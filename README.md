@@ -46,4 +46,4 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 
 ## Relationship to SSHScript
 
-SSHScript remains a separate execution library. SSHScript Ops builds operational content and a management framework on that foundation. Recipes initially live in this repository so their contracts, documentation, and workflows can evolve together.
+[SSHScript](https://github.com/iapyeh/sshscript) remains a separate execution library. SSHScript Ops builds operational content and a management framework on that foundation. Recipes initially live in this repository so their contracts, documentation, and workflows can evolve together.
