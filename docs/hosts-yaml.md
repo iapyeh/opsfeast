@@ -16,20 +16,14 @@ my-ops/
 ├── hosts/
 │   ├── bastions.yaml
 │   └── production.yaml
-├── recipes/
-│   └── inventory/
-│       └── hostname/
-│           ├── recipe.yaml
-│           ├── README.md
-│           └── main.spy
 ├── observations/
 ├── records/
 └── runs/
 ```
 
-`hosts.yaml` 與其他 YAML 保存設定；`recipes/` 保存可執行工具；`observations/` 保存觀測；`records/` 保存整理後的主機紀錄與人工筆記；`runs/` 保存執行狀態。後三者的詳細格式待定，不是本文件新增的資料契約。
+`hosts.yaml` 與其他 YAML 保存設定；可執行 recipes 直接使用 SSHScript Ops checkout 內的 `recipes/`；`observations/` 保存觀測；`records/` 保存整理後的主機紀錄與人工筆記；`runs/` 保存執行狀態。後三者的詳細格式待定，不是本文件新增的資料契約。
 
-公開的 SSHScript Ops repository 保存工具與合成範例。真實主機設定、憑證與結果留在使用者的管理環境。使用公開 recipes 時，先把所需版本安裝或複製到管理根目錄內，保留來源及版本資訊。指向根目錄外的符號連結不符合路徑規則。
+公開的 SSHScript Ops repository 保存工具與合成範例。真實主機設定、憑證與結果留在使用者的管理環境。使用公開 recipes 時，直接更新 SSHScript Ops checkout 即可，不必複製到管理根目錄。`recipes/...` 固定指向執行工具所在 checkout，不依目前工作目錄或 YAML 所在位置，也不回退到 instance 內的同名副本。自訂 recipe 可另存於管理目錄，用 `./recipes/...` 明確選取；既有副本不會被刪除。
 
 ## 建立與重複檢查管理目錄
 
@@ -40,9 +34,9 @@ python tools/my_ops.py init /srv/my-ops
 python tools/my_ops.py check /srv/my-ops
 ```
 
-`init` 建立 `hosts/`、`recipes/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
+`init` 建立 `hosts/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
 
-新建的樣板自動包含 `localhost`（本機執行）與一個 `host-01` 遠端範例；可設定欄位集中在註解區。遠端 hostname 使用非空的合成值 `host.example`，`recipes: []` 保持空清單，方便尚未安裝 recipes 時檢查通過。使用前替換連線值，安裝 recipe 後再加入選取。空清單表示沒有選取；非空選取沒有匹配結果仍是錯誤。
+新建的樣板自動包含 `localhost`（本機執行）與一個 `host-01` 遠端範例；可設定欄位集中在註解區。遠端 hostname 使用非空的合成值 `host.example`，`recipes: []` 保持空清單，方便尚未選取 recipes 時檢查通過。使用前替換連線值，再加入 checkout 內已有的 recipe 選取。空清單表示沒有選取；非空選取沒有匹配結果仍是錯誤。
 
 `check` 唯讀載入入口與 include，檢查 YAML 語法、重複鍵、欄位與型別、重複主機 ID、缺少引用、跳板與 include 循環、recipe 路徑邊界及選取。錯誤輸出來源和引用鏈，不輸出 YAML 原文或變數值。成功退出碼為 0，錯誤為 1。`init` 保留既有設定後若檢查失敗，也回傳 1，讓使用者修正；不覆寫有問題的檔案。
 
@@ -61,7 +55,7 @@ python tools/my_ops.py test-connection host-01 /srv/my-ops --timeout 10
 python tools/my_ops.py test-connection rms4 /srv/my-ops --debug --traceback
 ```
 
-載入入口與 include，檢查連線、帳號與跳板循環後，只連線至指定 host 及其所需跳板，再於目標主機各執行一次 `hostname`、`date`。不要求 recipes 已安裝、不執行 recipes、不切換 users 中的其他帳號，也不修改管理檔案。`localhost` 的 `local: true` 使用本機 Session 執行相同指令。
+載入入口與 include，檢查連線、帳號與跳板循環後，只連線至指定 host 及其所需跳板，再於目標主機各執行一次 `hostname`、`date`。不要求 recipes 已選取、不執行 recipes、不切換 users 中的其他帳號，也不修改管理檔案。`localhost` 的 `local: true` 使用本機 Session 執行相同指令。
 
 - 明確 hostname 模式使用 YAML 連線資料，不自動混入 SSH config；省略的 user 使用目前本機帳號，省略 port 使用 22。
 - 使用 `users.<登入帳號>.password` 作為該主機的登入密碼。未指定私鑰且提供密碼時，停用 agent 與自動找金鑰，讓測試實際使用該密碼。未提供密碼或私鑰時使用 SSH agent／預設金鑰。
@@ -349,7 +343,7 @@ hosts:
       via:
         host: bastion
     recipes:
-      - recipe: ../recipes/inventory/hostname
+      - recipe: recipes/inventory/hostname
 ```
 
 各檔案使用相同格式，也可以再 include 其他檔案。只負責 include 的檔案可以省略 `hosts`。全部載入後組成一份主機清單，才檢查跨檔案引用。
@@ -383,19 +377,19 @@ recipes:
 | `directory` 加 `recursive: true` | 遞迴選取該目錄下的 recipes |
 | `glob` | 比對 recipe 目錄路徑；`*` 與 `?` 不跨 `/`，`**` 可跨目錄層級 |
 
-每個選取項目只能使用 `recipe`、`directory`、`glob` 其中一種；`recursive` 只適用於 `directory`。相對路徑與 glob 都以**宣告該項目的 YAML 所在目錄**為基準，不是入口 `hosts.yaml` 或 repository 的 recipes 根目錄。
+每個選取項目只能使用 `recipe`、`directory`、`glob` 其中一種；`recursive` 只適用於 `directory`。`recipes` 或 `recipes/...` 路徑與 glob 以**工具所在 checkout**為基準，include YAML 也使用相同規則。其他相對路徑（例如 `./recipes/custom`、`../recipes/custom`）以**宣告該項目的 YAML 所在目錄**為基準，限定在管理根目錄內。絕對路徑可指向 checkout 的 recipes 目錄或管理根目錄內；不搜尋其他 checkout。
 
-按清單順序展開；每組匹配結果按相對管理根目錄的路徑排序。重複選到同一實際 recipe 目錄，只保留第一次；不同 recipe 宣告相同 ID 則報錯。沒有匹配項目或缺少有效 recipe 描述時報錯，不能回報空操作成功。Recipe 描述的完整欄位規格待定。
+按清單順序展開；每組匹配結果按相對該來源根目錄的路徑排序。重複選到同一實際 recipe 目錄，只保留第一次；不同 recipe 宣告相同 ID 則報錯。沒有匹配項目或缺少有效 recipe 描述時報錯，不能回報空操作成功。Recipe 描述的完整欄位規格待定。
 
 先展開清單，再檢查相容性、變數、權限與副作用。選取目錄或 glob 不等於授權所有修改操作；新增 recipe 可能改變下次選取結果。每次執行應記錄實際選中的 recipe ID、版本與執行狀態。
 
 ## 路徑邊界
 
-管理根目錄由使用者提供，不能由 include 的檔案重新定義。**Include 與 recipe 選取的所有實際路徑必須位於管理根目錄內。**
+管理根目錄由使用者提供，不能由 include 的檔案重新定義。**Include 必須位於管理根目錄內；repository recipe 必須位於工具所在 checkout 的 recipes 目錄內，自訂 recipe 必須位於管理根目錄內。** 兩者分別驗證，不能用 recipe 的外部來源放寬 include 或輸出路徑。
 
-- 相對路徑先依來源 YAML 所在目錄解析，再正規化並解析符號連結。
-- 允許 `..`，但最終路徑不得離開管理根目錄。
-- 絕對路徑只有實際位於管理根目錄內時才接受。為便於搬移，範例與新設定優先使用相對路徑。
+- `recipes/...` 先依工具所在 checkout 解析；其餘相對路徑依來源 YAML 所在目錄解析，再正規化並解析符號連結。
+- 允許 `..`，但最終路徑不得離開所選來源的根目錄；repository recipe 不能跳到 checkout 的 tools 或其他目錄。
+- Include 的絕對路徑只接受管理根目錄內的檔案；recipe 的絕對路徑也接受 checkout 的 recipes 目錄內。為便於搬移，範例與新設定優先使用相對路徑。
 - 以路徑元件判斷包含關係，不能用字串前綴；`/srv/my-ops-other/` 不在 `/srv/my-ops/` 內。
 - Glob 在展開前檢查搜尋範圍，不能先遍歷根目錄外；展開後再檢查每個匹配項目與符號連結。目錄遞迴也遵守相同規則。
 - 找不到必要檔案或目錄時報錯，不建立替代路徑，也不略過檢查。

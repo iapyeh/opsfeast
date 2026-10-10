@@ -42,7 +42,8 @@ class MyOpsTests(unittest.TestCase):
         ops.initialize(self.root)
         self.assertEqual(path.read_text(), 'hosts: {}\n# user note\n')
         self.assertIn(b'via:', original)
-        self.assertTrue(all((self.root / name).is_dir() for name in ('hosts', 'recipes', 'observations', 'records', 'runs')))
+        self.assertFalse((self.root / 'recipes').exists())
+        self.assertTrue(all((self.root / name).is_dir() for name in ('hosts', 'observations', 'records', 'runs')))
 
     def test_cross_file_reference_and_relative_recipe(self):
         self.write('hosts.yaml', 'include: [hosts/jump.yaml, hosts/web.yaml]\n')
@@ -53,13 +54,41 @@ class MyOpsTests(unittest.TestCase):
         self.assertEqual(result.edges['web'], ['jump'])
         self.assertEqual(result.selected['web'], [recipe.resolve()])
 
+    def test_checkout_recipes_work_from_included_yaml_without_copy(self):
+        self.write('hosts.yaml', 'include: [hosts/web.yaml]\n')
+        self.write('hosts/web.yaml', 'hosts: {web: {connection: {local: true}, recipes: [{recipe: recipes/inventory/system}]}}')
+        self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'inventory/system'])
+        self.assertFalse((self.root / 'recipes').exists())
+
+    def test_checkout_glob_directory_and_dedup(self):
+        for selector in ('{directory: recipes/inventory}', '{directory: recipes, recursive: true}',
+                         '{glob: "recipes/**/system"}'):
+            with self.subTest(selector=selector):
+                self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/inventory/system}}]}}}}')
+                self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'inventory/system'])
+
+    def test_checkout_boundary_does_not_allow_include_or_recipe_escape(self):
+        for recipe in ('recipes/../../outside', 'recipes/../tools', 'recipes/../tools/*'):
+            with self.subTest(recipe=recipe):
+                self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{{glob: "{recipe}"}}]}}}}')
+                with self.assertRaises(ops.ConfigError):
+                    self.check()
+        self.write('hosts.yaml', f'include: [{ops.REPOSITORY_ROOT / "recipes/inventory/system/recipe.yaml"}]')
+        with self.assertRaisesRegex(ops.ConfigError, 'outside management root'):
+            self.check()
+
+    def test_checkout_recipe_never_uses_same_named_instance_copy(self):
+        self.write('recipes/inventory/system/recipe.yaml', 'id: different\n')
+        self.write('hosts.yaml', 'hosts: {web: {connection: {local: true}, recipes: [{recipe: recipes/inventory/system}]}}')
+        self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'inventory/system'])
+
     def test_dump_merged_hosts_and_nested_values(self):
         self.write('hosts.yaml', 'include: [hosts/web.yaml]\nhosts: {localhost: {connection: {local: true}}}')
         self.write('hosts/web.yaml', '''hosts:
   host-01:
     connection: {hostname: host.example}
     vars: {label: 測試, enabled: true, count: 2, empty: null}
-    recipes: [{recipe: recipes/not-installed}]
+    recipes: [{recipe: ./recipes/not-installed}]
 ''')
         expected = self.check_loaded_hosts()
         for setting, value in (
@@ -225,7 +254,7 @@ class MyOpsTests(unittest.TestCase):
   a:
     connection: {hostname: host.example, user: operator}
     users: {operator: {password: SYNTHETIC-SECRET}}
-    recipes: [{recipe: recipes/not-installed}]
+    recipes: [{recipe: ./recipes/not-installed}]
 ''')
         session_class, local, remote = self.session_double()
         code, output, errors = self.connection_cli('a', session_class)
@@ -436,23 +465,23 @@ class MyOpsTests(unittest.TestCase):
     def test_glob_order_and_dedup(self):
         for name in ('basic-b-storage', 'basic-a-storage', 'other'):
             self.write(f'recipes/{name}/recipe.yaml', f'id: {name}\n')
-        self.write('hosts.yaml', 'hosts:\n  a:\n    connection: {hostname: a}\n    recipes:\n      - glob: recipes/basic-*-storage\n      - directory: recipes\n')
+        self.write('hosts.yaml', 'hosts:\n  a:\n    connection: {hostname: a}\n    recipes:\n      - glob: ./recipes/basic-*-storage\n      - directory: ./recipes\n')
         self.assertEqual([p.name for p in self.check().selected['a']], ['basic-a-storage', 'basic-b-storage', 'other'])
 
     def test_recursive_directory_and_double_star(self):
         self.write('recipes/category/basic/recipe.yaml', 'id: basic')
-        for selector in ('{directory: recipes, recursive: true}', '{glob: "recipes/**/basic"}'):
+        for selector in ('{directory: ./recipes, recursive: true}', '{glob: "./recipes/**/basic"}'):
             self.write('hosts.yaml', f'hosts: {{a: {{connection: {{hostname: a}}, recipes: [{selector}]}}}}')
             self.assertEqual(len(self.check().selected['a']), 1)
 
     def test_empty_match_and_duplicate_recipe_id(self):
-        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{glob: recipes/no-*}]}}')
+        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{glob: ./recipes/no-*}]}}')
         (self.root / 'recipes').mkdir()
         with self.assertRaisesRegex(ops.ConfigError, 'matched no recipes'):
             self.check()
         for name in ('a', 'b'):
             self.write(f'recipes/{name}/recipe.yaml', 'id: same')
-        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{directory: recipes}]}}')
+        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{directory: ./recipes}]}}')
         with self.assertRaisesRegex(ops.ConfigError, 'duplicate recipe ID'):
             self.check()
 
@@ -461,7 +490,7 @@ class MyOpsTests(unittest.TestCase):
         outside.mkdir()
         (self.root / 'recipes').mkdir()
         (self.root / 'recipes/link').symlink_to(outside)
-        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{glob: "recipes/**"}]}}')
+        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{glob: "./recipes/**"}]}}')
         with self.assertRaisesRegex(ops.ConfigError, 'outside management root'):
             self.check()
         self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{glob: "../outside/*"}]}}')

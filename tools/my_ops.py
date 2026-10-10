@@ -21,6 +21,10 @@ class ConfigError(ValueError):
     pass
 
 
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_RECIPES = REPOSITORY_ROOT / 'recipes'
+
+
 class UniqueLoader(yaml.SafeLoader):
     """Reject duplicate keys and YAML merge keys rather than silently overriding."""
 
@@ -112,6 +116,24 @@ class Validator:
             raise ConfigError(f'{source}: remote URLs are not supported')
         path = Path(text)
         return self.inside(path if path.is_absolute() else source.parent / path)
+
+    def recipe_scope(self, text, source):
+        """Bare recipes/... selects this checkout; explicit local paths stay local."""
+        string(text, f'{source}: recipe path')
+        path = Path(text)
+        if text == 'recipes' or text.startswith('recipes/'):
+            scope = Validator(REPOSITORY_RECIPES)
+            relative = text[len('recipes'):].lstrip('/') or '.'
+            return scope, relative, scope.root / 'selection.yaml'
+        if path.is_absolute() and path.is_relative_to(REPOSITORY_RECIPES):
+            scope = Validator(REPOSITORY_RECIPES)
+            return scope, text, source
+        return self, text, source
+
+    def recipe_inside(self, path):
+        if path.is_relative_to(REPOSITORY_RECIPES):
+            return Validator(REPOSITORY_RECIPES).inside(path)
+        return self.inside(path)
 
     def load(self, path):
         path = self.inside(path)
@@ -258,16 +280,17 @@ class Validator:
             kind = next(iter(kinds))
             if 'recursive' in selector and (kind != 'directory' or type(selector['recursive']) is not bool):
                 raise ConfigError(f'{where}: recursive is a boolean for directory only')
+            scope, pattern, recipe_source = self.recipe_scope(selector[kind], source)
             if kind == 'glob':
-                candidates = self.glob_dirs(selector[kind], source)
+                candidates = scope.glob_dirs(pattern, recipe_source)
             else:
-                directory = self.path(selector[kind], source)
+                directory = scope.path(pattern, recipe_source)
                 if not directory.is_dir():
                     raise ConfigError(f'{where}: recipe/directory does not exist: {directory}')
-                candidates = [directory] if kind == 'recipe' else list(self.descendants(directory, selector.get('recursive', False)))
+                candidates = [directory] if kind == 'recipe' else list(scope.descendants(directory, selector.get('recursive', False)))
             matches = []
             for directory in candidates:
-                descriptor = self.inside(directory / 'recipe.yaml')
+                descriptor = scope.inside(directory / 'recipe.yaml')
                 if not descriptor.is_file():
                     if kind == 'recipe':
                         raise ConfigError(f'{where}: recipe.yaml missing: {directory}')
@@ -275,10 +298,10 @@ class Validator:
                 matches.append(directory)
             if not matches:
                 raise ConfigError(f'{where}: selector matched no recipes')
-            for directory in sorted(set(matches), key=lambda p: p.relative_to(self.root).as_posix()):
+            for directory in sorted(set(matches), key=lambda p: p.relative_to(scope.root).as_posix()):
                 if directory in selected:
                     continue
-                data = mapping(read_yaml(self.inside(directory / 'recipe.yaml')), str(directory / 'recipe.yaml'))
+                data = mapping(read_yaml(scope.inside(directory / 'recipe.yaml')), str(directory / 'recipe.yaml'))
                 # Full recipe schema is not yet defined. Validate IDs only when present.
                 if 'id' in data:
                     recipe_id = string(data['id'], str(directory / 'recipe.yaml') + ': id')
@@ -318,7 +341,7 @@ class Validator:
 
 
 TEMPLATE = '''# Replace the example host ID and hostname before use.
-# Recipe selection stays empty until you install recipes under this directory.
+# Select recipes directly from the SSHScript Ops checkout with recipes/... paths.
 hosts:
   # Each host ID maps to connection (required), users, vars and recipes (optional).
   # Available fields, for example:
@@ -356,8 +379,9 @@ hosts:
   #     sudo:
   #       user: root
   #       password: example-password
-  #   recipes:  # Optional; select installed recipe directories.
-  #     - recipe: recipes/inventory/hostname
+  #   recipes:  # Optional; select recipe directories from the checkout.
+  #     - recipe: recipes/inventory/system
+  #     # Use ./recipes/... for custom recipes inside this management directory.
   #     # Or select recipe directories with either of these entries:
   #     # - directory: recipes/inventory
   #     #   recursive: false  # Optional; only valid with directory.
@@ -385,13 +409,13 @@ def initialize(root):
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve(strict=True)
     # Preflight existing entries before writing anything inside the root.
-    for name in ('hosts', 'recipes', 'observations', 'records', 'runs', 'hosts.yaml'):
+    for name in ('hosts', 'observations', 'records', 'runs', 'hosts.yaml'):
         item = root / name
         if item.is_symlink():
             raise ConfigError(f'init refuses scaffold symlink: {item}')
         if item.exists() and (item.is_file() if name != 'hosts.yaml' else not item.is_file()):
             raise ConfigError(f'wrong scaffold entry type: {item}')
-    for name in ('hosts', 'recipes', 'observations', 'records', 'runs'):
+    for name in ('hosts', 'observations', 'records', 'runs'):
         (root / name).mkdir(exist_ok=True)
     path = root / 'hosts.yaml'
     if not path.exists():

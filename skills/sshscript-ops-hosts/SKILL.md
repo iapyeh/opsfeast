@@ -38,9 +38,9 @@ Repository 提供 [tools/my_ops.py](../../tools/my_ops.py)：使用安裝 PyYAML
 
 ## 路徑與引用檢查
 
-Include 與每個 recipe 選取項目的相對路徑，都以**宣告它的 YAML 所在目錄**為基準。維持來源檔案資訊，不能合併後一律改用入口 YAML 的目錄。
+Include 的相對路徑以**宣告它的 YAML 所在目錄**為基準。Recipe 的 `recipes/...` 固定以工具所在 checkout 為基準，無需複製到 instance；其餘相對路徑（例如 `./recipes/...`）才以宣告 YAML 的目錄為基準。維持來源檔案資訊，不能合併後一律改用入口 YAML 的目錄。
 
-使用者指定的管理根目錄是邊界。解析相對路徑、`..` 與符號連結後，實際路徑必須仍在根目錄內；絕對路徑也只有在邊界內才接受。用路徑元件而非字串前綴檢查。Glob 或遞迴選取不能先搜尋外部再過濾，每個結果也需檢查邊界。新設定優先用相對路徑。
+Include 與自訂 recipe 以管理根目錄為邊界；repository recipe 以工具所在 checkout 的 recipes 目錄為邊界。解析相對路徑、`..` 與符號連結後，實際路徑必須仍在各自邊界內；recipe 的絕對路徑可位於這兩個邊界內。不可因此放寬 include 或結果輸出的邊界。用路徑元件而非字串前綴檢查。Glob 或遞迴選取不能先搜尋外部再過濾，每個結果也需檢查邊界。新設定優先用相對路徑。
 
 這個邊界不適用於目標主機的變數值。`identity_file` 是連線層設定，test-connection 將 identity_file 原樣傳給 SSHScript pkey_path，從呼叫 connect 的 parent Session 所在主機讀取 RSA 私鑰：直連讀 localhost，經由跳板時讀前一跳主機（SFTP 原始登入帳號）。不以 YAML 目錄解析相對路徑、不展開 ~，建議 parent 主機上的絕對路徑；不能將它替換成始終在 localhost 讀取的 key_filename。
 
@@ -48,7 +48,7 @@ Include 與每個 recipe 選取項目的相對路徑，都以**宣告它的 YAML
 
 ## 完成設定維護
 
-使用 `tools/my_ops.py check` 檢查本次修改，若缺少 Python 或 PyYAML 明確回報，不虛構成功結果。檢查涵蓋 YAML 語法、重複鍵、跨檔案引用、路徑邊界與 recipe 選取規則。使用安全的 YAML 載入方式，不執行自訂標籤。若 recipes 尚未安裝，明確回報選取尚無法驗證，不把草案稱為可執行環境。
+使用 `tools/my_ops.py check` 檢查本次修改，若缺少 Python 或 PyYAML 明確回報，不虛構成功結果。檢查涵蓋 YAML 語法、重複鍵、跨檔案引用、路徑邊界與 recipe 選取規則。使用安全的 YAML 載入方式，不執行自訂標籤。若所選 recipes 不存在，明確回報選取尚無法驗證，不把草案稱為可執行環境。
 
 回報修改檔案、主機 ID、解析後的連線拓樸與檢查結果；不要為說明變更而重貼真實密碼。需要示範完整設定時使用合成值。
 

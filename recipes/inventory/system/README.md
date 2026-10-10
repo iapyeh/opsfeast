@@ -20,18 +20,18 @@
 
 本 recipe 不採集 CPU／RAM、儲存、網路、軟體清單、服務或即時資源使用量。不 sudo、su、安裝工具或修改目標配置。登入帳號需要能執行 uname、/bin/sh、cat，以及讀取系統版本資訊。
 
-## 安裝與執行
+## 執行
 
 Controller 使用 Python 3.11+、PyYAML，以及 **SSHScript 5.0.0**。Runner 在連線前確認 import／distribution 皆為 5.0.0，不自動安裝或升級。執行時保留公開契約的預設 host-key 驗證；巢狀連線預設使用 calling parent 的 trust file，私鑰也依既有 Ops parent-host 規則處理。
 
-將本目錄完整複製到使用者管理根目錄的 `recipes/inventory/system/`。可以用 CLI 指定本次 recipe，不必修改主機的 `recipes` 設定：
+直接使用 SSHScript Ops checkout 內的 `recipes/inventory/system/`，更新 checkout 後即可使用新版，不必複製到 instance。可以用 CLI 指定本次 recipe，不必修改主機的 `recipes` 設定：
 
 ```sh
 python -B tools/run_recipe.py example-host-01 /srv/my-ops \
   --recipe recipes/inventory/system --timeout 30
 ```
 
-`--recipe` 接受單一 recipe 目錄路徑，不是 recipe ID、檔案或 glob。相對路徑以管理根目錄為基準；絕對路徑也必須位於管理根目錄內，符號連結解析後不能離開根目錄。目錄必須包含相符的 recipe.yaml 與 main.py，recipe 仍需先安裝。
+`--recipe` 接受單一 recipe 目錄路徑，不是 recipe ID、檔案或 glob。`recipes/...` 以工具所在 checkout 為基準，不受目前工作目錄影響。其他相對路徑（例如 `./recipes/inventory/system`）以管理根目錄為基準；絕對路徑可位於 checkout 的 recipes 或管理根目錄內。符號連結解析後不能離開所選來源的邊界。目錄必須包含相符的 recipe.yaml 與 main.py。
 
 有指定 `--recipe` 時只使用該目錄，不展開或檢查該主機的 recipes 選取清單。指定無效路徑或不支援的 recipe 會在連線前失敗，不回退到主機設定；hosts.yaml 的主機與連線設定仍需存在且有效。
 
@@ -42,7 +42,7 @@ recipes:
   - recipe: recipes/inventory/system
 ```
 
-相對路徑以宣告它的 YAML 所在目錄為基準。真實設定和輸出留在使用者管理環境，不加入公開 repository。
+`recipes/...` 直接指向 checkout，include YAML 中也相同。其他相對路徑以宣告它的 YAML 所在目錄為基準。真實設定和輸出留在使用者管理環境，不加入公開 repository。
 
 從 Ops repository 執行（以下使用合成 host ID 與管理路徑）：
 
@@ -51,7 +51,7 @@ python -B tools/my_ops.py check /srv/my-ops
 python -B tools/run_recipe.py example-host-01 /srv/my-ops --timeout 30
 ```
 
-最小 runner 僅執行明確的 inventory-system，不執行該主機選取的其他 recipes。它檢查安裝副本的 recipe.yaml 與 main.py 是否與這份 runner bundle 完全相符，然後呼叫 repository 內的相同採集程式；不動態執行任意安裝腳本。修改或更新副本需同步 runner bundle，目前不是通用插件執行器。
+最小 runner 僅執行明確的 inventory-system，不執行該主機選取的其他 recipes。它檢查所選 recipe.yaml 與 main.py 是否與這份 runner bundle 完全相符，然後呼叫 repository 內的採集程式；不動態執行任意腳本。`recipes/...` 永遠使用 checkout，不回退到 instance 的同名舊副本；明確指定自訂副本時仍需與 runner bundle 相符。目前不是通用插件執行器。
 
 Runner 沿用現有 connection／users／via 設定，僅連至指定主機與必要跳板。`--timeout` 是每跳連線、banner、驗證以及每項查詢的正有限秒數，預設 30 秒，**不是整次執行的總期限**。Session 在 finally 中以 `close(strict=True)` 清理，清理失敗使整體 failed。期限到達或 channel 關閉不證明遠端程序已結束。
 
@@ -59,7 +59,7 @@ Runner 沿用現有 connection／users／via 設定，僅連至指定主機與�
 
 每次保存一個 `observations/inventory-system-<uuid>.json`，不覆寫舊觀測，不更新人工 records。檔名不使用主機名稱或 host ID。結果包含執行狀態，初版不另寫 runs 檔案。stdout 僅印 status 與完整結果路徑。完整成功退出碼為 0；partial、unsupported、failed、設定／保存失敗為 1。無法保存時不回報成功。
 
-- `schema_version` 與 recipe version 分開；recipe 另保留 implementation SHA-256、安裝相對路徑。
+- `schema_version` 與 recipe version 分開；recipe 另保留 implementation SHA-256、`installed_path`（相對 checkout 或 instance 的路徑）、`location_source`（repository／instance）與 `resolved_path`（實際絕對路徑）。
 - recipe 的 `selection_source` 記錄 `cli` 或 `hosts`，表示本次使用哪一種選取來源。
 - `runtime` 保留 interpreter、Python 與 SSHScript import／distribution 版本。
 - `host_id` 是穩定管理 ID；hostname 是本次觀測值。
@@ -86,4 +86,4 @@ SSHScript API 的依據僅為安裝的公開 skill bundle：
 
 Linux 資料來源語意參考 [GNU uname manual](https://www.gnu.org/s/coreutils/manual/html_node/uname-invocation.html) 與 [systemd os-release 定義](https://github.com/systemd/systemd/blob/main/man/os-release.xml)（2026-10-10 查閱）。這些不是 SSHScript API 學習來源。
 
-執行 `python -B -m unittest discover -s tests -p 'test_*.py'` 驗證合成解析、缺值、缺檔 fallback、拒絕權限、unsupported、期限／partial output、transport／cleanup 失敗、設定選取、安裝副本一致性、輸出路徑與重複保存。SSHScript 5.0.0 credential-free quickstart 和 macOS unsupported 本機流程已驗證；Linux 完整採集、真正 SSH 與跳板仍待使用者指定目標後驗證。
+執行 `python -B -m unittest discover -s tests -p 'test_*.py'` 驗證合成解析、缺值、缺檔 fallback、拒絕權限、unsupported、期限／partial output、transport／cleanup 失敗、設定選取、checkout 選取與自訂副本一致性、輸出路徑與重複保存。SSHScript 5.0.0 credential-free quickstart 和 macOS unsupported 本機流程已驗證；Linux 完整採集、真正 SSH 與跳板仍待使用者指定目標後驗證。

@@ -125,7 +125,7 @@ class RunnerTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.directory = self.root / 'recipes/inventory/system'
         shutil.copytree(runner.BUNDLE, self.directory)
-        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes:\n      - recipe: recipes/inventory/system\n')
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session = Mock()
         self.session.exec_command.side_effect = linux_outputs()
         self.session_class = Mock(return_value=self.session)
@@ -142,12 +142,78 @@ class RunnerTests(unittest.TestCase):
         self.session.connect.assert_not_called()
         self.assertEqual(report['recipe']['selection_source'], 'hosts')
 
+    def test_checkout_recipe_without_instance_copy(self):
+        shutil.rmtree(self.root / 'recipes')
+        for selection in ('cli', 'hosts', 'absolute'):
+            with self.subTest(selection=selection):
+                (self.root / 'hosts.yaml').write_text('include: [hosts/group.yaml]\n')
+                (self.root / 'hosts').mkdir(exist_ok=True)
+                (self.root / 'hosts/group.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes: [{recipe: recipes/inventory/system}]\n')
+                self.session.exec_command.side_effect = linux_outputs()
+                recipe = None if selection == 'hosts' else str(runner.BUNDLE) if selection == 'absolute' else 'recipes/inventory/system'
+                report, path = runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
+                self.assertEqual(report['status'], 'success')
+                self.assertEqual(report['recipe']['location_source'], 'repository')
+                self.assertEqual(report['recipe']['resolved_path'], str(runner.BUNDLE))
+                self.assertEqual(report['recipe']['installed_path'], 'recipes/inventory/system')
+                self.assertEqual(path.parent, self.root.resolve() / 'observations')
+                self.assertFalse((self.root / 'recipes').exists())
+
+    def test_checkout_selection_ignores_outdated_instance_copy(self):
+        (self.directory / 'main.py').write_text('outdated copy')
+        report, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['recipe']['location_source'], 'repository')
+
+    def test_checkout_update_changes_recorded_digest_without_copying(self):
+        checkout = self.root / 'checkout'
+        recipes = checkout / 'recipes'
+        bundle = recipes / 'inventory/system'
+        shutil.copytree(runner.BUNDLE, bundle)
+        shutil.rmtree(self.root / 'recipes')
+        with patch.object(my_ops, 'REPOSITORY_RECIPES', recipes), \
+             patch.object(runner, 'REPOSITORY_ROOT', checkout), \
+             patch.object(runner, 'REPOSITORY_RECIPES', recipes), \
+             patch.object(runner, 'BUNDLE', bundle):
+            first, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+            entry = bundle / 'main.py'
+            entry.write_text(entry.read_text() + '\n# Updated checkout fixture\n')
+            self.session.exec_command.side_effect = linux_outputs()
+            second, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+        self.assertNotEqual(first['recipe']['implementation_sha256'], second['recipe']['implementation_sha256'])
+        self.assertFalse((self.root / 'recipes').exists())
+
+    def test_checkout_files_and_glob_cannot_escape_recipe_boundary(self):
+        checkout = self.root / 'checkout'
+        recipes = checkout / 'recipes'
+        bundle = recipes / 'inventory/system'
+        shutil.copytree(runner.BUNDLE, bundle)
+        with tempfile.TemporaryDirectory() as external:
+            external = Path(external)
+            with patch.object(my_ops, 'REPOSITORY_RECIPES', recipes):
+                for name in ('recipe.yaml', 'main.py'):
+                    with self.subTest(name=name):
+                        entry = bundle / name
+                        content = entry.read_bytes()
+                        (external / name).write_bytes(content)
+                        entry.unlink()
+                        entry.symlink_to(external / name)
+                        with self.assertRaises(my_ops.ConfigError):
+                            runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+                        entry.unlink()
+                        entry.write_bytes(content)
+                (recipes / 'escape').symlink_to(external, target_is_directory=True)
+                (self.root / 'hosts.yaml').write_text('hosts: {example: {connection: {local: true}, recipes: [{glob: "recipes/**"}]}}')
+                with self.assertRaises(my_ops.ConfigError):
+                    my_ops.Validator(self.root).check()
+        self.session_class.assert_not_called()
+
     def test_cli_recipe_without_host_selection(self):
         for selection in ('', '    recipes: []\n'):
             with self.subTest(selection=selection):
                 (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n' + selection)
                 self.session.exec_command.side_effect = linux_outputs()
-                report, path = runner.run(self.root, 'example', recipe='recipes/inventory/system',
+                report, path = runner.run(self.root, 'example', recipe='./recipes/inventory/system',
                                           session_class=self.session_class)
                 self.assertEqual(report['status'], 'success')
                 self.assertEqual(report['recipe']['selection_source'], 'cli')
@@ -164,7 +230,7 @@ class RunnerTests(unittest.TestCase):
         (self.root / 'hosts').mkdir()
         (self.root / 'hosts.yaml').write_text('include: [hosts/group.yaml]\n')
         (self.root / 'hosts/group.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n')
-        report, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system',
+        report, _ = runner.run(self.root, 'example', recipe='./recipes/inventory/system',
                                session_class=self.session_class)
         self.assertEqual(report['status'], 'success')
 
@@ -192,7 +258,7 @@ class RunnerTests(unittest.TestCase):
             descriptor.unlink()
             descriptor.symlink_to(external)
             with self.assertRaises(my_ops.ConfigError):
-                runner.run(self.root, 'example', recipe='recipes/inventory/system',
+                runner.run(self.root, 'example', recipe='./recipes/inventory/system',
                            session_class=self.session_class)
         self.session_class.assert_not_called()
 
@@ -200,9 +266,9 @@ class RunnerTests(unittest.TestCase):
         path = self.root / 'result.json'
         with patch.object(runner, 'run', return_value=({'status': 'success'}, path)) as run:
             with contextlib.redirect_stdout(io.StringIO()) as output:
-                code = runner.main(['example', str(self.root), '--recipe', 'recipes/inventory/system'])
+                code = runner.main(['example', str(self.root), '--recipe', './recipes/inventory/system'])
         self.assertEqual(code, 0)
-        run.assert_called_once_with(self.root, 'example', 30, recipe='recipes/inventory/system')
+        run.assert_called_once_with(self.root, 'example', 30, recipe='./recipes/inventory/system')
         self.assertEqual(json.loads(output.getvalue())['result_path'], str(path))
 
     def test_cleanup_failure_retains_observations(self):
@@ -232,7 +298,7 @@ class RunnerTests(unittest.TestCase):
         self.session_class.assert_not_called()
 
     def test_connection_failure_saved_safely(self):
-        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {hostname: example.invalid, user: ops}\n    recipes:\n      - recipe: recipes/inventory/system\n')
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {hostname: example.invalid, user: ops}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session_class.resolve_connection.return_value = {'hostname': 'example.invalid', 'username': 'ops', 'port': 22}
         self.session.connect.side_effect = OSError('private credential')
         report, _ = self.run_recipe()
@@ -242,7 +308,7 @@ class RunnerTests(unittest.TestCase):
         self.session.close.assert_called_once_with(strict=True)
 
     def test_nested_hops_receive_budgets_and_cleanup_root(self):
-        (self.root / 'hosts.yaml').write_text('hosts:\n  bastion:\n    connection: {hostname: bastion.example}\n  example:\n    connection:\n      hostname: target.example\n      via: {host: bastion}\n    recipes:\n      - recipe: recipes/inventory/system\n')
+        (self.root / 'hosts.yaml').write_text('hosts:\n  bastion:\n    connection: {hostname: bastion.example}\n  example:\n    connection:\n      hostname: target.example\n      via: {host: bastion}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session_class.resolve_connection.side_effect = [
             {'hostname': 'bastion.example', 'username': 'ops', 'port': 22},
             {'hostname': 'target.example', 'username': 'ops', 'port': 22}]

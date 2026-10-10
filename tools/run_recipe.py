@@ -1,4 +1,4 @@
-"""Run one selected, installed inventory-system recipe and save its result."""
+"""Run one selected inventory-system recipe from the checkout and save its result."""
 import argparse
 import hashlib
 from importlib.metadata import version
@@ -8,7 +8,7 @@ import runpy
 import sys
 from uuid import uuid4
 
-from my_ops import ConfigError, Validator, connection_plan, connection_error, positive_timeout, read_yaml, mapping
+from my_ops import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping
 
 BUNDLE = Path(__file__).resolve().parents[1] / 'recipes/inventory/system'
 collector = runpy.run_path(str(BUNDLE / 'main.py'))
@@ -30,8 +30,8 @@ def preflight(root, host, recipe=None):
     if host not in config.hosts:
         raise ConfigError(f'unknown host ID: {host}')
     if recipe is not None:
-        # CLI paths are based on the management root, independent of include files.
-        directory = config.path(str(recipe), config.root / 'hosts.yaml')
+        scope, pattern, source = config.recipe_scope(str(recipe), config.root / 'hosts.yaml')
+        directory = scope.path(pattern, source)
         if not directory.is_dir():
             raise ConfigError('CLI recipe directory does not exist')
     else:
@@ -39,20 +39,20 @@ def preflight(root, host, recipe=None):
         selected = config.selected[host]
         matches = [path for path in selected if read_yaml(path / 'recipe.yaml').get('id') == 'inventory-system']
         if len(matches) != 1:
-            raise ConfigError('select exactly one installed inventory-system recipe for this host or pass --recipe DIRECTORY')
+            raise ConfigError('select exactly one inventory-system recipe for this host or pass --recipe DIRECTORY')
         directory = matches[0]
-    descriptor = config.inside(directory / 'recipe.yaml')
+    descriptor = config.recipe_inside(directory / 'recipe.yaml')
     if not descriptor.is_file():
         raise ConfigError('selected recipe directory must contain recipe.yaml')
     metadata = mapping(read_yaml(descriptor), str(descriptor))
     if metadata.get('id') != 'inventory-system':
         raise ConfigError('this minimal runner only supports inventory-system')
     if metadata != read_yaml(BUNDLE / 'recipe.yaml'):
-        raise ConfigError('installed inventory-system descriptor differs from this runner bundle')
-    entry = config.inside(directory / 'main.py')
+        raise ConfigError('selected inventory-system descriptor differs from this runner bundle')
+    entry = config.recipe_inside(directory / 'main.py')
     digest = hashlib.sha256(entry.read_bytes()).hexdigest()
     if digest != hashlib.sha256((BUNDLE / 'main.py').read_bytes()).hexdigest():
-        raise ConfigError('installed inventory-system implementation differs from this runner bundle')
+        raise ConfigError('selected inventory-system implementation differs from this runner bundle')
     output_dir = config.root / 'observations'
     if output_dir.is_symlink() or (output_dir.exists() and not output_dir.is_dir()):
         raise ConfigError('observations must be a real directory within management root')
@@ -69,7 +69,10 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
     if runtime is None:
         report['evidence_kind'] = 'mock'
     report['recipe']['implementation_sha256'] = digest
-    report['recipe']['installed_path'] = directory.relative_to(config.root).as_posix()
+    repository_recipe = directory.is_relative_to(REPOSITORY_RECIPES)
+    report['recipe']['installed_path'] = directory.relative_to(REPOSITORY_ROOT if repository_recipe else config.root).as_posix()
+    report['recipe']['location_source'] = 'repository' if repository_recipe else 'instance'
+    report['recipe']['resolved_path'] = str(directory)
     report['recipe']['selection_source'] = 'cli' if recipe is not None else 'hosts'
     report['hops'] = []
     local = None
@@ -111,7 +114,7 @@ def main(argv=None):
     parser.add_argument('host')
     parser.add_argument('root', type=Path)
     parser.add_argument('--recipe', metavar='DIRECTORY',
-                        help='recipe directory within management root; overrides host recipe selection (relative paths use root)')
+                        help='recipes/... selects this checkout; ./paths select within management root; overrides host recipe selection')
     parser.add_argument('--timeout', type=positive_timeout, default=30,
                         help='per-hop connection stages and per-command seconds; not a whole-run deadline')
     args = parser.parse_args(argv)
