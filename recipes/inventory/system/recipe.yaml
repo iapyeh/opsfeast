@@ -1,0 +1,73 @@
+# Ops descriptor version 0.1.0; minimal runner supports this exact bundle.
+descriptor_version: 0.1.0
+id: inventory-system
+version: 0.1.0
+status: implemented
+title: System inventory
+description: Collect system identity, operating system version, kernel, and architecture.
+kind: collection
+entrypoint: main.py
+platforms:
+  planned:
+  - linux
+  implemented:
+  - linux
+  tested: []
+compatibility:
+  sshscript: ==5.0.0
+  note: Public 5.0.0 skill snapshot; exact runtime version checked before connection.
+dependencies:
+  controller:
+  - Python >=3.11
+  - PyYAML
+  - SSHScript ==5.0.0
+  target:
+  - uname
+  - /bin/sh
+  - cat
+  status: defined
+permissions:
+  account: login-user
+  elevation: false
+side_effects:
+  target: read-only-queries
+  controller: Save a new JSON result under the user management directory observations/.
+inputs:
+  required:
+  - management-root
+  - host-id
+  optional:
+  - command-timeout-seconds
+  note: 'CLI: host root --timeout SECONDS; default 30 seconds per connection stage/command,
+    not whole run.'
+output:
+  format: json
+  schema_version: 0.1.0
+  example: examples/result.synthetic.json
+  fields:
+  - hostname
+  - platform
+  - system_name
+  - system_version
+  - kernel_name
+  - kernel_release
+  - architecture
+  run_statuses:
+  - success
+  - partial
+  - failed
+  - unsupported
+  observation_statuses:
+  - success
+  - unavailable
+  - unsupported
+  - permission_denied
+  - timeout
+  - command_failed
+  - parsing_failed
+  - not_attempted
+verification:
+  synthetic_example: examples/result.synthetic.json
+  parser_tests: tests/test_inventory_system.py
+  local_execution: macOS unsupported-platform path verified; Linux not yet tested
+  ssh_execution: not-tested

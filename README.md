@@ -8,7 +8,11 @@ SSHScript provides the foundation for readable, flexible local and remote execut
 
 ## Status
 
-This repository is an initial project scaffold. It does not yet contain executable recipes, an implemented management system, or validated platform support.
+This repository is an initial project scaffold. It provides a Python utility for management-directory initialization, configuration inspection and validation, and explicit host connection tests. It also provides an initial inventory-system Linux collector and a minimal runner; Linux collection has synthetic coverage, while real Linux/SSH validation remains pending.
+
+## Host configuration
+
+See the [hosts.yaml user guide](docs/hosts-yaml.md) for the proposed management-directory format, includes, jump hosts, host variables, and recipe selection. AI agents can use the repository skill [sshscript-ops-hosts](skills/sshscript-ops-hosts/SKILL.md) to help maintain these settings. Use `python tools/my_ops.py init /path/to/my-ops` to create a layout and template, and `python tools/my_ops.py check /path/to/my-ops` to validate it (Python 3.11+ and PyYAML required). Use `python tools/my_ops.py test-connection <host-id> /path/to/my-ops` to connect and run `hostname` and `date` (SSHScript 4.0.1+ also required). Initialization, dumps and configuration checks do not connect. Use `python -B tools/run_recipe.py <host-id> /path/to/my-ops` to run the explicitly selected, installed inventory-system recipe; see [its guide](recipes/inventory/system/README.md) for runtime requirements, installation and validation limits.
 
 ## Planned workflow
 

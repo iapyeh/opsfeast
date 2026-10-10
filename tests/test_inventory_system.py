@@ -1,0 +1,222 @@
+"""Synthetic inventory and runner regressions; never contact SSH hosts."""
+import json
+from pathlib import Path
+import runpy
+import shutil
+import sys
+import tempfile
+from types import SimpleNamespace
+import unittest
+from unittest.mock import Mock, patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'tools'))
+import run_recipe as runner
+import my_ops
+C = runner.collector
+
+
+def result(text='', code=0):
+    return SimpleNamespace(stdout=text, stderr='', exitcode=code)
+
+
+def linux_outputs(product='NAME="Example Linux"\nVERSION_ID="1.2"\n'):
+    return [result('Linux\n'), result('node\n'), result('6.1\n'), result('x86_64\n'), result(product)]
+
+
+class InventoryTests(unittest.TestCase):
+    def collect(self, responses):
+        session = Mock()
+        session.exec_command.side_effect = responses
+        report = C['new_report']('example', 'mock')
+        C['collect'](session, report, 7)
+        C['finish'](report)
+        return report, session
+
+    def test_success_and_finite_argv(self):
+        report, session = self.collect(linux_outputs())
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['observations']['system_name']['value'], 'Example Linux')
+        for call in session.exec_command.call_args_list:
+            self.assertIsInstance(call.args[0], list)
+            self.assertEqual(call.kwargs, {'check': False, 'command_timeout': 7})
+
+    def test_version_absent(self):
+        report, _ = self.collect(linux_outputs('NAME=Example\n'))
+        self.assertEqual(report['status'], 'partial')
+        self.assertEqual(report['observations']['system_version']['status'], 'unavailable')
+        self.assertIsNone(report['observations']['system_version']['value'])
+
+    def test_unsupported_stops_after_detection(self):
+        report, session = self.collect([result('Darwin\n')])
+        self.assertEqual(report['status'], 'unsupported')
+        self.assertEqual(session.exec_command.call_count, 1)
+        self.assertEqual(report['observations']['kernel_name']['value'], 'Darwin')
+
+    def test_bad_kernel_does_not_guess(self):
+        report, session = self.collect([result('Linux\nDarwin\n')])
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['observations']['platform']['status'], 'not_attempted')
+        self.assertEqual(session.exec_command.call_count, 1)
+
+    def test_missing_file_fallback(self):
+        responses = linux_outputs()[:-1] + [result(code=44), result('NAME=Fallback\nVERSION_ID=2\n')]
+        report, _ = self.collect(responses)
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['observations']['system_name']['source_ids'], ['os_release_0', 'os_release_1'])
+
+    def test_denied_does_not_fallback(self):
+        report, session = self.collect(linux_outputs()[:-1] + [result(code=45)])
+        self.assertEqual(report['observations']['system_name']['status'], 'permission_denied')
+        self.assertEqual(session.exec_command.call_count, 5)
+
+    def test_successful_exit_with_truncation_is_not_a_success_value(self):
+        outputs = linux_outputs()
+        outputs[1] = SimpleNamespace(stdout='partial', stderr='', exitcode=0,
+                                     stdout_truncated=True, stderr_truncated=False)
+        report, _ = self.collect(outputs)
+        self.assertEqual(report['status'], 'partial')
+        self.assertEqual(report['observations']['hostname']['status'], 'parsing_failed')
+        self.assertIsNone(report['observations']['hostname']['value'])
+        self.assertEqual(report['sources'][1]['error']['code'], 'output_truncated')
+
+    def test_timeout_preserves_partial_output(self):
+        exc = TimeoutError('private exception text')
+        exc.result = SimpleNamespace(stdout='partial', stderr='', termination_status='unknown')
+        outputs = linux_outputs()
+        outputs[1] = exc
+        report, _ = self.collect(outputs)
+        self.assertEqual(report['status'], 'partial')
+        self.assertEqual(report['observations']['hostname']['status'], 'timeout')
+        self.assertEqual(report['sources'][1]['termination_status'], 'unknown')
+        self.assertNotIn('private exception text', json.dumps(report))
+
+    def test_transport_failure_is_failed_even_with_observations(self):
+        outputs = linux_outputs()
+        outputs[1] = OSError('secret')
+        report, _ = self.collect(outputs)
+        self.assertEqual(report['status'], 'failed')
+        self.assertNotIn('secret', json.dumps(report))
+
+    def test_command_failure_and_parse_failure(self):
+        outputs = linux_outputs()
+        outputs[1] = result(code=1)
+        outputs[2] = result('')
+        report, _ = self.collect(outputs)
+        self.assertEqual(report['observations']['hostname']['status'], 'command_failed')
+        self.assertEqual(report['observations']['kernel_release']['status'], 'parsing_failed')
+        self.assertEqual(report['status'], 'partial')
+
+    def test_release_parser_never_executes_and_rejects_malformed(self):
+        self.assertEqual(C['parse_os_release']('NAME="$(touch /tmp/never-run)"')['NAME'], '$(touch /tmp/never-run)')
+        for text in ('NAME="unterminated', 'NAME=x\nNAME=y', 'NAME=two words', 'invalid'):
+            with self.assertRaises(ValueError):
+                C['parse_os_release'](text)
+        report, _ = self.collect(linux_outputs('NAME="unterminated'))
+        self.assertEqual(report['observations']['system_name']['status'], 'parsing_failed')
+
+
+class RunnerTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.directory = self.root / 'recipes/inventory/system'
+        shutil.copytree(runner.BUNDLE, self.directory)
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes:\n      - recipe: recipes/inventory/system\n')
+        self.session = Mock()
+        self.session.exec_command.side_effect = linux_outputs()
+        self.session_class = Mock(return_value=self.session)
+
+    def run_recipe(self):
+        return runner.run(self.root, 'example', session_class=self.session_class)
+
+    def test_save_and_cleanup(self):
+        report, path = self.run_recipe()
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['evidence_kind'], 'mock')
+        self.assertEqual(json.loads(path.read_text()), report)
+        self.session.close.assert_called_once_with(strict=True)
+        self.session.connect.assert_not_called()
+
+    def test_cleanup_failure_retains_observations(self):
+        self.session.close.side_effect = RuntimeError('secret')
+        report, _ = self.run_recipe()
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['observations']['hostname']['value'], 'node')
+        self.assertEqual(report['execution_errors'][-1]['stage'], 'cleanup')
+        self.assertNotIn('secret', json.dumps(report))
+
+    def test_selection_and_modified_code_rejected_before_session(self):
+        (self.directory / 'main.py').write_text('raise RuntimeError("should not execute")')
+        with self.assertRaises(my_ops.ConfigError):
+            self.run_recipe()
+        self.session_class.assert_not_called()
+
+    def test_output_symlink_rejected_before_session(self):
+        (self.root / 'observations').symlink_to(self.directory, target_is_directory=True)
+        with self.assertRaises(my_ops.ConfigError):
+            self.run_recipe()
+        self.session_class.assert_not_called()
+
+    def test_unselected_rejected(self):
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes: []\n')
+        with self.assertRaises(my_ops.ConfigError):
+            self.run_recipe()
+        self.session_class.assert_not_called()
+
+    def test_connection_failure_saved_safely(self):
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {hostname: example.invalid, user: ops}\n    recipes:\n      - recipe: recipes/inventory/system\n')
+        self.session_class.resolve_connection.return_value = {'hostname': 'example.invalid', 'username': 'ops', 'port': 22}
+        self.session.connect.side_effect = OSError('private credential')
+        report, _ = self.run_recipe()
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['sources'], [])
+        self.assertNotIn('private credential', json.dumps(report))
+        self.session.close.assert_called_once_with(strict=True)
+
+    def test_nested_hops_receive_budgets_and_cleanup_root(self):
+        (self.root / 'hosts.yaml').write_text('hosts:\n  bastion:\n    connection: {hostname: bastion.example}\n  example:\n    connection:\n      hostname: target.example\n      via: {host: bastion}\n    recipes:\n      - recipe: recipes/inventory/system\n')
+        self.session_class.resolve_connection.side_effect = [
+            {'hostname': 'bastion.example', 'username': 'ops', 'port': 22},
+            {'hostname': 'target.example', 'username': 'ops', 'port': 22}]
+        middle = Mock()
+        target = Mock()
+        self.session.connect.return_value = middle
+        middle.connect.return_value = target
+        target.exec_command.side_effect = linux_outputs()
+        report, _ = self.run_recipe()
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(len(report['hops']), 2)
+        self.assertTrue(all(hop['connected'] for hop in report['hops']))
+        for session in (self.session, middle):
+            kwargs = session.connect.call_args.kwargs
+            self.assertEqual(kwargs['timeout'], 30)
+            self.assertEqual(kwargs['banner_timeout'], 30)
+            self.assertEqual(kwargs['auth_timeout'], 30)
+            self.assertFalse(kwargs['ssh_config'])
+        self.session.close.assert_called_once_with(strict=True)
+
+    def test_runtime_mismatch_rejected(self):
+        with patch.object(runner, 'version', return_value='4.0.2'):
+            with self.assertRaises(my_ops.ConfigError):
+                runner.load_runtime()
+
+    def test_descriptor_mismatch_rejected(self):
+        descriptor = self.directory / 'recipe.yaml'
+        descriptor.write_text(descriptor.read_text().replace('version: 0.1.0', 'version: 0.2.0'))
+        with self.assertRaises(my_ops.ConfigError):
+            self.run_recipe()
+        self.session_class.assert_not_called()
+
+    def test_repeated_runs_preserve_results(self):
+        _, first = self.run_recipe()
+        original = first.read_bytes()
+        self.session.exec_command.side_effect = linux_outputs()
+        _, second = self.run_recipe()
+        self.assertNotEqual(first, second)
+        self.assertEqual(first.read_bytes(), original)
+
+
+if __name__ == '__main__':
+    unittest.main()

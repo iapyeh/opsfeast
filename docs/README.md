@@ -2,6 +2,10 @@
 
 This directory will contain architecture, getting-started instructions, and project decisions.
 
+## Configuration guide
+
+- [管理 hosts.yaml 與主機設定](hosts-yaml.md): proposed configuration rules for users and AI agents; includes initialization and configuration checks; a minimal inventory-system runner is documented in the [recipe guide](../recipes/inventory/system/README.md).
+
 ## Initial decisions
 
 - The central project is named SSHScript Ops; its repository is `sshscript-ops`.
