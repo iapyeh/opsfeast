@@ -1,5 +1,7 @@
 """Synthetic inventory and runner regressions; never contact SSH hosts."""
 import json
+import contextlib
+import io
 from pathlib import Path
 import runpy
 import shutil
@@ -138,6 +140,70 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(json.loads(path.read_text()), report)
         self.session.close.assert_called_once_with(strict=True)
         self.session.connect.assert_not_called()
+        self.assertEqual(report['recipe']['selection_source'], 'hosts')
+
+    def test_cli_recipe_without_host_selection(self):
+        for selection in ('', '    recipes: []\n'):
+            with self.subTest(selection=selection):
+                (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n' + selection)
+                self.session.exec_command.side_effect = linux_outputs()
+                report, path = runner.run(self.root, 'example', recipe='recipes/inventory/system',
+                                          session_class=self.session_class)
+                self.assertEqual(report['status'], 'success')
+                self.assertEqual(report['recipe']['selection_source'], 'cli')
+                self.assertEqual(json.loads(path.read_text()), report)
+
+    def test_cli_recipe_overrides_invalid_host_recipe_selection(self):
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes:\n      - recipe: missing-host-recipe\n')
+        report, _ = runner.run(self.root, 'example', recipe=str(self.directory),
+                               session_class=self.session_class)
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['recipe']['installed_path'], 'recipes/inventory/system')
+
+    def test_cli_relative_path_uses_root_not_include_directory_or_cwd(self):
+        (self.root / 'hosts').mkdir()
+        (self.root / 'hosts.yaml').write_text('include: [hosts/group.yaml]\n')
+        (self.root / 'hosts/group.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n')
+        report, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system',
+                               session_class=self.session_class)
+        self.assertEqual(report['status'], 'success')
+
+    def test_invalid_cli_recipe_never_falls_back_or_connects(self):
+        with tempfile.TemporaryDirectory() as outside:
+            escape = self.root / 'escape'
+            escape.symlink_to(outside, target_is_directory=True)
+            bad_descriptor = self.root / 'bad-descriptor'
+            bad_descriptor.mkdir()
+            (bad_descriptor / 'recipe.yaml').write_text('[]\n')
+            unsupported = self.root / 'unsupported'
+            unsupported.mkdir()
+            (unsupported / 'recipe.yaml').write_text('id: other-recipe\n')
+            for recipe in ('missing', 'hosts.yaml', '', str(outside), '../outside',
+                           'escape', 'bad-descriptor', 'unsupported'):
+                with self.subTest(recipe=recipe), self.assertRaises(my_ops.ConfigError):
+                    runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
+            self.session_class.assert_not_called()
+
+    def test_cli_descriptor_symlink_outside_root_rejected(self):
+        descriptor = self.directory / 'recipe.yaml'
+        with tempfile.TemporaryDirectory() as outside:
+            external = Path(outside) / 'recipe.yaml'
+            shutil.copy2(descriptor, external)
+            descriptor.unlink()
+            descriptor.symlink_to(external)
+            with self.assertRaises(my_ops.ConfigError):
+                runner.run(self.root, 'example', recipe='recipes/inventory/system',
+                           session_class=self.session_class)
+        self.session_class.assert_not_called()
+
+    def test_main_passes_cli_recipe_and_reports_success(self):
+        path = self.root / 'result.json'
+        with patch.object(runner, 'run', return_value=({'status': 'success'}, path)) as run:
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                code = runner.main(['example', str(self.root), '--recipe', 'recipes/inventory/system'])
+        self.assertEqual(code, 0)
+        run.assert_called_once_with(self.root, 'example', 30, recipe='recipes/inventory/system')
+        self.assertEqual(json.loads(output.getvalue())['result_path'], str(path))
 
     def test_cleanup_failure_retains_observations(self):
         self.session.close.side_effect = RuntimeError('secret')

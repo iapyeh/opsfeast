@@ -24,7 +24,18 @@
 
 Controller 使用 Python 3.11+、PyYAML，以及 **SSHScript 5.0.0**。Runner 在連線前確認 import／distribution 皆為 5.0.0，不自動安裝或升級。執行時保留公開契約的預設 host-key 驗證；巢狀連線預設使用 calling parent 的 trust file，私鑰也依既有 Ops parent-host 規則處理。
 
-將本目錄完整複製到使用者管理根目錄的 `recipes/inventory/system/`。在目標主機的 `recipes` 欄位加入：
+將本目錄完整複製到使用者管理根目錄的 `recipes/inventory/system/`。可以用 CLI 指定本次 recipe，不必修改主機的 `recipes` 設定：
+
+```sh
+python -B tools/run_recipe.py example-host-01 /srv/my-ops \
+  --recipe recipes/inventory/system --timeout 30
+```
+
+`--recipe` 接受單一 recipe 目錄路徑，不是 recipe ID、檔案或 glob。相對路徑以管理根目錄為基準；絕對路徑也必須位於管理根目錄內，符號連結解析後不能離開根目錄。目錄必須包含相符的 recipe.yaml 與 main.py，recipe 仍需先安裝。
+
+有指定 `--recipe` 時只使用該目錄，不展開或檢查該主機的 recipes 選取清單。指定無效路徑或不支援的 recipe 會在連線前失敗，不回退到主機設定；hosts.yaml 的主機與連線設定仍需存在且有效。
+
+省略 `--recipe` 才使用該主機在 hosts.yaml 或 include YAML 中的 `recipes`：
 
 ```yaml
 recipes:
@@ -49,6 +60,7 @@ Runner 沿用現有 connection／users／via 設定，僅連至指定主機與�
 每次保存一個 `observations/inventory-system-<uuid>.json`，不覆寫舊觀測，不更新人工 records。檔名不使用主機名稱或 host ID。結果包含執行狀態，初版不另寫 runs 檔案。stdout 僅印 status 與完整結果路徑。完整成功退出碼為 0；partial、unsupported、failed、設定／保存失敗為 1。無法保存時不回報成功。
 
 - `schema_version` 與 recipe version 分開；recipe 另保留 implementation SHA-256、安裝相對路徑。
+- recipe 的 `selection_source` 記錄 `cli` 或 `hosts`，表示本次使用哪一種選取來源。
 - `runtime` 保留 interpreter、Python 與 SSHScript import／distribution 版本。
 - `host_id` 是穩定管理 ID；hostname 是本次觀測值。
 - 時間是含 UTC 時區的 ISO 8601 字串。各觀測有自己的時間，不代表原子快照。
