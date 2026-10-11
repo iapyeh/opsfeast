@@ -45,19 +45,20 @@ sshscript-ops/
 ├── .my-ops.yaml
 ├── recipes/
 └── my-ops/
-    ├── my-ops.yaml
-    ├── hosts.yaml
-    ├── hosts/
-    ├── observations/
-    ├── records/
-    └── runs/
+    └── default/
+        ├── my-ops.yaml
+        ├── hosts.yaml
+        ├── hosts/
+        ├── observations/
+        ├── records/
+        └── runs/
 ```
 
-`.venv/` 只在你選擇建立新環境時出現。`my-ops/` 與 `recipes/` 同層；`.my-ops.yaml` 記住管理目錄位置，後續命令可以省略該目錄參數。Agent 應回報實際 Python、套件及文件版本、初始化與檢查結果、`hosts.yaml` 的完整路徑。
+`.venv/` 只在你選擇建立新環境時出現。`my-ops/` 與 `recipes/` 同層；`.my-ops.yaml` 記錄 profile 清單與預設環境，後續命令可以省略該目錄參數。Agent 應回報實際 Python、套件及文件版本、初始化與檢查結果、`hosts.yaml` 的完整路徑。
 
 ## 4. 設定自己的主機
 
-打開 agent 回報的 `my-ops/hosts.yaml`。預設有 localhost 與使用合成位址 `host.example` 的遠端範例。替換範例主機 ID 與位址，設定登入帳號、認證方式；需要跳板時設定 via。Recipe 清單初始為空，可按需求加入。
+打開 agent 回報的 `my-ops/default/hosts.yaml`。預設有 localhost 與使用合成位址 `host.example` 的遠端範例。替換範例主機 ID 與位址，設定登入帳號、認證方式；需要跳板時設定 via。Recipe 清單初始為空，可按需求加入。
 
 可以請 agent 協助整理格式，但不要在聊天裡重貼密碼或私鑰。完整欄位與認證規則見 [主機設定指南](hosts-yaml.md)。預設管理目錄已被 Git 忽略；真實設定與觀測留在你的管理環境。
 
@@ -65,7 +66,7 @@ sshscript-ops/
 
 > 請檢查目前預設管理目錄的設定，不連線、不執行 recipes。若有錯誤，指出來源檔案與需要修正的地方。
 
-這也能確認 agent 使用同一個 Python，並能省略目錄執行 `my_ops.py check`。設定檢查通過不代表主機已可連線。準備好後，再指定要測試的 host ID；盤點則另行指定 recipe 與執行範圍。
+這也能確認 agent 使用同一個 Python，並能省略目錄執行 `ops.py check`。設定檢查通過不代表主機已可連線。準備好後，再指定要測試的 host ID；盤點則另行指定 recipe 與執行範圍。
 
 ## 5. 體驗 skill 更新檢查
 
@@ -74,6 +75,12 @@ sshscript-ops/
 > 請檢查公開 SSHScript skill 是否有變更，只比較並回報，不套用更新、不升級套件、不建立排程。
 
 Agent 應依 [下載與更新指南](skill-updates.md) 比較公開 bundle，回報是否一致、候選文件版本與相容性。沒有變更是正常結果；檢查失敗應回報原因，不能當成沒有更新。若你之後希望定期檢查，再與 agent 約定週期及通知方式，使用其平台的排程功能。
+
+## 使用不同管理環境，或接手既有資料
+
+想另外分類管理時，請 agent 建立具名環境，例如 `ops.py init inventory`，資料會放在 `my-ops/inventory/`。`ops.py profiles` 列出所有環境，`ops.py use inventory` 切換預設；互動終端可只輸入 `ops.py use` 後選擇。
+
+換電腦、交接或收到同事的管理目錄時，請 agent 使用 `ops.py add /path/to/existing-profile` 檢查並登記；它不建立 scaffold、不改寫該目錄的檔案。名稱衝突時由你選擇新名稱。詳細路徑與命名規則見 [管理環境指南](profiles.md)。
 
 ## 想先試用、不沿用既有管理資料
 

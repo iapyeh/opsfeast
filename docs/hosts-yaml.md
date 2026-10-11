@@ -8,10 +8,10 @@
 
 > 我的管理目錄是 `/srv/my-ops/`。請取得 `web-01` 目前作業系統回報的 hostname，並把結果存入這個管理目錄。
 
-Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 SSHScript Ops checkout 下建立 `my-ops/`，與 `recipes/` 同層；明確指定時，目錄可以使用其他名稱。
+Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 SSHScript Ops checkout 下建立 `my-ops/default/`；`my-ops/` 是各管理環境的容器，與 `recipes/` 同層。可用具名環境或自訂路徑，詳見 [管理環境指南](profiles.md)。
 
 ```text
-my-ops/
+my-ops/default/
 ├── my-ops.yaml
 ├── hosts.yaml
 ├── hosts/
@@ -28,34 +28,32 @@ my-ops/
 
 ## 建立與重複檢查管理目錄
 
-Repository 提供 [tools/my_ops.py](../tools/my_ops.py)，需要 Python 3.11 以上與 PyYAML。使用已安裝 PyYAML 的 Python 執行；以下假設目前工作目錄是 SSHScript Ops repository：
+Repository 提供 [tools/ops.py](../tools/ops.py)，需要 Python 3.11 以上與 PyYAML。使用已安裝 PyYAML 的 Python 執行；以下假設目前工作目錄是 SSHScript Ops repository：
 
 ```sh
-python tools/my_ops.py init
-python tools/my_ops.py check
-python tools/my_ops.py dump hosts.localhost
-# 也可以指定自訂目錄，成功後記住此目錄：
-python tools/my_ops.py init /srv/my-ops
-python tools/my_ops.py check
+python tools/ops.py init
+python tools/ops.py init inventory
+python tools/ops.py profiles
+python tools/ops.py use inventory
+python tools/ops.py check
+python tools/ops.py dump hosts.localhost
+# 自訂位置或登記既有環境：
+python tools/ops.py init /srv/my-ops
+python tools/ops.py add /srv/existing-ops
 ```
 
-`init` 在管理目錄內建立 `my-ops.yaml` 定義檔：
+`init` 在所選管理目錄內建立 `my-ops.yaml` 定義檔：
 
 ```yaml
 schema_version: 1
 kind: sshscript-ops
 ```
 
-初始化與設定檢查成功後，在工具所在 checkout 的 `.my-ops.yaml` 記住該目錄：
+登記與預設 profile 記錄於 checkout 的 `.my-ops.yaml`（schema 2）。Checkout 內的目錄保存相對路徑，外部保存絕對路徑。兩個工具省略目錄時使用預設 profile；--profile NAME 只影響本次執行，明確目錄與 --profile 不可同時指定。不存在或無效的登記不自動回退到其他目錄。
 
-```yaml
-schema_version: 1
-root: my-ops
-```
+第一個成功登記的環境成為預設，後續新增不切換。重複初始化保留原 profile 名稱與設定，失敗不更新登記。`add` 唯讀檢查既有環境後登記，不建立或改寫其內容；舊環境只有 hosts.yaml 也可加入，若有定義檔則須有效。舊 schema 1 定位檔視為 default，唯讀操作不改寫它；後續登記或切換時寫成 schema 2，不搬移資料。
 
-Checkout 內的目錄保存相對路徑，外部目錄保存絕對路徑。後續 `check`、`dump`、`test-connection` 與 `run_recipe.py` 省略管理目錄時共用此定位檔；CLI 明確目錄優先，不更改記住的位置。定位不依目前 shell 目錄，不向上搜尋其他專案。沒有定位檔時使用 checkout 下的 `my-ops/`，仍須有有效的定義檔；定位檔或定義檔無效、版本不支援、記錄目錄不存在時報錯，不自動切換其他目錄或執行初始化。明確指定的既有管理目錄仍可使用，不強制先補定義檔。
-
-無參數 `init` 固定初始化 checkout 下的 `my-ops/`，並在成功後把它記為預設；`init /srv/my-ops` 則改記指定目錄。失敗的設定檢查不更換定位檔。重複初始化保留既有定義檔與設定；定義檔使用不支援的內容時報錯，定位檔每次成功初始化後原子更新。`.gitignore` 忽略 `/my-ops/`、`/.my-ops.yaml` 與定位檔暫存檔，真實設定與觀測不加入 Git；其他自訂目錄若位於 repository 內，需另加自己的忽略規則。搬移 checkout 內管理目錄時同步調整定位檔，或以新位置重新執行 `init`。
+完整命名、互動選擇、遷移與路徑規則見 [管理環境指南](profiles.md)。`tools/my_ops.py` 保留為相容入口，採用與 ops.py 相同的新行為；舊命令中的單一名稱參數如今代表 `my-ops/<name>`，若要指定目前目錄下的路徑需使用 `./name`。
 
 `init` 建立 `hosts/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
 
@@ -72,10 +70,10 @@ Recipe 描述目前檢查為有效 YAML mapping，若有 `id` 則檢查型別與
 此命令需要在執行它的 Python 環境安裝 SSHScript 4.0.1 以上與 PyYAML：
 
 ```sh
-python tools/my_ops.py test-connection host-01
-python tools/my_ops.py test-connection localhost /srv/my-ops
-python tools/my_ops.py test-connection host-01 /srv/my-ops --timeout 10
-python tools/my_ops.py test-connection rms4 /srv/my-ops --debug --traceback
+python tools/ops.py test-connection host-01
+python tools/ops.py test-connection localhost /srv/my-ops
+python tools/ops.py test-connection host-01 /srv/my-ops --timeout 10
+python tools/ops.py test-connection rms4 /srv/my-ops --debug --traceback
 ```
 
 載入入口與 include，檢查連線、帳號與跳板循環後，只連線至指定 host 及其所需跳板，再於目標主機各執行一次 `hostname`、`date`。不要求 recipes 已選取、不執行 recipes、不切換 users 中的其他帳號，也不修改管理檔案。`localhost` 的 `local: true` 使用本機 Session 執行相同指令。
@@ -108,9 +106,9 @@ python tools/my_ops.py test-connection rms4 /srv/my-ops --debug --traceback
 ## 輸出指定設定
 
 ```sh
-python tools/my_ops.py dump hosts /srv/my-ops
-python tools/my_ops.py dump hosts.host-01 /srv/my-ops
-python tools/my_ops.py dump hosts.host-01.connection /srv/my-ops
+python tools/ops.py dump hosts /srv/my-ops
+python tools/ops.py dump hosts.host-01 /srv/my-ops
+python tools/ops.py dump hosts.host-01.connection /srv/my-ops
 ```
 
 `dump <設定路徑> <管理根目錄>` 以 `.` 分隔 mapping 鍵，輸出指定設定的 JSON（縮排 4 格，中文原樣保留，結尾換行）。`hosts` 包含入口與所有 include 合併後的主機；主機內的引用、recipe 選取與變數值仍原樣保留，不展開成執行結果。其他入口欄位如 `include` 也可查詢。路徑只能逐層選取 mapping 鍵，不支援 list 索引或含 `.` 的鍵名。
@@ -300,9 +298,9 @@ hosts:
 若 `connection.user` 不在該 host 的 `users` 中，或該帳號沒有 `password`，不提供 SSH 密碼，也不借用其他帳號的密碼或自動建立 users 項目。使用已設定的 `identity_file`；未設定私鑰時使用 SSH agent／預設金鑰。若這些方式都無法驗證，連線回報失敗。這個帳密選取規則同樣適用於透過 `proxy_command` 的連線。
 
 ```sh
-python tools/my_ops.py dump hosts.host-01.users /srv/my-ops
-python tools/my_ops.py dump hosts.host-01.users.appuser /srv/my-ops
-python tools/my_ops.py dump hosts.host-01.users.appuser.vars /srv/my-ops
+python tools/ops.py dump hosts.host-01.users /srv/my-ops
+python tools/ops.py dump hosts.host-01.users.appuser /srv/my-ops
+python tools/ops.py dump hosts.host-01.users.appuser.vars /srv/my-ops
 ```
 
 `check` 驗證 users 的欄位、帳號名稱、密碼與變數型別，不驗證帳號存在或密碼正確。`dump` 可取得原樣設定；通用 recipe 執行器尚未實作；inventory-system 的最小 runner 只使用登入帳號。`init`、`check`、`dump` 不會登入；`test-connection` 僅使用登入帳號，不執行 su。既有 `vars.sudo` 仍可使用，保持原有 recipe 輸入語意；不自動把 users 密碼套用為 sudo 密碼。

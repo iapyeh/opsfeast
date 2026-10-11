@@ -24,7 +24,7 @@
 
 Controller 使用 Python 3.11+、PyYAML，以及 **SSHScript 5.0.0**。Runner 在連線前確認 import／distribution 皆為 5.0.0，不自動安裝或升級。執行時保留公開契約的預設 host-key 驗證；巢狀連線預設使用 calling parent 的 trust file，私鑰也依既有 Ops parent-host 規則處理。
 
-管理目錄參數可省略：使用最近成功 `my_ops.py init [DIRECTORY]` 記住的位置；明確指定時仍優先使用 CLI 目錄。定位規則與定義檔詳見 [管理目錄指南](../../../docs/hosts-yaml.md)。
+管理目錄參數可省略：使用 `.my-ops.yaml` 的預設 profile，或用 `--profile NAME` 選擇本次環境；明確目錄與 --profile 不可同時指定。切換預設用 `ops.py use NAME`，登記新環境不切換既有預設。定位規則與定義檔詳見 [管理目錄指南](../../../docs/hosts-yaml.md)。
 
 直接使用 SSHScript Ops checkout 內的 `recipes/inventory/system/`，更新 checkout 後即可使用新版，不必複製到 instance。可以用 CLI 指定本次 recipe，不必修改主機的 `recipes` 設定：
 
@@ -49,7 +49,7 @@ recipes:
 從 Ops repository 執行（以下使用合成 host ID 與管理路徑）：
 
 ```sh
-python -B tools/my_ops.py check /srv/my-ops
+python -B tools/ops.py check /srv/my-ops
 python -B tools/run_recipe.py example-host-01 /srv/my-ops --timeout 30
 ```
 

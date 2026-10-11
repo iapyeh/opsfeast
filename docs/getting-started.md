@@ -50,11 +50,11 @@ Git clone 已包含完整 `.agents/skills/sshscript/` 公開快照，不必為�
 初始化不需要 SSHScript Session 或遠端連線：
 
 ```sh
-python -B tools/my_ops.py init
-python -B tools/my_ops.py check
+python -B tools/ops.py init
+python -B tools/ops.py check
 ```
 
-預設在 checkout 下建立 `my-ops/`，與 recipes 同層；成功後記住此位置。也可使用 `init /path/to/my-ops` 指定自訂目錄。後續兩個工具可省略目錄。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
+預設建立 `my-ops/default/` 並登記 `default` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `my-ops/inventory/`，`init /path/to/my-ops` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `add /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
 
 ## 告訴使用者下一步
 
@@ -64,7 +64,7 @@ python -B tools/my_ops.py check
 
 1. 編輯 `hosts.yaml`，替換合成的 `host-01`／`host.example`，設定主機 ID、位址、登入帳號與認證方式；需要跳板時設定 via。不要把範例密碼當成實際憑證，也不要要求使用者在聊天重貼密碼。
 2. 保留或依需求調整 localhost，選擇要使用的 recipes；初始 `recipes: []` 尚未選取任何 recipe。
-3. 執行 `my_ops.py check` 確認設定；檢查成功只代表設定通過，不代表連線或採集成功。
+3. 執行 `ops.py check` 確認設定；檢查成功只代表設定通過，不代表連線或採集成功。
 4. 指定要測試的 host ID，授權 `test-connection`；要盤點時另指定或授權 runner 執行。首次設定本身不自動觸發 SSH、代理命令、su／sudo 或 recipe 採集。
 
 `my-ops/` 與定位檔已被 Git 忽略；自訂管理目錄若放在 checkout 內，需另加忽略規則。真實憑證、主機設定與觀測不提交至公開 Git。

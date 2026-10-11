@@ -7,6 +7,7 @@ This directory will contain architecture, getting-started instructions, and proj
 - [人類使用者的第一次體驗](first-use.md): clone the repository, give its path to an agent, review and authorize setup, and see what to configure next; includes copyable prompts and an isolated trial.
 - [初次使用 SSHScript Ops](getting-started.md): shared human/agent entry point, prerequisites, authorized setup and next steps.
 - [Skill 下載與更新檢查](skill-updates.md): public download source, comparison, candidate staging and authorized periodic checks.
+- [管理環境與 profiles](profiles.md): named and external directories, registration, default selection and legacy locator compatibility.
 - [管理 hosts.yaml 與主機設定](hosts-yaml.md): proposed configuration rules for users and AI agents; includes initialization and configuration checks; a minimal inventory-system runner is documented in the [recipe guide](../recipes/inventory/system/README.md).
 
 ## Initial decisions

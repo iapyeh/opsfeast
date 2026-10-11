@@ -6,6 +6,7 @@
 - 初次接手先讀 [README](README.md) 與 [初次使用指南](docs/getting-started.md)，了解已實作範圍、依賴、skill、初始化與使用者下一步。
 - 唯讀環境檢查用 `python -B tools/check_environment.py`；初始化精簡需求用 `--scope init`。缺少依賴時依 requirements 清單提出安裝方案，使用者已提供的 Python 環境優先，不自行重建或升級共用環境。
 - 初次設定須在授權範圍內建立環境、安裝套件、下載缺少的 skill 及執行 init/check。只交付 repository 路徑供查看不等於授權安裝或執行；已明確授權的初始化流程不重複詢問。
+- 使用 [管理環境指南](docs/profiles.md) 的 profile 規則：init 建立、add 唯讀驗證登記、use 切換；兩個工具支援 --profile，本次選擇不改預設。名稱衝突不能覆寫既有登記，非互動執行不等待輸入。
 - 完成後回報實際環境、skill 狀態、管理目錄、hosts.yaml 位置及檢查結果，請使用者設定主機帳號、認證及 recipes。初始化不自動授權連線、代理命令、權限切換或 recipe 採集。
 
 使用者要求本專案作為 SSHScript 公開 AI agent 文件與 skill 的實際使用測試。

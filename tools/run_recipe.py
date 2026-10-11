@@ -8,7 +8,7 @@ import runpy
 import sys
 from uuid import uuid4
 
-from my_ops import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root
+from ops import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root
 
 BUNDLE = Path(__file__).resolve().parents[1] / 'recipes/inventory/system'
 collector = runpy.run_path(str(BUNDLE / 'main.py'))
@@ -112,14 +112,15 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('host')
-    parser.add_argument('root', type=Path, nargs='?', help='management directory (default: remembered init directory, or checkout/my-ops)')
+    parser.add_argument('root', type=Path, nargs='?', help='management directory (default: selected profile)')
+    parser.add_argument('--profile', help='profile for this invocation; does not change the default')
     parser.add_argument('--recipe', metavar='DIRECTORY',
                         help='recipes/... selects this checkout; ./paths select within management root; overrides host recipe selection')
     parser.add_argument('--timeout', type=positive_timeout, default=30,
                         help='per-hop connection stages and per-command seconds; not a whole-run deadline')
     args = parser.parse_args(argv)
     try:
-        report, path = run(resolve_root(args.root), args.host, args.timeout, recipe=args.recipe)
+        report, path = run(resolve_root(args.root, args.profile), args.host, args.timeout, recipe=args.recipe)
         print(json.dumps({'status': report['status'], 'result_path': str(path)}, indent=2))
         return 0 if report['status'] == 'success' else 1
     except (ConfigError, OSError, ImportError) as exc:

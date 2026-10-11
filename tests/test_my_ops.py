@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-spec = importlib.util.spec_from_file_location('my_ops', Path(__file__).parents[1] / 'tools/my_ops.py')
+spec = importlib.util.spec_from_file_location('ops', Path(__file__).parents[1] / 'tools/ops.py')
 ops = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ops)
 
@@ -49,11 +49,11 @@ class MyOpsTests(unittest.TestCase):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(ops.main(['init']), 0)
-            self.assertEqual(ops.read_yaml(self.root / 'my-ops.yaml'), ops.INSTANCE_SCHEMA)
-            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.my-ops.yaml')['root'], 'my-ops')
+            self.assertEqual(ops.read_yaml(self.root / 'default/my-ops.yaml'), ops.INSTANCE_SCHEMA)
+            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.my-ops.yaml')['profiles']['default']['root'], 'my-ops/default')
             # Locator resolution never depends on the invoking shell directory.
             with contextlib.chdir('/'):
-                self.assertEqual(ops.resolve_root(), self.root.resolve())
+                self.assertEqual(ops.resolve_root(), (self.root / 'default').resolve())
                 self.assertEqual(ops.main(['check']), 0)
                 self.assertEqual(ops.main(['dump', 'hosts.localhost']), 0)
                 session_class, local, remote = self.session_double()
@@ -69,9 +69,10 @@ class MyOpsTests(unittest.TestCase):
             self.assertEqual(ops.main(['init', str(other)]), 0)
             self.assertEqual(ops.resolve_root(), other.resolve())
             self.assertEqual(ops.resolve_root(self.root), self.root)
-            # init without a path always creates checkout/my-ops.
+            # New init registers default without switching the existing selection.
             self.assertEqual(ops.main(['init']), 0)
-            self.assertEqual(ops.resolve_root(), (checkout / 'my-ops').resolve())
+            self.assertEqual(ops.resolve_root(), other.resolve())
+            self.assertEqual(ops.resolve_root(profile='default'), (checkout / 'my-ops/default').resolve())
 
     def test_failed_init_does_not_switch_default(self):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
@@ -90,6 +91,7 @@ class MyOpsTests(unittest.TestCase):
             with self.assertRaises(ops.ConfigError):
                 ops.resolve_root()
             ops.initialize(self.root)
+            (Path(self.temp.name) / '.my-ops.yaml').write_text('schema_version: 1\nroot: my-ops\n')
             self.write('my-ops.yaml', 'schema_version: true\nkind: sshscript-ops\n')
             with self.assertRaisesRegex(ops.ConfigError, 'unsupported management'):
                 ops.resolve_root()
