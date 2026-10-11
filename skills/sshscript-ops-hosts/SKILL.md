@@ -5,6 +5,8 @@ description: 協助使用者建立、修改與審閱 SSHScript Ops 管理目錄�
 
 # SSHScript Ops 主機設定維護
 
+初次設定環境時先依 [初次使用指南](../../docs/getting-started.md) 檢查 Python、依賴與授權範圍，完成初始化後告知使用者應設定的主機、帳號與 recipes。需要準備或檢查公開 SSHScript skill 時依 [下載與更新指南](../../docs/skill-updates.md)；檢查不自動替換快照或升級套件。本 skill 與連結的 Markdown 可直接閱讀，不要求特定 agent loader。
+
 使用者指南與設定規格位於 [docs/hosts-yaml.md](../../docs/hosts-yaml.md)。開始設定工作時閱讀它；不要自行建立另一套欄位語意。這是 repository 內的 skill，使用時保留 repository 結構。若要獨立安裝，需一併打包指南並調整此連結；目前未提供 skill 安裝工具。
 
 Repository 提供 [tools/my_ops.py](../../tools/my_ops.py)：使用安裝 PyYAML 的 Python 執行 `init [管理根目錄]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍；完整 recipe 執行器尚未實作。先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。

@@ -1,3 +1,5 @@
 /my-ops/
 /.my-ops.yaml
 /.my-ops-*.tmp
+/.venv/
+/.skill-downloads/

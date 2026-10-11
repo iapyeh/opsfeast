@@ -4,5 +4,5 @@
     "saved_at_utc": "2026-10-10T12:45:38.639124+00:00",
     "documentation_contract": "5.0.0",
     "bundle_sha256": "e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b",
-    "update_policy": "Only update when the user explicitly asks; never refresh automatically."
+    "update_policy": "Check only when requested or on an authorized schedule; apply updates only with authorization."
 }

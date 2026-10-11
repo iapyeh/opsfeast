@@ -1,0 +1,2 @@
+# Initialization, configuration checks and tests (Python 3.11+).
+PyYAML==6.0.3

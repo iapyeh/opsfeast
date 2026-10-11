@@ -1,0 +1,3 @@
+# Complete currently supported Ops environment; no automatic upgrades.
+-r requirements-init.txt
+sshscript==5.0.0

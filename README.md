@@ -2,6 +2,14 @@
 
 Tools, recipes, and workflows for building and maintaining IT operations with SSHScript.
 
+## Getting started with your AI agent
+
+Clone this repository, give its directory to your agent, and ask it to read [AGENTS.md](AGENTS.md) and the [getting-started guide](docs/getting-started.md). The same Markdown workflow applies to Codex, Hermes, and other agents; automatic skill discovery is optional.
+
+The agent can inspect prerequisites with `python3 -B tools/check_environment.py`, explain the supported tools and propose a concrete setup. After authorization, it can install the dependencies in `requirements.txt` (or `requirements-init.txt` for initialization only), read the included skills, and run `tools/my_ops.py init` and `check`. It then reports where to configure your hosts, accounts, authentication and recipe selection. Remote connection tests and collection require their own authorized scope.
+
+The full SSHScript skill snapshot is included in Git. [Skill download and update instructions](docs/skill-updates.md) explain how to check the public bundle, stage a complete candidate and review compatibility. A user-authorized schedule may check for changes; checks never automatically replace skills or upgrade packages.
+
 SSHScript Ops aims to help IT staff, with assistance from AI agents, build an orderly operations environment from their existing hosts and maintain it as systems change and problems arise.
 
 SSHScript provides the foundation for readable, flexible local and remote execution. This repository will bring together reusable recipes, management data formats, operational procedures, and documentation templates.
