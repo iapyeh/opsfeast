@@ -45,6 +45,74 @@ class MyOpsTests(unittest.TestCase):
         self.assertFalse((self.root / 'recipes').exists())
         self.assertTrue(all((self.root / name).is_dir() for name in ('hosts', 'observations', 'records', 'runs')))
 
+    def test_default_init_and_commands_from_other_cwd(self):
+        with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(ops.main(['init']), 0)
+            self.assertEqual(ops.read_yaml(self.root / 'my-ops.yaml'), ops.INSTANCE_SCHEMA)
+            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.my-ops.yaml')['root'], 'my-ops')
+            # Locator resolution never depends on the invoking shell directory.
+            with contextlib.chdir('/'):
+                self.assertEqual(ops.resolve_root(), self.root.resolve())
+                self.assertEqual(ops.main(['check']), 0)
+                self.assertEqual(ops.main(['dump', 'hosts.localhost']), 0)
+                session_class, local, remote = self.session_double()
+                with patch.object(ops, 'load_session_class', return_value=session_class):
+                    self.assertEqual(ops.main(['test-connection', 'localhost']), 0)
+                local.connect.assert_not_called()
+
+    def test_custom_init_remembered_and_explicit_override(self):
+        checkout = Path(self.temp.name) / 'checkout'
+        checkout.mkdir()
+        other = Path(self.temp.name) / 'custom'
+        with patch.object(ops, 'REPOSITORY_ROOT', checkout), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(ops.main(['init', str(other)]), 0)
+            self.assertEqual(ops.resolve_root(), other.resolve())
+            self.assertEqual(ops.resolve_root(self.root), self.root)
+            # init without a path always creates checkout/my-ops.
+            self.assertEqual(ops.main(['init']), 0)
+            self.assertEqual(ops.resolve_root(), (checkout / 'my-ops').resolve())
+
+    def test_failed_init_does_not_switch_default(self):
+        with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(ops.main(['init']), 0)
+            pointer = Path(self.temp.name) / '.my-ops.yaml'
+            original = pointer.read_bytes()
+            other = Path(self.temp.name) / 'broken'
+            other.mkdir()
+            (other / 'hosts.yaml').write_text('hosts: []')
+            self.assertEqual(ops.main(['init', str(other)]), 1)
+            self.assertEqual(pointer.read_bytes(), original)
+
+    def test_default_missing_or_invalid_definition_fails_without_fallback(self):
+        with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)):
+            with self.assertRaises(ops.ConfigError):
+                ops.resolve_root()
+            ops.initialize(self.root)
+            self.write('my-ops.yaml', 'schema_version: true\nkind: sshscript-ops\n')
+            with self.assertRaisesRegex(ops.ConfigError, 'unsupported management'):
+                ops.resolve_root()
+            self.write('my-ops.yaml', 'schema_version: 1\nkind: sshscript-ops\n')
+            pointer = Path(self.temp.name) / '.my-ops.yaml'
+            pointer.write_text('schema_version: 1\nroot: missing\n')
+            with self.assertRaisesRegex(ops.ConfigError, 'not found'):
+                ops.resolve_root()
+            pointer.write_text('schema_version: 1\nroot: [invalid]\n')
+            with self.assertRaises(ops.ConfigError):
+                ops.resolve_root()
+
+    def test_definition_preserved_and_symlink_rejected_before_scaffolding(self):
+        definition = self.write('my-ops.yaml', '# note\nschema_version: 1\nkind: sshscript-ops\n')
+        ops.initialize(self.root)
+        self.assertTrue(definition.read_text().startswith('# note'))
+        definition.unlink()
+        outside = Path(self.temp.name) / 'definition.yaml'
+        outside.write_text('schema_version: 1\nkind: sshscript-ops\n')
+        definition.symlink_to(outside)
+        with self.assertRaisesRegex(ops.ConfigError, 'scaffold symlink'):
+            ops.initialize(self.root)
+
     def test_cross_file_reference_and_relative_recipe(self):
         self.write('hosts.yaml', 'include: [hosts/jump.yaml, hosts/web.yaml]\n')
         self.write('hosts/jump.yaml', 'hosts: {jump: {connection: {hostname: jump.example}}}\n')

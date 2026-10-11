@@ -7,8 +7,10 @@ import fnmatch
 import getpass
 import json
 import math
+import os
 from pathlib import Path
 import sys
+import tempfile
 import traceback
 
 try:
@@ -23,6 +25,57 @@ class ConfigError(ValueError):
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_RECIPES = REPOSITORY_ROOT / 'recipes'
+INSTANCE_DEFINITION = 'my-ops.yaml'
+INSTANCE_SCHEMA = {'schema_version': 1, 'kind': 'sshscript-ops'}
+
+
+def instance_definition(root):
+    path = root / INSTANCE_DEFINITION
+    if path.is_symlink():
+        raise ConfigError(f'refuses scaffold symlink: {path}')
+    data = mapping(read_yaml(path), str(path), INSTANCE_SCHEMA)
+    if type(data.get('schema_version')) is not int or data != INSTANCE_SCHEMA:
+        raise ConfigError(f'{path}: unsupported management directory definition')
+
+
+def resolve_root(root=None, initializing=False):
+    """Explicit CLI paths win; remembered paths are relative to this checkout."""
+    if root is not None:
+        return root
+    if initializing:
+        return REPOSITORY_ROOT / 'my-ops'
+    pointer = REPOSITORY_ROOT / '.my-ops.yaml'
+    if pointer.exists() or pointer.is_symlink():
+        data = mapping(read_yaml(pointer), str(pointer), ('schema_version', 'root'))
+        if type(data.get('schema_version')) is not int or data['schema_version'] != 1:
+            raise ConfigError(f'{pointer}: unsupported locator version')
+        path = Path(string(data.get('root'), f'{pointer}: root'))
+        root = path if path.is_absolute() else REPOSITORY_ROOT / path
+    else:
+        root = REPOSITORY_ROOT / 'my-ops'
+    if not root.is_dir():
+        raise ConfigError(f'management directory not found: {root}; run my_ops.py init or specify a directory')
+    instance_definition(root)
+    return root.resolve(strict=True)
+
+
+def remember_root(root):
+    """Replace the locator atomically, only after init validation succeeds."""
+    pointer = REPOSITORY_ROOT / '.my-ops.yaml'
+    if pointer.is_symlink() or (pointer.exists() and not pointer.is_file()):
+        raise ConfigError(f'locator must be a regular file: {pointer}')
+    root = root.resolve(strict=True)
+    checkout = REPOSITORY_ROOT.resolve(strict=True)
+    location = root.relative_to(checkout).as_posix() if root.is_relative_to(checkout) else str(root)
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=REPOSITORY_ROOT,
+                                     prefix='.my-ops-', suffix='.tmp', delete=False) as stream:
+        temporary = Path(stream.name)
+        try:
+            yaml.safe_dump({'schema_version': 1, 'root': location}, stream, sort_keys=False)
+            stream.close()
+            os.replace(temporary, pointer)
+        finally:
+            temporary.unlink(missing_ok=True)
 
 
 class UniqueLoader(yaml.SafeLoader):
@@ -409,12 +462,15 @@ def initialize(root):
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve(strict=True)
     # Preflight existing entries before writing anything inside the root.
-    for name in ('hosts', 'observations', 'records', 'runs', 'hosts.yaml'):
+    for name in ('hosts', 'observations', 'records', 'runs', 'hosts.yaml', INSTANCE_DEFINITION):
         item = root / name
         if item.is_symlink():
             raise ConfigError(f'init refuses scaffold symlink: {item}')
-        if item.exists() and (item.is_file() if name != 'hosts.yaml' else not item.is_file()):
+        if item.exists() and (not item.is_file() if name in ('hosts.yaml', INSTANCE_DEFINITION) else not item.is_dir()):
             raise ConfigError(f'wrong scaffold entry type: {item}')
+    definition = root / INSTANCE_DEFINITION
+    if definition.exists():
+        instance_definition(root)
     for name in ('hosts', 'observations', 'records', 'runs'):
         (root / name).mkdir(exist_ok=True)
     path = root / 'hosts.yaml'
@@ -424,6 +480,9 @@ def initialize(root):
         print(f'Created {path}')
     else:
         print(f'Preserved {path}')
+    if not definition.exists():
+        with definition.open('x', encoding='utf-8') as handle:
+            yaml.safe_dump(INSTANCE_SCHEMA, handle, sort_keys=False)
     return root
 
 
@@ -610,9 +669,11 @@ def main(argv=None):
             command_parser.add_argument('-v', '--verbose', action='store_true', help='show hop and command progress on stderr')
             command_parser.add_argument('--debug', action='store_true', help='show safe effective connection details on stderr; implies verbose')
             command_parser.add_argument('--traceback', action='store_true', help='show exception stack frames on stderr, without source, locals or exception text')
-        command_parser.add_argument('root', type=Path, help='management directory containing hosts.yaml')
+        default_help = 'checkout/my-ops' if command == 'init' else 'remembered init directory, or checkout/my-ops'
+        command_parser.add_argument('root', type=Path, nargs='?', help=f'management directory (default: {default_help})')
     args = parser.parse_args(argv)
     try:
+        args.root = resolve_root(args.root, initializing=args.command == 'init')
         if args.command == 'test-connection':
             return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback)
         if args.command == 'dump':
@@ -633,6 +694,8 @@ def main(argv=None):
             return 0
         root = initialize(args.root) if args.command == 'init' else args.root
         result = Validator(root).check()
+        if args.command == 'init':
+            remember_root(root)
         print(f'OK: {len(result.loaded)} YAML files, {len(result.hosts)} hosts; configuration checks passed.')
         for host, recipes in result.selected.items():
             print(f'  {host}: {len(recipes)} selected recipes')

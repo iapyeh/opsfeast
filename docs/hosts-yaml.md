@@ -8,10 +8,11 @@
 
 > 我的管理目錄是 `/srv/my-ops/`。請取得 `web-01` 目前作業系統回報的 hostname，並把結果存入這個管理目錄。
 
-Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`my-ops` 只是範例名稱，目錄可以使用其他名稱。
+Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 SSHScript Ops checkout 下建立 `my-ops/`，與 `recipes/` 同層；明確指定時，目錄可以使用其他名稱。
 
 ```text
 my-ops/
+├── my-ops.yaml
 ├── hosts.yaml
 ├── hosts/
 │   ├── bastions.yaml
@@ -30,9 +31,31 @@ my-ops/
 Repository 提供 [tools/my_ops.py](../tools/my_ops.py)，需要 Python 3.11 以上與 PyYAML。使用已安裝 PyYAML 的 Python 執行；以下假設目前工作目錄是 SSHScript Ops repository：
 
 ```sh
+python tools/my_ops.py init
+python tools/my_ops.py check
+python tools/my_ops.py dump hosts.localhost
+# 也可以指定自訂目錄，成功後記住此目錄：
 python tools/my_ops.py init /srv/my-ops
-python tools/my_ops.py check /srv/my-ops
+python tools/my_ops.py check
 ```
+
+`init` 在管理目錄內建立 `my-ops.yaml` 定義檔：
+
+```yaml
+schema_version: 1
+kind: sshscript-ops
+```
+
+初始化與設定檢查成功後，在工具所在 checkout 的 `.my-ops.yaml` 記住該目錄：
+
+```yaml
+schema_version: 1
+root: my-ops
+```
+
+Checkout 內的目錄保存相對路徑，外部目錄保存絕對路徑。後續 `check`、`dump`、`test-connection` 與 `run_recipe.py` 省略管理目錄時共用此定位檔；CLI 明確目錄優先，不更改記住的位置。定位不依目前 shell 目錄，不向上搜尋其他專案。沒有定位檔時使用 checkout 下的 `my-ops/`，仍須有有效的定義檔；定位檔或定義檔無效、版本不支援、記錄目錄不存在時報錯，不自動切換其他目錄或執行初始化。明確指定的既有管理目錄仍可使用，不強制先補定義檔。
+
+無參數 `init` 固定初始化 checkout 下的 `my-ops/`，並在成功後把它記為預設；`init /srv/my-ops` 則改記指定目錄。失敗的設定檢查不更換定位檔。重複初始化保留既有定義檔與設定；定義檔使用不支援的內容時報錯，定位檔每次成功初始化後原子更新。`.gitignore` 忽略 `/my-ops/`、`/.my-ops.yaml` 與定位檔暫存檔，真實設定與觀測不加入 Git；其他自訂目錄若位於 repository 內，需另加自己的忽略規則。搬移 checkout 內管理目錄時同步調整定位檔，或以新位置重新執行 `init`。
 
 `init` 建立 `hosts/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
 
@@ -49,7 +72,7 @@ Recipe 描述目前檢查為有效 YAML mapping，若有 `id` 則檢查型別與
 此命令需要在執行它的 Python 環境安裝 SSHScript 4.0.1 以上與 PyYAML：
 
 ```sh
-python tools/my_ops.py test-connection host-01 /srv/my-ops
+python tools/my_ops.py test-connection host-01
 python tools/my_ops.py test-connection localhost /srv/my-ops
 python tools/my_ops.py test-connection host-01 /srv/my-ops --timeout 10
 python tools/my_ops.py test-connection rms4 /srv/my-ops --debug --traceback

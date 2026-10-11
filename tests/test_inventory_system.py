@@ -271,6 +271,21 @@ class RunnerTests(unittest.TestCase):
         run.assert_called_once_with(self.root, 'example', 30, recipe='./recipes/inventory/system')
         self.assertEqual(json.loads(output.getvalue())['result_path'], str(path))
 
+    def test_main_uses_remembered_management_directory(self):
+        checkout = self.root / 'checkout'
+        checkout.mkdir()
+        with patch.object(my_ops, 'REPOSITORY_ROOT', checkout):
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(my_ops.main(['init', str(self.root)]), 0)
+            with patch.object(runner, 'run', return_value=({'status': 'success'}, self.root / 'result.json')) as run, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(runner.main(['example', '--recipe', 'recipes/inventory/system']), 0)
+            run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='recipes/inventory/system')
+            (checkout / '.my-ops.yaml').write_text('schema_version: 1\nroot: missing\n')
+            with patch.object(runner, 'run') as run, contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(runner.main(['example']), 1)
+            run.assert_not_called()
+
     def test_cleanup_failure_retains_observations(self):
         self.session.close.side_effect = RuntimeError('secret')
         report, _ = self.run_recipe()

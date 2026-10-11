@@ -7,13 +7,13 @@ description: 協助使用者建立、修改與審閱 SSHScript Ops 管理目錄�
 
 使用者指南與設定規格位於 [docs/hosts-yaml.md](../../docs/hosts-yaml.md)。開始設定工作時閱讀它；不要自行建立另一套欄位語意。這是 repository 內的 skill，使用時保留 repository 結構。若要獨立安裝，需一併打包指南並調整此連結；目前未提供 skill 安裝工具。
 
-Repository 提供 [tools/my_ops.py](../../tools/my_ops.py)：使用安裝 PyYAML 的 Python 執行 `init <管理根目錄>` 建立樣板，或 `check <管理根目錄>` 做唯讀檢查；`dump <設定路徑> <管理根目錄>` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> <管理根目錄>`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍；完整 recipe 執行器尚未實作。先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
+Repository 提供 [tools/my_ops.py](../../tools/my_ops.py)：使用安裝 PyYAML 的 Python 執行 `init [管理根目錄]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍；完整 recipe 執行器尚未實作。先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
 
 ## 工作入口與編輯範圍
 
 連線診斷可加 `--verbose`（進度）、`--debug`（篩選後的有效設定）及 `--traceback`（不含原文、source 與 locals 的堆疊）。JSON 的 hops 與 error.hop 區分每跳；key_source 指出 identity_file 從哪一個 parent 主機讀取。這些是 Ops 自己的診斷，不等同啟用 SSHScript 原始 DEBUG log。診斷寫 stderr，stdout 保持 JSON；不要為了除錯回貼密碼、代理命令或 token，也不要只憑提示就聲稱已找到根因。
 
-- 以使用者提供的管理根目錄為入口，讀取其中的 `hosts.yaml`。沒有根目錄時，先取得路徑；可以先提供合成範例。
+- 以使用者提供的管理根目錄為入口，讀取其中的 `hosts.yaml`。沒有明確根目錄時，依工具所在 checkout 的 `.my-ops.yaml` 使用最近成功 init 的目錄；沒有定位檔時使用 checkout 下的 `my-ops/`。省略路徑的操作須有有效 `my-ops.yaml` 定義檔，無效或不存在時明確回報，不能自行改查其他目錄。新建環境可用無參數 init；既有目錄不自行初始化。
 - 確認要建立、修改或查詢的主機 ID 與目標。已提供的資料不重複詢問；只詢問會影響結果的缺漏。
 - 先讀既有入口及相關 include，保留主機 ID、分檔方式、註解與不相關設定。修改主機定義所在的來源檔案，不在入口建立重複主機作為覆寫。
 - 真實資料寫入使用者的管理環境；repository 文件和範例只使用合成資料。維護 SSHScript Ops 文件不代表可修改 SSHScript library；遵守當前目錄的 AGENTS.md。

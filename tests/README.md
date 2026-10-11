@@ -21,3 +21,5 @@ python -m unittest discover -s tests -p 'test_*.py'
 CLI recipe selection tests cover `--recipe` precedence, absent/empty host selections, invalid host selections bypassed by a valid override, management-root relative paths with includes, absolute paths, invalid overrides without fallback, recipe/descriptor symlink escapes, and CLI argument forwarding.
 
 Checkout recipe tests cover execution without instance copies, included YAML selection, directory/glob expansion, duplicate selection, stale instance copies, separate include and recipe boundaries, and result paths within the instance. Legacy custom copies use explicit `./recipes/...` paths.
+
+Management-directory discovery tests cover default and custom initialization, shared remembered paths in both CLIs, explicit overrides, definition preservation, invalid or missing locators/definitions without fallback, and failed init preserving the previous default. All instances and locators use temporary directories.
