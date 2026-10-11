@@ -18,6 +18,16 @@ Prefer concise discovery metadata, explicit inputs, stable result contracts and 
 
 For routine recipes, avoid requiring an LLM inside the execution path. If a task actually needs model inference, document that dependency, what data leaves the environment, its cost implications and how its output is verified.
 
+## Write AI-friendly documentation for humans and agents
+
+AI-friendly documentation is a continuing project principle for new and revised guides, recipe documentation and skills. A human reader should understand the purpose and outcome, and a fresh AI agent should be able to find and use the relevant instructions without relying on a previous conversation or a particular agent's automatic discovery.
+
+Provide a visible entrypoint, a sensible reading order and links from tasks to the relevant tools, skills and detailed guides. Keep a canonical source for each contract and link to it rather than copying instructions that can drift. Use progressive detail: explain the task first, then provide the exact interface and evidence needed to perform it. Include only the detail relevant to the document's scope.
+
+For operational instructions, state prerequisites, arguments and defaults, targets, privileges, side effects, authorization scope, outputs, saved-data locations and how to interpret success, failure, partial and skipped states. Keep examples consistent with implemented commands. Identify planned capabilities and verification limits explicitly; do not expect a reader to infer them from examples or earlier conversations.
+
+For skills, document where the complete skill and its accompanying references come from, how to read or install them, how to check and stage updates, and how compatibility is reviewed before authorized application. Record source/version evidence and explain any missing installer or update command. A lone SKILL.md must not be presented as a complete bundle when it depends on other documents. Keep guidance portable across agents, and preserve clear prose for human readers.
+
 ## Build an open community of operational knowledge
 
 Administrators should be able to contribute independently: one person develops inventory recipes, another adds service diagnostics, and others improve tests, documentation or platform support. Recipes may be shared individually or as collections in separate repositories or archives; contributing should not require a particular agent product, editor or a fork of Ops.
@@ -46,9 +56,10 @@ Preserve human notes and existing configuration. Retain the recipe versions, inp
 
 ## Apply the principles during development
 
-For a feature or recipe, assess these questions before delivery:
+For a feature, recipe or documentation change, assess the relevant questions before delivery:
 
 - Can the administrator request and assess the outcome without learning internal APIs?
+- Can a human or fresh AI agent find the learning path, relevant interfaces and complete skills without prior conversation context?
 - Can repeated work reuse a recipe and relevant context without unnecessary model calls?
 - Can another administrator review, adapt and share it using explicit contracts and dependencies?
 - Are targets, privileges, side effects and authorization boundaries clear?
@@ -56,3 +67,5 @@ For a feature or recipe, assess these questions before delivery:
 - Are private data and existing user work protected?
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
+
+_Last modified: 2026-10-11_

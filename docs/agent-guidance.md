@@ -8,6 +8,12 @@ The repository root `AGENTS.md` is tracked in Git and distributed when users clo
 
 Different agents discover instructions differently. Codex discovers project guidance along the path from the project root to its working directory; other agents may need an explicit request to read AGENTS.md. See the [official Codex guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md). Reading instructions is not permission to install dependencies or perform remote operations.
 
+## Learning path and documentation principles
+
+The [README's For AI agents section](../README.md#for-ai-agents) provides the learning order, task-to-skill routing, included SSHScript references and complete skill acquisition/update entrypoints. Use it when starting with a fresh agent; direct Markdown reading works even without automatic guidance or skill discovery. The [skill update guide](skill-updates.md) owns the detailed candidate review and application procedure.
+
+Future documentation and skills follow the shared [AI-friendly documentation principles](vision.md#write-ai-friendly-documentation-for-humans-and-agents). Keep them understandable to humans and actionable by agents: expose the relevant learning path, exact interfaces and interpretation, sources and update procedures, and verification limits without requiring prior chat context. These are contributor requirements, not a claim of machine-enforced documentation checks.
+
 ## Shared tool reference
 
 The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/ops.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.

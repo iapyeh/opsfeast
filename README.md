@@ -8,7 +8,7 @@ You set the goals and authorize the actions. Your AI agent helps build and carry
 
 Built on SSHScript, Ops brings tools, documented workflows and agent skills together to organize host settings, develop recipes for your environment, and share operational knowledge. The work you do today can become something you understand, review and reuse tomorrow.
 
-Read the **[command-line reference](docs/cli.md)** for every ops.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents.
+Read the **[command-line reference](docs/cli.md)** for every ops.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
 
 ## Why SSHScript Ops matters in the AI era
 
@@ -71,6 +71,44 @@ The agent can inspect prerequisites with `python3 -B tools/check_environment.py`
 
 The full SSHScript skill snapshot is included in Git. [Skill download and update instructions](docs/skill-updates.md) explain how to check the public bundle, stage a complete candidate and review compatibility. A user-authorized schedule may check for changes; checks never automatically replace skills or upgrade packages.
 
+## For AI agents
+
+Start here when a user asks you to use SSHScript Ops. Read the linked Markdown directly if your agent does not automatically discover project guidance or skills; no particular agent product or skill loader is required.
+
+### Learn Ops and choose the relevant skill
+
+1. Read [AGENTS.md](AGENTS.md) for project instructions, then any user-maintained `AGENTS.local.md` in this checkout. Local guidance is optional, private and not supplied by a clone; see [public and local guidance](docs/agent-guidance.md).
+2. Read the [getting-started guide](docs/getting-started.md) for prerequisites and setup, and the [CLI reference](docs/cli.md) before selecting commands. It documents `tools/ops.py` and `tools/run_recipe.py`, including arguments, defaults, side effects, saved data, results and exit codes. Use the interpreter selected by the user.
+3. Select the task-specific skill below and follow its linked guides. Reuse already-read material when it remains applicable. Before designing features or writing recipes or documentation, read the [vision and design principles](docs/vision.md).
+
+| Task | Start with |
+| --- | --- |
+| Manage profiles, hosts.yaml, platform facts or connection/su/sudo diagnostics | [Ops hosts skill](skills/sshscript-ops-hosts/SKILL.md), then [host diagnostics](docs/host-diagnostics.md) for tests |
+| Discover, execute, author, share or review recipes | [Ops recipes skill](skills/sshscript-ops-recipes/SKILL.md), then the [recipe catalog](recipes/README.md) and selected recipe guide |
+| Write or adapt SSHScript commands and sessions | [Included SSHScript skill](.agents/skills/sshscript/SKILL.md), its [Agent Guide](.agents/skills/sshscript/references/agent-guide.md), [version policy](.agents/skills/sshscript/references/versioning.md) and relevant [API guide](.agents/skills/sshscript/references/api-guide.md) sections |
+
+Ops skills describe the management workflow; the SSHScript skill describes the execution library. The complete public SSHScript snapshot is included at `.agents/skills/sshscript/` and can be read offline. Its [SOURCE.json](.agents/skills/sshscript/SOURCE.json) records provenance, documentation contract and bundle digest. Verify the actual interpreter and SSHScript import/distribution versions against that contract before use. Bundled files do not imply installation or automatic loading by your agent.
+
+### Obtain and update complete skills
+
+The [official SSHScript AI agent entrypoint](https://iapyeh.github.io/sshscript/v3a/ai-agents/) provides the public guides and [complete skill ZIP](https://iapyeh.github.io/sshscript/v3a/ai-agents/downloads/sshscript-skill.zip). The `/v3a/` URL is not a package version; inspect the candidate's documentation contract.
+
+When the user requests a check or authorizes downloading a candidate, run the applicable command from the Ops checkout with the selected interpreter:
+
+```sh
+# Compare the official bundle with the included snapshot; do not replace it.
+python -B tools/skill_bundle.py check
+
+# Download and validate a complete candidate into a directory that does not exist.
+python -B tools/skill_bundle.py download .skill-downloads/sshscript-candidate
+```
+
+`check` downloads into memory and reports `unchanged` or `review_required`; a difference does not necessarily mean a newer version, and a failed check does not mean no update. `download` saves a candidate without activating it. Review compatibility and local changes before authorized application, replacing the complete snapshot including references and SOURCE.json. Downloading only `SKILL.md` is incomplete. Neither command installs or upgrades SSHScript. Follow the [skill download and update guide](docs/skill-updates.md) for result interpretation, review, application and authorized scheduled checks.
+
+The **Ops hosts and recipes skills** ship with the [Ops repository](https://github.com/iapyeh/sshscript-ops), together with `docs/` and AGENTS.md; they are not part of the SSHScript ZIP. Obtain a trusted full clone or snapshot, preserve relative paths and record the actual commit. For updates, compare an isolated candidate's skills, accompanying guides and tool changes before authorized application. There is currently no separate Ops skill ZIP or automatic Ops skill update command. Direct reading is supported; installing into an agent requires its platform-specific procedure and the accompanying documents, as described in the update guide.
+
+Reading these materials does not authorize installation, connections, privilege tests or recipe execution. Work within the user's requested scope and distinguish documented support, implemented behavior and actual verification evidence.
+
 ## Status
 
 This repository is an initial project scaffold. It provides a Python utility for management-directory initialization, configuration inspection and validation, and explicit host connection tests. It also provides inventory-system collectors for Linux, FreeBSD and macOS, automatic host initialization and account diagnostics. Linux/FreeBSD have synthetic coverage; macOS has local read-only validation. Real SSH and native su/sudo validation remain pending.
@@ -94,10 +132,6 @@ python -B tools/run_recipe.py host-01 --recipe inventory/system --hosts host-02 
 ```
 
 Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when an explicit sudo password is configured, and independently tests su to other declared accounts. Direct host-init always refreshes facts. Runner automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. A general recipe runner and extension installer remain planned.
-
-## Agent guidance
-
-[AGENTS.md](AGENTS.md) contains portable project instructions and is distributed with this repository. Personal checkout paths and maintenance preferences belong in the optional, Git-ignored `AGENTS.local.md`. See [public and local guidance](docs/agent-guidance.md) for reading behavior and verification; local settings are not supplied to other users by a clone.
 
 ## Find, create and share recipes
 

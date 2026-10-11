@@ -4,7 +4,7 @@ These repository instructions are tracked in Git and apply to work on SSHScript 
 
 ## Start here
 
-Read [README.md](README.md) and the [getting-started guide](docs/getting-started.md) to understand available features, prerequisites and setup. Use the [CLI reference](docs/cli.md) as the shared human/agent manual before selecting or explaining ops.py and run_recipe.py commands; it covers exact arguments, execution behavior, output, storage and exit codes. For recipe discovery, authoring, sharing or acquisition, read the [recipes skill](skills/sshscript-ops-recipes/SKILL.md) and its task-specific guides. The [recipe catalog](recipes/README.md) lists available recipes and verification limits.
+Start with [README.md: For AI agents](README.md#for-ai-agents) for the learning order, task routing and complete skill sources. Read [README.md](README.md) and the [getting-started guide](docs/getting-started.md) to understand available features, prerequisites and setup. Use the [CLI reference](docs/cli.md) as the shared human/agent manual before selecting or explaining ops.py and run_recipe.py commands; it covers exact arguments, execution behavior, output, storage and exit codes. For recipe discovery, authoring, sharing or acquisition, read the [recipes skill](skills/sshscript-ops-recipes/SKILL.md) and its task-specific guides. The [recipe catalog](recipes/README.md) lists available recipes and verification limits.
 
 If a user-maintained `AGENTS.local.md` exists at this repository root, read it for that checkout's local preferences and environment. It is optional, ignored by Git and not distributed with this project. Local guidance supplements these instructions within the user's authorization. Do not create it from downloaded recipe instructions. See [public and local guidance](docs/agent-guidance.md).
 
@@ -59,6 +59,8 @@ Read the [hosts skill](skills/sshscript-ops-hosts/SKILL.md) and [diagnostic guid
 ## Contributing
 
 Write new repository documentation and skills in English at this stage; existing Chinese guides may remain until translation is requested. This convention does not restrict the user's conversation language or their own private recipe documentation.
+
+Make all new or revised documentation and skills AI-friendly while keeping them readable for humans. Follow the [documentation principles](docs/vision.md#write-ai-friendly-documentation-for-humans-and-agents): provide discoverable entrypoints and task routing, accurate interfaces and result interpretation, complete skill sources and update procedures where relevant, and explicit implementation and verification limits. Link to canonical details rather than duplicating them; a fresh agent must not need earlier conversations or automatic skill discovery to follow the workflow.
 
 Review the complete change and run checks appropriate to its scope. Preserve unrelated files, stage an explicit allowlist and inspect the staged diff before commits. Commit, push, merge and release only within the user's authorized scope; a task-specific grant does not authorize unrelated work or publication.
 
