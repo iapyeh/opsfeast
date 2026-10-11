@@ -13,7 +13,7 @@ ops = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ops)
 
 
-class MyOpsTests(unittest.TestCase):
+class OpsTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

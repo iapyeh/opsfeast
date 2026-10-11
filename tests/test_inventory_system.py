@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import run_recipe as runner
-import my_ops
+import ops
 C = runner.collector
 
 
@@ -171,7 +171,7 @@ class RunnerTests(unittest.TestCase):
         bundle = recipes / 'inventory/system'
         shutil.copytree(runner.BUNDLE, bundle)
         shutil.rmtree(self.root / 'recipes')
-        with patch.object(my_ops, 'REPOSITORY_RECIPES', recipes), \
+        with patch.object(ops, 'REPOSITORY_RECIPES', recipes), \
              patch.object(runner, 'REPOSITORY_ROOT', checkout), \
              patch.object(runner, 'REPOSITORY_RECIPES', recipes), \
              patch.object(runner, 'BUNDLE', bundle):
@@ -190,7 +190,7 @@ class RunnerTests(unittest.TestCase):
         shutil.copytree(runner.BUNDLE, bundle)
         with tempfile.TemporaryDirectory() as external:
             external = Path(external)
-            with patch.object(my_ops, 'REPOSITORY_RECIPES', recipes):
+            with patch.object(ops, 'REPOSITORY_RECIPES', recipes):
                 for name in ('recipe.yaml', 'main.py'):
                     with self.subTest(name=name):
                         entry = bundle / name
@@ -198,14 +198,14 @@ class RunnerTests(unittest.TestCase):
                         (external / name).write_bytes(content)
                         entry.unlink()
                         entry.symlink_to(external / name)
-                        with self.assertRaises(my_ops.ConfigError):
+                        with self.assertRaises(ops.ConfigError):
                             runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
                         entry.unlink()
                         entry.write_bytes(content)
                 (recipes / 'escape').symlink_to(external, target_is_directory=True)
                 (self.root / 'hosts.yaml').write_text('hosts: {example: {connection: {local: true}, recipes: [{glob: "recipes/**"}]}}')
-                with self.assertRaises(my_ops.ConfigError):
-                    my_ops.Validator(self.root).check()
+                with self.assertRaises(ops.ConfigError):
+                    ops.Validator(self.root).check()
         self.session_class.assert_not_called()
 
     def test_cli_recipe_without_host_selection(self):
@@ -246,7 +246,7 @@ class RunnerTests(unittest.TestCase):
             (unsupported / 'recipe.yaml').write_text('id: other-recipe\n')
             for recipe in ('missing', 'hosts.yaml', '', str(outside), '../outside',
                            'escape', 'bad-descriptor', 'unsupported'):
-                with self.subTest(recipe=recipe), self.assertRaises(my_ops.ConfigError):
+                with self.subTest(recipe=recipe), self.assertRaises(ops.ConfigError):
                     runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
             self.session_class.assert_not_called()
 
@@ -257,7 +257,7 @@ class RunnerTests(unittest.TestCase):
             shutil.copy2(descriptor, external)
             descriptor.unlink()
             descriptor.symlink_to(external)
-            with self.assertRaises(my_ops.ConfigError):
+            with self.assertRaises(ops.ConfigError):
                 runner.run(self.root, 'example', recipe='./recipes/inventory/system',
                            session_class=self.session_class)
         self.session_class.assert_not_called()
@@ -274,9 +274,9 @@ class RunnerTests(unittest.TestCase):
     def test_main_uses_remembered_management_directory(self):
         checkout = self.root / 'checkout'
         checkout.mkdir()
-        with patch.object(my_ops, 'REPOSITORY_ROOT', checkout):
+        with patch.object(ops, 'REPOSITORY_ROOT', checkout):
             with contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(my_ops.main(['init', str(self.root)]), 0)
+                self.assertEqual(ops.main(['init', str(self.root)]), 0)
             with patch.object(runner, 'run', return_value=({'status': 'success'}, self.root / 'result.json')) as run, \
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(runner.main(['example', '--recipe', 'recipes/inventory/system']), 0)
@@ -296,19 +296,19 @@ class RunnerTests(unittest.TestCase):
 
     def test_selection_and_modified_code_rejected_before_session(self):
         (self.directory / 'main.py').write_text('raise RuntimeError("should not execute")')
-        with self.assertRaises(my_ops.ConfigError):
+        with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
 
     def test_output_symlink_rejected_before_session(self):
         (self.root / 'observations').symlink_to(self.directory, target_is_directory=True)
-        with self.assertRaises(my_ops.ConfigError):
+        with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
 
     def test_unselected_rejected(self):
         (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes: []\n')
-        with self.assertRaises(my_ops.ConfigError):
+        with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
 
@@ -346,13 +346,13 @@ class RunnerTests(unittest.TestCase):
 
     def test_runtime_mismatch_rejected(self):
         with patch.object(runner, 'version', return_value='4.0.2'):
-            with self.assertRaises(my_ops.ConfigError):
+            with self.assertRaises(ops.ConfigError):
                 runner.load_runtime()
 
     def test_descriptor_mismatch_rejected(self):
         descriptor = self.directory / 'recipe.yaml'
         descriptor.write_text(descriptor.read_text().replace('version: 0.1.0', 'version: 0.2.0'))
-        with self.assertRaises(my_ops.ConfigError):
+        with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
 

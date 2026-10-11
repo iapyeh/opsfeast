@@ -83,6 +83,6 @@ Checkout 內位置保存相對路徑，外部保存絕對路徑。`.my-ops.yaml`
 
 舊 schema 1 的 `root` 視為名叫 default 的 profile，原位置不搬移；唯讀命令不改寫定位檔。成功登記或 use 時將清單寫為 schema 2。為新環境引入的 my-ops/main 結構不會自動套用到既有資料。
 
-`tools/my_ops.py` 保留為相容入口，CLI 與 imports 轉交給 ops.py，採用目前行為。明確路徑與既有設定可繼續使用；`init inventory` 如今是具名初始化，若舊命令要指定目前 shell 下的同名路徑，請改成 `init ./inventory`。之後的文件及新命令使用 ops.py。
+原入口 `tools/my_ops.py` 已移除，命令與 Python imports 請改用 ops.py／ops。明確路徑與既有設定可繼續使用；`init inventory` 如今是具名初始化，若舊命令要指定目前 shell 下的同名路徑，請改成 `init ./inventory`。之後的文件及新命令使用 ops.py。
 
 無參數 init 的初始名稱是 main；default 只作為「目前預設」的角色概念，不是新建環境的固定名稱。已登記的 default profile 仍可使用，不自動改名或搬移；在這種環境執行無參數 init 會新增 main，並保留原本預設。

@@ -53,7 +53,7 @@ kind: sshscript-ops
 
 第一個成功登記的環境成為預設，後續新增不切換。重複初始化保留原 profile 名稱與設定，失敗不更新登記。`add` 唯讀檢查既有環境後登記，不建立或改寫其內容；舊環境只有 hosts.yaml 也可加入，若有定義檔則須有效。舊 schema 1 定位檔視為 default，唯讀操作不改寫它；後續登記或切換時寫成 schema 2，不搬移資料。
 
-完整命名、互動選擇、遷移與路徑規則見 [管理環境指南](profiles.md)。`tools/my_ops.py` 保留為相容入口，採用與 ops.py 相同的新行為；舊命令中的單一名稱參數如今代表 `my-ops/<name>`，若要指定目前目錄下的路徑需使用 `./name`。
+完整命名、互動選擇、遷移與路徑規則見 [管理環境指南](profiles.md)。管理入口使用 `tools/ops.py`；舊命令中的單一名稱參數如今代表 `my-ops/<name>`，若要指定目前目錄下的路徑需使用 `./name`。
 
 `init` 建立 `hosts/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
 

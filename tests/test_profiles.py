@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import ops
-import my_ops
 import run_recipe
 
 
@@ -249,7 +248,6 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(run_recipe.main(['localhost', '--profile', 'inventory']), 0)
         run.assert_called_once_with(path.parent, 'localhost', 30, recipe=None)
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
-        self.assertIs(my_ops, ops)
 
     def test_profile_boundaries_and_result_directories(self):
         from types import SimpleNamespace
