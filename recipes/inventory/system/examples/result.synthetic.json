@@ -1,8 +1,8 @@
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.1.1",
   "recipe": {
     "id": "inventory-system",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "host_id": "example-host-01",
   "evidence_kind": "synthetic",
@@ -98,5 +98,11 @@
       }
     }
   ],
-  "execution_errors": []
+  "execution_errors": [],
+  "reason_code": "inventory_incomplete",
+  "message": "inventory-system is incomplete. 6/7 inventory fields collected successfully. Missing fields: system_version (unavailable).",
+  "detected_kernel": "Linux",
+  "supported_platforms": [
+    "linux"
+  ]
 }

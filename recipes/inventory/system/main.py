@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import shlex
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 FIELDS = ('hostname', 'platform', 'system_name', 'system_version',
           'kernel_name', 'kernel_release', 'architecture')
 
@@ -13,7 +13,7 @@ def now():
 
 def new_report(host_id, evidence_kind):
     return {
-        'schema_version': '0.1.0', 'recipe': {'id': 'inventory-system', 'version': VERSION},
+        'schema_version': '0.1.1', 'recipe': {'id': 'inventory-system', 'version': VERSION},
         'host_id': host_id, 'evidence_kind': evidence_kind, 'started_at': now(),
         'finished_at': None, 'status': 'failed',
         'observations': {key: {'value': None, 'status': 'not_attempted', 'observed_at': None,
@@ -24,17 +24,38 @@ def new_report(host_id, evidence_kind):
 
 def finish(report):
     states = [item['status'] for item in report['observations'].values()]
+    detected_kernel = report['observations']['kernel_name']['value']
+    collected = states.count('success')
+    coverage = f'{collected}/{len(FIELDS)} inventory fields collected successfully.'
     if report['execution_errors']:
         status = 'failed'
+        reason = 'execution_error'
+        stages = ', '.join(dict.fromkeys(item['stage'] for item in report['execution_errors']))
+        message = (f'inventory-system encountered execution errors during: {stages}. '
+                   f'{coverage} See execution_errors for details.')
     elif report['observations']['platform']['status'] == 'unsupported':
         status = 'unsupported'
+        reason = 'unsupported_platform'
+        message = (f'inventory-system currently supports Linux only. Detected kernel: {detected_kernel}. '
+                   'Kernel detection evidence is available; the remaining inventory fields were not collected.')
     elif all(state == 'success' for state in states):
         status = 'success'
+        reason = 'inventory_complete'
+        message = f'inventory-system completed. {coverage}'
     elif 'success' in states:
         status = 'partial'
+        reason = 'inventory_incomplete'
+        missing = ', '.join(f"{key} ({item['status']})" for key, item in report['observations'].items()
+                            if item['status'] != 'success')
+        message = f'inventory-system is incomplete. {coverage} Missing fields: {missing}.'
     else:
         status = 'failed'
-    report.update(status=status, finished_at=now())
+        reason = 'no_observations'
+        kernel_status = report['observations']['kernel_name']['status']
+        message = ('inventory-system collected no inventory fields successfully. '
+                   f'Kernel detection status: {kernel_status}. See observations and sources for details.')
+    report.update(status=status, finished_at=now(), reason_code=reason, message=message,
+                  detected_kernel=detected_kernel, supported_platforms=['linux'])
     return report
 
 

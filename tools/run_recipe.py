@@ -30,7 +30,12 @@ def preflight(root, host, recipe=None):
     if host not in config.hosts:
         raise ConfigError(f'unknown host ID: {host}')
     if recipe is not None:
-        scope, pattern, source = config.recipe_scope(str(recipe), config.root / 'hosts.yaml')
+        text = str(recipe)
+        # Bare CLI paths are checkout-relative; explicit ./ paths stay instance-relative.
+        if (text and not Path(text).is_absolute() and not text.startswith(('./', '../'))
+                and text != 'recipes' and not text.startswith('recipes/')):
+            text = 'recipes/' + text
+        scope, pattern, source = config.recipe_scope(text, config.root / 'hosts.yaml')
         directory = scope.path(pattern, source)
         if not directory.is_dir():
             raise ConfigError('CLI recipe directory does not exist')
@@ -115,13 +120,16 @@ def main(argv=None):
     parser.add_argument('root', type=Path, nargs='?', help='management directory (default: selected profile)')
     parser.add_argument('--profile', help='profile for this invocation; does not change the default')
     parser.add_argument('--recipe', metavar='DIRECTORY',
-                        help='recipes/... selects this checkout; ./paths select within management root; overrides host recipe selection')
+                        help='inventory/system (or recipes/...) selects this checkout; ./paths select within management root; overrides host recipe selection')
     parser.add_argument('--timeout', type=positive_timeout, default=30,
                         help='per-hop connection stages and per-command seconds; not a whole-run deadline')
     args = parser.parse_args(argv)
     try:
         report, path = run(resolve_root(args.root, args.profile), args.host, args.timeout, recipe=args.recipe)
-        print(json.dumps({'status': report['status'], 'result_path': str(path)}, indent=2))
+        summary = {key: report[key] for key in (
+            'status', 'reason_code', 'message', 'detected_kernel', 'supported_platforms')}
+        summary.update(recipe_id=report['recipe']['id'], result_path=str(path))
+        print(json.dumps(summary, indent=2))
         return 0 if report['status'] == 'success' else 1
     except (ConfigError, OSError, ImportError) as exc:
         # Do not print third-party exception text or potentially sensitive config values.

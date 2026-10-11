@@ -1,7 +1,7 @@
 # Ops descriptor version 0.1.0; minimal runner supports this exact bundle.
 descriptor_version: 0.1.0
 id: inventory-system
-version: 0.1.0
+version: 0.1.1
 status: implemented
 title: System inventory
 description: Collect system identity, operating system version, kernel, and architecture.
@@ -42,7 +42,7 @@ inputs:
     not whole run.'
 output:
   format: json
-  schema_version: 0.1.0
+  schema_version: 0.1.1
   example: examples/result.synthetic.json
   fields:
   - hostname
@@ -52,6 +52,7 @@ output:
   - kernel_name
   - kernel_release
   - architecture
+  summary_fields: [reason_code, message, detected_kernel, supported_platforms]
   run_statuses:
   - success
   - partial

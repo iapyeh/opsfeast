@@ -6,7 +6,7 @@ This catalog lists recipes currently supplied by SSHScript Ops. To ask your AI a
 
 | Recipe | Purpose | Implemented platform | Verification evidence | Usage |
 | --- | --- | --- | --- | --- |
-| [inventory-system](inventory/system/README.md) 0.1.0 | Seven fields covering hostname, system name/version, kernel and architecture | Linux | Synthetic tests; macOS unsupported-platform path tested locally; real Linux/SSH collection unverified | Dedicated runner, SSHScript ==5.0.0; see recipe README |
+| [inventory-system](inventory/system/README.md) 0.1.1 | Seven fields covering hostname, system name/version, kernel and architecture | Linux | Synthetic tests; macOS unsupported-platform path tested locally; real Linux/SSH collection unverified | Dedicated runner, SSHScript ==5.0.0; see recipe README |
 
 No other recipes are currently supplied, and there is no third-party catalog yet. FreeBSD/macOS support and other inventory types are future directions, not available collectors. Update this catalog when adding recipes, including purpose, version, platforms, evidence and usage. Author declarations are not substitutes for actual testing.
 
@@ -28,3 +28,5 @@ Each recipe should document its purpose, supported and tested platforms, SSHScri
 Collection recipes should retain observation sources and timestamps and distinguish success, permission denial, unsupported operations, timeouts and parsing failures.
 
 The first result contract and synthetic example live with inventory-system. The runner currently supports only the exact inventory-system bundle, not arbitrary recipe execution.
+
+_Last modified: 2026-10-11_

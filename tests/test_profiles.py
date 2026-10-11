@@ -243,7 +243,10 @@ class ProfileTests(unittest.TestCase):
         self.cli('init')
         self.cli('init', 'inventory')
         path = self.checkout / 'my-ops/inventory/result.json'
-        with patch.object(run_recipe, 'run', return_value=({'status': 'success'}, path)) as run, \
+        report = {'status': 'success', 'reason_code': 'inventory_complete',
+                  'message': 'Synthetic successful run.', 'detected_kernel': 'Linux',
+                  'supported_platforms': ['linux'], 'recipe': {'id': 'inventory-system'}}
+        with patch.object(run_recipe, 'run', return_value=(report, path)) as run, \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(run_recipe.main(['localhost', '--profile', 'inventory']), 0)
         run.assert_called_once_with(path.parent, 'localhost', 30, recipe=None)

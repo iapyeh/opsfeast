@@ -27,3 +27,7 @@ Management-directory discovery tests cover default and custom initialization, sh
 `test_setup_tools.py` verifies environment scope and import/distribution mismatches, full skill candidate/provenance preservation, read-only comparisons, local changes and incompatible contracts, failed downloads, existing destinations, failed writes, unsafe ZIP paths/links/duplicates and expansion limits. It uses synthetic ZIPs and mocked network responses; it never installs packages or changes schedulers. Public bundle check/download CLI verification is reported separately.
 
 `test_profiles.py` verifies named/default/path initialization, registration of existing and legacy directories without changes, name conflicts and suggested names, interactive selection/cancellation, noninteractive failure, explicit profile selection in both CLIs, sibling boundaries, separate result locations, schema 1 compatibility and atomic write failure. All directories and Sessions are temporary or mocked.
+
+Result summary tests cover detected kernels, reasons and messages for success, partial, unsupported and failed runs, cleanup-error precedence, and equality between CLI summaries and saved reports. CLI short paths select checkout recipes; explicit `./` paths retain management-root semantics.
+
+_Last modified: 2026-10-11_

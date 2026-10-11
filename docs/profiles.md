@@ -58,7 +58,7 @@ python tools/ops.py use
 python tools/ops.py check --profile inventory
 python tools/ops.py dump hosts.localhost --profile inventory
 python tools/ops.py test-connection host-01 --profile inventory
-python tools/run_recipe.py host-01 --profile inventory --recipe recipes/inventory/system
+python tools/run_recipe.py host-01 --profile inventory --recipe inventory/system
 ```
 
 --profile 不改預設，不能與執行命令的明確目錄參數同時使用。明確目錄仍可直接使用未登記的既有管理資料。未知 profile、無效定位檔或遺失目錄報錯，不改查其他環境。設定、連線測試及 recipe 執行的範圍與授權依 [主機設定指南](hosts-yaml.md) 和 [recipe 指南](../recipes/inventory/system/README.md)。
@@ -86,3 +86,5 @@ Checkout 內位置保存相對路徑，外部保存絕對路徑。`.my-ops.yaml`
 原入口 `tools/my_ops.py` 已移除，命令與 Python imports 請改用 ops.py／ops。明確路徑與既有設定可繼續使用；`init inventory` 如今是具名初始化，若舊命令要指定目前 shell 下的同名路徑，請改成 `init ./inventory`。之後的文件及新命令使用 ops.py。
 
 無參數 init 的初始名稱是 main；default 只作為「目前預設」的角色概念，不是新建環境的固定名稱。已登記的 default profile 仍可使用，不自動改名或搬移；在這種環境執行無參數 init 會新增 main，並保留原本預設。
+
+_Last modified: 2026-10-11_

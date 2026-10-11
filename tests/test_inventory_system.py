@@ -26,6 +26,14 @@ def linux_outputs(product='NAME="Example Linux"\nVERSION_ID="1.2"\n'):
     return [result('Linux\n'), result('node\n'), result('6.1\n'), result('x86_64\n'), result(product)]
 
 
+def completed_report():
+    report = C['new_report']('example', 'mock')
+    session = Mock()
+    session.exec_command.side_effect = linux_outputs()
+    C['collect'](session, report, 7)
+    return C['finish'](report)
+
+
 class InventoryTests(unittest.TestCase):
     def collect(self, responses):
         session = Mock()
@@ -38,6 +46,9 @@ class InventoryTests(unittest.TestCase):
     def test_success_and_finite_argv(self):
         report, session = self.collect(linux_outputs())
         self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['reason_code'], 'inventory_complete')
+        self.assertIn('7/7', report['message'])
+        self.assertEqual(report['detected_kernel'], 'Linux')
         self.assertEqual(report['observations']['system_name']['value'], 'Example Linux')
         for call in session.exec_command.call_args_list:
             self.assertIsInstance(call.args[0], list)
@@ -46,18 +57,41 @@ class InventoryTests(unittest.TestCase):
     def test_version_absent(self):
         report, _ = self.collect(linux_outputs('NAME=Example\n'))
         self.assertEqual(report['status'], 'partial')
+        self.assertEqual(report['reason_code'], 'inventory_incomplete')
+        self.assertIn('6/7', report['message'])
+        self.assertIn('system_version (unavailable)', report['message'])
         self.assertEqual(report['observations']['system_version']['status'], 'unavailable')
         self.assertIsNone(report['observations']['system_version']['value'])
 
     def test_unsupported_stops_after_detection(self):
-        report, session = self.collect([result('Darwin\n')])
-        self.assertEqual(report['status'], 'unsupported')
-        self.assertEqual(session.exec_command.call_count, 1)
-        self.assertEqual(report['observations']['kernel_name']['value'], 'Darwin')
+        for kernel in ('Darwin', 'FreeBSD'):
+            with self.subTest(kernel=kernel):
+                report, session = self.collect([result(kernel + '\n')])
+                self.assertEqual(report['status'], 'unsupported')
+                self.assertEqual(session.exec_command.call_count, 1)
+                self.assertEqual(report['observations']['kernel_name']['value'], kernel)
+                self.assertEqual(report['reason_code'], 'unsupported_platform')
+                self.assertEqual(report['detected_kernel'], kernel)
+                self.assertEqual(report['supported_platforms'], ['linux'])
+                self.assertIn(kernel, report['message'])
+                self.assertIn('remaining inventory fields were not collected', report['message'])
+
+    def test_cleanup_error_takes_precedence_over_unsupported(self):
+        report, _ = self.collect([result('FreeBSD\n')])
+        report['execution_errors'].append({'stage': 'cleanup', 'type': 'RuntimeError'})
+        C['finish'](report)
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['reason_code'], 'execution_error')
+        self.assertIn('cleanup', report['message'])
+        self.assertIn('1/7', report['message'])
+        self.assertEqual(report['detected_kernel'], 'FreeBSD')
 
     def test_bad_kernel_does_not_guess(self):
         report, session = self.collect([result('Linux\nDarwin\n')])
         self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['reason_code'], 'no_observations')
+        self.assertIsNone(report['detected_kernel'])
+        self.assertIn('parsing_failed', report['message'])
         self.assertEqual(report['observations']['platform']['status'], 'not_attempted')
         self.assertEqual(session.exec_command.call_count, 1)
 
@@ -144,13 +178,14 @@ class RunnerTests(unittest.TestCase):
 
     def test_checkout_recipe_without_instance_copy(self):
         shutil.rmtree(self.root / 'recipes')
-        for selection in ('cli', 'hosts', 'absolute'):
+        for selection in ('cli', 'short', 'hosts', 'absolute'):
             with self.subTest(selection=selection):
                 (self.root / 'hosts.yaml').write_text('include: [hosts/group.yaml]\n')
                 (self.root / 'hosts').mkdir(exist_ok=True)
                 (self.root / 'hosts/group.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes: [{recipe: recipes/inventory/system}]\n')
                 self.session.exec_command.side_effect = linux_outputs()
-                recipe = None if selection == 'hosts' else str(runner.BUNDLE) if selection == 'absolute' else 'recipes/inventory/system'
+                recipe = {'hosts': None, 'absolute': str(runner.BUNDLE),
+                          'short': 'inventory/system', 'cli': 'recipes/inventory/system'}[selection]
                 report, path = runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
                 self.assertEqual(report['status'], 'success')
                 self.assertEqual(report['recipe']['location_source'], 'repository')
@@ -161,9 +196,28 @@ class RunnerTests(unittest.TestCase):
 
     def test_checkout_selection_ignores_outdated_instance_copy(self):
         (self.directory / 'main.py').write_text('outdated copy')
-        report, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+        report, _ = runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
         self.assertEqual(report['status'], 'success')
         self.assertEqual(report['recipe']['location_source'], 'repository')
+
+    def test_short_path_has_no_instance_fallback_and_cannot_escape(self):
+        # Even a matching instance copy must not be used for a missing checkout path.
+        shutil.copytree(runner.BUNDLE, self.root / 'inventory/system')
+        empty_recipes = self.root / 'checkout/recipes'
+        empty_recipes.mkdir(parents=True)
+        with patch.object(ops, 'REPOSITORY_RECIPES', empty_recipes):
+            for recipe in ('inventory/system', 'inventory/../../../recipes/inventory/system'):
+                with self.subTest(recipe=recipe), self.assertRaises(ops.ConfigError):
+                    runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
+        self.session_class.assert_not_called()
+
+    def test_short_path_symlink_escape_rejected(self):
+        recipes = self.root / 'checkout/recipes'
+        recipes.mkdir(parents=True)
+        (recipes / 'inventory').symlink_to(self.root / 'recipes/inventory', target_is_directory=True)
+        with patch.object(ops, 'REPOSITORY_RECIPES', recipes), self.assertRaises(ops.ConfigError):
+            runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
+        self.session_class.assert_not_called()
 
     def test_checkout_update_changes_recorded_digest_without_copying(self):
         checkout = self.root / 'checkout'
@@ -264,12 +318,29 @@ class RunnerTests(unittest.TestCase):
 
     def test_main_passes_cli_recipe_and_reports_success(self):
         path = self.root / 'result.json'
-        with patch.object(runner, 'run', return_value=({'status': 'success'}, path)) as run:
+        with patch.object(runner, 'run', return_value=(completed_report(), path)) as run:
             with contextlib.redirect_stdout(io.StringIO()) as output:
                 code = runner.main(['example', str(self.root), '--recipe', './recipes/inventory/system'])
         self.assertEqual(code, 0)
         run.assert_called_once_with(self.root, 'example', 30, recipe='./recipes/inventory/system')
         self.assertEqual(json.loads(output.getvalue())['result_path'], str(path))
+
+    def test_main_unsupported_summary_matches_saved_result(self):
+        (self.root / 'hosts.yaml').write_text('hosts: {example: {connection: {local: true}}}')
+        self.session.exec_command.side_effect = [result('FreeBSD\n')]
+        with patch.object(runner, 'load_runtime', return_value=(self.session_class, {'verification': 'mock'})), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            code = runner.main(['example', str(self.root), '--recipe', 'inventory/system'])
+        summary = json.loads(output.getvalue())
+        saved = json.loads(Path(summary['result_path']).read_text())
+        self.assertEqual(code, 1)
+        self.assertEqual(summary['recipe_id'], 'inventory-system')
+        self.assertEqual(summary['status'], 'unsupported')
+        for key in ('status', 'reason_code', 'message', 'detected_kernel', 'supported_platforms'):
+            self.assertEqual(summary[key], saved[key])
+        self.assertEqual(saved['observations']['kernel_name']['value'], 'FreeBSD')
+        self.assertEqual(self.session.exec_command.call_count, 1)
+        self.session.close.assert_called_once_with(strict=True)
 
     def test_main_uses_remembered_management_directory(self):
         checkout = self.root / 'checkout'
@@ -277,7 +348,7 @@ class RunnerTests(unittest.TestCase):
         with patch.object(ops, 'REPOSITORY_ROOT', checkout):
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(ops.main(['init', str(self.root)]), 0)
-            with patch.object(runner, 'run', return_value=({'status': 'success'}, self.root / 'result.json')) as run, \
+            with patch.object(runner, 'run', return_value=(completed_report(), self.root / 'result.json')) as run, \
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(runner.main(['example', '--recipe', 'recipes/inventory/system']), 0)
             run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='recipes/inventory/system')
@@ -351,7 +422,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_descriptor_mismatch_rejected(self):
         descriptor = self.directory / 'recipe.yaml'
-        descriptor.write_text(descriptor.read_text().replace('version: 0.1.0', 'version: 0.2.0'))
+        descriptor.write_text(descriptor.read_text().replace('version: 0.1.1', 'version: 0.2.0'))
         with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
