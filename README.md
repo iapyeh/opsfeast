@@ -1,8 +1,12 @@
 # SSHScript Ops
 
-**Turn everyday system administration into reusable operations with your AI agent.**
+**The era of AI agents managing IT systems has begun.**
 
-SSHScript Ops helps system administrators organize host settings, build recipes for their own environments, and share operational knowledge. It brings tools, documented workflows and agent skills together on top of SSHScript, so the work you do today can become something you understand, review and reuse tomorrow.
+SSHScript Ops is a project for IT operations and automation built around AI agents. It helps system administrators put this new way of working into practice through reusable, verifiable, and shareable automation.
+
+You set the goals and authorize the actions. Your AI agent helps build and carry out the operational workflows. The project's goal is an ecosystem where AI agents manage IT systems through recipes, under user-defined goals and authorization.
+
+Built on SSHScript, Ops brings tools, documented workflows and agent skills together to organize host settings, develop recipes for your environment, and share operational knowledge. The work you do today can become something you understand, review and reuse tomorrow.
 
 ## Why SSHScript Ops matters in the AI era
 
