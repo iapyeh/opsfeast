@@ -20,6 +20,9 @@ For a system administrator, the value is continuity: fewer repeated explanations
 
 - **Bring order to your hosts.** Keep connection settings, jump hosts, accounts and recipe selections in your own management environment. Use named profiles to work with different groups of systems.
 - **Build recipes for your needs.** Give your agent a task and use the authoring guides to develop a recipe with documented inputs, outputs, permissions and verification evidence.
+- **Describe the goal; let your agent handle the details.** The design aims to let administrators explain what they need and set operational boundaries while their agent learns the relevant skills, prepares the recipe and explains the result. You should not need to learn SSHScript APIs to request a workflow.
+- **Spend fewer tokens on repeated work.** Use AI to develop, review and adapt recipes, then run their defined operations as code. Routine recipe execution does not require an LLM to generate each command again. Agent planning, reviews and interpretation can still consume tokens; minimum token usage is a design goal, not a measured guarantee.
+- **Build through community collaboration.** Administrators can contribute their expertise as individual recipes or collections, share them in repositories or archives, and help each other improve documentation, compatibility and verification. The documented sharing workflows support this direction; automated distribution tools are still planned.
 - **Keep knowledge you can share.** Package one recipe or a collection with its documentation, dependencies and synthetic examples. Others can review the content and adapt it to their environments.
 - **Make evidence part of the workflow.** Distinguish observations from interpretations, configuration checks from execution, and successful commands from verified outcomes. Missing information stays unknown.
 - **Keep control of your environment.** Real host data and credentials stay in your management environment. Third-party recipes follow a review and authorization workflow before installation; execution has its own scope.
@@ -27,6 +30,22 @@ For a system administrator, the value is continuity: fewer repeated explanations
 The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and the first Linux system inventory recipe with a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
 
 **[Take the first-use walkthrough](docs/first-use.md)** or **[explore the recipe catalog](recipes/README.md)** to get started.
+
+## Safety and operational control
+
+Managing infrastructure requires more than generating a plausible command. SSHScript Ops emphasizes reviewable recipes, explicit targets and permissions, and evidence that distinguishes success, failure, partial results and unknowns. Existing tools provide configuration and path checks; the inventory recipe defines its operations and records results with bounded command execution and cleanup handling.
+
+Third-party recipes should be acquired as candidates, checked for integrity and publisher evidence, and reviewed for behavior before you authorize a concrete installation plan. Installation does not authorize execution. A matching checksum establishes consistency with that checksum; protection against source replacement requires trusted publisher evidence. Even a valid signature does not prove safe behavior. See the [acquisition and review guide](docs/recipe-acquisition.md).
+
+These safeguards combine implemented checks with documented agent procedures. The project does not yet provide a general execution sandbox, machine-enforced approval records or a complete supply-chain verification system. Keeping operational files outside the public repository also does not prevent an agent from reading them; agents must avoid exposing secrets in prompts, reports and shared artifacts.
+
+## A lower learning curve, with informed decisions
+
+Our goal is for you to describe the desired result in ordinary language while your agent handles skills, configuration and execution details. You still define the systems in scope, provide authentication through an appropriate private channel, and authorize actions that may affect them. The agent should ask only for missing information that matters, explain consequences clearly and reuse context already supplied.
+
+Today, that approach is supported by setup and connection tools, agent guides and the dedicated inventory runner. Arbitrary requests may require a new recipe, compatibility work and validation before use. We are building toward this experience; it is not yet a general system that can safely perform every IT task from a single sentence.
+
+Read the [vision and design principles](docs/vision.md) for the shared direction followed by project contributors and recipe authors.
 
 ## Getting started with your AI agent
 

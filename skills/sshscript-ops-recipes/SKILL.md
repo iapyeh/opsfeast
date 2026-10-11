@@ -9,7 +9,7 @@ Read the repository README.md, AGENTS.md and [user guide](../../docs/recipes.md)
 
 ## Read according to the task
 
-- Author or modify a custom recipe: read the [authoring guide](../../docs/recipe-authoring.md). Deliver a complete directory, synthetic examples and verification evidence. Do not impersonate inventory-system to bypass the dedicated runner.
+- Author or modify a custom recipe: read the [vision and design principles](../../docs/vision.md) and [authoring guide](../../docs/recipe-authoring.md). Design for human intent, economical repeat execution, community reuse and explicit risk boundaries; assess the vision's delivery questions. Deliver a complete directory, synthetic examples and verification evidence. Do not impersonate inventory-system to bypass the dedicated runner.
 - Package or share: read the [sharing guide](../../docs/recipe-sharing.md). Support one or multiple recipes using explicit selection and file allowlists. GitHub push, releases and other publication follow the user's destination and authorization scope.
 - Acquire, install or update third-party content: read the [acquisition guide](../../docs/recipe-acquisition.md). Download to a candidate area. Separate integrity, publisher authentication and behavior review. Complete a concrete report before authorized installation; installation does not execute recipes.
 - Prepare or update knowledge: read the [skill update guide](../../docs/skill-updates.md). Distinguish the public SSHScript bundle from Ops skills. Do not reread already applicable material. Check updates only when requested or on an authorized schedule; applying updates requires its own authorized scope.

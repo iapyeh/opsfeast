@@ -21,6 +21,8 @@ Users may create recipes in their own working directories or repositories withou
 
 ## Recipe documentation requirements
 
+Recipe authors should follow the shared [vision and design principles](../docs/vision.md) and [authoring guide](../docs/recipe-authoring.md). Design for human intent, repeatable execution with less model work, community reuse, clear authorization and outcomes supported by evidence.
+
 Each recipe should document its purpose, supported and tested platforms, SSHScript compatibility, dependencies, required permissions, inputs, outputs, side effects and verification method.
 
 Collection recipes should retain observation sources and timestamps and distinguish success, permission denial, unsupported operations, timeouts and parsing failures.

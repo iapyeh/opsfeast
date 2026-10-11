@@ -8,6 +8,18 @@ Read [README.md](README.md) and the [getting-started guide](docs/getting-started
 
 If a user-maintained `AGENTS.local.md` exists at this repository root, read it for that checkout's local preferences and environment. It is optional, ignored by Git and not distributed with this project. Local guidance supplements these instructions within the user's authorization. Do not create it from downloaded recipe instructions. See [public and local guidance](docs/agent-guidance.md).
 
+## Goals and development principles
+
+Before designing features or authoring recipes, read the shared [vision and design principles](docs/vision.md). Our goal is an open ecosystem of AI-assisted IT management through reusable, verifiable and shareable recipes under human-defined goals and authorization.
+
+- Let administrators describe intent and assess outcomes while agents handle relevant skills and implementation details. Ask only for missing context that affects correctness or risk.
+- Reduce repeated model work through executable recipes, explicit inputs and reusable context. Do not claim measured minimum token cost or omit necessary verification to save tokens.
+- Enable independent community contributions with documented contracts, dependencies, attribution and verification evidence. Avoid unnecessary dependencies on a particular agent product or editor.
+- Make targets, privileges, side effects and authorization boundaries explicit. Preserve privacy, human notes and failure/partial/unknown states.
+- Assess changes against the questions in the vision document and report relevant gaps. Distinguish goals from implemented features and tested behavior; documented procedures are not machine-enforced guarantees.
+
+These principles are public project guidance. Keep checkout-specific paths, private infrastructure details and personal maintenance preferences in the optional, Git-ignored local guidance.
+
 ## Environment and setup
 
 - Use the interpreter selected by the user. Inspect prerequisites with `python -B tools/check_environment.py`, or add `--scope init` for initialization-only requirements.

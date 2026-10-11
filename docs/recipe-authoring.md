@@ -2,6 +2,19 @@
 
 For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). A general recipe API, complete descriptor schema and authoring CLI do not exist yet. The following requirements and layout recommendations are not an implemented execution protocol.
 
+## Design for the shared vision
+
+Read the [vision and design principles](vision.md) before creating or changing a recipe. Recipe authors contribute to the same ecosystem as framework developers: administrators express intent, agents handle implementation details, and reusable code carries out defined operations under human authorization.
+
+- Create a focused recipe with explicit inputs and documented results that another administrator can review and adapt.
+- Keep routine execution independent of an LLM where possible. If model inference is necessary, explain the dependency, data disclosure, cost implications and output verification.
+- Provide enough context for an agent to explain purpose, target scope and consequences without asking the human to learn APIs or skill syntax.
+- Use the least necessary privileges, document side effects and recovery limits, and keep secrets out of code, examples and shared artifacts.
+- Preserve partial, failed and unknown results; publish evidence and compatibility limits instead of unsupported assurances.
+- Include dependencies, versions, licensing and attribution so individual recipes and collections can be shared responsibly.
+
+Use the vision document's delivery questions to identify gaps. These principles do not create a generic runner interface or authorize installing, connecting or executing code.
+
 ## Obtain knowledge and define the task
 
 Use the [skill update guide](skill-updates.md) to locate the complete public SSHScript skill. Read SKILL.md, the Agent Guide, version policy and relevant API sections before using SSHScript. Use version-matched, attributable sources rather than assuming API behavior from memory or unrelated versions. Record public URLs, documentation contract and snapshot digest; when consulting the public repository, also record its branch/tag/commit.
