@@ -28,6 +28,6 @@ Management-directory discovery tests cover default and custom initialization, sh
 
 `test_profiles.py` verifies named/default/path initialization, registration of existing and legacy directories without changes, name conflicts and suggested names, interactive selection/cancellation, noninteractive failure, explicit profile selection in both CLIs, sibling boundaries, separate result locations, schema 1 compatibility and atomic write failure. All directories and Sessions are temporary or mocked.
 
-Result summary tests cover detected kernels, reasons and messages for success, partial, unsupported and failed runs, cleanup-error precedence, and equality between CLI summaries and saved reports. CLI short paths select checkout recipes; explicit `./` paths retain management-root semantics.
+Result summary tests cover detected kernels, reasons and messages for success, partial, unsupported and failed runs, cleanup-error precedence, and equality between CLI summaries and saved reports. CLI short paths select checkout recipes and bare `recipes/` prefixes are rejected before connecting with a correction hint; explicit `./` paths retain management-root semantics.
 
 _Last modified: 2026-10-11_

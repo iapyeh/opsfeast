@@ -33,7 +33,7 @@ python -B tools/run_recipe.py example-host-01 \
   --recipe inventory/system --timeout 30
 ```
 
-`--recipe` accepts one recipe directory, not a recipe ID, file or glob. Bare CLI paths such as `inventory/system` resolve under this checkout's `recipes/`, independently of the current working directory or management profile. The legacy `recipes/inventory/system` spelling remains supported. Use an explicit `./` path (for example `./recipes/inventory/system`) for a directory relative to the management root. Absolute paths must be inside the checkout's recipes directory or management root. Symlinks and traversal cannot escape the selected boundary. Missing checkout paths never fall back to instance copies. The directory must contain matching recipe.yaml and main.py. These short-path rules apply only to `--recipe`; hosts.yaml selectors retain their existing semantics.
+`--recipe` accepts one recipe directory, not a recipe ID, file or glob. Bare CLI paths such as `inventory/system` resolve under this checkout's `recipes/`, independently of the current working directory or management profile. The `recipes/` prefix is not accepted for checkout CLI paths: use `--recipe inventory/system`; `--recipe recipes/inventory/system` is rejected before connecting, with a correction hint. Use an explicit `./` path (for example `./recipes/inventory/system`) for a directory relative to the management root. Absolute paths must be inside the checkout's recipes directory or management root. Symlinks and traversal cannot escape the selected boundary. Missing checkout paths never fall back to instance copies. The directory must contain matching recipe.yaml and main.py. These short-path rules apply only to `--recipe`; hosts.yaml selectors retain their existing semantics.
 
 有指定 `--recipe` 時只使用該目錄，不展開或檢查該主機的 recipes 選取清單。指定無效路徑或不支援的 recipe 會在連線前失敗，不回退到主機設定；hosts.yaml 的主機與連線設定仍需存在且有效。
 
@@ -53,7 +53,7 @@ python -B tools/ops.py check /srv/my-ops
 python -B tools/run_recipe.py example-host-01 /srv/my-ops --timeout 30
 ```
 
-最小 runner 僅執行明確的 inventory-system，不執行該主機選取的其他 recipes。它檢查所選 recipe.yaml 與 main.py 是否與這份 runner bundle 完全相符，然後呼叫 repository 內的採集程式；不動態執行任意腳本。`recipes/...` 永遠使用 checkout，不回退到 instance 的同名舊副本；明確指定自訂副本時仍需與 runner bundle 相符。目前不是通用插件執行器。
+最小 runner 僅執行明確的 inventory-system，不執行該主機選取的其他 recipes。它檢查所選 recipe.yaml 與 main.py 是否與這份 runner bundle 完全相符，然後呼叫 repository 內的採集程式；不動態執行任意腳本。Bare CLI paths such as `inventory/system` always select the checkout without falling back to an instance copy. 明確指定自訂副本時仍需與 runner bundle 相符。目前不是通用插件執行器。
 
 Runner 沿用現有 connection／users／via 設定，僅連至指定主機與必要跳板。`--timeout` 是每跳連線、banner、驗證以及每項查詢的正有限秒數，預設 30 秒，**不是整次執行的總期限**。Session 在 finally 中以 `close(strict=True)` 清理，清理失敗使整體 failed。期限到達或 channel 關閉不證明遠端程序已結束。
 

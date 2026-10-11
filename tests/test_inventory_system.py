@@ -178,14 +178,14 @@ class RunnerTests(unittest.TestCase):
 
     def test_checkout_recipe_without_instance_copy(self):
         shutil.rmtree(self.root / 'recipes')
-        for selection in ('cli', 'short', 'hosts', 'absolute'):
+        for selection in ('cli', 'hosts', 'absolute'):
             with self.subTest(selection=selection):
                 (self.root / 'hosts.yaml').write_text('include: [hosts/group.yaml]\n')
                 (self.root / 'hosts').mkdir(exist_ok=True)
                 (self.root / 'hosts/group.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes: [{recipe: recipes/inventory/system}]\n')
                 self.session.exec_command.side_effect = linux_outputs()
                 recipe = {'hosts': None, 'absolute': str(runner.BUNDLE),
-                          'short': 'inventory/system', 'cli': 'recipes/inventory/system'}[selection]
+                          'cli': 'inventory/system'}[selection]
                 report, path = runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
                 self.assertEqual(report['status'], 'success')
                 self.assertEqual(report['recipe']['location_source'], 'repository')
@@ -219,6 +219,24 @@ class RunnerTests(unittest.TestCase):
             runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
         self.session_class.assert_not_called()
 
+    def test_cli_recipes_prefix_rejected_with_correction_before_connecting(self):
+        for recipe in ('recipes', 'recipes/inventory/system', 'recipes/inventory/system/'):
+            with self.subTest(recipe=recipe), self.assertRaisesRegex(ops.ConfigError, 'omit the recipes/ prefix'):
+                runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
+        self.session_class.assert_not_called()
+        self.assertFalse((self.root / 'observations').exists())
+
+    def test_main_recipes_prefix_reports_correction(self):
+        with patch.object(runner, 'load_runtime') as runtime, \
+                contextlib.redirect_stderr(io.StringIO()) as error, \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            code = runner.main(['example', str(self.root), '--recipe', 'recipes/inventory/system'])
+        self.assertEqual(code, 1)
+        self.assertIn('omit the recipes/ prefix', error.getvalue())
+        self.assertIn('inventory/system', error.getvalue())
+        self.assertEqual(output.getvalue(), '')
+        runtime.assert_not_called()
+
     def test_checkout_update_changes_recorded_digest_without_copying(self):
         checkout = self.root / 'checkout'
         recipes = checkout / 'recipes'
@@ -229,11 +247,11 @@ class RunnerTests(unittest.TestCase):
              patch.object(runner, 'REPOSITORY_ROOT', checkout), \
              patch.object(runner, 'REPOSITORY_RECIPES', recipes), \
              patch.object(runner, 'BUNDLE', bundle):
-            first, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+            first, _ = runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
             entry = bundle / 'main.py'
             entry.write_text(entry.read_text() + '\n# Updated checkout fixture\n')
             self.session.exec_command.side_effect = linux_outputs()
-            second, _ = runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+            second, _ = runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
         self.assertNotEqual(first['recipe']['implementation_sha256'], second['recipe']['implementation_sha256'])
         self.assertFalse((self.root / 'recipes').exists())
 
@@ -253,7 +271,7 @@ class RunnerTests(unittest.TestCase):
                         entry.unlink()
                         entry.symlink_to(external / name)
                         with self.assertRaises(ops.ConfigError):
-                            runner.run(self.root, 'example', recipe='recipes/inventory/system', session_class=self.session_class)
+                            runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
                         entry.unlink()
                         entry.write_bytes(content)
                 (recipes / 'escape').symlink_to(external, target_is_directory=True)
@@ -350,8 +368,8 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(ops.main(['init', str(self.root)]), 0)
             with patch.object(runner, 'run', return_value=(completed_report(), self.root / 'result.json')) as run, \
                     contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(runner.main(['example', '--recipe', 'recipes/inventory/system']), 0)
-            run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='recipes/inventory/system')
+                self.assertEqual(runner.main(['example', '--recipe', 'inventory/system']), 0)
+            run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='inventory/system')
             (checkout / '.my-ops.yaml').write_text('schema_version: 1\nroot: missing\n')
             with patch.object(runner, 'run') as run, contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(runner.main(['example']), 1)

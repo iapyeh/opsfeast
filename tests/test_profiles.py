@@ -268,7 +268,7 @@ class ProfileTests(unittest.TestCase):
             session = Mock()
             session.exec_command.return_value = SimpleNamespace(stdout='Darwin\n', stderr='', exitcode=0)
             report, path = run_recipe.run(ops.resolve_root(profile=profile), 'localhost',
-                                          recipe='recipes/inventory/system',
+                                          recipe='inventory/system',
                                           session_class=Mock(return_value=session))
             self.assertEqual(report['status'], 'unsupported')
             self.assertEqual(path.parent, self.checkout / 'my-ops' / profile / 'observations')
