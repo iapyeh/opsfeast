@@ -4,7 +4,19 @@ Tools, recipes, and workflows for building and maintaining IT operations with SS
 
 ## Getting started with your AI agent
 
-Clone this repository, give its directory to your agent, and ask it to read [AGENTS.md](AGENTS.md) and the [getting-started guide](docs/getting-started.md). The same Markdown workflow applies to Codex, Hermes, and other agents; automatic skill discovery is optional.
+Start by cloning the repository:
+
+```sh
+git clone https://github.com/iapyeh/sshscript-ops.git
+```
+
+Open a new conversation with an agent that can read your local files, such as Codex or Hermes, and send this prompt after replacing the path with your clone's absolute directory:
+
+> I am using SSHScript Ops for the first time. The repository is at `/absolute/path/to/sshscript-ops`. Read README.md, AGENTS.md and the getting-started guide, explain what the project can do and what environment it needs, and propose an initial setup. Do not install dependencies or initialize anything yet.
+
+Review the proposal, then authorize setup. The agent should initialize your management directory and tell you where to configure host addresses, login accounts, authentication and recipes.
+
+**[First-use walkthrough / 人類使用者的第一次體驗](docs/first-use.md)** provides copyable prompts for setup and skill update checks, expected results, and an optional isolated trial. The [getting-started guide](docs/getting-started.md) contains the detailed setup procedure for agents. The same Markdown workflow applies across agents; automatic skill discovery is optional.
 
 The agent can inspect prerequisites with `python3 -B tools/check_environment.py`, explain the supported tools and propose a concrete setup. After authorization, it can install the dependencies in `requirements.txt` (or `requirements-init.txt` for initialization only), read the included skills, and run `tools/my_ops.py init` and `check`. It then reports where to configure your hosts, accounts, authentication and recipe selection. Remote connection tests and collection require their own authorized scope.
 
