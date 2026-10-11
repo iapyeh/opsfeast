@@ -45,7 +45,7 @@ sshscript-ops/
 ├── .my-ops.yaml
 ├── recipes/
 └── my-ops/
-    └── default/
+    └── main/
         ├── my-ops.yaml
         ├── hosts.yaml
         ├── hosts/
@@ -58,7 +58,7 @@ sshscript-ops/
 
 ## 4. 設定自己的主機
 
-打開 agent 回報的 `my-ops/default/hosts.yaml`。預設有 localhost 與使用合成位址 `host.example` 的遠端範例。替換範例主機 ID 與位址，設定登入帳號、認證方式；需要跳板時設定 via。Recipe 清單初始為空，可按需求加入。
+打開 agent 回報的 `my-ops/main/hosts.yaml`。預設有 localhost 與使用合成位址 `host.example` 的遠端範例。替換範例主機 ID 與位址，設定登入帳號、認證方式；需要跳板時設定 via。Recipe 清單初始為空，可按需求加入。
 
 可以請 agent 協助整理格式，但不要在聊天裡重貼密碼或私鑰。完整欄位與認證規則見 [主機設定指南](hosts-yaml.md)。預設管理目錄已被 Git 忽略；真實設定與觀測留在你的管理環境。
 

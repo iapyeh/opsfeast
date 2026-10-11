@@ -54,7 +54,7 @@ python -B tools/ops.py init
 python -B tools/ops.py check
 ```
 
-預設建立 `my-ops/default/` 並登記 `default` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `my-ops/inventory/`，`init /path/to/my-ops` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `add /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
+預設建立 `my-ops/main/` 並登記 `main` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `my-ops/inventory/`，`init /path/to/my-ops` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `add /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
 
 ## 告訴使用者下一步
 

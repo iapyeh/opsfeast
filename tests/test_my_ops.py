@@ -49,11 +49,11 @@ class MyOpsTests(unittest.TestCase):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(ops.main(['init']), 0)
-            self.assertEqual(ops.read_yaml(self.root / 'default/my-ops.yaml'), ops.INSTANCE_SCHEMA)
-            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.my-ops.yaml')['profiles']['default']['root'], 'my-ops/default')
+            self.assertEqual(ops.read_yaml(self.root / 'main/my-ops.yaml'), ops.INSTANCE_SCHEMA)
+            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.my-ops.yaml')['profiles']['main']['root'], 'my-ops/main')
             # Locator resolution never depends on the invoking shell directory.
             with contextlib.chdir('/'):
-                self.assertEqual(ops.resolve_root(), (self.root / 'default').resolve())
+                self.assertEqual(ops.resolve_root(), (self.root / 'main').resolve())
                 self.assertEqual(ops.main(['check']), 0)
                 self.assertEqual(ops.main(['dump', 'hosts.localhost']), 0)
                 session_class, local, remote = self.session_double()
@@ -69,10 +69,10 @@ class MyOpsTests(unittest.TestCase):
             self.assertEqual(ops.main(['init', str(other)]), 0)
             self.assertEqual(ops.resolve_root(), other.resolve())
             self.assertEqual(ops.resolve_root(self.root), self.root)
-            # New init registers default without switching the existing selection.
+            # New init registers main without switching the existing selection.
             self.assertEqual(ops.main(['init']), 0)
             self.assertEqual(ops.resolve_root(), other.resolve())
-            self.assertEqual(ops.resolve_root(profile='default'), (checkout / 'my-ops/default').resolve())
+            self.assertEqual(ops.resolve_root(profile='main'), (checkout / 'my-ops/main').resolve())
 
     def test_failed_init_does_not_switch_default(self):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \

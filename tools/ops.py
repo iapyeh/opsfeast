@@ -125,7 +125,7 @@ def resolve_root(root=None, profile=None):
 
 def init_plan(argument=None, profile=None):
     if argument is None:
-        root = REPOSITORY_ROOT / 'my-ops/default'
+        root = REPOSITORY_ROOT / 'my-ops/main'
     elif '/' in argument or '\\' in argument or Path(argument).is_absolute():
         root = Path(argument).expanduser()
     else:
@@ -178,7 +178,7 @@ def list_profiles(data=None, numbered=False):
     print('PROFILE  ROOT  DEFAULT')
     for index, (name, item) in enumerate(data['profiles'].items(), 1):
         prefix = f'{index}. ' if numbered else ''
-        mark = ' *' if name == data['default_profile'] else ''
+        mark = (' [current default]' if numbered else ' *') if name == data['default_profile'] else ''
         print(f"{prefix}{name}  {profile_root(item['root'])}{mark}")
 
 
@@ -813,7 +813,7 @@ def main(argv=None):
             command_parser.add_argument('-v', '--verbose', action='store_true', help='show hop and command progress on stderr')
             command_parser.add_argument('--debug', action='store_true', help='show safe effective connection details on stderr; implies verbose')
             command_parser.add_argument('--traceback', action='store_true', help='show exception stack frames on stderr, without source, locals or exception text')
-        command_parser.add_argument('root', type=str if command == 'init' else Path, nargs='?', help='init: name or path (default: my-ops/default); other commands: optional management directory')
+        command_parser.add_argument('root', type=str if command == 'init' else Path, nargs='?', help='init: name or path (default: my-ops/main); other commands: optional management directory')
         command_parser.add_argument('--profile', help='init: registration name; other commands: profile for this invocation')
     args = parser.parse_args(argv)
     try:

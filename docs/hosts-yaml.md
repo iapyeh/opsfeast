@@ -8,10 +8,10 @@
 
 > 我的管理目錄是 `/srv/my-ops/`。請取得 `web-01` 目前作業系統回報的 hostname，並把結果存入這個管理目錄。
 
-Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 SSHScript Ops checkout 下建立 `my-ops/default/`；`my-ops/` 是各管理環境的容器，與 `recipes/` 同層。可用具名環境或自訂路徑，詳見 [管理環境指南](profiles.md)。
+Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 SSHScript Ops checkout 下建立 `my-ops/main/`；`my-ops/` 是各管理環境的容器，與 `recipes/` 同層。可用具名環境或自訂路徑，詳見 [管理環境指南](profiles.md)。
 
 ```text
-my-ops/default/
+my-ops/main/
 ├── my-ops.yaml
 ├── hosts.yaml
 ├── hosts/

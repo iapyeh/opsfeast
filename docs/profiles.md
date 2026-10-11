@@ -8,7 +8,7 @@
 
 | 命令 | 目錄 | 自動 profile 名稱 |
 | --- | --- | --- |
-| `python tools/ops.py init` | `<checkout>/my-ops/default` | default |
+| `python tools/ops.py init` | `<checkout>/my-ops/main` | main |
 | `python tools/ops.py init inventory` | `<checkout>/my-ops/inventory` | inventory |
 | `python tools/ops.py init ~/my_ops/inventory` | `$HOME/my_ops/inventory` | inventory |
 | `python tools/ops.py init ./inventory` | `<目前工作目錄>/inventory` | inventory |
@@ -50,7 +50,7 @@ python tools/ops.py use
 
 `profiles` 唯讀列出所有名稱、解析後的完整路徑與目前預設（*）。沒有登記時提示先 init 或 add，退出 0。
 
-`use <profile>` 確認登記、目錄與入口／定義檔有效後切換預設；這不是完整設定 check，不驗證 SSH。`use` 無參數且 stdin/stdout 都是互動終端時，列出編號並接受名稱或編號；無效輸入重新提示，Enter、Ctrl+C 或 EOF 取消並退出 0，不改設定。沒有 profile 或非互動環境則提示並退出 1，不等待輸入。Agent 可呈現清單，取得選擇後執行明確 use 命令。
+`use <profile>` 確認登記、目錄與入口／定義檔有效後切換預設；這不是完整設定 check，不驗證 SSH。`use` 無參數且 stdin/stdout 都是互動終端時，列出編號、以 [current default] 標記目前預設，並接受名稱或編號；無效輸入重新提示，Enter、Ctrl+C 或 EOF 取消並退出 0，不改設定。沒有 profile 或非互動環境則提示並退出 1，不等待輸入。Agent 可呈現清單，取得選擇後執行明確 use 命令。
 
 單次指定環境：
 
@@ -69,10 +69,10 @@ Checkout 根目錄的 `.my-ops.yaml` 保存清單，原子替換寫入：
 
 ```yaml
 schema_version: 2
-default_profile: default
+default_profile: main
 profiles:
-  default:
-    root: my-ops/default
+  main:
+    root: my-ops/main
   inventory:
     root: my-ops/inventory
   team.inventory:
@@ -81,6 +81,8 @@ profiles:
 
 Checkout 內位置保存相對路徑，外部保存絕對路徑。`.my-ops.yaml`、`my-ops/` 與定位暫存檔被 Git 忽略；其他位於 checkout 內的自訂目錄需自行加忽略規則。各管理根目錄是 include／自訂 recipe／結果的邊界，不能越過到相鄰 profile。對已登記的舊環境，沒有 my-ops.yaml 時仍可使用 hosts.yaml；已有定義檔但無效則報錯。
 
-舊 schema 1 的 `root` 視為名叫 default 的 profile，原位置不搬移；唯讀命令不改寫定位檔。成功登記或 use 時將清單寫為 schema 2。為新環境引入的 my-ops/default 結構不會自動套用到既有資料。
+舊 schema 1 的 `root` 視為名叫 default 的 profile，原位置不搬移；唯讀命令不改寫定位檔。成功登記或 use 時將清單寫為 schema 2。為新環境引入的 my-ops/main 結構不會自動套用到既有資料。
 
 `tools/my_ops.py` 保留為相容入口，CLI 與 imports 轉交給 ops.py，採用目前行為。明確路徑與既有設定可繼續使用；`init inventory` 如今是具名初始化，若舊命令要指定目前 shell 下的同名路徑，請改成 `init ./inventory`。之後的文件及新命令使用 ops.py。
+
+無參數 init 的初始名稱是 main；default 只作為「目前預設」的角色概念，不是新建環境的固定名稱。已登記的 default profile 仍可使用，不自動改名或搬移；在這種環境執行無參數 init 會新增 main，並保留原本預設。

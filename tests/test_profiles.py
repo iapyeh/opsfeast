@@ -52,7 +52,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_default_named_and_relative_path_init(self):
         self.assertEqual(self.cli('init')[0], 0)
-        default = self.checkout / 'my-ops/default'
+        default = self.checkout / 'my-ops/main'
         self.assertEqual(ops.resolve_root(), default)
         with contextlib.chdir(self.root):
             self.assertEqual(self.cli('init', 'inventory')[0], 0)
@@ -123,7 +123,7 @@ class ProfileTests(unittest.TestCase):
         self.cli('init')
         self.cli('init', 'inventory')
         self.assertEqual(self.cli('check', '--profile', 'inventory')[0], 0)
-        self.assertEqual(ops.load_profiles()['default_profile'], 'default')
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
         self.assertEqual(self.cli('use', 'inventory')[0], 0)
         self.assertEqual(ops.resolve_root(), self.checkout / 'my-ops/inventory')
         before = self.pointer.read_bytes()
@@ -133,7 +133,7 @@ class ProfileTests(unittest.TestCase):
         self.assertIn(str(self.checkout / 'my-ops/inventory'), output)
         self.assertIn('*', output)
         self.assertEqual(self.pointer.read_bytes(), before)
-        self.assertEqual(self.cli('check', str(self.checkout / 'my-ops/default'), '--profile', 'inventory')[0], 1)
+        self.assertEqual(self.cli('check', str(self.checkout / 'my-ops/main'), '--profile', 'inventory')[0], 1)
 
     def test_interactive_use_retries_invalid_and_accepts_number_or_name(self):
         self.cli('init')
@@ -142,8 +142,8 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(code, 0, errors)
         self.assertIn('Invalid selection', output)
         self.assertEqual(ops.load_profiles()['default_profile'], 'inventory')
-        self.assertEqual(self.cli('use', interactive=True, answers=['default'])[0], 0)
-        self.assertEqual(ops.load_profiles()['default_profile'], 'default')
+        self.assertEqual(self.cli('use', interactive=True, answers=['main'])[0], 0)
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_use_cancel_and_noninteractive_do_not_change_selection(self):
         self.cli('init')
@@ -163,8 +163,8 @@ class ProfileTests(unittest.TestCase):
         self.cli('init')
         before = self.pointer.read_bytes()
         self.assertEqual(self.cli('use', 'missing')[0], 1)
-        (self.checkout / 'my-ops/default/my-ops.yaml').write_text('schema_version: 9')
-        self.assertEqual(self.cli('use', 'default')[0], 1)
+        (self.checkout / 'my-ops/main/my-ops.yaml').write_text('schema_version: 9')
+        self.assertEqual(self.cli('use', 'main')[0], 1)
         self.assertEqual(self.pointer.read_bytes(), before)
 
     def test_legacy_locator_read_only_until_registration_or_use(self):
@@ -180,6 +180,21 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(data['default_profile'], 'default')
         self.assertEqual(ops.resolve_root(), root)
         self.assertEqual(self.snapshot(root)['hosts.yaml'], b'hosts: {localhost: {connection: {local: true}}}\n')
+
+    def test_existing_default_profile_preserved_when_main_is_created(self):
+        root = self.existing('checkout/my-ops/default')
+        self.assertEqual(self.cli('add', str(root))[0], 0)
+        before = self.snapshot(root)
+        self.assertEqual(self.cli('init')[0], 0)
+        self.assertEqual(list(ops.load_profiles()['profiles']), ['default', 'main'])
+        self.assertEqual(ops.load_profiles()['default_profile'], 'default')
+        self.assertEqual(ops.resolve_root(), root)
+        self.assertEqual(ops.resolve_root(profile='main'), self.checkout / 'my-ops/main')
+        self.assertEqual(self.snapshot(root), before)
+        code, output, errors = self.cli('use', interactive=True, answers=['main'])
+        self.assertEqual(code, 0, errors)
+        self.assertIn('default  ' + str(root) + ' [current default]', output)
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_add_legacy_and_modern_directory_preserves_all_contents(self):
         for name, definition in (('legacy', False), ('modern', True)):
@@ -201,11 +216,11 @@ class ProfileTests(unittest.TestCase):
         for root in (self.root / 'missing', invalid):
             self.assertEqual(self.cli('add', str(root))[0], 1)
             self.assertEqual(self.pointer.read_bytes(), before)
-        duplicate = self.existing('shared/default')
+        duplicate = self.existing('shared/main')
         self.assertEqual(self.cli('add', str(duplicate))[0], 1)
         self.assertEqual(self.pointer.read_bytes(), before)
-        self.assertEqual(self.cli('add', str(duplicate), '--profile', 'shared.default')[0], 0)
-        self.assertEqual(ops.load_profiles()['default_profile'], 'default')
+        self.assertEqual(self.cli('add', str(duplicate), '--profile', 'shared.main')[0], 0)
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_registry_validation_and_atomic_save_failure(self):
         self.cli('init')
@@ -233,7 +248,7 @@ class ProfileTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(run_recipe.main(['localhost', '--profile', 'inventory']), 0)
         run.assert_called_once_with(path.parent, 'localhost', 30, recipe=None)
-        self.assertEqual(ops.load_profiles()['default_profile'], 'default')
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
         self.assertIs(my_ops, ops)
 
     def test_profile_boundaries_and_result_directories(self):
@@ -241,14 +256,14 @@ class ProfileTests(unittest.TestCase):
         from unittest.mock import Mock
         self.cli('init')
         self.cli('init', 'inventory')
-        default = self.checkout / 'my-ops/default'
+        default = self.checkout / 'my-ops/main'
         inventory = self.checkout / 'my-ops/inventory'
         original = (default / 'hosts.yaml').read_bytes()
         (default / 'hosts.yaml').write_text('include: [../inventory/hosts.yaml]\n')
-        self.assertEqual(self.cli('check', '--profile', 'default')[0], 1)
+        self.assertEqual(self.cli('check', '--profile', 'main')[0], 1)
         (default / 'hosts.yaml').write_bytes(original)
         paths = []
-        for profile in ('default', 'inventory'):
+        for profile in ('main', 'inventory'):
             session = Mock()
             session.exec_command.return_value = SimpleNamespace(stdout='Darwin\n', stderr='', exitcode=0)
             report, path = run_recipe.run(ops.resolve_root(profile=profile), 'localhost',

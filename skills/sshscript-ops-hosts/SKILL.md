@@ -15,7 +15,7 @@ Repository 提供 [tools/ops.py](../../tools/ops.py)：使用安裝 PyYAML 的 P
 
 連線診斷可加 `--verbose`（進度）、`--debug`（篩選後的有效設定）及 `--traceback`（不含原文、source 與 locals 的堆疊）。JSON 的 hops 與 error.hop 區分每跳；key_source 指出 identity_file 從哪一個 parent 主機讀取。這些是 Ops 自己的診斷，不等同啟用 SSHScript 原始 DEBUG log。診斷寫 stderr，stdout 保持 JSON；不要為了除錯回貼密碼、代理命令或 token，也不要只憑提示就聲稱已找到根因。
 
-- 以使用者提供的管理根目錄為入口，讀取其中的 `hosts.yaml`。沒有明確根目錄時，依工具所在 checkout 的 `.my-ops.yaml` 使用預設 profile，或使用 --profile NAME 選取；缺少登記或位置無效時明確回報，不自行改查其他目錄。無參數 init 新建 my-ops/default，具名 init 新建 my-ops/<name>；帶路徑分隔符的參數是自訂路徑。既有目錄用 add <directory> 驗證登記，不能為了登記執行 init 改動它。新增不切換預設；use NAME 才切換。名稱衝突須詢問使用者，非互動時以 --profile 指定選定名稱。細節見 [管理環境指南](../../docs/profiles.md)。
+- 以使用者提供的管理根目錄為入口，讀取其中的 `hosts.yaml`。沒有明確根目錄時，依工具所在 checkout 的 `.my-ops.yaml` 使用預設 profile，或使用 --profile NAME 選取；缺少登記或位置無效時明確回報，不自行改查其他目錄。無參數 init 新建 my-ops/main，具名 init 新建 my-ops/<name>；帶路徑分隔符的參數是自訂路徑。既有目錄用 add <directory> 驗證登記，不能為了登記執行 init 改動它。新增不切換預設；use NAME 才切換。名稱衝突須詢問使用者，非互動時以 --profile 指定選定名稱。細節見 [管理環境指南](../../docs/profiles.md)。
 - 確認要建立、修改或查詢的主機 ID 與目標。已提供的資料不重複詢問；只詢問會影響結果的缺漏。
 - 先讀既有入口及相關 include，保留主機 ID、分檔方式、註解與不相關設定。修改主機定義所在的來源檔案，不在入口建立重複主機作為覆寫。
 - 真實資料寫入使用者的管理環境；repository 文件和範例只使用合成資料。維護 SSHScript Ops 文件不代表可修改 SSHScript library；遵守當前目錄的 AGENTS.md。
