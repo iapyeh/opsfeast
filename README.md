@@ -1,6 +1,28 @@
 # SSHScript Ops
 
-Tools, recipes, and workflows for building and maintaining IT operations with SSHScript.
+**Turn everyday system administration into reusable operations with your AI agent.**
+
+SSHScript Ops helps system administrators organize host settings, build recipes for their own environments, and share operational knowledge. It brings tools, documented workflows and agent skills together on top of SSHScript, so the work you do today can become something you understand, review and reuse tomorrow.
+
+## Why SSHScript Ops matters in the AI era
+
+AI makes it easier to generate commands and scripts. Running real infrastructure still requires context: which host and account to use, what permissions are needed, what a command may change, and how to tell whether it worked. That context must survive beyond a single conversation.
+
+SSHScript Ops gives you a place to organize that context and a common workflow for turning a request into a documented recipe. Your agent can help prepare the work; you define the goal and authorize the operations. Versioned code, explicit inputs and recorded evidence make the result easier to revisit, hand over and improve.
+
+For a system administrator, the value is continuity: fewer repeated explanations, a clearer connection between scripts and the hosts they serve, and useful operational knowledge that can be shared with a colleague or another agent.
+
+## What makes it useful
+
+- **Bring order to your hosts.** Keep connection settings, jump hosts, accounts and recipe selections in your own management environment. Use named profiles to work with different groups of systems.
+- **Build recipes for your needs.** Give your agent a task and use the authoring guides to develop a recipe with documented inputs, outputs, permissions and verification evidence.
+- **Keep knowledge you can share.** Package one recipe or a collection with its documentation, dependencies and synthetic examples. Others can review the content and adapt it to their environments.
+- **Make evidence part of the workflow.** Distinguish observations from interpretations, configuration checks from execution, and successful commands from verified outcomes. Missing information stays unknown.
+- **Keep control of your environment.** Real host data and credentials stay in your management environment. Third-party recipes follow a review and authorization workflow before installation; execution has its own scope.
+
+The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and the first Linux system inventory recipe with a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
+
+**[Take the first-use walkthrough](docs/first-use.md)** or **[explore the recipe catalog](recipes/README.md)** to get started.
 
 ## Getting started with your AI agent
 
@@ -21,10 +43,6 @@ Review the proposal, then authorize setup. The agent should initialize your mana
 The agent can inspect prerequisites with `python3 -B tools/check_environment.py`, explain the supported tools and propose a concrete setup. After authorization, it can install the dependencies in `requirements.txt` (or `requirements-init.txt` for initialization only), read the included skills, and run `tools/ops.py init` and `check`. It then reports where to configure your hosts, accounts, authentication and recipe selection. Remote connection tests and collection require their own authorized scope.
 
 The full SSHScript skill snapshot is included in Git. [Skill download and update instructions](docs/skill-updates.md) explain how to check the public bundle, stage a complete candidate and review compatibility. A user-authorized schedule may check for changes; checks never automatically replace skills or upgrade packages.
-
-SSHScript Ops aims to help IT staff, with assistance from AI agents, build an orderly operations environment from their existing hosts and maintain it as systems change and problems arise.
-
-SSHScript provides the foundation for readable, flexible local and remote execution. This repository will bring together reusable recipes, management data formats, operational procedures, and documentation templates.
 
 ## Status
 
