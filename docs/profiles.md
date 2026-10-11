@@ -4,6 +4,8 @@
 
 以下以 `python` 表示已選定且安裝 PyYAML 的 Python，命令從 checkout 執行。省略目錄或 profile 的設定／執行命令使用目前預設；排程建議明確指定 --profile，避免日常切換預設影響排程。
 
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+
 ## 建立環境
 
 | 命令 | 目錄 | 自動 profile 名稱 |

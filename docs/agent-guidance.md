@@ -8,6 +8,10 @@ The repository root `AGENTS.md` is tracked in Git and distributed when users clo
 
 Different agents discover instructions differently. Codex discovers project guidance along the path from the project root to its working directory; other agents may need an explicit request to read AGENTS.md. See the [official Codex guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md). Reading instructions is not permission to install dependencies or perform remote operations.
 
+## Shared tool reference
+
+The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/ops.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.
+
 ## Route operational requests
 
 Use the [hosts skill](../skills/sshscript-ops-hosts/SKILL.md) for settings, platform initialization and requested host/account diagnostics. Use the [recipes skill](../skills/sshscript-ops-recipes/SKILL.md) for inventory execution, platform implementations and recipe sharing/review. Both link to executable interfaces and their limits; reading a skill does not execute it.

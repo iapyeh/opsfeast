@@ -2,6 +2,8 @@
 
 These commands use the selected management profile unless `--profile NAME` or an explicit management directory is supplied. Diagnostics and initialization require matching SSHScript import/distribution 5.0.0, Python 3.11+ and PyYAML. They retain the existing connection, jump-host, key and host-key trust rules. They do not install packages or alter target configuration. Connecting may execute a configured proxy command; authentication attempts and login-shell startup may create target audit records.
 
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+
 ## Initialize platform facts
 
 ```sh

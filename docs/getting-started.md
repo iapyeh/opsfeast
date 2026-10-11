@@ -56,6 +56,8 @@ python -B tools/ops.py check
 
 預設建立 `my-ops/main/` 並登記 `main` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `my-ops/inventory/`，`init /path/to/my-ops` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `add /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
 
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+
 ## Recipe next steps
 
 To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; custom inventory implementations must follow its descriptor 0.2.0 and shared output contract; other recipe IDs remain unsupported.

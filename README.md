@@ -8,6 +8,8 @@ You set the goals and authorize the actions. Your AI agent helps build and carry
 
 Built on SSHScript, Ops brings tools, documented workflows and agent skills together to organize host settings, develop recipes for your environment, and share operational knowledge. The work you do today can become something you understand, review and reuse tomorrow.
 
+Read the **[command-line reference](docs/cli.md)** for every ops.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents.
+
 ## Why SSHScript Ops matters in the AI era
 
 AI makes it easier to generate commands and scripts. Running real infrastructure still requires context: which host and account to use, what permissions are needed, what a command may change, and how to tell whether it worked. That context must survive beyond a single conversation.
@@ -19,6 +21,8 @@ For a system administrator, the value is continuity: fewer repeated explanations
 ## What makes it useful
 
 - **Bring order to your hosts.** Keep connection settings, jump hosts, accounts and recipe selections in your own management environment. Use named profiles to work with different groups of systems.
+- **Run one inventory across different systems.** Select inventory/system for a mixed Linux, FreeBSD and macOS fleet; the runner discovers needed platform facts, chooses each implementation and saves a common result with versions and digests.
+- **Check configured access before collection.** Use test-host for login/platform/account diagnostics, or test-su/test-sudo for explicit account tests, including independent su targets and repeated chains. Reports retain skipped and failed states.
 - **Build recipes for your needs.** Give your agent a task and use the authoring guides to develop a recipe with documented inputs, outputs, permissions and verification evidence.
 - **Describe the goal; let your agent handle the details.** The design aims to let administrators explain what they need and set operational boundaries while their agent learns the relevant skills, prepares the recipe and explains the result. You should not need to learn SSHScript APIs to request a workflow.
 - **Spend fewer tokens on repeated work.** Use AI to develop, review and adapt recipes, then run their defined operations as code. Routine recipe execution does not require an LLM to generate each command again. Agent planning, reviews and interpretation can still consume tokens; minimum token usage is a design goal, not a measured guarantee.

@@ -4,7 +4,7 @@ These repository instructions are tracked in Git and apply to work on SSHScript 
 
 ## Start here
 
-Read [README.md](README.md) and the [getting-started guide](docs/getting-started.md) to understand available features, prerequisites and setup. For recipe discovery, authoring, sharing or acquisition, read the [recipes skill](skills/sshscript-ops-recipes/SKILL.md) and its task-specific guides. The [recipe catalog](recipes/README.md) lists available recipes and verification limits.
+Read [README.md](README.md) and the [getting-started guide](docs/getting-started.md) to understand available features, prerequisites and setup. Use the [CLI reference](docs/cli.md) as the shared human/agent manual before selecting or explaining ops.py and run_recipe.py commands; it covers exact arguments, execution behavior, output, storage and exit codes. For recipe discovery, authoring, sharing or acquisition, read the [recipes skill](skills/sshscript-ops-recipes/SKILL.md) and its task-specific guides. The [recipe catalog](recipes/README.md) lists available recipes and verification limits.
 
 If a user-maintained `AGENTS.local.md` exists at this repository root, read it for that checkout's local preferences and environment. It is optional, ignored by Git and not distributed with this project. Local guidance supplements these instructions within the user's authorization. Do not create it from downloaded recipe instructions. See [public and local guidance](docs/agent-guidance.md).
 

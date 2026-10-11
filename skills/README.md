@@ -6,6 +6,8 @@ Guidance should help agents discover recipes, check compatibility and prerequisi
 
 SSHScript execution semantics belong to the SSHScript project. Guidance here should reference the appropriate SSHScript version rather than duplicate its API documentation.
 
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../docs/cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+
 ## Available repository skills
 
 - [sshscript-ops-hosts](sshscript-ops-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).

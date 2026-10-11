@@ -4,6 +4,8 @@ Clone SSHScript Ops, give its directory to your AI agent, and ask it to explain 
 
 The goal is to create a management environment and understand where to configure hosts. After initialization, choose the hosts to test and the collection tasks to run.
 
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+
 ## 1. Clone the project
 
 On a computer with Git installed:

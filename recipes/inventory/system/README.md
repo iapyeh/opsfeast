@@ -2,6 +2,8 @@
 
 Recipe version 0.2.0 provides Linux, FreeBSD and macOS implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+
 ## Collection contract
 
 | Field | Linux | FreeBSD | macOS |

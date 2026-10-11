@@ -17,6 +17,8 @@ Read the repository README.md, AGENTS.md and [user guide](../../docs/recipes.md)
 
 ## Execute or extend system inventory
 
+Use the [CLI reference](../../docs/cli.md) for run_recipe.py arguments, recipe-location precedence, automatic initialization, batch behavior, saved reports and exit codes. It is the same tool reference supplied to human administrators.
+
 Read the [inventory-system guide](../../recipes/inventory/system/README.md) for descriptor 0.2.0, result schema 0.2.0 and the implemented Python contract. Other recipe IDs still have no general runner. Host/account diagnostics belong to [sshscript-ops-hosts](../sshscript-ops-hosts/SKILL.md).
 
 - Users select one recipe directory for a mixed-platform fleet. Do not ask them to select linux.py/freebsd.py for each host. `python -B tools/run_recipe.py HOST [ROOT] --recipe inventory/system --hosts OTHER_HOST ...` executes hosts independently and sequentially; --profile selects one environment without changing the default.

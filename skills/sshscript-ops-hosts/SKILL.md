@@ -11,6 +11,10 @@ description: Maintain SSHScript Ops hosts.yaml and profiles, initialize host pla
 
 Repository 提供 [tools/ops.py](../../tools/ops.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍；完整 recipe 執行器尚未實作。先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
 
+## Command reference
+
+Read the [CLI reference](../../docs/cli.md) when choosing, explaining or running ops.py commands. It is the shared administrator/agent manual for all subcommands, root/profile argument forms, output and exit codes. Use the detailed guides below only for the configuration/diagnostic mode needed.
+
 ## Host initialization and account diagnostics
 
 For connection/platform/account checks, read [host diagnostics](../../docs/host-diagnostics.md). New diagnostics require matching SSHScript import/distribution 5.0.0. Read the bundled public SSHScript skill, Agent Guide and authenticated-console API sections before privilege tests; reuse already-read applicable material. Setup/configuration requests alone do not authorize connections, proxies, su/sudo or recipe execution. Apply the user's existing authorization without asking again.

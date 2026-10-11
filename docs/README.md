@@ -4,6 +4,11 @@ This directory contains architecture, getting-started instructions, diagnostic p
 
 Start with the shared [vision and design principles](vision.md): human intent, lower learning burden, token efficiency through reusable recipes, community collaboration, explicit authorization and verifiable outcomes. Project contributors and recipe authors follow the same direction.
 
+## Command-line tools
+
+- **[Complete CLI reference](cli.md)**: ops.py subcommands, run_recipe.py options, defaults, platform dispatch, cache behavior, outputs, storage and exit codes for humans and agents.
+- [Host initialization and diagnostics](host-diagnostics.md): detailed platform/credential semantics and su/sudo verification limits.
+
 ## Configuration guide
 
 - [First-use walkthrough](first-use.md): clone the repository, give its path to an agent, review and authorize setup, and see what to configure next; includes copyable prompts and an isolated trial.
@@ -20,8 +25,6 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 - Obsidian, AI agent workflows, and compliance evidence collection are integrations or functional areas, not restrictions on the project name.
 - The public repository contains tools and examples. User operational data stays in the user's environment.
 - Initial target platforms are Linux, FreeBSD, and macOS. Actual support will be declared per recipe after verification.
-
-- [Host initialization and diagnostics](host-diagnostics.md): host-init cache/refresh, test-host aggregation, independent/repeated su chains and sudo actors/targets.
 
 ## Agent instructions
 
