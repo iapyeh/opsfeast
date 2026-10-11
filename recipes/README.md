@@ -6,13 +6,13 @@ This catalog lists recipes currently supplied by SSHScript Ops. To ask your AI a
 
 | Recipe | Purpose | Implemented platform | Verification evidence | Usage |
 | --- | --- | --- | --- | --- |
-| [inventory-system](inventory/system/README.md) 0.1.1 | Seven fields covering hostname, system name/version, kernel and architecture | Linux | Synthetic tests; macOS unsupported-platform path tested locally; real Linux/SSH collection unverified | Dedicated runner, SSHScript ==5.0.0; see recipe README |
+| [inventory-system](inventory/system/README.md) 0.2.0 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/SSH collection unverified | Dedicated runner, SSHScript ==5.0.0; see recipe README |
 
-No other recipes are currently supplied, and there is no third-party catalog yet. FreeBSD/macOS support and other inventory types are future directions, not available collectors. Update this catalog when adding recipes, including purpose, version, platforms, evidence and usage. Author declarations are not substitutes for actual testing.
+No other recipes are currently supplied, and there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, evidence and usage. Author declarations are not substitutes for actual testing.
 
 ## Custom and third-party content
 
-Users may create recipes in their own working directories or repositories without forking Ops. Custom recipes within a management directory can be selected through explicit `./recipes/...` paths. However, the current runner accepts only the exact built-in inventory-system bundle, not arbitrary custom code. A general execution interface and third-party installer are not implemented.
+Users may create recipes in their own working directories or repositories without forking Ops. Custom recipes within a management directory can be selected through explicit `./recipes/...` paths. However, the current runner supports only the documented inventory-system descriptor/implementation contract; reviewed custom platform implementations can execute within it. A general execution interface and third-party installer are not implemented.
 
 - [Create a custom recipe](../docs/recipe-authoring.md)
 - [Share one or multiple recipes](../docs/recipe-sharing.md)
@@ -27,6 +27,6 @@ Each recipe should document its purpose, supported and tested platforms, SSHScri
 
 Collection recipes should retain observation sources and timestamps and distinguish success, permission denial, unsupported operations, timeouts and parsing failures.
 
-The first result contract and synthetic example live with inventory-system. The runner currently supports only the exact inventory-system bundle, not arbitrary recipe execution.
+The first result contract and synthetic example live with inventory-system. The runner supports inventory-system implementations with a shared schema, not arbitrary recipe IDs.
 
 _Last modified: 2026-10-11_

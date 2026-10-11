@@ -27,7 +27,7 @@ For a system administrator, the value is continuity: fewer repeated explanations
 - **Make evidence part of the workflow.** Distinguish observations from interpretations, configuration checks from execution, and successful commands from verified outcomes. Missing information stays unknown.
 - **Keep control of your environment.** Real host data and credentials stay in your management environment. Third-party recipes follow a review and authorization workflow before installation; execution has its own scope.
 
-The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and the first Linux system inventory recipe with a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
+The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS implementation selection and a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
 
 **[Take the first-use walkthrough](docs/first-use.md)** or **[explore the recipe catalog](recipes/README.md)** to get started.
 
@@ -69,11 +69,27 @@ The full SSHScript skill snapshot is included in Git. [Skill download and update
 
 ## Status
 
-This repository is an initial project scaffold. It provides a Python utility for management-directory initialization, configuration inspection and validation, and explicit host connection tests. It also provides an initial inventory-system Linux collector and a minimal runner; Linux collection has synthetic coverage, while real Linux/SSH validation remains pending.
+This repository is an initial project scaffold. It provides a Python utility for management-directory initialization, configuration inspection and validation, and explicit host connection tests. It also provides inventory-system collectors for Linux, FreeBSD and macOS, automatic host initialization and account diagnostics. Linux/FreeBSD have synthetic coverage; macOS has local read-only validation. Real SSH and native su/sudo validation remain pending.
+
+See [host diagnostics](docs/host-diagnostics.md) for `host-init`, `test-host`, independent/chained `test-su` and multi-account `test-sudo`. Setup alone does not authorize these connection or privilege tests.
 
 ## Host configuration
 
 See the [hosts.yaml user guide](docs/hosts-yaml.md) for the proposed management-directory format, includes, jump hosts, host variables, and recipe selection. AI agents can use the repository skill [sshscript-ops-hosts](skills/sshscript-ops-hosts/SKILL.md) to help maintain these settings. Use `python tools/ops.py init` to create the `main` profile at `my-ops/main/`, and `python tools/ops.py check` to validate it (Python 3.11+ and PyYAML required). Use `python tools/ops.py test-connection <host-id>` to connect and run `hostname` and `date` (SSHScript 4.0.1+ also required). The ignored `.my-ops.yaml` records all profiles and the selected default; each initialized directory contains a `my-ops.yaml` definition. Use `init inventory` to create `my-ops/inventory`, `add /existing/directory` to register existing settings, `profiles` to list environments, and `use inventory` to switch the default. Adding profiles preserves an existing default. See the [profile guide](docs/profiles.md). Use `--profile NAME` on either tool for one invocation without changing the default, or pass an explicit directory. Registered relative paths are located from the tool checkout; relative CLI directory paths use the shell directory. Initialization, dumps and configuration checks do not connect. Use `python -B tools/run_recipe.py <host-id>` to run the explicitly selected inventory-system recipe directly from this checkout. No copying into the instance is needed after updating this repository. Add `--recipe inventory/system` to select a recipe directory for this run instead of the host's recipe settings; see [its guide](recipes/inventory/system/README.md) for runtime requirements and validation limits.
+
+## Initialize and diagnose a host
+
+After configuring a host and authorizing its tests, use the selected interpreter from this checkout:
+
+```sh
+python -B tools/ops.py test-host host-01
+python -B tools/ops.py host-init host-01
+python -B tools/ops.py test-su host-01 --chain user2 user3 --chain user3 user2
+python -B tools/ops.py test-sudo host-01 user2 user3 --run-as root
+python -B tools/run_recipe.py host-01 --recipe inventory/system --hosts host-02 host-03
+```
+
+Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when an explicit sudo password is configured, and independently tests su to other declared accounts. Direct host-init always refreshes facts. Runner automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. A general recipe runner and extension installer remain planned.
 
 ## Agent guidance
 

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import run_recipe as runner
 import ops
+import host_runtime as hr
 C = runner.collector
 
 
@@ -24,6 +25,14 @@ def result(text='', code=0):
 
 def linux_outputs(product='NAME="Example Linux"\nVERSION_ID="1.2"\n'):
     return [result('Linux\n'), result('node\n'), result('6.1\n'), result('x86_64\n'), result(product)]
+
+
+def runner_outputs():
+    def execute(argv, **kwargs):
+        if argv[:1] == ['uname']:
+            return result({'-s': 'Linux', '-n': 'node', '-r': '6.1', '-m': 'x86_64'}[argv[1]] + '\n')
+        return result('ID=example\nNAME="Example Linux"\nVERSION_ID=1.2\n')
+    return execute
 
 
 def completed_report():
@@ -161,7 +170,7 @@ class RunnerTests(unittest.TestCase):
         shutil.copytree(runner.BUNDLE, self.directory)
         (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session = Mock()
-        self.session.exec_command.side_effect = linux_outputs()
+        self.session.exec_command.side_effect = runner_outputs()
         self.session_class = Mock(return_value=self.session)
 
     def run_recipe(self):
@@ -183,7 +192,7 @@ class RunnerTests(unittest.TestCase):
                 (self.root / 'hosts.yaml').write_text('include: [hosts/group.yaml]\n')
                 (self.root / 'hosts').mkdir(exist_ok=True)
                 (self.root / 'hosts/group.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes: [{recipe: recipes/inventory/system}]\n')
-                self.session.exec_command.side_effect = linux_outputs()
+                self.session.exec_command.side_effect = runner_outputs()
                 recipe = {'hosts': None, 'absolute': str(runner.BUNDLE),
                           'cli': 'inventory/system'}[selection]
                 report, path = runner.run(self.root, 'example', recipe=recipe, session_class=self.session_class)
@@ -248,9 +257,9 @@ class RunnerTests(unittest.TestCase):
              patch.object(runner, 'REPOSITORY_RECIPES', recipes), \
              patch.object(runner, 'BUNDLE', bundle):
             first, _ = runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
-            entry = bundle / 'main.py'
+            entry = bundle / 'implementations/linux.py'
             entry.write_text(entry.read_text() + '\n# Updated checkout fixture\n')
-            self.session.exec_command.side_effect = linux_outputs()
+            self.session.exec_command.side_effect = runner_outputs()
             second, _ = runner.run(self.root, 'example', recipe='inventory/system', session_class=self.session_class)
         self.assertNotEqual(first['recipe']['implementation_sha256'], second['recipe']['implementation_sha256'])
         self.assertFalse((self.root / 'recipes').exists())
@@ -263,10 +272,11 @@ class RunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as external:
             external = Path(external)
             with patch.object(ops, 'REPOSITORY_RECIPES', recipes):
-                for name in ('recipe.yaml', 'main.py'):
+                for name in ('recipe.yaml', 'implementations/linux.py'):
                     with self.subTest(name=name):
                         entry = bundle / name
                         content = entry.read_bytes()
+                        (external / name).parent.mkdir(parents=True, exist_ok=True)
                         (external / name).write_bytes(content)
                         entry.unlink()
                         entry.symlink_to(external / name)
@@ -284,7 +294,7 @@ class RunnerTests(unittest.TestCase):
         for selection in ('', '    recipes: []\n'):
             with self.subTest(selection=selection):
                 (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n' + selection)
-                self.session.exec_command.side_effect = linux_outputs()
+                self.session.exec_command.side_effect = runner_outputs()
                 report, path = runner.run(self.root, 'example', recipe='./recipes/inventory/system',
                                           session_class=self.session_class)
                 self.assertEqual(report['status'], 'success')
@@ -345,7 +355,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_main_unsupported_summary_matches_saved_result(self):
         (self.root / 'hosts.yaml').write_text('hosts: {example: {connection: {local: true}}}')
-        self.session.exec_command.side_effect = [result('FreeBSD\n')]
+        self.session.exec_command.side_effect = [result('OpenBSD\n'), result('7.6\n'), result('amd64\n')]
         with patch.object(runner, 'load_runtime', return_value=(self.session_class, {'verification': 'mock'})), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             code = runner.main(['example', str(self.root), '--recipe', 'inventory/system'])
@@ -356,8 +366,8 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(summary['status'], 'unsupported')
         for key in ('status', 'reason_code', 'message', 'detected_kernel', 'supported_platforms'):
             self.assertEqual(summary[key], saved[key])
-        self.assertEqual(saved['observations']['kernel_name']['value'], 'FreeBSD')
-        self.assertEqual(self.session.exec_command.call_count, 1)
+        self.assertEqual(saved['observations']['kernel_name']['value'], 'OpenBSD')
+        self.assertEqual(self.session.exec_command.call_count, 3)
         self.session.close.assert_called_once_with(strict=True)
 
     def test_main_uses_remembered_management_directory(self):
@@ -384,7 +394,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotIn('secret', json.dumps(report))
 
     def test_selection_and_modified_code_rejected_before_session(self):
-        (self.directory / 'main.py').write_text('raise RuntimeError("should not execute")')
+        (self.directory / 'implementations/linux.py').write_text('raise RuntimeError("should not execute")')
         with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
@@ -420,7 +430,7 @@ class RunnerTests(unittest.TestCase):
         target = Mock()
         self.session.connect.return_value = middle
         middle.connect.return_value = target
-        target.exec_command.side_effect = linux_outputs()
+        target.exec_command.side_effect = runner_outputs()
         report, _ = self.run_recipe()
         self.assertEqual(report['status'], 'success')
         self.assertEqual(len(report['hops']), 2)
@@ -440,7 +450,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_descriptor_mismatch_rejected(self):
         descriptor = self.directory / 'recipe.yaml'
-        descriptor.write_text(descriptor.read_text().replace('version: 0.1.1', 'version: 0.2.0'))
+        descriptor.write_text(descriptor.read_text().replace('schema_version: 0.2.0', 'schema_version: 9.0.0'))
         with self.assertRaises(ops.ConfigError):
             self.run_recipe()
         self.session_class.assert_not_called()
@@ -448,7 +458,7 @@ class RunnerTests(unittest.TestCase):
     def test_repeated_runs_preserve_results(self):
         _, first = self.run_recipe()
         original = first.read_bytes()
-        self.session.exec_command.side_effect = linux_outputs()
+        self.session.exec_command.side_effect = runner_outputs()
         _, second = self.run_recipe()
         self.assertNotEqual(first, second)
         self.assertEqual(first.read_bytes(), original)

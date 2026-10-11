@@ -16,11 +16,11 @@ python -m unittest discover -s tests -p 'test_*.py'
 
 ## Inventory and runner tests
 
-`test_inventory_system.py` covers Linux synthetic outputs, safe os-release parsing, missing-file fallback, permission denial, unsupported platforms, command and transport failures, timeout partial output, strict cleanup, recipe selection and bundle matching, output symlink rejection and repeated result preservation. These tests never contact SSH targets. The actual macOS unsupported-platform path and SSHScript 5.0.0 credential-free quickstart were checked locally; full Linux and SSH collection remain unverified.
+`test_inventory_system.py` covers Linux synthetic outputs, safe os-release parsing, missing-file fallback, permission denial, unsupported platforms, command and transport failures, timeout partial output, strict cleanup, recipe selection and manifest/version validation, output symlink rejection and repeated result preservation. These tests never contact SSH targets. The legacy Linux collector unsupported-platform path remains covered; SSHScript 5.0.0 credential-free quickstart was checked locally; full Linux/FreeBSD and SSH collection remain unverified. macOS now has a collector with separate local read-only validation.
 
 CLI recipe selection tests cover `--recipe` precedence, absent/empty host selections, invalid host selections bypassed by a valid override, management-root relative paths with includes, absolute paths, invalid overrides without fallback, recipe/descriptor symlink escapes, and CLI argument forwarding.
 
-Checkout recipe tests cover execution without instance copies, included YAML selection, directory/glob expansion, duplicate selection, stale instance copies, separate include and recipe boundaries, and result paths within the instance. Legacy custom copies use explicit `./recipes/...` paths.
+Checkout recipe tests cover execution without instance copies, included YAML selection, directory/glob expansion, duplicate selection, explicitly selected custom implementations and stale instance copies, separate include and recipe boundaries, and result paths within the instance. Legacy custom copies use explicit `./recipes/...` paths.
 
 Management-directory discovery tests cover default and custom initialization, shared default selection in both CLIs, explicit overrides, definition preservation, invalid locators/definitions and missing registered directories without fallback, and failed init preserving the previous default. All instances and locators use temporary directories.
 
@@ -29,5 +29,7 @@ Management-directory discovery tests cover default and custom initialization, sh
 `test_profiles.py` verifies named/default/path initialization, registration of existing and legacy directories without changes, name conflicts and suggested names, interactive selection/cancellation, noninteractive failure, explicit profile selection in both CLIs, sibling boundaries, separate result locations, schema 1 compatibility and atomic write failure. All directories and Sessions are temporary or mocked.
 
 Result summary tests cover detected kernels, reasons and messages for success, partial, unsupported and failed runs, cleanup-error precedence, and equality between CLI summaries and saved reports. CLI short paths select checkout recipes and bare `recipes/` prefixes are rejected before connecting with a correction hint; explicit `./` paths retain management-root semantics.
+
+`test_host_runtime.py` covers platform facts, cache refresh/invalidation, target changes, su/sudo identities, independent/repeated chains, missing credentials, test-host aggregation, three-platform runner dispatch, implementation versions and batch continuation. All account/SSH tests are synthetic; no real privileged accounts are tested.
 
 _Last modified: 2026-10-11_

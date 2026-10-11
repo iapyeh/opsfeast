@@ -1,6 +1,6 @@
 # Documentation
 
-This directory will contain architecture, getting-started instructions, and project decisions.
+This directory contains architecture, getting-started instructions, diagnostic procedures and project decisions.
 
 Start with the shared [vision and design principles](vision.md): human intent, lower learning burden, token efficiency through reusable recipes, community collaboration, explicit authorization and verifiable outcomes. Project contributors and recipe authors follow the same direction.
 
@@ -21,6 +21,8 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 - The public repository contains tools and examples. User operational data stays in the user's environment.
 - Initial target platforms are Linux, FreeBSD, and macOS. Actual support will be declared per recipe after verification.
 
+- [Host initialization and diagnostics](host-diagnostics.md): host-init cache/refresh, test-host aggregation, independent/repeated su chains and sudo actors/targets.
+
 ## Agent instructions
 
 - [Public and local agent guidance](agent-guidance.md): shared tracked instructions, optional private settings, discovery behavior and checks before publication.
@@ -35,4 +37,6 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 ## Next design work
 
-Version the generic recipe contract and runner interface, then implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/SSH validation and the collect-record-repeat-compare workflow, including preservation of human notes.
+Version the generic recipe contract and runner interface, then implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/FreeBSD/SSH and native su/sudo validation and the collect-record-repeat-compare workflow, including preservation of human notes.
+
+_Last modified: 2026-10-11_

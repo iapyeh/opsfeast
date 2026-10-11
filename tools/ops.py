@@ -700,13 +700,17 @@ def diagnostic_traceback(exc):
         print(f'  {frame.f_code.co_filename}:{lineno} in {frame.f_code.co_name}', file=sys.stderr)
 
 
-def test_connection(root, host, timeout, verbose=False, debug=False, show_traceback=False):
+def test_connection(root, host, timeout, verbose=False, debug=False, show_traceback=False, init_host=False):
     config = Validator(root)
     config.load(config.root / 'hosts.yaml')
     if host not in config.hosts:
         raise ConfigError(f'unknown host ID: {host}')
     config.check_connections()
-    session_class = load_session_class()
+    if init_host:
+        from host_runtime import runtime_class
+        session_class = runtime_class()
+    else:
+        session_class = load_session_class()
     report = {'host': host, 'connected': False, 'hops': [], 'commands': [], 'success': False}
     local = None
     current_hop = None
@@ -783,6 +787,13 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
                 report['success'] = False
                 report['cleanup_error'] = type(exc).__name__
                 trace(exc)
+    if init_host:
+        if report['connected']:
+            from host_runtime import initialize_host
+            report['host_init'] = initialize_host(config, host, timeout, session_class, refresh=True)
+            report['success'] = report['success'] and report['host_init']['status'] == 'success'
+        else:
+            report['host_init'] = {'status': 'skipped', 'reason_code': 'connection_failed'}
     print(json.dumps(report, indent=4, ensure_ascii=False))
     return 0 if report['success'] else 1
 
@@ -809,12 +820,25 @@ def main(argv=None):
             command_parser.add_argument('setting', help='dot-separated setting path, such as hosts.host-01')
         if command == 'test-connection':
             command_parser.add_argument('host', help='host ID from hosts.yaml')
+            command_parser.add_argument('--host-init', action='store_true', help='also refresh saved platform facts after connecting')
             command_parser.add_argument('--timeout', type=positive_timeout, default=30, help='per-stage connection and command timeout in seconds (default: 30)')
             command_parser.add_argument('-v', '--verbose', action='store_true', help='show hop and command progress on stderr')
             command_parser.add_argument('--debug', action='store_true', help='show safe effective connection details on stderr; implies verbose')
             command_parser.add_argument('--traceback', action='store_true', help='show exception stack frames on stderr, without source, locals or exception text')
         command_parser.add_argument('root', type=str if command == 'init' else Path, nargs='?', help='init: name or path (default: my-ops/main); other commands: optional management directory')
         command_parser.add_argument('--profile', help='init: registration name; other commands: profile for this invocation')
+    for command in ('host-init', 'test-su', 'test-sudo', 'test-host'):
+        diagnostic = commands.add_parser(command)
+        diagnostic.add_argument('host', help='host ID from hosts.yaml')
+        if command in ('test-su', 'test-sudo'):
+            diagnostic.add_argument('usernames', nargs='*', help='independent account tests')
+        if command == 'test-su':
+            diagnostic.add_argument('--chain', nargs='+', action='append', help='one ordered su chain; repeat for independent chains')
+        if command == 'test-sudo':
+            diagnostic.add_argument('--run-as', default='root', help='sudo target account (default: root)')
+        diagnostic.add_argument('--root', type=Path, help='management directory (default: selected profile)')
+        diagnostic.add_argument('--profile', help='profile for this invocation')
+        diagnostic.add_argument('--timeout', type=positive_timeout, default=30)
     args = parser.parse_args(argv)
     try:
         if args.command == 'profiles':
@@ -836,6 +860,20 @@ def main(argv=None):
             args.root, name, registry = init_plan(args.root, args.profile)
         else:
             args.root = resolve_root(args.root, args.profile)
+        if args.command in ('host-init', 'test-su', 'test-sudo', 'test-host'):
+            from host_runtime import load_config, initialize_host, privilege_test, test_host
+            config = load_config(args.root, args.host)
+            if args.command == 'host-init':
+                report = initialize_host(config, args.host, args.timeout, refresh=True)
+            elif args.command == 'test-host':
+                report = test_host(config, args.host, args.timeout)
+            else:
+                report = privilege_test(config, args.host, args.command[5:], args.usernames,
+                                        getattr(args, 'chain', None), getattr(args, 'run_as', 'root'), args.timeout)
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+            return 1 if report['status'] == 'failed' else 0
+        if args.command == 'test-connection' and args.host_init:
+            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback, init_host=True)
         if args.command == 'test-connection':
             return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback)
         if args.command == 'dump':

@@ -2,6 +2,12 @@
 
 A recipe is reusable operational content: code, purpose, prerequisites, inputs, results and verification instructions. You can use recipes supplied by Ops, ask your AI agent to build recipes for your environment, and share one recipe or a collection with others.
 
+## Run supported inventory across platforms
+
+For a reviewed inventory-system bundle, select the recipe once; the runner initializes missing host facts and chooses a Linux, FreeBSD or macOS entrypoint per host. Use `python -B tools/run_recipe.py host-01 --recipe inventory/system --hosts host-02 host-03` from the checkout with the selected interpreter and authorized targets. See the [inventory guide](../recipes/inventory/system/README.md) for descriptor/result schema 0.2.0, versions/digests, custom-code execution and migration from older descriptors. A valid descriptor is not proof of safe behavior.
+
+For initialization and account checks, use the [host diagnostic guide](host-diagnostics.md) and [hosts skill](../skills/sshscript-ops-hosts/SKILL.md). Direct host-init refreshes platform facts; test-host reuses valid facts and reports skipped tests. Diagnostics do not execute recipes. Unknown, unsupported, partial and failed results remain visible per host.
+
 ## What is available now
 
 Start with the [recipe catalog](../recipes/README.md), then read the selected recipe's README. The catalog distinguishes availability, supported platforms and actual verification evidence.
@@ -42,3 +48,5 @@ Have your agent acquire a candidate, verify its source and review its behavior b
 | Keep knowledge and skills current | [Skill sources and updates](skill-updates.md) |
 
 These guides describe human/agent workflows. Only explicitly documented existing tools are implemented features.
+
+_Last modified: 2026-10-11_

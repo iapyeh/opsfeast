@@ -1,8 +1,11 @@
 {
-  "schema_version": "0.1.1",
+  "schema_version": "0.2.0",
   "recipe": {
     "id": "inventory-system",
-    "version": "0.1.1"
+    "version": "0.2.0",
+    "recipe_version": "0.2.0",
+    "implementation_id": "linux",
+    "implementation_version": "0.1.1"
   },
   "host_id": "example-host-01",
   "evidence_kind": "synthetic",

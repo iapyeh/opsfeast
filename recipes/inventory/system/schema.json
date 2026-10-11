@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SSHScript Ops system inventory result 0.2.0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "recipe",
+    "host_id",
+    "status",
+    "observations",
+    "sources",
+    "execution_errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "recipe": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "const": "inventory-system"
+        },
+        "version": {
+          "type": "string"
+        },
+        "recipe_version": {
+          "type": "string"
+        },
+        "implementation_id": {
+          "type": "string"
+        },
+        "implementation_version": {
+          "type": "string"
+        },
+        "implementation_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bundle_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "host_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "success",
+        "partial",
+        "failed",
+        "unsupported",
+        "skipped"
+      ]
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hostname",
+        "platform",
+        "system_name",
+        "system_version",
+        "kernel_name",
+        "kernel_release",
+        "architecture"
+      ],
+      "properties": {
+        "hostname": {
+          "$ref": "#/$defs/observation"
+        },
+        "platform": {
+          "$ref": "#/$defs/observation"
+        },
+        "system_name": {
+          "$ref": "#/$defs/observation"
+        },
+        "system_version": {
+          "$ref": "#/$defs/observation"
+        },
+        "kernel_name": {
+          "$ref": "#/$defs/observation"
+        },
+        "kernel_release": {
+          "$ref": "#/$defs/observation"
+        },
+        "architecture": {
+          "$ref": "#/$defs/observation"
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "execution_errors": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "required": [
+        "value",
+        "status",
+        "observed_at",
+        "source_ids",
+        "error"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "success",
+            "unavailable",
+            "unsupported",
+            "permission_denied",
+            "timeout",
+            "command_failed",
+            "parsing_failed",
+            "not_attempted"
+          ]
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "error": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-11"
+}

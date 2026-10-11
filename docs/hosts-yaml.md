@@ -1,6 +1,6 @@
 # 管理 hosts.yaml 與主機設定
 
-這份文件定義 SSHScript Ops 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有僅支援 inventory-system 的最小 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
+這份文件定義 SSHScript Ops 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
 
 ## 從管理目錄開始
 
@@ -433,4 +433,12 @@ Agent 可以使用上述工具編寫及檢查設定，但必須說明檢查範�
 
 ## 尚待實作與定案
 
-目前已確立以上設定組織與解析規則；目前已提供初版載入與設定檢查工具；目前另提供 inventory-system 採集與最小執行流程，Linux 真機／SSH 驗證仍待完成。完整 schema、recipe 描述格式、變數存取 API、金鑰路徑解析及結果檔案格式仍待定。後續功能應維持既有設定意義，並以明確版本或選項加入。
+Host configuration/path rules and inventory-system descriptor/result schema 0.2.0 are implemented, alongside platform initialization and requested account diagnostics. The general recipe contract, arbitrary-recipe runner and other record schemas remain planned. Linux/FreeBSD have synthetic inventory coverage; macOS has local read-only validation. Real SSH and native su/sudo verification remain pending. Future changes must preserve existing configuration semantics or introduce an explicit version/option.
+
+## Diagnostic credential interpretation
+
+New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su uses users.<target>.password. Sudo uses users.<actor>.vars.sudo.password, with host-level vars.sudo.password as fallback only for the actual connection account. Login passwords are never implicitly reused for sudo; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
+
+Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured sudo password. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
+
+_Last modified: 2026-10-11_

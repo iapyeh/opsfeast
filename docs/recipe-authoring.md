@@ -38,7 +38,7 @@ my-recipe/
   tests/
 ```
 
-Include `schemas/`, assets and supporting files when needed. Follow public SSHScript guidance for Python or .spy usage. `main.py` is a layout recommendation, not a dynamically supported runner entrypoint. The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; do not impersonate its id or version to bypass runner checks.
+Include `schemas/`, assets and supporting files when needed. Follow public SSHScript guidance for Python or .spy usage. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract; other recipe IDs do not have a runner interface. The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
 
 Document at least the following:
 
@@ -62,6 +62,8 @@ Static review is not execution evidence. New code and tests are executable conte
 
 ## Explain how it can be used today
 
-The current runner accepts only the exact inventory-system bundle. Other recipes may be delivered as standalone SSHScript programs, but must supply and validate their own concrete CLI/input/result protocol. Execute them according to their reviewed README only within authorization; do not claim `tools/run_recipe.py` supports them. Without a working standalone entrypoint, report a draft.
+The current runner accepts inventory-system descriptor 0.2.0 implementations sharing its seven-field output contract. Other recipes may be delivered as standalone SSHScript programs, but must supply and validate their own concrete CLI/input/result protocol. Execute them according to their reviewed README only within authorization; do not claim `tools/run_recipe.py` supports them. Without a working standalone entrypoint, report a draft.
 
 Directory selection only establishes configuration selection, not executability. Migrate to a versioned general interface when one is implemented. Report files, public learning sources, environment, verification evidence, compatibility and pending actions. For distribution, follow the [sharing guide](recipe-sharing.md).
+
+_Last modified: 2026-10-11_

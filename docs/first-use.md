@@ -68,6 +68,18 @@ After editing, paste:
 
 This also checks that the agent uses the same interpreter and can run `ops.py check` without a directory argument. Successful configuration validation does not establish connectivity. When ready, specify a host ID for a connection test. For inventory collection, separately specify the recipe and execution scope.
 
+## Optional: initialize and test a configured host
+
+For platform discovery without account-switch tests, paste after replacing the host ID:
+
+> Read docs/host-diagnostics.md and the Ops hosts skill. Run host-init for host-01 in my default profile to refresh its platform facts. I authorize the configured connection and read-only platform queries. Do not run su, sudo or recipes. Report the result and saved facts path.
+
+For the configured host diagnostic suite, paste:
+
+> Read docs/host-diagnostics.md and the Ops hosts skill. Run test-host for host-01 in my default profile. I authorize its configured connection, read-only login/platform checks, connection-account sudo shell/identity testing only when an explicit sudo password is configured, and independent su shell/identity testing to other accounts declared for that host. Do not test chains, passwordless sudo or recipes. Report each test, skipped reasons and whether facts were reused or freshly collected; do not disclose credentials.
+
+Test-host reuses successful target-matching facts; direct host-init always refreshes. A zero test-host exit code may include skipped tests. Platform facts do not prove recipe compatibility or complete account privileges. Native SSH/su/sudo validation is still pending; the tool reports actual outcomes without assuming success. Inventory is a separately authorized operation: one inventory/system recipe can dispatch mixed-platform hosts automatically. See its [guide](../recipes/inventory/system/README.md).
+
 ## 5. Try a skill update check
 
 Paste:
@@ -99,3 +111,5 @@ git clone "/absolute/path/to/sshscript-ops" "/absolute/path/to/sshscript-ops-tri
 ```
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
+
+_Last modified: 2026-10-11_

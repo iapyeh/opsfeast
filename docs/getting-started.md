@@ -4,7 +4,7 @@
 
 ## 先了解可以做什麼
 
-目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及只支援 inventory-system 的最小 runner。Inventory 的 Linux 採集通過合成測試，真正 Linux／SSH 驗證仍有待執行；macOS 本機已驗證遇到不支援平台時停止。工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/inventory/system/README.md)。
+目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及只支援 inventory-system 的最小 runner。Inventory supports Linux, FreeBSD and macOS through platform dispatch; Linux/FreeBSD have synthetic coverage and macOS has local read-only validation. Real SSH validation remains pending. 工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/inventory/system/README.md)。
 
 README 是共同入口；AGENTS.md 是隨 Git 提供的專案工作規則。若 agent 沒有自動載入 AGENTS.md，請直接讀取它。不要將其他電腦的私人 checkout、絕對路徑或環境設定當成本專案的必備環境。
 
@@ -58,7 +58,13 @@ python -B tools/ops.py check
 
 ## Recipe next steps
 
-To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; placing a custom recipe in a directory does not make it executable by that runner.
+To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; custom inventory implementations must follow its descriptor 0.2.0 and shared output contract; other recipe IDs remain unsupported.
+
+## Authorized host checks and inventory
+
+After the user identifies targets and authorizes the relevant diagnostics, use test-host for configured login/platform/account checks. For a narrower request, use host-init, test-connection, test-su or test-sudo. Direct host-init refreshes existing facts; test-host reuses successful matching data. See [host diagnostics](host-diagnostics.md) for exact CLI/credential rules. Setup authorization alone does not include these tests.
+
+For authorized inventory, select inventory/system once for mixed Linux/FreeBSD/macOS hosts. The runner obtains needed platform facts automatically and records which implementation/version was selected. Descriptor and result schema are 0.2.0; migrate old copied descriptors before execution. Custom implementation code requires review and appropriate execution scope. See the [inventory guide](../recipes/inventory/system/README.md).
 
 ## 告訴使用者下一步
 
@@ -74,3 +80,7 @@ To select, create or share recipes, start with the [recipe user guide](recipes.m
 `my-ops/` 與定位檔已被 Git 忽略；自訂管理目錄若放在 checkout 內，需另加忽略規則。真實憑證、主機設定與觀測不提交至公開 Git。
 
 更新檢查是可選後續工作。若使用者希望定期檢查，先確定檢查範圍、週期及通知方式，使用其 agent 平台的排程能力；未建立排程不可回報「已定期檢查」。
+
+See [host diagnostics](host-diagnostics.md) for platform initialization/cache semantics and explicitly requested su/sudo diagnostics. Initialization/configuration checks alone never authorize connections or privilege tests.
+
+_Last modified: 2026-10-11_

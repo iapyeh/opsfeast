@@ -266,7 +266,7 @@ class ProfileTests(unittest.TestCase):
         paths = []
         for profile in ('main', 'inventory'):
             session = Mock()
-            session.exec_command.return_value = SimpleNamespace(stdout='Darwin\n', stderr='', exitcode=0)
+            session.exec_command.return_value = SimpleNamespace(stdout='OpenBSD\n', stderr='', exitcode=0)
             report, path = run_recipe.run(ops.resolve_root(profile=profile), 'localhost',
                                           recipe='inventory/system',
                                           session_class=Mock(return_value=session))

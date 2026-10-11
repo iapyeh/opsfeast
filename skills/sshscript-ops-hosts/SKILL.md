@@ -1,6 +1,6 @@
 ---
 name: sshscript-ops-hosts
-description: 協助使用者建立、修改與審閱 SSHScript Ops 管理目錄中的 hosts.yaml 及 include YAML，處理主機連線、跳板引用、變數、recipe 選取與路徑邊界。適用主機設定維護；不代表授權連線或執行 recipes。
+description: Maintain SSHScript Ops hosts.yaml and profiles, initialize host platform facts, and diagnose connections or configured su/sudo access when requested. Use for host configuration and diagnostics; recipe authoring belongs to sshscript-ops-recipes.
 ---
 
 # SSHScript Ops 主機設定維護
@@ -10,6 +10,32 @@ description: 協助使用者建立、修改與審閱 SSHScript Ops 管理目錄�
 使用者指南與設定規格位於 [docs/hosts-yaml.md](../../docs/hosts-yaml.md)。開始設定工作時閱讀它；不要自行建立另一套欄位語意。這是 repository 內的 skill，使用時保留 repository 結構。若要獨立安裝，需一併打包指南並調整此連結；目前未提供 skill 安裝工具。
 
 Repository 提供 [tools/ops.py](../../tools/ops.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍；完整 recipe 執行器尚未實作。先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
+
+## Host initialization and account diagnostics
+
+For connection/platform/account checks, read [host diagnostics](../../docs/host-diagnostics.md). New diagnostics require matching SSHScript import/distribution 5.0.0. Read the bundled public SSHScript skill, Agent Guide and authenticated-console API sections before privilege tests; reuse already-read applicable material. Setup/configuration requests alone do not authorize connections, proxies, su/sudo or recipe execution. Apply the user's existing authorization without asking again.
+
+Choose the narrowest command that satisfies the request:
+
+| Request | Command from repository root |
+| --- | --- |
+| Check login and hostname/date | `python -B tools/ops.py test-connection HOST [ROOT]` |
+| Refresh platform facts | `python -B tools/ops.py host-init HOST --root ROOT` |
+| Check login and refresh facts | `python -B tools/ops.py test-connection HOST ROOT --host-init` |
+| Check configured host capabilities | `python -B tools/ops.py test-host HOST --root ROOT` |
+| Independent su targets | `python -B tools/ops.py test-su HOST user2 user3 --root ROOT` |
+| Two independent su chains | `python -B tools/ops.py test-su HOST --chain user2 user3 --chain user3 user2 --root ROOT` |
+| Login-account sudo | `python -B tools/ops.py test-sudo HOST --root ROOT` |
+| Other sudo actors | `python -B tools/ops.py test-sudo HOST user2 user3 --run-as root --root ROOT` |
+
+Use the selected interpreter instead of assuming `python`. New commands accept `--root` or `--profile`, not a positional management root; omit both for the default profile. Existing test-connection retains its positional root. `--timeout` is per stage/command, not a whole-run deadline.
+
+- Direct host-init and test-connection --host-init refresh facts. Test-host reuses successful target-matching facts, otherwise probes; failed latest refresh never becomes a reused success. Show cache/probe provenance and original observation time. Endpoint reinstallation or external SSH-config changes require explicit refresh; the cache has no age expiry.
+- Test-host includes login checks, platform initialization, connection-account sudo only with an explicit sudo password, and independent su to other declared accounts. It does not enumerate accounts, test chains or attempt passwordless sudo. This is the explicit exception to ordinary configuration work never selecting su targets automatically.
+- Test-sudo usernames are actors; omitted means the actual connection identity, and --run-as selects the sudo target (default root). Another actor requires verified su entry first. Distinguish failed su prerequisites from an attempted sudo failure.
+- Su reads the target's users.<name>.password. Sudo reads users.<actor>.vars.sudo.password, with host vars.sudo.password as fallback only for the actual connection account. Never substitute a login password for a sudo password. Diagnostics select the target with --run-as; they do not read vars.sudo.user. Standalone test-sudo can test passwordless sudo; test-host cannot.
+- Test-su requires targets excluding the actual connection account. Space-separated targets are independent; each repeated --chain is an independent ordered chain. Do not mix forms. Missing required credentials are skipped; failed/skipped predecessors prevent remaining chain steps. Other groups use fresh sessions and continue.
+- Report verified identities, entry/command/cleanup failures and skipped reasons separately. Shell sudo success does not establish command-specific privileges or prove password consumption. Test-host partial/skipped can return exit code zero; inspect JSON statuses rather than treating zero as all tests verified. Native SSH/su/sudo support has not been established by synthetic tests.
 
 ## 工作入口與編輯範圍
 
@@ -55,3 +81,5 @@ Include 與自訂 recipe 以管理根目錄為邊界；repository recipe 以工�
 回報修改檔案、主機 ID、解析後的連線拓樸與檢查結果；不要為說明變更而重貼真實密碼。需要示範完整設定時使用合成值。
 
 若使用者也要求執行，先展開確定的 recipe 清單，檢查支援平台、變數、權限與副作用，並確認操作在該次授權範圍內。記錄實際 recipe ID 與版本；觀測與人工資料分開，保留人工筆記。查詢失敗不得寫成零值、空值或成功，也不得把舊觀測改成新時間。
+
+_Last modified: 2026-10-11_

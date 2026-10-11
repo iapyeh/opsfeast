@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import shlex
 
-VERSION = '0.1.1'
+VERSION = '0.2.0'  # Recipe/report contract; implementations declare their own VERSION.
 FIELDS = ('hostname', 'platform', 'system_name', 'system_version',
           'kernel_name', 'kernel_release', 'architecture')
 
@@ -13,7 +13,7 @@ def now():
 
 def new_report(host_id, evidence_kind):
     return {
-        'schema_version': '0.1.1', 'recipe': {'id': 'inventory-system', 'version': VERSION},
+        'schema_version': '0.2.0', 'recipe': {'id': 'inventory-system', 'version': VERSION},
         'host_id': host_id, 'evidence_kind': evidence_kind, 'started_at': now(),
         'finished_at': None, 'status': 'failed',
         'observations': {key: {'value': None, 'status': 'not_attempted', 'observed_at': None,

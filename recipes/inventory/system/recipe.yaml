@@ -1,18 +1,22 @@
-# Ops descriptor version 0.1.0; minimal runner supports this exact bundle.
-descriptor_version: 0.1.0
+# Inventory descriptor 0.2.0; shared output contract 0.2.0.
+descriptor_version: 0.2.0
 id: inventory-system
-version: 0.1.1
+version: 0.2.0
 status: implemented
 title: System inventory
 description: Collect system identity, operating system version, kernel, and architecture.
 kind: collection
-entrypoint: main.py
 platforms:
   planned:
   - linux
+  - freebsd
+  - macos
   implemented:
   - linux
-  tested: []
+  - freebsd
+  - macos
+  tested:
+  - macos
 compatibility:
   sshscript: ==5.0.0
   note: Public 5.0.0 skill snapshot; exact runtime version checked before connection.
@@ -24,7 +28,9 @@ dependencies:
   target:
   - uname
   - /bin/sh
-  - cat
+  - cat (Linux)
+  - freebsd-version (FreeBSD)
+  - sw_vers (macOS)
   status: defined
 permissions:
   account: login-user
@@ -42,7 +48,7 @@ inputs:
     not whole run.'
 output:
   format: json
-  schema_version: 0.1.1
+  schema_version: 0.2.0
   example: examples/result.synthetic.json
   fields:
   - hostname
@@ -52,12 +58,17 @@ output:
   - kernel_name
   - kernel_release
   - architecture
-  summary_fields: [reason_code, message, detected_kernel, supported_platforms]
+  summary_fields:
+  - reason_code
+  - message
+  - detected_kernel
+  - supported_platforms
   run_statuses:
   - success
   - partial
   - failed
   - unsupported
+  - skipped
   observation_statuses:
   - success
   - unavailable
@@ -69,6 +80,35 @@ output:
   - not_attempted
 verification:
   synthetic_example: examples/result.synthetic.json
-  parser_tests: tests/test_inventory_system.py
-  local_execution: macOS unsupported-platform path verified; Linux not yet tested
+  parser_tests: tests/test_inventory_system.py and tests/test_host_runtime.py
+  local_execution: 2026-10-11 macOS local host-init and inventory success; Linux/FreeBSD
+    not tested
   ssh_execution: not-tested
+implementations:
+- id: linux
+  version: 0.1.1
+  entrypoint: implementations/linux.py
+  match:
+    os_name: linux
+  verification:
+    synthetic: tested
+    ssh: not-tested
+    local: not-tested
+- id: freebsd
+  version: 0.1.0
+  entrypoint: implementations/freebsd.py
+  match:
+    os_name: freebsd
+  verification:
+    synthetic: tested
+    ssh: not-tested
+    local: not-tested
+- id: macos
+  version: 0.1.0
+  entrypoint: implementations/macos.py
+  match:
+    os_name: macos
+  verification:
+    synthetic: tested
+    ssh: not-tested
+    local: 2026-10-11 read-only success
