@@ -1,6 +1,6 @@
 # SSHScript skill 下載與更新檢查
 
-Git 隨附 `.agents/skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為 5.0.0。初次使用可離線閱讀，不必重新下載。`skills/sshscript-ops-hosts/` 則是 Ops 自己維護的 skill，隨 Ops repository 更新，不由以下 SSHScript bundle 覆寫。
+Git 隨附 `.agents/skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為 5.0.0。初次使用可離線閱讀，不必重新下載。
 
 公開入口：https://iapyeh.github.io/sshscript/v3a/ai-agents/
 
@@ -43,6 +43,20 @@ python -B tools/skill_bundle.py download /path/to/new-candidate
 4. 執行 `check_environment.py`、Ops 一般測試、skill 格式驗證與本次操作所需的驗證；回報版本、摘要、實際替換範圍與驗證限制。套用不包含 Git 提交／push；依使用者要求處理。
 
 本工具只做檢查及準備候選，實際套用仍由 agent 按上述步驟處理；它沒有自動更新命令。若目前 snapshot 不足以支援任務，先說明缺口，不從私人 SSHScript checkout 或過往記憶補足。
+
+## Ops skills and accompanying guides
+
+Official Ops repository: <https://github.com/iapyeh/sshscript-ops>. `skills/sshscript-ops-hosts/`, `skills/sshscript-ops-recipes/`, docs/ and AGENTS.md are published with Ops, not in the official SSHScript ZIP. Start with the [recipe user guide](recipes.md) or [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). There is currently no separate Ops skill bundle or download/update CLI.
+
+Initially acquire a full Ops snapshot at a fixed commit, or a trusted clone. Preserve the relative directory structure and record source URL and actual commit. Skill links depend on accompanying guides; downloading SKILL.md alone is incomplete. Standalone installation into an agent requires the relevant documents, adjusted links, platform-specific handling and user authorization. Direct Markdown reading remains the cross-agent baseline.
+
+When the user requests an update check or authorizes a schedule, acquire a new candidate in isolation. Compare skills, related docs, AGENTS.md, dependencies and tool changes. Follow the [acquisition guide](recipe-acquisition.md) to verify source and content; report commit, differences, compatibility and trust gaps. Checks do not pull over the active checkout or replace installed skills. Apply updates only within authorization, preserving local changes and complete accompanying documents. Code changes require their appropriate CI and are not merely skill updates. A fixed commit does not authenticate a publisher by itself; do not assume this project supplies signed releases.
+
+Review skills bundled with third-party recipes through the acquisition guide; they are not authoritative SSHScript API references. Check recipe updates against their fixed sources and installation records. Checking and applying updates remain separate scopes.
+
+## Update check scopes
+
+Checking the SSHScript public bundle, Ops skills and recipes are different scopes. Schedules must specify sources; permission to check the SSHScript bundle does not authorize updates to third-party recipes. For authorized scheduled checks, use the above `check` command for the SSHScript bundle and the candidate comparison workflow for Ops skills. Preserve scope, frequency, environment and notification preferences. No schedule is established merely by documenting it.
 
 ## 定期檢查
 

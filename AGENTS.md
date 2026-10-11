@@ -12,6 +12,14 @@
 使用者要求本專案作為 SSHScript 公開 AI agent 文件與 skill 的實際使用測試。
 後續所有 SSHScript API 選擇、行為說明與使用技巧，必須重新從下列公開來源取得證據。
 
+## Documentation language
+
+At this stage, write new documentation and skills in English. Chinese editions will be created later; do not add new Chinese documentation unless the user requests it. Existing Chinese guides may remain until translation is requested.
+
+## Recipe workflow entrypoint
+
+For recipe discovery, authoring, sharing, acquisition or installation, read the [recipes skill](skills/sshscript-ops-recipes/SKILL.md) and its task-specific guides. The human entrypoint is [Use, create and share recipes](docs/recipes.md); available content is listed in the [recipe catalog](recipes/README.md). Complete source verification, safety review and a concrete installation report before installing third-party candidates within user authorization. Installation does not authorize execution. Documented workflows do not imply that a general runner or installer exists.
+
 ## 唯一的 SSHScript 學習來源
 
 - 入口：<https://iapyeh.github.io/sshscript/v3a/ai-agents/>
