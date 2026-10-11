@@ -14,6 +14,10 @@ python -m unittest discover -s tests -p 'test_*.py'
 
 `test_ops.py` checks connection-test credential/key/jump mapping, fixed commands, failure reporting and cleanup with mocked Sessions, per-hop diagnostics, credential omission and frames-only tracebacks, JSON dumps of merged and nested settings, dump error handling, initialization preservation, cross-file references, duplicate definitions, include and jump-host cycles, recipe selection, and path boundaries using temporary directories and synthetic values. The default tests do not contact hosts; real connection tests are invoked separately with `test-connection`.
 
+## Recipe inspection tests
+
+`test_recipe_inspection.py` covers read-only discovery without profile access, requested/planned/tested coverage gaps, full match-condition retention, unsupported runner IDs, missing/version-mismatched/invalid entrypoints, descriptor/entrypoint symlink escapes, malformed-recipe continuation, path semantics and CLI status/output. Synthetic entrypoints contain a raising top-level statement to prove inspection never executes them. The bundled inventory descriptor is also inspected with the existing static validator. No host is contacted.
+
 ## Inventory and runner tests
 
 `test_inventory_system.py` covers Linux synthetic outputs, safe os-release parsing, missing-file fallback, permission denial, unsupported platforms, command and transport failures, timeout partial output, strict cleanup, recipe selection and manifest/version validation, output symlink rejection and repeated result preservation. These tests never contact SSH targets. The legacy Linux collector unsupported-platform path remains covered; SSHScript 5.0.0 credential-free quickstart was checked locally; full Linux/FreeBSD and SSH collection remain unverified. macOS now has a collector with separate local read-only validation.

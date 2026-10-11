@@ -2,18 +2,18 @@
 
 SSHScript Ops provides two command-line entrypoints:
 
-- **`tools/ops.py` prepares and diagnoses the host environment.** It manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
+- **`tools/ops.py` prepares and diagnoses the host environment.** It inspects recipe metadata and platform coverage, manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
 - **`tools/run_recipe.py` collects system inventory.** Select one recipe for a mixed Linux, FreeBSD and macOS fleet; the runner selects each host's implementation automatically and saves results with version and source evidence.
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
 ## Conventions and prerequisites
 
-Run examples from the repository checkout. `python` means the interpreter selected for your environment; `-B` avoids writing Python bytecode. Replace synthetic host IDs, account names and `/srv/my-ops` with your settings. Commands read `hosts.yaml` from the chosen management environment; a host ID is a configuration key, not necessarily its hostname.
+Run examples from the repository checkout. `python` means the interpreter selected for your environment; `-B` avoids writing Python bytecode. Replace synthetic host IDs, account names and `/srv/my-ops` with your settings. Host/configuration commands read `hosts.yaml` from the chosen management environment; a host ID is a configuration key, not necessarily its hostname.
 
 | Operation | Controller requirements |
 | --- | --- |
-| Profiles, init, add, use, check, dump | Python 3.11+ and PyYAML; no SSHScript Session |
+| Profiles, init, add, use, check, dump, inspect-recipe | Python 3.11+ and PyYAML; no SSHScript Session |
 | Standalone test-connection | Python 3.11+, PyYAML and the supported SSHScript command contract (documented minimum 4.0.1) |
 | Host-init, test-host, test-su, test-sudo, test-connection --host-init, inventory | Python 3.11+, PyYAML and matching SSHScript import/distribution **5.0.0** |
 
@@ -55,6 +55,7 @@ Run `python -B tools/ops.py COMMAND --help` for that command's parser help. Brac
 | `profiles` | List registrations and show the selected default. No registrations is a normal result. |
 | `use [NAME]` | Change the default to a registered environment. Omitted NAME opens an interactive selector; noninteractive use requires a name. |
 | `check [ROOT] [--profile NAME]` | Validate YAML, duplicate definitions, connections/users/vars, include/jump cycles, recipe selections and path boundaries. Does not connect or validate complete recipe execution contracts. |
+| `inspect-recipe [RECIPE] [--platform OS_NAME ...] [--json]` | Read recipe metadata, declared platform coverage, entrypoint/version status and verification evidence. Omitted RECIPE discovers checkout recipes; repeat --platform for desired OS names. No management profile, SSHScript import or connection. |
 | `dump SETTING [ROOT] [--profile NAME]` | Print a dot-separated mapping path from loaded configuration as JSON, including merged hosts. This performs loading checks, not a complete check. List indexes are unsupported. |
 | `test-connection HOST [ROOT] [--profile NAME]` | Connect to the host and required hops, then independently run hostname and date. Does not switch accounts or run recipes. |
 | `host-init HOST [--root ROOT] [--profile NAME]` | Connect and freshly discover platform facts, updating saved initialization data on every explicit invocation. |
@@ -63,7 +64,31 @@ Run `python -B tools/ops.py COMMAND --help` for that command's parser help. Brac
 | `test-su HOST USER ... [--root ROOT] [--profile NAME]` | Independently test connection-user → each target. At least one target is required. |
 | `test-su HOST --chain USER ... [--chain USER ...] [--root ROOT] [--profile NAME]` | Test each ordered chain from a fresh connection identity. Repeat --chain for separate chains. |
 
-The first six commands do not connect or execute recipes. Init/add preserve an existing default; the first successful registration becomes the default. Use changes only the selected profile. In interactive registration, a conflicting name may prompt for another name; noninteractive conflicts fail without waiting. Init failure may leave newly created scaffold files for correction, but does not register a failed setup.
+Profile/configuration commands and inspect-recipe do not connect or execute recipes. Init/add preserve an existing default; the first successful registration becomes the default. Use changes only the selected profile. In interactive registration, a conflicting name may prompt for another name; noninteractive conflicts fail without waiting. Init failure may leave newly created scaffold files for correction, but does not register a failed setup.
+
+### Inspect recipes and platform gaps
+
+```sh
+# Discover every recipe.yaml under this checkout's recipes directory.
+python -B tools/ops.py inspect-recipe
+
+# Inspect a recipe and compare desired OS names against its declarations.
+python -B tools/ops.py inspect-recipe inventory/system --platform linux --platform openbsd
+
+# Obtain the complete descriptor and inspection report for an agent.
+python -B tools/ops.py inspect-recipe recipes/inventory/system --json
+python -B tools/ops.py inspect-recipe ./my-custom-recipe --json
+```
+
+Short paths such as `inventory/system` or `recipes/inventory/system` resolve under this checkout's recipes directory. Absolute paths and explicit `./`, `../` or `~` paths use the shell directory/home, **not a management root**. A supplied path selects one recipe directory containing recipe.yaml; omit it for recursive checkout discovery. This command does not use hosts.yaml, the profile registry, host-init caches or SSHScript. Python 3.11+ and PyYAML suffice.
+
+Human output shows description, planned/implemented/tested platforms, implementation IDs/versions/entrypoints, all match conditions (including OS/distribution versions), priority, dependencies, privileges, side effects, inputs, output contract and recorded verification. JSON includes the complete `descriptor`, per-entrypoint static checks, `coverage`, `runner_contract`, errors and inspection report version 0.1.0. No report file is saved.
+
+Coverage compares declarations: `not_declared_implemented` lists requested OS names absent from platforms.implemented; `planned_not_implemented` lists pending declared platforms; `implemented_not_declared_tested` lists implementations without a tested-platform declaration. For the current inventory recipe, requesting openbsd exposes that missing declaration, while Linux/FreeBSD remain implemented but lack local/SSH execution evidence. Requested values are exact os_name labels such as linux, freebsd or macos; repeat the option, rather than using commas. A platform gap is informational and does not change the exit code.
+
+Inspection reads YAML and parses Python VERSION literals without importing or executing entrypoints. Missing files, invalid syntax, version mismatches and escaping descriptor/entrypoint symlinks are reported. For inventory-system, it also uses the current runner's descriptor validator; other recipe IDs are inspectable but report `unsupported-recipe-id`, since no general runner or descriptor schema exists. One bad discovered recipe does not hide the others; any inspection error returns 1, and a completed inspection returns 0. Command/path errors use stderr; completed reports use stdout, including failed per-recipe reports in JSON mode.
+
+These are declared capabilities and static checks. They do not establish publisher authenticity, installed dependencies, actual host applicability, platform detection or successful execution. Match conditions may restrict OS/distribution/version/architecture even when a platform name is listed. Read recorded verification and review code before authorized execution.
 
 ### Connection diagnostics and options
 

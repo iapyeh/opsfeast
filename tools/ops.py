@@ -809,6 +809,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('profiles', help='list all registered profiles')
+    inspection = commands.add_parser('inspect-recipe', help='inspect recipe metadata, platform coverage and entrypoints without executing code')
+    inspection.add_argument('recipe', nargs='?', help='checkout short path or explicit directory; omitted: discover checkout recipes')
+    inspection.add_argument('--platform', action='append', default=[], help='requested os_name to compare with declared implemented platforms; repeat as needed')
+    inspection.add_argument('--json', action='store_true', help='emit complete descriptor and static inspection report as JSON')
     use = commands.add_parser('use', help='select the default profile')
     use.add_argument('profile', nargs='?')
     add = commands.add_parser('add', help='validate and register an existing management directory without modifying it')
@@ -841,6 +845,11 @@ def main(argv=None):
         diagnostic.add_argument('--timeout', type=positive_timeout, default=30)
     args = parser.parse_args(argv)
     try:
+        if args.command == 'inspect-recipe':
+            from recipe_inspection import inspect_recipes, format_report
+            report = inspect_recipes(args.recipe, args.platform)
+            print(json.dumps(report, indent=2, ensure_ascii=False) if args.json else format_report(report))
+            return 1 if report['status'] == 'failed' else 0
         if args.command == 'profiles':
             list_profiles()
             return 0
