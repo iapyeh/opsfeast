@@ -4,7 +4,7 @@ For humans and AI agents creating custom recipes. Start with the [user guide](re
 
 ## Obtain knowledge and define the task
 
-Use the [skill update guide](skill-updates.md) to locate the complete public SSHScript skill. Read SKILL.md, the Agent Guide, version policy and relevant API sections before using SSHScript. Do not fill API knowledge gaps from private SSHScript checkouts or memory. Record public URLs, documentation contract and snapshot digest; when consulting the public repository, also record its branch/tag/commit.
+Use the [skill update guide](skill-updates.md) to locate the complete public SSHScript skill. Read SKILL.md, the Agent Guide, version policy and relevant API sections before using SSHScript. Use version-matched, attributable sources rather than assuming API behavior from memory or unrelated versions. Record public URLs, documentation contract and snapshot digest; when consulting the public repository, also record its branch/tag/commit.
 
 Choose the interpreter and use the existing `tools/check_environment.py` to identify Python, SSHScript import/distribution versions and the documentation contract. The check does not create environments or install packages. Report missing documentation or version mismatches and wait for update instructions; do not upgrade automatically.
 

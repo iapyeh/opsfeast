@@ -17,7 +17,7 @@ Read the repository README.md, AGENTS.md and [user guide](../../docs/recipes.md)
 
 ## Knowledge and capability boundaries
 
-Before using SSHScript, read `.agents/skills/sshscript/SKILL.md`, its Agent Guide, version policy and relevant API sections. If the snapshot is missing, follow the update guide. Record public sources, documentation contract and runtime. Report missing or mismatched information rather than filling gaps from private checkouts or prior knowledge.
+Before using SSHScript, read `.agents/skills/sshscript/SKILL.md`, its Agent Guide, version policy and relevant API sections. If the snapshot is missing, follow the update guide. Record public sources, documentation contract and runtime. Report missing or mismatched information and establish a matching source within the user's scope rather than guessing API contracts.
 
 The current runner supports only the exact inventory-system bundle. A general runner, recipe installer, complete descriptor schema, lockfile, packaging and signing CLI are not implemented. Documentation conventions are not implemented APIs; do not invent commands, schema support or successful execution.
 

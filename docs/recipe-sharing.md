@@ -6,7 +6,7 @@ Share one recipe or several from a repository or archive. Complete the [authorin
 
 Confirm authorship, license, provenance and exact recipe versions. For multiple recipes, list each id, version, directory, dependencies and required shared files. A request to share one recipe does not include other private recipes.
 
-Create a clean staging directory from an explicit file allowlist. Include code, README, recipe.yaml, synthetic examples, public tests, required assets and licenses. Exclude hosts.yaml, management locators, credentials, observations, logs, venvs, caches, Git metadata and unnecessary hidden files. Inspect file contents; ignore rules cannot guarantee the absence of secrets. Preserve third-party licenses and provenance.
+Create a clean staging directory from an explicit file allowlist. Include code, README, recipe.yaml, synthetic examples, public tests, required assets and licenses. Exclude hosts.yaml, management locators, credentials, observations, logs, local agent guidance (AGENTS.local.md and AGENTS.override.md), venvs, caches, Git metadata and unnecessary hidden files. Inspect file contents; ignore rules cannot guarantee the absence of secrets. Preserve third-party licenses and provenance.
 
 Suggested public layout, a sharing convention without an implemented collection schema or installer:
 

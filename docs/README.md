@@ -19,6 +19,10 @@ This directory will contain architecture, getting-started instructions, and proj
 - The public repository contains tools and examples. User operational data stays in the user's environment.
 - Initial target platforms are Linux, FreeBSD, and macOS. Actual support will be declared per recipe after verification.
 
+## Agent instructions
+
+- [Public and local agent guidance](agent-guidance.md): shared tracked instructions, optional private settings, discovery behavior and checks before publication.
+
 ## Recipe ecosystem guides
 
 - [Use, create and share recipes](recipes.md): available content and copyable human prompts.

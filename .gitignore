@@ -3,3 +3,7 @@
 /.my-ops-*.tmp
 /.venv/
 /.skill-downloads/
+
+# User-specific agent guidance; never distribute private checkout settings.
+/AGENTS.local.md
+/AGENTS.override.md

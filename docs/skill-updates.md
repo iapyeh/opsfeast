@@ -42,7 +42,7 @@ python -B tools/skill_bundle.py download /path/to/new-candidate
 3. 在使用者授權套用更新後，備份既有快照，將候選完整 `sshscript/` 目錄替換到 repository 的 `.agents/skills/sshscript/`，包括 SOURCE.json；不要只換 SKILL.md，也不要把新舊版本 references 混在一起。若目的地有本機修改，先保留並處理差異。
 4. 執行 `check_environment.py`、Ops 一般測試、skill 格式驗證與本次操作所需的驗證；回報版本、摘要、實際替換範圍與驗證限制。套用不包含 Git 提交／push；依使用者要求處理。
 
-本工具只做檢查及準備候選，實際套用仍由 agent 按上述步驟處理；它沒有自動更新命令。若目前 snapshot 不足以支援任務，先說明缺口，不從私人 SSHScript checkout 或過往記憶補足。
+This tool checks and prepares candidates; the agent applies changes through the authorized procedure above. It has no automatic update command. If the snapshot cannot support the task, report the gap and establish matching documentation within the user's scope rather than guessing APIs.
 
 ## Ops skills and accompanying guides
 
