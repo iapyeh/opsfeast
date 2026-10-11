@@ -95,6 +95,40 @@ class RecipeInspectionTests(unittest.TestCase):
         self.assertIn('invalid Python syntax', output.getvalue())
         self.assertIn('Metadata/static inspection only', output.getvalue())
 
+    def test_default_summary_keeps_platform_gaps_without_full_metadata(self):
+        report = inspection.inspect_recipes(str(self.recipe))
+        text = inspection.format_report(report)
+        self.assertIn('Implemented: linux', text)
+        self.assertIn('Declared tested: none declared', text)
+        self.assertIn('Planned only: freebsd', text)
+        self.assertNotIn('dependencies:', text)
+        self.assertNotIn('os_version', text)
+        self.assertLessEqual(len(text.splitlines()), 9)
+
+    def test_platform_summary_focuses_on_requested_os_and_constraints(self):
+        report = inspection.inspect_recipes(str(self.recipe), ['linux', 'freebsd', 'openbsd'])
+        text = inspection.format_report(report)
+        self.assertIn('linux: implemented; not declared tested', text)
+        self.assertIn('distribution_id=debian, os_version=>=12', text)
+        self.assertIn('freebsd: planned; not implemented', text)
+        self.assertIn('openbsd: not declared supported', text)
+        self.assertNotIn('dependencies:', text)
+        report = inspection.inspect_recipes('inventory/system', ['freebsd'])
+        text = inspection.format_report(report)
+        self.assertIn('freebsd: implemented', text)
+        self.assertIn('ssh: not-tested', text)
+        self.assertNotIn('linux', text)
+        self.assertNotIn('macos', text)
+
+    def test_details_preserves_full_human_output_and_cli_flag(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = ops.main(['inspect-recipe', str(self.recipe), '--details'])
+        self.assertEqual(code, 0)
+        self.assertIn('dependencies:', output.getvalue())
+        self.assertIn(str(self.recipe), output.getvalue())
+        self.assertIn('os_version', output.getvalue())
+
     def test_inventory_contract_uses_existing_validator(self):
         report = inspection.inspect_recipes('inventory/system', ['linux', 'freebsd', 'macos', 'openbsd'])
         self.assertEqual(report['status'], 'success')

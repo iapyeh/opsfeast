@@ -55,7 +55,7 @@ Run `python -B tools/ops.py COMMAND --help` for that command's parser help. Brac
 | `profiles` | List registrations and show the selected default. No registrations is a normal result. |
 | `use [NAME]` | Change the default to a registered environment. Omitted NAME opens an interactive selector; noninteractive use requires a name. |
 | `check [ROOT] [--profile NAME]` | Validate YAML, duplicate definitions, connections/users/vars, include/jump cycles, recipe selections and path boundaries. Does not connect or validate complete recipe execution contracts. |
-| `inspect-recipe [RECIPE] [--platform OS_NAME ...] [--json]` | Read recipe metadata, declared platform coverage, entrypoint/version status and verification evidence. Omitted RECIPE discovers checkout recipes; repeat --platform for desired OS names. No management profile, SSHScript import or connection. |
+| `inspect-recipe [RECIPE] [--platform OS_NAME ...] [--details | --json]` | Read recipe metadata, declared platform coverage, entrypoint/version status and verification evidence. Omitted RECIPE discovers checkout recipes; repeat --platform for desired OS names. No management profile, SSHScript import or connection. |
 | `dump SETTING [ROOT] [--profile NAME]` | Print a dot-separated mapping path from loaded configuration as JSON, including merged hosts. This performs loading checks, not a complete check. List indexes are unsupported. |
 | `test-connection HOST [ROOT] [--profile NAME]` | Connect to the host and required hops, then independently run hostname and date. Does not switch accounts or run recipes. |
 | `host-init HOST [--root ROOT] [--profile NAME]` | Connect and freshly discover platform facts, updating saved initialization data on every explicit invocation. |
@@ -75,14 +75,15 @@ python -B tools/ops.py inspect-recipe
 # Inspect a recipe and compare desired OS names against its declarations.
 python -B tools/ops.py inspect-recipe inventory/system --platform linux --platform openbsd
 
-# Obtain the complete descriptor and inspection report for an agent.
+# Read full details, or obtain the complete descriptor/report for an agent.
+python -B tools/ops.py inspect-recipe inventory/system --details
 python -B tools/ops.py inspect-recipe recipes/inventory/system --json
 python -B tools/ops.py inspect-recipe ./my-custom-recipe --json
 ```
 
 Short paths such as `inventory/system` or `recipes/inventory/system` resolve under this checkout's recipes directory. Absolute paths and explicit `./`, `../` or `~` paths use the shell directory/home, **not a management root**. A supplied path selects one recipe directory containing recipe.yaml; omit it for recursive checkout discovery. This command does not use hosts.yaml, the profile registry, host-init caches or SSHScript. Python 3.11+ and PyYAML suffice.
 
-Human output shows description, planned/implemented/tested platforms, implementation IDs/versions/entrypoints, all match conditions (including OS/distribution versions), priority, dependencies, privileges, side effects, inputs, output contract and recorded verification. JSON includes the complete `descriptor`, per-entrypoint static checks, `coverage`, `runner_contract`, errors and inspection report version 0.1.0. No report file is saved.
+Default human output is a short recipe summary: identity/version, purpose and implemented/declared-tested/planned-only platforms. With --platform, it focuses on the requested OS names: implemented, planned but missing, or not declared supported; relevant entrypoint health, additional match conditions and recorded verification are shown only for those OS names. Inspection errors and unsupported runner IDs remain visible in either view. Use --details for full human-readable metadata, paths, all implementations, dependencies, privileges, side effects, inputs, output contract and verification. --details and --json are mutually exclusive; --details shows the full report even when --platform is supplied. JSON includes the complete `descriptor`, per-entrypoint static checks, `coverage`, `runner_contract`, errors and inspection report version 0.1.0. No report file is saved.
 
 Coverage compares declarations: `not_declared_implemented` lists requested OS names absent from platforms.implemented; `planned_not_implemented` lists pending declared platforms; `implemented_not_declared_tested` lists implementations without a tested-platform declaration. For the current inventory recipe, requesting openbsd exposes that missing declaration, while Linux/FreeBSD remain implemented but lack local/SSH execution evidence. Requested values are exact os_name labels such as linux, freebsd or macos; repeat the option, rather than using commas. A platform gap is informational and does not change the exit code.
 

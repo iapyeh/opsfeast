@@ -114,7 +114,7 @@ def inspect_recipes(value=None, requested=()):
             'recipes': reports}
 
 
-def format_report(report):
+def format_details(report):
     lines = []
     for recipe in report['recipes']:
         meta = recipe['descriptor'] or {}
@@ -141,4 +141,59 @@ def format_report(report):
             lines.append(f'  ERROR: {error}')
         lines.append('')
     lines.append('Metadata/static inspection only; no recipe execution, host connection or platform discovery. Declared coverage is not proof of host applicability or successful execution.')
+    return '\n'.join(lines)
+
+
+def format_report(report, details=False):
+    if details:
+        return format_details(report)
+    lines = []
+    for recipe in report['recipes']:
+        meta = recipe['descriptor'] or {}
+        lines.append(f"{meta.get('id', '<unknown>')} {meta.get('version', '?')} — {meta.get('title', '')}")
+        platforms = meta.get('platforms', {})
+        platforms = platforms if isinstance(platforms, dict) else {}
+        implemented = platforms.get('implemented', [])
+        tested = platforms.get('tested', [])
+        planned = platforms.get('planned', [])
+        requested = (recipe['coverage'] or {}).get('requested', [])
+        if requested:
+            for platform in requested:
+                if platform not in implemented:
+                    state = 'planned; not implemented' if platform in planned else 'not declared supported'
+                    lines.append(f'  {platform}: {state}')
+                    continue
+                lines.append(f"  {platform}: implemented; {'declared tested' if platform in tested else 'not declared tested'}")
+                candidates = [item for item in recipe['implementations']
+                              if isinstance(item['declaration'].get('match'), dict)
+                              and item['declaration']['match'].get('os_name', platform) == platform]
+                if not candidates:
+                    lines.append('    No entrypoint declared for this OS; inspect --details.')
+                for item in candidates:
+                    entry = item['declaration']
+                    conditions = {k: v for k, v in entry['match'].items() if k != 'os_name'}
+                    limits = ', '.join(f'{k}={v}' for k, v in conditions.items()) or 'no additional platform conditions'
+                    lines.append(f"    {entry.get('id', '<unnamed>')}: file {item['file_status']}; {limits}")
+                    evidence = entry.get('verification')
+                    if isinstance(evidence, dict) and evidence:
+                        lines.append('    Evidence: ' + '; '.join(f'{k}: {v}' for k, v in evidence.items()))
+        else:
+            description = meta.get('description')
+            if description:
+                lines.append(f'  {description}')
+            for label, values in (
+                ('Implemented', implemented),
+                ('Declared tested', tested),
+                ('Planned only', [v for v in planned if v not in implemented] if isinstance(planned, list) and isinstance(implemented, list) else []),
+            ):
+                if label == 'Planned only' and not values:
+                    continue
+                summary = ', '.join(values) if isinstance(values, list) and all(isinstance(v, str) for v in values) else 'invalid declaration'
+                lines.append(f"  {label}: {summary or 'none declared'}")
+        if recipe['runner_contract'] == 'unsupported-recipe-id':
+            lines.append('  Runner: this recipe ID is not supported.')
+        for error in dict.fromkeys(recipe['errors']):
+            lines.append(f'  ERROR: {error}')
+        lines.append('')
+    lines.append('Metadata/static inspection only. Use --details or --json for the full report.')
     return '\n'.join(lines)
