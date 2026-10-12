@@ -2,14 +2,14 @@
 
 These commands use the selected management profile unless `--profile NAME` or an explicit management directory is supplied. Diagnostics and initialization require matching SSHScript import/distribution 5.0.0, Python 3.11+ and PyYAML. They retain the existing connection, jump-host, key and host-key trust rules. They do not install packages or alter target configuration. Connecting may execute a configured proxy command; authentication attempts and login-shell startup may create target audit records.
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
 ## Initialize platform facts
 
 ```sh
-python -B tools/ops.py host-init host-01 --profile main
-python -B tools/ops.py host-init host-01 --root /srv/my-ops
-python -B tools/ops.py test-connection host-01 /srv/my-ops --host-init
+python -B tools/opsfeast.py host-init host-01 --profile main
+python -B tools/opsfeast.py host-init host-01 --root /srv/feasts/main
+python -B tools/opsfeast.py test-connection host-01 /srv/feasts/main --host-init
 ```
 
 A direct `host-init` invocation always refreshes facts. The optional `test-connection --host-init` also performs a fresh probe after its connection test; it currently uses a separate connection. Standalone connection-test behavior is unchanged.
@@ -23,8 +23,8 @@ A failed explicit refresh retains the previous successful facts as historical ev
 ## Independent and chained su tests
 
 ```sh
-python -B tools/ops.py test-su host-01 user2 user3 --root /srv/my-ops
-python -B tools/ops.py test-su host-01 --chain user2 user3 --chain user3 user2 --root /srv/my-ops
+python -B tools/opsfeast.py test-su host-01 user2 user3 --root /srv/feasts/main
+python -B tools/opsfeast.py test-su host-01 --chain user2 user3 --chain user3 user2 --root /srv/feasts/main
 ```
 
 The first command independently tests connection-user → user2 and connection-user → user3. Each repeated `--chain` starts a fresh connection: the second command tests connection-user → user2 → user3, then connection-user → user3 → user2. A failed chain step prevents later steps in that chain, while other groups continue. Chains cannot be mixed with independent usernames. At least one target is required, and the actual connection account cannot appear in any chain/list. Independent duplicates and adjacent chain duplicates are rejected; nonadjacent chain repeats are allowed.
@@ -34,8 +34,8 @@ Target passwords come only from `hosts.<host>.users.<target>.password`. Missing 
 ## Sudo tests
 
 ```sh
-python -B tools/ops.py test-sudo host-01 --root /srv/my-ops
-python -B tools/ops.py test-sudo host-01 user2 user3 --run-as service-user --root /srv/my-ops
+python -B tools/opsfeast.py test-sudo host-01 --root /srv/feasts/main
+python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as service-user --root /srv/feasts/main
 ```
 
 Omitting usernames tests the actual connection account. Supplied usernames are independent **sudo actors**; `--run-as` is the sudo target, default root. For another actor, Ops first enters that account through su and verifies identity, then tests sudo. A failed prerequisite is reported with a su stage, rather than a claim that sudo was attempted.
@@ -47,7 +47,7 @@ Tests enter an authenticated shell and query effective UID/name, compare UID wit
 ## Test one host
 
 ```sh
-python -B tools/ops.py test-host host-01 --root /srv/my-ops
+python -B tools/opsfeast.py test-host host-01 --root /srv/feasts/main
 ```
 
 `test-host` always tests hostname/date and performs the following:
@@ -66,4 +66,4 @@ Synthetic tests cover cache refresh/invalidation, platform parsing, identity mis
 
 SSHScript APIs follow the included public snapshot: [Agent Guide](https://iapyeh.github.io/sshscript/v3a/ai-agents/guide/), [canonical API](https://iapyeh.github.io/sshscript/v3a/recommended-api/) and `.agents/skills/sshscript/SOURCE.json`, documentation contract 5.0.0, bundle SHA-256 `e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b`. The su/sudo signatures were additionally checked against public repository branch `release`, commit `fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb`: [session.py](https://github.com/iapyeh/sshscript/blob/fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb/src/sshscript/session.py) and [sessionwrapper.py](https://github.com/iapyeh/sshscript/blob/fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb/src/sshscript/sessionwrapper.py). FreeBSD userland semantics follow the [FreeBSD manual](https://man.freebsd.org/cgi/man.cgi?query=freebsd-version&sektion=1), consulted 2026-10-11. macOS commands are verified by local read-only execution.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

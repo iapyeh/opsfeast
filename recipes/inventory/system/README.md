@@ -2,7 +2,7 @@
 
 Recipe version 0.2.0 provides Linux, FreeBSD and macOS implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
 ## Collection contract
 
@@ -24,7 +24,7 @@ No su/sudo, installation or target configuration changes are performed. Read acc
 
 ```sh
 python -B tools/run_recipe.py host-01 --recipe inventory/system
-python -B tools/run_recipe.py host-01 /srv/my-ops --recipe inventory/system --hosts host-02 host-03
+python -B tools/run_recipe.py host-01 /srv/feasts/main --recipe inventory/system --hosts host-02 host-03
 python -B tools/run_recipe.py host-01 --profile inventory
 ```
 
@@ -36,7 +36,7 @@ Without `--recipe`, exactly one selected recipe with ID `inventory-system` is re
 
 ## Host initialization and selection
 
-The runner reuses successful, target-matching host facts from the management environment. Otherwise it performs the same read-only probe as `ops.py host-init`; cached facts that cannot select an implementation also trigger one fresh probe. A failed probe skips recipe execution and saves the reason. Unknown platforms produce unsupported. Missing distribution/version can still select a generic OS implementation.
+The runner reuses successful, target-matching host facts from the management environment. Otherwise it performs the same read-only probe as `opsfeast.py host-init`; cached facts that cannot select an implementation also trigger one fresh probe. A failed probe skips recipe execution and saves the reason. Unknown platforms produce unsupported. Missing distribution/version can still select a generic OS implementation.
 
 See [host diagnostics](../../../docs/host-diagnostics.md) for refresh semantics, cache storage, limitations and su/sudo tests. Direct `host-init` always refreshes; `test-host` only fills missing/failed/invalid initialization. The original facts timestamp and cache/probe source remain in results.
 
@@ -87,4 +87,4 @@ Synthetic tests cover parsers, three platform collectors, specialization/ambigui
 
 SSHScript source: bundled public documentation contract 5.0.0 and SOURCE.json bundle SHA-256 `e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b`; public [API guide](https://iapyeh.github.io/sshscript/v3a/recommended-api/). FreeBSD userland semantics follow the [FreeBSD manual](https://man.freebsd.org/cgi/man.cgi?query=freebsd-version&sektion=1), consulted 2026-10-11. No private SSHScript source was used.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

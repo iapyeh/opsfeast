@@ -46,7 +46,7 @@ This tool checks and prepares candidates; the agent applies changes through the 
 
 ## Ops skills and accompanying guides
 
-Official Ops repository: <https://github.com/iapyeh/sshscript-ops>. `skills/sshscript-ops-hosts/`, `skills/sshscript-ops-recipes/`, docs/ and AGENTS.md are published with Ops, not in the official SSHScript ZIP. Start with the [recipe user guide](recipes.md) or [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). There is currently no separate Ops skill bundle or download/update CLI.
+Official Ops repository: <https://github.com/iapyeh/opsfeast>. `skills/opsfeast-hosts/`, `skills/opsfeast-recipes/`, docs/ and AGENTS.md are published with Ops, not in the official SSHScript ZIP. Start with the [recipe user guide](recipes.md) or [recipes skill](../skills/opsfeast-recipes/SKILL.md). There is currently no separate Ops skill bundle or download/update CLI.
 
 Initially acquire a full Ops snapshot at a fixed commit, or a trusted clone. Preserve the relative directory structure and record source URL and actual commit. Skill links depend on accompanying guides; downloading SKILL.md alone is incomplete. Standalone installation into an agent requires the relevant documents, adjusted links, platform-specific handling and user authorization. Direct Markdown reading remains the cross-agent baseline.
 
@@ -61,3 +61,5 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 ## 定期檢查
 
 文件不會啟動排程。使用者授權後，由其 agent 平台排程執行相同 `check` 命令，保留 scope、週期、環境與通知約定。預設未變更時保持安靜；有差異、檢查失敗或需使用者決定時通知。定期檢查授權不等於套用、套件升級或遠端執行授權；若另外授權特定更新流程，按其明確範圍執行。
+
+_Last modified: 2026-10-12_

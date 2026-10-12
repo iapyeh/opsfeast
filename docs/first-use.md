@@ -1,27 +1,27 @@
-# Your first experience with SSHScript Ops
+# Your first experience with OpsFeast
 
-Clone SSHScript Ops, give its directory to your AI agent, and ask it to explain the requirements and propose a setup. After you authorize the plan, the agent can initialize your environment. You do not need to learn every Python tool's arguments first. This walkthrough assumes an agent such as Codex or Hermes that can read local files and run commands. If the agent runs on another machine, the repository must be accessible there.
+Clone OpsFeast, give its directory to your AI agent, and ask it to explain the requirements and propose a setup. After you authorize the plan, the agent can initialize your environment. You do not need to learn every Python tool's arguments first. This walkthrough assumes an agent such as Codex or Hermes that can read local files and run commands. If the agent runs on another machine, the repository must be accessible there.
 
 The goal is to create a management environment and understand where to configure hosts. After initialization, choose the hosts to test and the collection tasks to run.
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
 ## 1. Clone the project
 
 On a computer with Git installed:
 
 ```sh
-git clone https://github.com/iapyeh/sshscript-ops.git
-cd sshscript-ops
+git clone https://github.com/iapyeh/opsfeast.git
+cd opsfeast
 ```
 
-Record the directory's absolute path. On macOS/Linux, use `pwd`; in PowerShell, use `Get-Location`. Replace `/absolute/path/to/sshscript-ops` in the prompts below with that path. On Windows, use the full Windows path.
+Record the directory's absolute path. On macOS/Linux, use `pwd`; in PowerShell, use `Get-Location`. Replace `/absolute/path/to/opsfeast` in the prompts below with that path. On Windows, use the full Windows path.
 
 ## 2. Let your agent learn about the project
 
 Start a new conversation and paste:
 
-> I am using SSHScript Ops for the first time. The repository is at `/absolute/path/to/sshscript-ops`. Read README.md, AGENTS.md and docs/getting-started.md. Explain what the project can do, what environment it needs, and propose an initial setup. Do not install dependencies or initialize anything yet.
+> I am using OpsFeast for the first time. The repository is at `/absolute/path/to/opsfeast`. Read README.md, AGENTS.md and docs/getting-started.md. Explain what the project can do, what environment it needs, and propose an initial setup. Do not install dependencies or initialize anything yet.
 
 The agent should find the project guidance, explain the Python 3.11+ requirement and the dependencies for initialization or the full toolset, and report:
 
@@ -42,13 +42,13 @@ If you already have a Python environment, provide its interpreter path instead. 
 After successful setup, the layout should include:
 
 ```text
-sshscript-ops/
+opsfeast/
 ├── .venv/
-├── .my-ops.yaml
+├── .opsfeast.yaml
 ├── recipes/
-└── my-ops/
+└── feasts/
     └── main/
-        ├── my-ops.yaml
+        ├── feast.yaml
         ├── hosts.yaml
         ├── hosts/
         ├── observations/
@@ -56,11 +56,11 @@ sshscript-ops/
         └── runs/
 ```
 
-`.venv/` exists only if you chose to create a new environment. `my-ops/` and `recipes/` are siblings. `.my-ops.yaml` records profiles and the default environment, allowing later commands to omit the directory argument. The agent should report the actual interpreter, package and documentation versions, initialization/check results, and the full path to `hosts.yaml`.
+`.venv/` exists only if you chose to create a new environment. `feasts/` and `recipes/` are siblings. `.opsfeast.yaml` records profiles and the default environment, allowing later commands to omit the directory argument. The agent should report the actual interpreter, package and documentation versions, initialization/check results, and the full path to `hosts.yaml`.
 
 ## 4. Configure your hosts
 
-Open the reported `my-ops/main/hosts.yaml`. The initial template includes localhost and a remote example with the synthetic address `host.example`. Replace the example host ID and address, set the login account and authentication method, and configure `via` if a jump host is needed. Recipe lists start empty; add selections as needed.
+Open the reported `feasts/main/hosts.yaml`. The initial template includes localhost and a remote example with the synthetic address `host.example`. Replace the example host ID and address, set the login account and authentication method, and configure `via` if a jump host is needed. Recipe lists start empty; add selections as needed.
 
 Your agent can help organize settings, but do not paste passwords or private keys into chat. See the [host configuration guide](hosts-yaml.md) for fields and authentication rules. The default management directory is ignored by Git; keep real settings and observations in your management environment.
 
@@ -68,7 +68,7 @@ After editing, paste:
 
 > Validate the current default management environment's configuration. Do not connect or execute recipes. If validation fails, identify the source file and what needs correction.
 
-This also checks that the agent uses the same interpreter and can run `ops.py check` without a directory argument. Successful configuration validation does not establish connectivity. When ready, specify a host ID for a connection test. For inventory collection, separately specify the recipe and execution scope.
+This also checks that the agent uses the same interpreter and can run `opsfeast.py check` without a directory argument. Successful configuration validation does not establish connectivity. When ready, specify a host ID for a connection test. For inventory collection, separately specify the recipe and execution scope.
 
 ## Optional: initialize and test a configured host
 
@@ -92,16 +92,16 @@ The agent should follow the [skill update guide](skill-updates.md), compare the 
 
 ## Use multiple environments or take over existing data
 
-To organize another group of hosts, ask your agent to create a named environment, such as `ops.py init inventory`. Its data resides in `my-ops/inventory/`. `ops.py profiles` lists environments, and `ops.py use inventory` changes the default. In an interactive terminal, `ops.py use` lets you select one.
+To organize another group of hosts, ask your agent to create a named environment, such as `opsfeast.py init inventory`. Its data resides in `feasts/inventory/`. `opsfeast.py profiles` lists environments, and `opsfeast.py use inventory` changes the default. In an interactive terminal, `opsfeast.py use` lets you select one.
 
-When moving computers, handing over work or receiving a colleague's management directory, use `ops.py add /path/to/existing-profile` to validate and register it. This does not create a scaffold or rewrite the directory's files. Choose a new profile name if there is a conflict. See the [profile guide](profiles.md) for naming and path rules.
+When moving computers, handing over work or receiving a colleague's management directory, use `opsfeast.py add /path/to/existing-profile` to validate and register it. This does not create a scaffold or rewrite the directory's files. Choose a new profile name if there is a conflict. See the [profile guide](profiles.md) for naming and path rules.
 
 ## Try it without reusing existing management data
 
 Clone into a new directory, for example:
 
 ```sh
-git clone https://github.com/iapyeh/sshscript-ops.git sshscript-ops-trial
+git clone https://github.com/iapyeh/opsfeast.git opsfeast-trial
 ```
 
 Give the trial directory's absolute path to the agent and follow the steps above. A new clone does not include ignored management settings, Python environments or locator files.
@@ -109,9 +109,9 @@ Give the trial directory's absolute path to the agent and follow the steps above
 Maintainers can test committed local changes that have not been pushed by cloning their local repository into a new directory. Replace these paths with your own:
 
 ```sh
-git clone "/absolute/path/to/sshscript-ops" "/absolute/path/to/sshscript-ops-trial"
+git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 ```
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

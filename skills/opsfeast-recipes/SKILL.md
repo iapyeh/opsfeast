@@ -1,27 +1,29 @@
 ---
-name: sshscript-ops-recipes
-description: Help SSHScript Ops users discover, create and share one or multiple recipes, then acquire, verify and review third-party candidates before authorized installation. Use for recipe discovery, platform implementation authoring and authorized inventory execution; obtain SSHScript API knowledge from its public skill and version-matched guides.
+name: opsfeast-recipes
+description: Help OpsFeast users discover, create and share one or multiple recipes, then acquire, verify and review third-party candidates before authorized installation. Use for recipe discovery, platform implementation authoring and authorized inventory execution; obtain SSHScript API knowledge from its public skill and version-matched guides.
 ---
 
-# SSHScript Ops recipes
+# OpsFeast recipes
 
 Read the repository README.md, AGENTS.md and [user guide](../../docs/recipes.md). Use the [catalog](../../recipes/README.md) to identify available recipes. This skill is supplied with Ops and can be read directly; its presence does not imply installation or automatic loading.
 
+Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
+
 ## Read according to the task
 
-- Inspect available recipes or identify platform gaps: use `python -B tools/ops.py inspect-recipe [RECIPE] --json`; omit RECIPE for checkout discovery and repeat `--platform OS_NAME` for desired coverage. Default text is a concise summary; --platform focuses text on requested OS names, --details shows full human-readable content, and --json retains the complete structured report. Read the [inspection reference](../../docs/cli.md#inspect-recipes-and-platform-gaps) for path rules, fields and exit codes. The command statically reads descriptors/entrypoints; it does not execute code, inspect hosts or prove applicability. Preserve planned/implemented/tested distinctions and implementation match/version constraints; other recipe IDs can be inspected even though the runner does not support them.
+- Inspect available recipes or identify platform gaps: use `python -B tools/opsfeast.py inspect-recipe [RECIPE] --json`; omit RECIPE for checkout discovery and repeat `--platform OS_NAME` for desired coverage. Default text is a concise summary; --platform focuses text on requested OS names, --details shows full human-readable content, and --json retains the complete structured report. Read the [inspection reference](../../docs/cli.md#inspect-recipes-and-platform-gaps) for path rules, fields and exit codes. The command statically reads descriptors/entrypoints; it does not execute code, inspect hosts or prove applicability. Preserve planned/implemented/tested distinctions and implementation match/version constraints; other recipe IDs can be inspected even though the runner does not support them.
 
 - Author or modify a custom recipe: read the [vision and design principles](../../docs/vision.md) and [authoring guide](../../docs/recipe-authoring.md). Design for human intent, economical repeat execution, community reuse and explicit risk boundaries; assess the vision's delivery questions. Deliver a complete directory, synthetic examples and verification evidence. Use the documented inventory-system implementation contract only for genuine system inventory; review custom code before execution.
 - Package or share: read the [sharing guide](../../docs/recipe-sharing.md). Support one or multiple recipes using explicit selection and file allowlists. GitHub push, releases and other publication follow the user's destination and authorization scope.
 - Acquire, install or update third-party content: read the [acquisition guide](../../docs/recipe-acquisition.md). Download to a candidate area. Separate integrity, publisher authentication and behavior review. Complete a concrete report before authorized installation; installation does not execute recipes.
 - Prepare or update knowledge: read the [skill update guide](../../docs/skill-updates.md). Distinguish the public SSHScript bundle from Ops skills. Do not reread already applicable material. Check updates only when requested or on an authorized schedule; applying updates requires its own authorized scope.
-- Modify host settings: use the repository sshscript-ops-hosts skill and [hosts.yaml guide](../../docs/hosts-yaml.md), preserving existing path and selector semantics.
+- Modify host settings: use the repository opsfeast-hosts skill and [hosts.yaml guide](../../docs/hosts-yaml.md), preserving existing path and selector semantics.
 
 ## Execute or extend system inventory
 
 Use the [CLI reference](../../docs/cli.md) for run_recipe.py arguments, recipe-location precedence, automatic initialization, batch behavior, saved reports and exit codes. It is the same tool reference supplied to human administrators.
 
-Read the [inventory-system guide](../../recipes/inventory/system/README.md) for descriptor 0.2.0, result schema 0.2.0 and the implemented Python contract. Other recipe IDs still have no general runner. Host/account diagnostics belong to [sshscript-ops-hosts](../sshscript-ops-hosts/SKILL.md).
+Read the [inventory-system guide](../../recipes/inventory/system/README.md) for descriptor 0.2.0, result schema 0.2.0 and the implemented Python contract. Other recipe IDs still have no general runner. Host/account diagnostics belong to [opsfeast-hosts](../opsfeast-hosts/SKILL.md).
 
 - Users select one recipe directory for a mixed-platform fleet. Do not ask them to select linux.py/freebsd.py for each host. `python -B tools/run_recipe.py HOST [ROOT] --recipe inventory/system --hosts OTHER_HOST ...` executes hosts independently and sequentially; --profile selects one environment without changing the default.
 - The runner probes missing/invalid facts automatically. Initialization failure skips that host's recipe with a recorded reason; unsupported or ambiguous matches remain visible. Cached facts retain their original time. Use explicit host-init to refresh after known system changes.
@@ -43,4 +45,4 @@ This skill depends on repository-relative guides. Standalone distribution must i
 
 See [host diagnostics](../../docs/host-diagnostics.md) for platform initialization/cache semantics and explicitly requested su/sudo diagnostics. Initialization/configuration checks alone never authorize connections or privilege tests.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

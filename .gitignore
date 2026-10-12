@@ -1,3 +1,6 @@
+/feasts/
+/.opsfeast.yaml
+/.opsfeast-*.tmp
 /my-ops/
 /.my-ops.yaml
 /.my-ops-*.tmp

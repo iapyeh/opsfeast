@@ -11,7 +11,7 @@ from uuid import uuid4
 from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint
 from recipe_dispatch import validate, select, bundle_digest, validate_observations
 
-from ops import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root
+from opsfeast import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root
 
 BUNDLE = Path(__file__).resolve().parents[1] / 'recipes/inventory/system'
 collector = runpy.run_path(str(BUNDLE / 'main.py'))

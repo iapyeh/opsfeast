@@ -9,10 +9,14 @@ Verification should cover result parsing, failure status, supported platforms, a
 With Python 3.11+ and PyYAML installed, run:
 
 ```sh
-python -m unittest discover -s tests -p 'test_*.py'
+python -B -m unittest discover -s tests -p 'test_*.py'
 ```
 
-`test_ops.py` checks connection-test credential/key/jump mapping, fixed commands, failure reporting and cleanup with mocked Sessions, per-hop diagnostics, credential omission and frames-only tracebacks, JSON dumps of merged and nested settings, dump error handling, initialization preservation, cross-file references, duplicate definitions, include and jump-host cycles, recipe selection, and path boundaries using temporary directories and synthetic values. The default tests do not contact hosts; real connection tests are invoked separately with `test-connection`.
+`test_opsfeast.py` checks connection-test credential/key/jump mapping, fixed commands, failure reporting and cleanup with mocked Sessions, per-hop diagnostics, credential omission and frames-only tracebacks, JSON dumps of merged and nested settings, dump error handling, initialization preservation, cross-file references, duplicate definitions, include and jump-host cycles, recipe selection, and path boundaries using temporary directories and synthetic values. The default tests do not contact hosts; real connection tests are invoked separately with `test-connection`.
+
+## Rename compatibility tests
+
+`test_rename.py` verifies both CLI entrypoints and the shared import alias, old registry/definition preservation, schema-1 locator upgrades, reuse of registered roots, mixed-generation conflicts, invalid legacy definitions, dangling symlink rejection and explicit filename migration. Fixtures and subprocess checkouts are temporary and synthetic; no real user environment is changed.
 
 ## Recipe inspection tests
 
@@ -36,4 +40,4 @@ Result summary tests cover detected kernels, reasons and messages for success, p
 
 `test_host_runtime.py` covers platform facts, cache refresh/invalidation, target changes, su/sudo identities, independent/repeated chains, missing credentials, test-host aggregation, three-platform runner dispatch, implementation versions and batch continuation. All account/SSH tests are synthetic; no real privileged accounts are tested.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

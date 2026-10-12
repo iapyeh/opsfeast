@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-spec = importlib.util.spec_from_file_location('ops', Path(__file__).parents[1] / 'tools/ops.py')
+spec = importlib.util.spec_from_file_location('opsfeast_test', Path(__file__).parents[1] / 'tools/opsfeast.py')
 ops = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ops)
 
@@ -17,7 +17,7 @@ class OpsTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name) / 'my-ops'
+        self.root = Path(self.temp.name) / 'feasts'
         self.root.mkdir()
 
     def write(self, relative, content):
@@ -49,8 +49,8 @@ class OpsTests(unittest.TestCase):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(ops.main(['init']), 0)
-            self.assertEqual(ops.read_yaml(self.root / 'main/my-ops.yaml'), ops.INSTANCE_SCHEMA)
-            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.my-ops.yaml')['profiles']['main']['root'], 'my-ops/main')
+            self.assertEqual(ops.read_yaml(self.root / 'main/feast.yaml'), ops.INSTANCE_SCHEMA)
+            self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.opsfeast.yaml')['profiles']['main']['root'], 'feasts/main')
             # Locator resolution never depends on the invoking shell directory.
             with contextlib.chdir('/'):
                 self.assertEqual(ops.resolve_root(), (self.root / 'main').resolve())
@@ -72,13 +72,13 @@ class OpsTests(unittest.TestCase):
             # New init registers main without switching the existing selection.
             self.assertEqual(ops.main(['init']), 0)
             self.assertEqual(ops.resolve_root(), other.resolve())
-            self.assertEqual(ops.resolve_root(profile='main'), (checkout / 'my-ops/main').resolve())
+            self.assertEqual(ops.resolve_root(profile='main'), (checkout / 'feasts/main').resolve())
 
     def test_failed_init_does_not_switch_default(self):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(ops.main(['init']), 0)
-            pointer = Path(self.temp.name) / '.my-ops.yaml'
+            pointer = Path(self.temp.name) / '.opsfeast.yaml'
             original = pointer.read_bytes()
             other = Path(self.temp.name) / 'broken'
             other.mkdir()
@@ -91,12 +91,12 @@ class OpsTests(unittest.TestCase):
             with self.assertRaises(ops.ConfigError):
                 ops.resolve_root()
             ops.initialize(self.root)
-            (Path(self.temp.name) / '.my-ops.yaml').write_text('schema_version: 1\nroot: my-ops\n')
-            self.write('my-ops.yaml', 'schema_version: true\nkind: sshscript-ops\n')
+            (Path(self.temp.name) / '.opsfeast.yaml').write_text('schema_version: 1\nroot: feasts\n')
+            self.write('feast.yaml', 'schema_version: true\nkind: opsfeast\n')
             with self.assertRaisesRegex(ops.ConfigError, 'unsupported management'):
                 ops.resolve_root()
-            self.write('my-ops.yaml', 'schema_version: 1\nkind: sshscript-ops\n')
-            pointer = Path(self.temp.name) / '.my-ops.yaml'
+            self.write('feast.yaml', 'schema_version: 1\nkind: opsfeast\n')
+            pointer = Path(self.temp.name) / '.opsfeast.yaml'
             pointer.write_text('schema_version: 1\nroot: missing\n')
             with self.assertRaisesRegex(ops.ConfigError, 'not found'):
                 ops.resolve_root()
@@ -105,12 +105,12 @@ class OpsTests(unittest.TestCase):
                 ops.resolve_root()
 
     def test_definition_preserved_and_symlink_rejected_before_scaffolding(self):
-        definition = self.write('my-ops.yaml', '# note\nschema_version: 1\nkind: sshscript-ops\n')
+        definition = self.write('feast.yaml', '# note\nschema_version: 1\nkind: opsfeast\n')
         ops.initialize(self.root)
         self.assertTrue(definition.read_text().startswith('# note'))
         definition.unlink()
         outside = Path(self.temp.name) / 'definition.yaml'
-        outside.write_text('schema_version: 1\nkind: sshscript-ops\n')
+        outside.write_text('schema_version: 1\nkind: opsfeast\n')
         definition.symlink_to(outside)
         with self.assertRaisesRegex(ops.ConfigError, 'scaffold symlink'):
             ops.initialize(self.root)

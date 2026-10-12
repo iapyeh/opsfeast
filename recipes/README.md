@@ -1,6 +1,6 @@
 # Recipe catalog
 
-This catalog lists recipes currently supplied by SSHScript Ops. To ask your AI agent to create a recipe, share content or acquire someone else's work, start with the [user guide](../docs/recipes.md).
+This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent to create a recipe, share content or acquire someone else's work, start with the [user guide](../docs/recipes.md).
 
 ## Available recipes
 
@@ -17,7 +17,7 @@ Users may create recipes in their own working directories or repositories withou
 - [Create a custom recipe](../docs/recipe-authoring.md)
 - [Share one or multiple recipes](../docs/recipe-sharing.md)
 - [Acquire, review, verify and authorize installation](../docs/recipe-acquisition.md)
-- [Recipes skill for AI agents](../skills/sshscript-ops-recipes/SKILL.md)
+- [Recipes skill for AI agents](../skills/opsfeast-recipes/SKILL.md)
 
 ## Recipe documentation requirements
 
@@ -29,4 +29,4 @@ Collection recipes should retain observation sources and timestamps and distingu
 
 The first result contract and synthetic example live with inventory-system. The runner supports inventory-system implementations with a shared schema, not arbitrary recipe IDs.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

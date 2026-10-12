@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'tools'))
-import ops
+import opsfeast as ops
 import recipe_inspection as inspection
 
 

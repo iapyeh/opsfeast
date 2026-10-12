@@ -1,6 +1,6 @@
 # Recipe authoring guide
 
-For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). A general recipe API, complete descriptor schema and authoring CLI do not exist yet. The following requirements and layout recommendations are not an implemented execution protocol.
+For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). A general recipe API, complete descriptor schema and authoring CLI do not exist yet. The following requirements and layout recommendations are not an implemented execution protocol.
 
 ## Design for the shared vision
 
@@ -52,7 +52,7 @@ Document at least the following:
 | Verification | Separate synthetic/mock, local and SSH evidence, with dates, environments, methods and limitations |
 | Maintenance | Version changes, upgrade differences and incompatibilities; outcome verification and recovery limits for recipes that make changes |
 
-Currently, `ops.py check` validates configuration, paths and limited descriptor properties, not all these requirements. Identify additional fields as custom documentation data; do not claim a general schema exists.
+Currently, `opsfeast.py check` validates configuration, paths and limited descriptor properties, not all these requirements. Identify additional fields as custom documentation data; do not claim a general schema exists.
 
 ## Deliver a reviewable draft first
 
@@ -66,4 +66,4 @@ The current runner accepts inventory-system descriptor 0.2.0 implementations sha
 
 Directory selection only establishes configuration selection, not executability. Migrate to a versioned general interface when one is implemented. Report files, public learning sources, environment, verification evidence, compatibility and pending actions. For distribution, follow the [sharing guide](recipe-sharing.md).
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

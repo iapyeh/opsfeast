@@ -1,4 +1,4 @@
-# 初次使用 SSHScript Ops
+# 初次使用 OpsFeast
 
 本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。將 clone 後的 repository 路徑交給 agent，請它閱讀 README、AGENTS.md 與本指南。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
 
@@ -43,24 +43,24 @@ python3 -m venv .venv
 
 ## 閱讀 skill，完成本機初始化
 
-Git clone 已包含完整 `.agents/skills/sshscript/` 公開快照，不必為初次使用重新下載。Agent 在使用 SSHScript 前依序閱讀其中的 SKILL.md、Agent Guide 與任務相關 API 章節；主機設定維護另讀 [Ops hosts skill](../skills/sshscript-ops-hosts/SKILL.md)。
+Git clone 已包含完整 `.agents/skills/sshscript/` 公開快照，不必為初次使用重新下載。Agent 在使用 SSHScript 前依序閱讀其中的 SKILL.md、Agent Guide 與任務相關 API 章節；主機設定維護另讀 [Ops hosts skill](../skills/opsfeast-hosts/SKILL.md)。
 
 可直接閱讀 Markdown，不需要 skill loader。若使用者要安裝到某個 agent 的 skill 搜尋位置，依該產品的機制與授權處理；不要假設所有 agent 都自動搜尋 `.agents/skills/`，也不要將「檔案隨附」或「已閱讀」回報成「已安裝／自動載入」。缺少快照或要檢查更新時，依 [下載與更新指南](skill-updates.md) 操作。
 
 初始化不需要 SSHScript Session 或遠端連線：
 
 ```sh
-python -B tools/ops.py init
-python -B tools/ops.py check
+python -B tools/opsfeast.py init
+python -B tools/opsfeast.py check
 ```
 
-預設建立 `my-ops/main/` 並登記 `main` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `my-ops/inventory/`，`init /path/to/my-ops` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `add /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
+預設建立 `feasts/main/` 並登記 `main` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `feasts/inventory/`，`init /path/to/feast` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `add /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/ops.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
 ## Recipe next steps
 
-To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/sshscript-ops-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; custom inventory implementations must follow its descriptor 0.2.0 and shared output contract; other recipe IDs remain unsupported.
+To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; custom inventory implementations must follow its descriptor 0.2.0 and shared output contract; other recipe IDs remain unsupported.
 
 ## Authorized host checks and inventory
 
@@ -76,13 +76,13 @@ For authorized inventory, select inventory/system once for mixed Linux/FreeBSD/m
 
 1. 編輯 `hosts.yaml`，替換合成的 `host-01`／`host.example`，設定主機 ID、位址、登入帳號與認證方式；需要跳板時設定 via。不要把範例密碼當成實際憑證，也不要要求使用者在聊天重貼密碼。
 2. 保留或依需求調整 localhost，選擇要使用的 recipes；初始 `recipes: []` 尚未選取任何 recipe。
-3. 執行 `ops.py check` 確認設定；檢查成功只代表設定通過，不代表連線或採集成功。
+3. 執行 `opsfeast.py check` 確認設定；檢查成功只代表設定通過，不代表連線或採集成功。
 4. 指定要測試的 host ID，授權 `test-connection`；要盤點時另指定或授權 runner 執行。首次設定本身不自動觸發 SSH、代理命令、su／sudo 或 recipe 採集。
 
-`my-ops/` 與定位檔已被 Git 忽略；自訂管理目錄若放在 checkout 內，需另加忽略規則。真實憑證、主機設定與觀測不提交至公開 Git。
+`feasts/` 與定位檔已被 Git 忽略；自訂管理目錄若放在 checkout 內，需另加忽略規則。真實憑證、主機設定與觀測不提交至公開 Git。
 
 更新檢查是可選後續工作。若使用者希望定期檢查，先確定檢查範圍、週期及通知方式，使用其 agent 平台的排程能力；未建立排程不可回報「已定期檢查」。
 
 See [host diagnostics](host-diagnostics.md) for platform initialization/cache semantics and explicitly requested su/sudo diagnostics. Initialization/configuration checks alone never authorize connections or privilege tests.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

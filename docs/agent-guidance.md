@@ -1,6 +1,6 @@
 # Public and local agent guidance
 
-SSHScript Ops separates shared project instructions from each user's private environment and maintenance preferences.
+OpsFeast separates shared project instructions from each user's private environment and maintenance preferences.
 
 ## Public guidance
 
@@ -16,11 +16,11 @@ Future documentation and skills follow the shared [AI-friendly documentation pri
 
 ## Shared tool reference
 
-The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/ops.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.
+The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/opsfeast.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.
 
 ## Route operational requests
 
-Use the [hosts skill](../skills/sshscript-ops-hosts/SKILL.md) for settings, platform initialization and requested host/account diagnostics. Use the [recipes skill](../skills/sshscript-ops-recipes/SKILL.md) for inventory execution, platform implementations and recipe sharing/review. Both link to executable interfaces and their limits; reading a skill does not execute it.
+Use the [hosts skill](../skills/opsfeast-hosts/SKILL.md) for settings, platform initialization and requested host/account diagnostics. Use the [recipes skill](../skills/opsfeast-recipes/SKILL.md) for inventory execution, platform implementations and recipe sharing/review. Both link to executable interfaces and their limits; reading a skill does not execute it.
 
 The [host diagnostic guide](host-diagnostics.md) distinguishes fresh host-init from test-host cache reuse and explains independent versus chained su, sudo actors versus targets, credentials and skipped states. The [inventory guide](../recipes/inventory/system/README.md) owns descriptor/result schema 0.2.0 and platform selection. Record actual source/version/digest and verification evidence; do not equate a zero diagnostic exit code or matching metadata with complete host capability verification or safe custom code.
 
@@ -46,4 +46,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

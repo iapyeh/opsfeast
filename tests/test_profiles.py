@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
-import ops
+import opsfeast as ops
 import run_recipe
 
 
@@ -27,7 +27,7 @@ class ProfileTests(unittest.TestCase):
         patcher = patch.object(ops, 'REPOSITORY_ROOT', self.checkout)
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.pointer = self.checkout / '.my-ops.yaml'
+        self.pointer = self.checkout / '.opsfeast.yaml'
 
     def cli(self, *arguments, interactive=False, answers=()):
         output = Terminal() if interactive else io.StringIO()
@@ -43,7 +43,7 @@ class ProfileTests(unittest.TestCase):
         root.mkdir(parents=True)
         (root / 'hosts.yaml').write_text('hosts: {localhost: {connection: {local: true}}}\n')
         if definition:
-            (root / 'my-ops.yaml').write_text('schema_version: 1\nkind: sshscript-ops\n')
+            (root / 'feast.yaml').write_text('schema_version: 1\nkind: opsfeast\n')
         return root
 
     def snapshot(self, root):
@@ -51,15 +51,15 @@ class ProfileTests(unittest.TestCase):
 
     def test_default_named_and_relative_path_init(self):
         self.assertEqual(self.cli('init')[0], 0)
-        default = self.checkout / 'my-ops/main'
+        default = self.checkout / 'feasts/main'
         self.assertEqual(ops.resolve_root(), default)
         with contextlib.chdir(self.root):
             self.assertEqual(self.cli('init', 'inventory')[0], 0)
             self.assertEqual(self.cli('init', './external')[0], 0)
-        self.assertEqual(ops.resolve_root(profile='inventory'), self.checkout / 'my-ops/inventory')
+        self.assertEqual(ops.resolve_root(profile='inventory'), self.checkout / 'feasts/inventory')
         self.assertEqual(ops.resolve_root(profile='external'), self.root / 'external')
         self.assertEqual(ops.resolve_root(), default)
-        self.assertEqual(ops.load_profiles()['profiles']['inventory']['root'], 'my-ops/inventory')
+        self.assertEqual(ops.load_profiles()['profiles']['inventory']['root'], 'feasts/inventory')
         self.assertEqual(ops.load_profiles()['profiles']['external']['root'], str(self.root / 'external'))
 
     def test_tilde_expanded_even_when_passed_as_literal(self):
@@ -70,7 +70,7 @@ class ProfileTests(unittest.TestCase):
     def test_names_with_unicode_spaces_and_invalid_path_components(self):
         for name in ('盤點資料', 'team inventory', '.hidden'):
             self.assertEqual(self.cli('init', name)[0], 0)
-            self.assertEqual(ops.resolve_root(profile=name), self.checkout / 'my-ops' / name)
+            self.assertEqual(ops.resolve_root(profile=name), self.checkout / 'feasts' / name)
         before = self.pointer.read_bytes()
         for name in ('.', '..', ' trailing ', 'bad\nname'):
             self.assertEqual(self.cli('init', name)[0], 1)
@@ -124,15 +124,15 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(self.cli('check', '--profile', 'inventory')[0], 0)
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
         self.assertEqual(self.cli('use', 'inventory')[0], 0)
-        self.assertEqual(ops.resolve_root(), self.checkout / 'my-ops/inventory')
+        self.assertEqual(ops.resolve_root(), self.checkout / 'feasts/inventory')
         before = self.pointer.read_bytes()
         code, output, errors = self.cli('profiles')
         self.assertEqual(code, 0)
         self.assertIn('inventory', output)
-        self.assertIn(str(self.checkout / 'my-ops/inventory'), output)
+        self.assertIn(str(self.checkout / 'feasts/inventory'), output)
         self.assertIn('*', output)
         self.assertEqual(self.pointer.read_bytes(), before)
-        self.assertEqual(self.cli('check', str(self.checkout / 'my-ops/main'), '--profile', 'inventory')[0], 1)
+        self.assertEqual(self.cli('check', str(self.checkout / 'feasts/main'), '--profile', 'inventory')[0], 1)
 
     def test_interactive_use_retries_invalid_and_accepts_number_or_name(self):
         self.cli('init')
@@ -152,7 +152,7 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(self.pointer.read_bytes(), before)
         code, output, errors = self.cli('use')
         self.assertEqual(code, 1)
-        self.assertIn('ops.py use <profile>', output)
+        self.assertIn('opsfeast.py use <profile>', output)
         self.assertEqual(self.pointer.read_bytes(), before)
 
     def test_empty_list_unknown_or_missing_profile(self):
@@ -162,7 +162,7 @@ class ProfileTests(unittest.TestCase):
         self.cli('init')
         before = self.pointer.read_bytes()
         self.assertEqual(self.cli('use', 'missing')[0], 1)
-        (self.checkout / 'my-ops/main/my-ops.yaml').write_text('schema_version: 9')
+        (self.checkout / 'feasts/main/feast.yaml').write_text('schema_version: 9')
         self.assertEqual(self.cli('use', 'main')[0], 1)
         self.assertEqual(self.pointer.read_bytes(), before)
 
@@ -181,14 +181,14 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(self.snapshot(root)['hosts.yaml'], b'hosts: {localhost: {connection: {local: true}}}\n')
 
     def test_existing_default_profile_preserved_when_main_is_created(self):
-        root = self.existing('checkout/my-ops/default')
+        root = self.existing('checkout/feasts/default')
         self.assertEqual(self.cli('add', str(root))[0], 0)
         before = self.snapshot(root)
         self.assertEqual(self.cli('init')[0], 0)
         self.assertEqual(list(ops.load_profiles()['profiles']), ['default', 'main'])
         self.assertEqual(ops.load_profiles()['default_profile'], 'default')
         self.assertEqual(ops.resolve_root(), root)
-        self.assertEqual(ops.resolve_root(profile='main'), self.checkout / 'my-ops/main')
+        self.assertEqual(ops.resolve_root(profile='main'), self.checkout / 'feasts/main')
         self.assertEqual(self.snapshot(root), before)
         code, output, errors = self.cli('use', interactive=True, answers=['main'])
         self.assertEqual(code, 0, errors)
@@ -237,12 +237,12 @@ class ProfileTests(unittest.TestCase):
         with patch.object(ops.os, 'replace', side_effect=OSError('synthetic')):
             self.assertEqual(self.cli('init', 'inventory')[0], 1)
         self.assertEqual(self.pointer.read_bytes(), original)
-        self.assertEqual(list(self.checkout.glob('.my-ops-*.tmp')), [])
+        self.assertEqual(list(self.checkout.glob('.opsfeast-*.tmp')), [])
 
     def test_runner_uses_profile_without_changing_default(self):
         self.cli('init')
         self.cli('init', 'inventory')
-        path = self.checkout / 'my-ops/inventory/result.json'
+        path = self.checkout / 'feasts/inventory/result.json'
         report = {'status': 'success', 'reason_code': 'inventory_complete',
                   'message': 'Synthetic successful run.', 'detected_kernel': 'Linux',
                   'supported_platforms': ['linux'], 'recipe': {'id': 'inventory-system'}}
@@ -257,8 +257,8 @@ class ProfileTests(unittest.TestCase):
         from unittest.mock import Mock
         self.cli('init')
         self.cli('init', 'inventory')
-        default = self.checkout / 'my-ops/main'
-        inventory = self.checkout / 'my-ops/inventory'
+        default = self.checkout / 'feasts/main'
+        inventory = self.checkout / 'feasts/inventory'
         original = (default / 'hosts.yaml').read_bytes()
         (default / 'hosts.yaml').write_text('include: [../inventory/hosts.yaml]\n')
         self.assertEqual(self.cli('check', '--profile', 'main')[0], 1)
@@ -271,7 +271,7 @@ class ProfileTests(unittest.TestCase):
                                           recipe='inventory/system',
                                           session_class=Mock(return_value=session))
             self.assertEqual(report['status'], 'unsupported')
-            self.assertEqual(path.parent, self.checkout / 'my-ops' / profile / 'observations')
+            self.assertEqual(path.parent, self.checkout / 'feasts' / profile / 'observations')
             paths.append(path)
         self.assertTrue(all(p.is_file() for p in paths))
 

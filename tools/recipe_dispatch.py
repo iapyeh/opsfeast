@@ -3,7 +3,7 @@ import ast
 import hashlib
 from pathlib import Path
 import re
-from ops import ConfigError
+from opsfeast import ConfigError
 
 MATCH_FIELDS = {'os_name', 'distribution_id', 'os_version', 'distribution_version', 'kernel_release', 'architecture'}
 

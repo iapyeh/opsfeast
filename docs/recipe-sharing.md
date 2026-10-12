@@ -45,6 +45,8 @@ Record the actual commit, recipe subdirectories and release asset digests. Tags 
 
 ## Deliver skills and knowledge references
 
-Recipe READMEs link to the [recipes skill](../skills/sshscript-ops-recipes/SKILL.md), [knowledge update guide](skill-updates.md) and public SSHScript entrypoint. When bundling a complete skill, preserve its license, provenance and references. The Ops recipes skill uses repository-relative links: standalone packaging must include linked guides and adjust paths, not just copy SKILL.md. Review third-party bundled skills using the [acquisition guide](recipe-acquisition.md) before installing them into an agent's instruction sources.
+Recipe READMEs link to the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [knowledge update guide](skill-updates.md) and public SSHScript entrypoint. When bundling a complete skill, preserve its license, provenance and references. The Ops recipes skill uses repository-relative links: standalone packaging must include linked guides and adjust paths, not just copy SKILL.md. Review third-party bundled skills using the [acquisition guide](recipe-acquisition.md) before installing them into an agent's instruction sources.
 
 Report the actual package inventory, versions, digests, signature status, verification limits and delivery path. Report URLs/commits only after publication has actually occurred. Updates use new versions and describe changes; checking for updates and applying them are separate authorization scopes.
+
+_Last modified: 2026-10-12_

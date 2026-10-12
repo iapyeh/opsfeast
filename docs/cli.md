@@ -1,15 +1,15 @@
 # Ops command-line reference
 
-SSHScript Ops provides two command-line entrypoints:
+OpsFeast provides two command-line entrypoints:
 
-- **`tools/ops.py` prepares and diagnoses the host environment.** It inspects recipe metadata and platform coverage, manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
+- **`tools/opsfeast.py` prepares and diagnoses the host environment.** It inspects recipe metadata and platform coverage, manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
 - **`tools/run_recipe.py` collects system inventory.** Select one recipe for a mixed Linux, FreeBSD and macOS fleet; the runner selects each host's implementation automatically and saves results with version and source evidence.
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
 ## Conventions and prerequisites
 
-Run examples from the repository checkout. `python` means the interpreter selected for your environment; `-B` avoids writing Python bytecode. Replace synthetic host IDs, account names and `/srv/my-ops` with your settings. Host/configuration commands read `hosts.yaml` from the chosen management environment; a host ID is a configuration key, not necessarily its hostname.
+Run examples from the repository checkout. `python` means the interpreter selected for your environment; `-B` avoids writing Python bytecode. Replace synthetic host IDs, account names and `/srv/feasts/main` with your settings. Host/configuration commands read `hosts.yaml` from the chosen management environment; a host ID is a configuration key, not necessarily its hostname.
 
 | Operation | Controller requirements |
 | --- | --- |
@@ -22,35 +22,37 @@ The full environment check expects PyYAML 6.0.3 and SSHScript 5.0.0:
 ```sh
 python -B tools/check_environment.py
 python -B tools/check_environment.py --scope init
-python -B tools/ops.py --help
+python -B tools/opsfeast.py --help
 python -B tools/run_recipe.py --help
 ```
 
 Environment checks only report readiness. Tools do not automatically create Python environments, install dependencies, upgrade SSHScript or download skills. See [getting started](getting-started.md) for setup and [host configuration](hosts-yaml.md) for connection/key/jump-host rules.
 
+The former tools/ops.py remains a compatibility entrypoint. New checkouts use .opsfeast.yaml and feasts/; an existing .my-ops.yaml remains active. Named init reuses registered roots. New feast.yaml definitions use kind: opsfeast; legacy my-ops.yaml definitions use kind: sshscript-ops. Both naming generations together are a conflict. See [rename compatibility and migration](migration.md).
+
 ## Choose the management environment
 
-For most commands, omit the location to use the selected default profile in the checkout's `.my-ops.yaml`, or pass `--profile NAME` for one invocation. This does not change the default. An explicit management root and `--profile` cannot be combined for execution/configuration commands. Missing or invalid profiles fail without searching other environments.
+For most commands, omit the location to use the selected default profile in the checkout's `.opsfeast.yaml`, or pass `--profile NAME` for one invocation. This does not change the default. An explicit management root and `--profile` cannot be combined for execution/configuration commands. Missing or invalid profiles fail without searching other environments.
 
 The CLI has two forms for an explicit root:
 
 | Entrypoint/subcommands | Root argument |
 | --- | --- |
-| ops.py check, dump, test-connection | Optional positional `ROOT` |
-| ops.py host-init, test-host, test-su, test-sudo | Optional `--root ROOT` |
+| opsfeast.py check, dump, test-connection | Optional positional `ROOT` |
+| opsfeast.py host-init, test-host, test-su, test-sudo | Optional `--root ROOT` |
 | run_recipe.py | Optional positional `ROOT` |
-| ops.py init | Optional name or path; `--profile` names the registration |
-| ops.py add | Required existing directory; `--profile` names the registration |
+| opsfeast.py init | Optional name or path; `--profile` names the registration |
+| opsfeast.py add | Required existing directory; `--profile` names the registration |
 
-Explicit relative directory paths use the current shell directory; registered relative locations use the checkout. `init inventory` is a name under the checkout's `my-ops/`; `init ./inventory` is a path under the shell directory. See [profiles](profiles.md) for registration conflicts, legacy directories and locator migration.
+Explicit relative directory paths use the current shell directory; registered relative locations use the checkout. `init inventory` is a name under the checkout's `feasts/`; `init ./inventory` is a path under the shell directory. See [profiles](profiles.md) for registration conflicts, legacy directories and locator migration.
 
-## tools/ops.py: command reference
+## tools/opsfeast.py: command reference
 
-Run `python -B tools/ops.py COMMAND --help` for that command's parser help. Brackets below mean optional arguments; usernames use spaces, not commas.
+Run `python -B tools/opsfeast.py COMMAND --help` for that command's parser help. Brackets below mean optional arguments; usernames use spaces, not commas.
 
-| Command syntax after tools/ops.py | Purpose and behavior |
+| Command syntax after tools/opsfeast.py | Purpose and behavior |
 | --- | --- |
-| `init [NAME_OR_PATH] [--profile NAME]` | Create a management scaffold, validate it, then register it. Default: my-ops/main, profile main. Preserve existing configuration. |
+| `init [NAME_OR_PATH] [--profile NAME]` | Create a management scaffold, validate it, then register it. Default: feasts/main, profile main. Preserve existing configuration. |
 | `add ROOT [--profile NAME]` | Validate/register an existing directory without creating or changing its scaffold. |
 | `profiles` | List registrations and show the selected default. No registrations is a normal result. |
 | `use [NAME]` | Change the default to a registered environment. Omitted NAME opens an interactive selector; noninteractive use requires a name. |
@@ -70,15 +72,15 @@ Profile/configuration commands and inspect-recipe do not connect or execute reci
 
 ```sh
 # Discover every recipe.yaml under this checkout's recipes directory.
-python -B tools/ops.py inspect-recipe
+python -B tools/opsfeast.py inspect-recipe
 
 # Inspect a recipe and compare desired OS names against its declarations.
-python -B tools/ops.py inspect-recipe inventory/system --platform linux --platform openbsd
+python -B tools/opsfeast.py inspect-recipe inventory/system --platform linux --platform openbsd
 
 # Read full details, or obtain the complete descriptor/report for an agent.
-python -B tools/ops.py inspect-recipe inventory/system --details
-python -B tools/ops.py inspect-recipe recipes/inventory/system --json
-python -B tools/ops.py inspect-recipe ./my-custom-recipe --json
+python -B tools/opsfeast.py inspect-recipe inventory/system --details
+python -B tools/opsfeast.py inspect-recipe recipes/inventory/system --json
+python -B tools/opsfeast.py inspect-recipe ./my-custom-recipe --json
 ```
 
 Short paths such as `inventory/system` or `recipes/inventory/system` resolve under this checkout's recipes directory. Absolute paths and explicit `./`, `../` or `~` paths use the shell directory/home, **not a management root**. A supplied path selects one recipe directory containing recipe.yaml; omit it for recursive checkout discovery. This command does not use hosts.yaml, the profile registry, host-init caches or SSHScript. Python 3.11+ and PyYAML suffice.
@@ -107,11 +109,11 @@ Only test-connection additionally accepts:
 Test-connection JSON includes host, connected, hops, commands and success. Each hop records its connection result; key_source identifies where identity_file is read. Commands retain stdout/stderr/exitcode or error. Success requires both commands and strict cleanup to succeed; connected alone is insufficient. With --host-init, initialization must also succeed.
 
 ```sh
-python -B tools/ops.py init inventory
-python -B tools/ops.py check --profile inventory
-python -B tools/ops.py dump hosts.host-01.connection --profile inventory
-python -B tools/ops.py test-connection host-01 --profile inventory --debug
-python -B tools/ops.py test-connection host-01 /srv/my-ops --host-init
+python -B tools/opsfeast.py init inventory
+python -B tools/opsfeast.py check --profile inventory
+python -B tools/opsfeast.py dump hosts.host-01.connection --profile inventory
+python -B tools/opsfeast.py test-connection host-01 --profile inventory --debug
+python -B tools/opsfeast.py test-connection host-01 /srv/feasts/main --host-init
 ```
 
 Dump emits selected values unchanged, including passwords if the selected mapping contains them. Keep real configuration, command output and saved reports in your management environment.
@@ -121,8 +123,8 @@ Dump emits selected values unchanged, including passwords if the selected mappin
 Host-init queries uname for OS/kernel/architecture. Linux distribution information comes from os-release; FreeBSD userland version and macOS product version are separate from kernel release. Missing fields retain their state; sufficient OS evidence can still permit a generic implementation.
 
 ```sh
-python -B tools/ops.py host-init host-01 --profile inventory
-python -B tools/ops.py host-init host-01 --root /srv/my-ops
+python -B tools/opsfeast.py host-init host-01 --profile inventory
+python -B tools/opsfeast.py host-init host-01 --root /srv/feasts/main
 ```
 
 Facts include os_name, kernel_name, kernel_release, architecture and available OS/distribution names/versions. The JSON includes schema/probe version **0.1.0**, host_id, status, reason_code, observed_at, facts, per-field states, command sources and target_fingerprint. Explicit initialization also returns result_path. The file is atomically replaced at:
@@ -138,8 +140,8 @@ There is no age expiry. Changes to an external SSH config or an OS reinstallatio
 ### Sudo: actor versus target
 
 ```sh
-python -B tools/ops.py test-sudo host-01 --profile inventory
-python -B tools/ops.py test-sudo host-01 user2 user3 --run-as service-user --profile inventory
+python -B tools/opsfeast.py test-sudo host-01 --profile inventory
+python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as service-user --profile inventory
 ```
 
 USER is the account **executing sudo**. TARGET is the identity sudo should enter. Other actors first require verified su entry from the connection account. Results identify whether failure happened at su entry/identity or sudo entry/identity. Independent actors use fresh connections.
@@ -149,8 +151,8 @@ Sudo uses `users.<actor>.vars.sudo.password`; host `vars.sudo.password` is fallb
 ### Su: independent targets and ordered chains
 
 ```sh
-python -B tools/ops.py test-su host-01 user2 user3 --profile inventory
-python -B tools/ops.py test-su host-01 --chain user2 user3 --chain user3 user2 --profile inventory
+python -B tools/opsfeast.py test-su host-01 user2 user3 --profile inventory
+python -B tools/opsfeast.py test-su host-01 --chain user2 user3 --chain user3 user2 --profile inventory
 ```
 
 The first command tests connection-user → user2 and connection-user → user3. The second tests two independent chains:
@@ -169,7 +171,7 @@ Privilege-test JSON includes host, test, status, connection_user when identified
 ### Test-host: one configured-host check
 
 ```sh
-python -B tools/ops.py test-host host-01 --profile inventory
+python -B tools/opsfeast.py test-host host-01 --profile inventory
 ```
 
 Test-host always tests login/hostname/date. It then reuses or initializes facts, tests sudo **only for the connection identity and only with an explicit sudo password**, and independently tests su to other accounts declared in users. It does not enumerate accounts, test chains, attempt passwordless sudo or execute recipes.
@@ -197,9 +199,9 @@ python -B tools/run_recipe.py HOST [ROOT]
 
 ```sh
 python -B tools/run_recipe.py host-01 --recipe inventory/system
-python -B tools/run_recipe.py host-01 /srv/my-ops --recipe inventory/system --hosts host-02 host-03
+python -B tools/run_recipe.py host-01 /srv/feasts/main --recipe inventory/system --hosts host-02 host-03
 python -B tools/run_recipe.py host-01 --profile inventory
-python -B tools/run_recipe.py host-01 /srv/my-ops --recipe ./recipes/custom-system
+python -B tools/run_recipe.py host-01 /srv/feasts/main --recipe ./recipes/custom-system
 ```
 
 Without --recipe, exactly one selected inventory-system recipe is required for the host. Other selected recipe IDs are not executed. With --recipe, host recipe selectors are bypassed; host/connection configuration still must be valid. A bad override fails without falling back to host selectors.
@@ -257,8 +259,8 @@ Setup/checks do not authorize connections, proxy commands, account switches or r
 
 Prepare/register an environment, edit hosts.yaml, and run check. For an authorized readiness check, use test-host and interpret every test state. Explicitly refresh host-init after known OS/endpoint changes. For authorized inventory, select the same recipe for the fleet and read each host's result, selected implementation/version and partial/error evidence. Keep configuration, credentials, observations and human notes in the management environment.
 
-Agents should use --profile or an explicit root for unattended work, explicit profile names instead of interactive use, and the user's chosen interpreter. Read the [hosts skill](../skills/sshscript-ops-hosts/SKILL.md) for diagnostics and the [recipes skill](../skills/sshscript-ops-recipes/SKILL.md) for inventory. Reuse existing authorization and context; ask only for missing information that affects correctness or scope.
+Agents should use --profile or an explicit root for unattended work, explicit profile names instead of interactive use, and the user's chosen interpreter. Read the [hosts skill](../skills/opsfeast-hosts/SKILL.md) for diagnostics and the [recipes skill](../skills/opsfeast-recipes/SKILL.md) for inventory. Reuse existing authorization and context; ask only for missing information that affects correctness or scope.
 
 Synthetic tests cover configuration, dispatch, cache, account transitions, batch continuation and failure/cleanup handling. macOS local read-only initialization/inventory has been verified. Real Linux/FreeBSD collection, SSH and native su/sudo remain unverified; compatible metadata and synthetic success do not establish those outcomes.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

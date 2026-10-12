@@ -6,7 +6,7 @@ A recipe is reusable operational content: code, purpose, prerequisites, inputs, 
 
 For a reviewed inventory-system bundle, select the recipe once; the runner initializes missing host facts and chooses a Linux, FreeBSD or macOS entrypoint per host. Use `python -B tools/run_recipe.py host-01 --recipe inventory/system --hosts host-02 host-03` from the checkout with the selected interpreter and authorized targets. See the [inventory guide](../recipes/inventory/system/README.md) for descriptor/result schema 0.2.0, versions/digests, custom-code execution and migration from older descriptors. A valid descriptor is not proof of safe behavior.
 
-For initialization and account checks, use the [host diagnostic guide](host-diagnostics.md) and [hosts skill](../skills/sshscript-ops-hosts/SKILL.md). Direct host-init refreshes platform facts; test-host reuses valid facts and reports skipped tests. Diagnostics do not execute recipes. Unknown, unsupported, partial and failed results remain visible per host.
+For initialization and account checks, use the [host diagnostic guide](host-diagnostics.md) and [hosts skill](../skills/opsfeast-hosts/SKILL.md). Direct host-init refreshes platform facts; test-host reuses valid facts and reports skipped tests. Diagnostics do not execute recipes. Unknown, unsupported, partial and failed results remain visible per host.
 
 ## What is available now
 
@@ -20,7 +20,7 @@ Start with the problem you want to solve; you do not need to learn the SSHScript
 
 Copy this prompt and replace the placeholders:
 
-> I use SSHScript Ops at `/absolute/path/to/sshscript-ops`. Read README.md, AGENTS.md, docs/recipes.md and skills/sshscript-ops-recipes/SKILL.md. I need a recipe for [task] on Linux hosts, producing [fields and format]. Permitted operations are [for example, read-only queries without sudo or tool installation]. Use the public SSHScript skill and version-matched guides. Create the recipe in [my custom working directory], with synthetic examples, documentation and tests. Prepare a local draft and review first; do not connect, install dependencies, execute new code or publish. Report whether the current runner supports it and what authorization is needed next.
+> I use OpsFeast at `/absolute/path/to/opsfeast`. Read README.md, AGENTS.md, docs/recipes.md and skills/opsfeast-recipes/SKILL.md. I need a recipe for [task] on Linux hosts, producing [fields and format]. Permitted operations are [for example, read-only queries without sudo or tool installation]. Use the public SSHScript skill and version-matched guides. Create the recipe in [my custom working directory], with synthetic examples, documentation and tests. Prepare a local draft and review first; do not connect, install dependencies, execute new code or publish. Report whether the current runner supports it and what authorization is needed next.
 
 This prompt requests a draft first. You may include specific local test permissions if you want the agent to run them; already authorized steps do not require repeated approval. See the [authoring guide](recipe-authoring.md).
 
@@ -34,7 +34,7 @@ Publish one or more recipes in your GitHub repository or deliver a ZIP/tar.gz ar
 
 Have your agent acquire a candidate, verify its source and review its behavior before deciding whether to install. A README's safety claim, a successful download or a matching hash does not replace code review.
 
-> Follow skills/sshscript-ops-recipes/SKILL.md and docs/recipe-acquisition.md to acquire [one or more specified recipes] from [repository URL and version, archive URL or local shared file] as candidates. Verify integrity and publisher evidence. Review local and remote side effects, credential access and dependencies, and prepare a pre-installation report. Do not execute candidates or tests, install dependencies or modify hosts.yaml. Install only after I authorize the concrete plan in the report. Installation does not include connection or execution.
+> Follow skills/opsfeast-recipes/SKILL.md and docs/recipe-acquisition.md to acquire [one or more specified recipes] from [repository URL and version, archive URL or local shared file] as candidates. Verify integrity and publisher evidence. Review local and remote side effects, credential access and dependencies, and prepare a pre-installation report. Do not execute candidates or tests, install dependencies or modify hosts.yaml. Install only after I authorize the concrete plan in the report. Installation does not include connection or execution.
 
 ## Documentation map
 
@@ -44,9 +44,9 @@ Have your agent acquire a candidate, verify its source and review its behavior b
 | Ask an agent to create a custom recipe | [Authoring](recipe-authoring.md) |
 | Share one recipe or a collection | [Sharing and packaging](recipe-sharing.md) |
 | Acquire, verify, review and authorize installation | [Acquisition and installation](recipe-acquisition.md) |
-| Knowledge and skills an agent should read | [Recipes skill](../skills/sshscript-ops-recipes/SKILL.md) |
+| Knowledge and skills an agent should read | [Recipes skill](../skills/opsfeast-recipes/SKILL.md) |
 | Keep knowledge and skills current | [Skill sources and updates](skill-updates.md) |
 
 These guides describe human/agent workflows. Only explicitly documented existing tools are implemented features.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

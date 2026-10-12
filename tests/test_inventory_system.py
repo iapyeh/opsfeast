@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import run_recipe as runner
-import ops
+import opsfeast as ops
 import host_runtime as hr
 C = runner.collector
 

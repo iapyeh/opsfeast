@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from ops import ConfigError, REPOSITORY_RECIPES, plain_values, read_yaml
+from opsfeast import ConfigError, REPOSITORY_RECIPES, plain_values, read_yaml
 from recipe_dispatch import declared_version, validate
 
 

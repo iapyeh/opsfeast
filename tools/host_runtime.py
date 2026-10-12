@@ -9,7 +9,7 @@ import re
 import shlex
 import tempfile
 
-from ops import ConfigError, Validator, connection_plan, connection_error
+from opsfeast import ConfigError, Validator, connection_plan, connection_error
 
 FACTS_VERSION = '0.1.0'
 

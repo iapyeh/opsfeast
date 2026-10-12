@@ -1,12 +1,14 @@
 # Vision and design principles
 
-SSHScript Ops aims to build an ecosystem in which AI agents help manage IT systems through reusable, verifiable and shareable recipes, under human-defined goals and authorization. AI-assisted operations should become easier to request, more economical to repeat and easier for administrators to improve together.
+OpsFeast aims to build an ecosystem in which AI agents drive IT operations through reusable, verifiable and shareable recipes, under human-defined goals and authorization. Agent-driven, human-authorized operations should become easier to request, more economical to repeat and easier for administrators to improve together.
 
 This document is the shared direction for project development and recipe authoring. It describes design goals, not a claim that every capability already exists. Consult the [README status](../README.md#status) and [recipe catalog](../recipes/README.md) for current features and verification limits.
 
+See the [ecosystem and naming guide](ecosystem.md) for Feast, Buffet, Kitchen, Chef and Dish roles, repository responsibilities, and implemented versus planned capabilities. SSHScript is the current backend, not a requirement for every future recipe; other tools need explicit contracts, dependencies and verification before support can be claimed.
+
 ## Start from the administrator's intent
 
-An administrator should be able to explain the result they need without learning SSHScript APIs, skill formats or command syntax. The agent reads the relevant guidance, identifies suitable recipes or develops a new one, prepares the work and explains the outcome in terms the administrator can assess.
+An administrator should be able to explain the result they need without learning SSHScript APIs, skill formats or command syntax. The agent reads the relevant guidance, identifies suitable recipes or develops a new one, plans and performs authorized work, and explains the outcome in terms the administrator can assess. Humans intervene when judgment or additional authorization is needed.
 
 Humans still decide goals, target systems, acceptable side effects and authorization. Ask concise questions when missing context changes correctness or risk. Reuse requirements and authorization already supplied within their scope. Feature and recipe design should make these decisions clear without forcing people to become framework experts.
 
@@ -68,4 +70,4 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_

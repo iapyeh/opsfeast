@@ -1,18 +1,18 @@
 # 管理 hosts.yaml 與主機設定
 
-這份文件定義 SSHScript Ops 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
+這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
 
 ## 從管理目錄開始
 
-使用者提供自己的管理根目錄，例如 `/srv/my-ops/`，以及要操作的主機 ID 與目標：
+使用者提供自己的管理根目錄，例如 `/srv/feasts/`，以及要操作的主機 ID 與目標：
 
-> 我的管理目錄是 `/srv/my-ops/`。請取得 `web-01` 目前作業系統回報的 hostname，並把結果存入這個管理目錄。
+> 我的管理目錄是 `/srv/feasts/`。請取得 `web-01` 目前作業系統回報的 hostname，並把結果存入這個管理目錄。
 
-Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 SSHScript Ops checkout 下建立 `my-ops/main/`；`my-ops/` 是各管理環境的容器，與 `recipes/` 同層。可用具名環境或自訂路徑，詳見 [管理環境指南](profiles.md)。
+Agent 從根目錄的 `hosts.yaml` 讀取設定，不要求使用者每次重貼 SSH 指令。`init` 不給目錄時，預設在工具所在 OpsFeast checkout 下建立 `feasts/main/`；`feasts/` 是各管理環境的容器，與 `recipes/` 同層。可用具名環境或自訂路徑，詳見 [管理環境指南](profiles.md)。
 
 ```text
-my-ops/main/
-├── my-ops.yaml
+feasts/main/
+├── feast.yaml
 ├── hosts.yaml
 ├── hosts/
 │   ├── bastions.yaml
@@ -22,38 +22,38 @@ my-ops/main/
 └── runs/
 ```
 
-`hosts.yaml` 與其他 YAML 保存設定；可執行 recipes 直接使用 SSHScript Ops checkout 內的 `recipes/`；`observations/` 保存觀測；`records/` 保存整理後的主機紀錄與人工筆記；`runs/` 保存執行狀態。後三者的詳細格式待定，不是本文件新增的資料契約。
+`hosts.yaml` 與其他 YAML 保存設定；可執行 recipes 直接使用 OpsFeast checkout 內的 `recipes/`；`observations/` 保存觀測；`records/` 保存整理後的主機紀錄與人工筆記；`runs/` 保存執行狀態。後三者的詳細格式待定，不是本文件新增的資料契約。
 
-公開的 SSHScript Ops repository 保存工具與合成範例。真實主機設定、憑證與結果留在使用者的管理環境。使用公開 recipes 時，直接更新 SSHScript Ops checkout 即可，不必複製到管理根目錄。`recipes/...` 固定指向執行工具所在 checkout，不依目前工作目錄或 YAML 所在位置，也不回退到 instance 內的同名副本。自訂 recipe 可另存於管理目錄，用 `./recipes/...` 明確選取；既有副本不會被刪除。
+公開的 OpsFeast repository 保存工具與合成範例。真實主機設定、憑證與結果留在使用者的管理環境。使用公開 recipes 時，直接更新 OpsFeast checkout 即可，不必複製到管理根目錄。`recipes/...` 固定指向執行工具所在 checkout，不依目前工作目錄或 YAML 所在位置，也不回退到 instance 內的同名副本。自訂 recipe 可另存於管理目錄，用 `./recipes/...` 明確選取；既有副本不會被刪除。
 
 ## 建立與重複檢查管理目錄
 
-Repository 提供 [tools/ops.py](../tools/ops.py)，需要 Python 3.11 以上與 PyYAML。使用已安裝 PyYAML 的 Python 執行；以下假設目前工作目錄是 SSHScript Ops repository：
+Repository 提供 [tools/opsfeast.py](../tools/opsfeast.py)，需要 Python 3.11 以上與 PyYAML。使用已安裝 PyYAML 的 Python 執行；以下假設目前工作目錄是 OpsFeast repository：
 
 ```sh
-python tools/ops.py init
-python tools/ops.py init inventory
-python tools/ops.py profiles
-python tools/ops.py use inventory
-python tools/ops.py check
-python tools/ops.py dump hosts.localhost
+python tools/opsfeast.py init
+python tools/opsfeast.py init inventory
+python tools/opsfeast.py profiles
+python tools/opsfeast.py use inventory
+python tools/opsfeast.py check
+python tools/opsfeast.py dump hosts.localhost
 # 自訂位置或登記既有環境：
-python tools/ops.py init /srv/my-ops
-python tools/ops.py add /srv/existing-ops
+python tools/opsfeast.py init /srv/feasts/main
+python tools/opsfeast.py add /srv/existing-ops
 ```
 
-`init` 在所選管理目錄內建立 `my-ops.yaml` 定義檔：
+`init` 在所選管理目錄內建立 `feast.yaml` 定義檔：
 
 ```yaml
 schema_version: 1
-kind: sshscript-ops
+kind: opsfeast
 ```
 
-登記與預設 profile 記錄於 checkout 的 `.my-ops.yaml`（schema 2）。Checkout 內的目錄保存相對路徑，外部保存絕對路徑。兩個工具省略目錄時使用預設 profile；--profile NAME 只影響本次執行，明確目錄與 --profile 不可同時指定。不存在或無效的登記不自動回退到其他目錄。
+登記與預設 profile 記錄於 checkout 的 `.opsfeast.yaml`（schema 2）。Checkout 內的目錄保存相對路徑，外部保存絕對路徑。兩個工具省略目錄時使用預設 profile；--profile NAME 只影響本次執行，明確目錄與 --profile 不可同時指定。不存在或無效的登記不自動回退到其他目錄。
 
 第一個成功登記的環境成為預設，後續新增不切換。重複初始化保留原 profile 名稱與設定，失敗不更新登記。`add` 唯讀檢查既有環境後登記，不建立或改寫其內容；舊環境只有 hosts.yaml 也可加入，若有定義檔則須有效。舊 schema 1 定位檔視為 default，唯讀操作不改寫它；後續登記或切換時寫成 schema 2，不搬移資料。
 
-完整命名、互動選擇、遷移與路徑規則見 [管理環境指南](profiles.md)。管理入口使用 `tools/ops.py`；舊命令中的單一名稱參數如今代表 `my-ops/<name>`，若要指定目前目錄下的路徑需使用 `./name`。
+完整命名、互動選擇、遷移與路徑規則見 [管理環境指南](profiles.md)。管理入口使用 `tools/opsfeast.py`；舊命令中的單一名稱參數如今代表 `feasts/<name>`，若要指定目前目錄下的路徑需使用 `./name`。
 
 `init` 建立 `hosts/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
 
@@ -70,10 +70,10 @@ Recipe 描述目前檢查為有效 YAML mapping，若有 `id` 則檢查型別與
 此命令需要在執行它的 Python 環境安裝 SSHScript 4.0.1 以上與 PyYAML：
 
 ```sh
-python tools/ops.py test-connection host-01
-python tools/ops.py test-connection localhost /srv/my-ops
-python tools/ops.py test-connection host-01 /srv/my-ops --timeout 10
-python tools/ops.py test-connection rms4 /srv/my-ops --debug --traceback
+python tools/opsfeast.py test-connection host-01
+python tools/opsfeast.py test-connection localhost /srv/feasts/main
+python tools/opsfeast.py test-connection host-01 /srv/feasts/main --timeout 10
+python tools/opsfeast.py test-connection rms4 /srv/feasts/main --debug --traceback
 ```
 
 載入入口與 include，檢查連線、帳號與跳板循環後，只連線至指定 host 及其所需跳板，再於目標主機各執行一次 `hostname`、`date`。不要求 recipes 已選取、不執行 recipes、不切換 users 中的其他帳號，也不修改管理檔案。`localhost` 的 `local: true` 使用本機 Session 執行相同指令。
@@ -106,9 +106,9 @@ python tools/ops.py test-connection rms4 /srv/my-ops --debug --traceback
 ## 輸出指定設定
 
 ```sh
-python tools/ops.py dump hosts /srv/my-ops
-python tools/ops.py dump hosts.host-01 /srv/my-ops
-python tools/ops.py dump hosts.host-01.connection /srv/my-ops
+python tools/opsfeast.py dump hosts /srv/feasts/main
+python tools/opsfeast.py dump hosts.host-01 /srv/feasts/main
+python tools/opsfeast.py dump hosts.host-01.connection /srv/feasts/main
 ```
 
 `dump <設定路徑> <管理根目錄>` 以 `.` 分隔 mapping 鍵，輸出指定設定的 JSON（縮排 4 格，中文原樣保留，結尾換行）。`hosts` 包含入口與所有 include 合併後的主機；主機內的引用、recipe 選取與變數值仍原樣保留，不展開成執行結果。其他入口欄位如 `include` 也可查詢。路徑只能逐層選取 mapping 鍵，不支援 list 索引或含 `.` 的鍵名。
@@ -298,9 +298,9 @@ hosts:
 若 `connection.user` 不在該 host 的 `users` 中，或該帳號沒有 `password`，不提供 SSH 密碼，也不借用其他帳號的密碼或自動建立 users 項目。使用已設定的 `identity_file`；未設定私鑰時使用 SSH agent／預設金鑰。若這些方式都無法驗證，連線回報失敗。這個帳密選取規則同樣適用於透過 `proxy_command` 的連線。
 
 ```sh
-python tools/ops.py dump hosts.host-01.users /srv/my-ops
-python tools/ops.py dump hosts.host-01.users.appuser /srv/my-ops
-python tools/ops.py dump hosts.host-01.users.appuser.vars /srv/my-ops
+python tools/opsfeast.py dump hosts.host-01.users /srv/feasts/main
+python tools/opsfeast.py dump hosts.host-01.users.appuser /srv/feasts/main
+python tools/opsfeast.py dump hosts.host-01.users.appuser.vars /srv/feasts/main
 ```
 
 `check` 驗證 users 的欄位、帳號名稱、密碼與變數型別，不驗證帳號存在或密碼正確。`dump` 可取得原樣設定；通用 recipe 執行器尚未實作；inventory-system 的最小 runner 只使用登入帳號。`init`、`check`、`dump` 不會登入；`test-connection` 僅使用登入帳號，不執行 su。既有 `vars.sudo` 仍可使用，保持原有 recipe 輸入語意；不自動把 users 密碼套用為 sudo 密碼。
@@ -335,10 +335,10 @@ hosts:
 
 ## include：把主機清單分檔
 
-YAML 本身沒有標準 include；這是 SSHScript Ops 設定載入層定義的根層欄位，使用一般 YAML，不使用自訂 `!include` 標籤。
+YAML 本身沒有標準 include；這是 OpsFeast 設定載入層定義的根層欄位，使用一般 YAML，不使用自訂 `!include` 標籤。
 
 ```yaml
-# my-ops/hosts.yaml
+# feasts/hosts.yaml
 include:
   - hosts/bastions.yaml
   - hosts/production.yaml
@@ -346,7 +346,7 @@ hosts: {}
 ```
 
 ```yaml
-# my-ops/hosts/bastions.yaml
+# feasts/hosts/bastions.yaml
 hosts:
   bastion:
     connection:
@@ -355,7 +355,7 @@ hosts:
 ```
 
 ```yaml
-# my-ops/hosts/production.yaml
+# feasts/hosts/production.yaml
 hosts:
   web-01:
     connection:
@@ -411,7 +411,7 @@ recipes:
 - `recipes/...` 先依工具所在 checkout 解析；其餘相對路徑依來源 YAML 所在目錄解析，再正規化並解析符號連結。
 - 允許 `..`，但最終路徑不得離開所選來源的根目錄；repository recipe 不能跳到 checkout 的 tools 或其他目錄。
 - Include 的絕對路徑只接受管理根目錄內的檔案；recipe 的絕對路徑也接受 checkout 的 recipes 目錄內。為便於搬移，範例與新設定優先使用相對路徑。
-- 以路徑元件判斷包含關係，不能用字串前綴；`/srv/my-ops-other/` 不在 `/srv/my-ops/` 內。
+- 以路徑元件判斷包含關係，不能用字串前綴；`/srv/feasts/main-other/` 不在 `/srv/feasts/` 內。
 - Glob 在展開前檢查搜尋範圍，不能先遍歷根目錄外；展開後再檢查每個匹配項目與符號連結。目錄遞迴也遵守相同規則。
 - 找不到必要檔案或目錄時報錯，不建立替代路徑，也不略過檢查。
 
@@ -441,4 +441,4 @@ New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md)
 
 Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured sudo password. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
 
-_Last modified: 2026-10-11_
+_Last modified: 2026-10-12_
