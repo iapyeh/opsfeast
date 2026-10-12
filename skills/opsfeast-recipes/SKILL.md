@@ -15,6 +15,18 @@ Follow the [tool selection workflow](../../docs/recipe-authoring.md#choose-execu
 
 Read the selected tools' task-relevant documentation. The SSHScript skill is required when using SSHScript, not for every recipe. This policy does not add runner backends or authorize installation or execution.
 
+## Discover services when authoring recipes
+
+Before implementing logging, notifications or another shared capability in a recipe, consult this skill's service capability references, check the supported runner/API version, and verify the required configuration and provider availability in the selected Feast. Reuse suitable services and document prerequisites, inputs/outputs and failure handling. Distinguish bundled services, user-provided providers and planned capabilities; do not infer local availability from documentation or send a test notification merely to check configuration.
+
+Services and their capability catalog are not implemented yet. When adding or changing a service, maintain a discoverable catalog and canonical usage references linked from this skill, following the [service knowledge-transfer requirement](../../docs/vision.md#enable-agent-operations-through-open-data-contracts-and-skills). Include invocation examples, configuration/availability checks, storage, errors, extension points and verification evidence, and distribute the references with the skill. Do not complete service delivery while this user-agent guidance is missing.
+
+## Support operations without bundled tools
+
+When designing recipe data or helping with an operation that has no bundled tool, follow [agent operations through open contracts and skills](../../docs/vision.md#enable-agent-operations-through-open-data-contracts-and-skills). Inspect the actual versioned contract and storage first. If the operation is feasible, use suitable existing tools or prepare a script within the user's scope; absence of an OpsFeast command alone is not a blocker. If the contract or evidence is insufficient, report the specific gap.
+
+For authoring, deliver linked procedures with prerequisites, inputs, outputs, selection rules and outcome checks so a fresh agent can operate without prior conversations. For execution, establish the authorized targets and side effects, preserve source data when exporting, and preview the selected scope before deletion. Validate transformations and report skipped, failed or unknown items. Do not treat a design proposal as an existing schema or command: logging aggregation/CSV export, retention storage and notification services still require implementation and their own operational guides.
+
 ## Read according to the task
 
 - Inspect available recipes or identify platform gaps: use `python -B tools/opsfeast.py inspect-recipe [RECIPE] --json`; omit RECIPE for checkout discovery and repeat `--platform OS_NAME` for desired coverage. Default text is a concise summary; --platform focuses text on requested OS names, --details shows full human-readable content, and --json retains the complete structured report. Read the [inspection reference](../../docs/cli.md#inspect-recipes-and-platform-gaps) for path rules, fields and exit codes. The command statically reads descriptors/entrypoints; it does not execute code, inspect hosts or prove applicability. Preserve planned/implemented/tested distinctions and implementation match/version constraints; other recipe IDs can be inspected even though the runner does not support them.

@@ -26,6 +26,20 @@ Prefer concise discovery metadata, explicit inputs, stable result contracts and 
 
 For routine recipes, avoid requiring an LLM inside the execution path. If a task actually needs model inference, document that dependency, what data leaves the environment, its cost implications and how its output is verified.
 
+## Enable agent operations through open data contracts and skills
+
+Design data structures and storage so a user's own AI agent can perform useful operations without waiting for every operation to have a bundled OpsFeast tool. This is a required development principle: supported data must have documented, versioned contracts and discoverable skills that explain how to inspect, process and maintain it with suitable tools in the user's environment.
+
+Document field meanings, identities, timestamps and timezones, ordering, paths, relationships, compatibility and failure states. For operations that change data, define selection rules, concurrency constraints, preservation boundaries and verification. Avoid requiring knowledge of private implementation details or a particular agent product. A bundled tool can improve convenience and repeatability, but its absence must not be the sole reason a documented, feasible operation is unavailable to the user's agent.
+
+Skills must provide actionable procedures, prerequisites, inputs, outputs and outcome checks, with synthetic examples where useful. Agents may adapt or create scripts within the user's authorized scope. Reuse reliable scripts for repeated operations when appropriate; agent assistance does not require an LLM inside routine recipe execution. Missing dependencies, unavailable data or insufficient contracts remain explicit limitations, not permission to invent commands or guess behavior.
+
+Logging is a concrete design requirement for future services: structured events across run files must support aggregation, filtering and CSV export through a common schema, stable identities and explicit ordering rules. Arbitrary recipe log files require documented parsers before normalization. Storage must also support retention by a documented run completion time, with a deletion preview, protection for active runs, explicit treatment of incomplete metadata and separate preservation rules for observations, notifications and exported copies. These operations may initially be performed by the user's agent following skills instead of bundled export or cleanup tools. The logging schema, storage layout and operational skills are not implemented by this principle; deliver them with the logging feature before claiming those operations are supported.
+
+Apply the same principle to other services: describe extension contracts and agent workflows for user-provided notification capabilities, including destinations, credentials, external side effects and delivery evidence. Documentation does not grant authorization or provide a sandbox; sending notifications and deleting records remain within the user's actual scope.
+
+Every new or changed service must be delivered with updates to the user-facing recipe-authoring skill and its linked canonical references. Provide a discoverable service capability catalog: what each service does, supported API/contract versions, invocation examples, inputs and outputs, configuration and dependencies, storage, failure behavior, extension points and verification limits. Distinguish bundled capabilities from user-provided providers and planned features. Explain how an agent checks whether a capability is configured and usable in the selected Feast; documented product support alone does not establish local availability. Keep the learning path reachable from the README and recipe skill, and distribute the required references with the skill so a fresh user's agent can select and use services without this conversation. A service is not ready for delivery until this knowledge transfer is complete.
+
 ## Write AI-friendly documentation for humans and agents
 
 AI-friendly documentation is a continuing project principle for new and revised guides, recipe documentation and skills. A human reader should understand the purpose and outcome, and a fresh AI agent should be able to find and use the relevant instructions without relying on a previous conversation or a particular agent's automatic discovery.
@@ -68,6 +82,7 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 - Can the administrator request and assess the outcome without learning internal APIs?
 - Can a human or fresh AI agent find the learning path, relevant interfaces and complete skills without prior conversation context?
+- Can the user's agent perform relevant data operations through documented contracts and actionable skills when no bundled tool exists, and are any remaining limitations explicit?
 - Can repeated work reuse a recipe and relevant context without unnecessary model calls?
 - Can another administrator review, adapt and share it using explicit contracts and dependencies?
 - Does the implementation choice follow the tool selection workflow, and does any SSHScript showcase explain actual capabilities with code and verification evidence?

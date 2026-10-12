@@ -12,8 +12,11 @@ Read the [vision and design principles](vision.md) before creating or changing a
 - Use the least necessary privileges, document side effects and recovery limits, and keep secrets out of code, examples and shared artifacts.
 - Preserve partial, failed and unknown results; publish evidence and compatibility limits instead of unsupported assurances.
 - Include dependencies, versions, licensing and attribution so individual recipes and collections can be shared responsibly.
+- Follow [agent operations through open contracts and skills](vision.md#enable-agent-operations-through-open-data-contracts-and-skills): document data and storage contracts and provide actionable skills for relevant inspection, transformation and maintenance tasks, including tasks without a bundled tool. State actual prerequisites and verification limits rather than inventing a CLI or claiming unsupported behavior.
 
 Use the vision document's delivery questions to identify gaps. These principles do not create a generic runner interface or authorize installing, connecting or executing code.
+
+When selecting services for a recipe, consult the recipe skill's service capability references and verify support for the intended runner/API version and configuration in the selected Feast. Reuse applicable services and document the capabilities used, required configuration/providers and failure handling. Service contributors must update these discoverable skill references with each new or changed service before delivery; see the [knowledge-transfer requirement](vision.md#enable-agent-operations-through-open-data-contracts-and-skills). The service catalog and APIs remain future deliverables until services are implemented.
 
 ## Choose execution tools
 
