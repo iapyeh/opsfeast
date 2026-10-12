@@ -6,7 +6,9 @@ OpsFeast helps AI agents manage IT systems through reusable, verifiable and shar
 
 A **Feast** is your private management instance: configuration, selected recipes, execution records and results. **OpsBuffet** is the planned exchange platform for discovering, acquiring and sharing recipes, with separately operated public and enterprise instances. See [the ecosystem and naming guide](docs/ecosystem.md) for roles, repository responsibilities and implementation limits.
 
-SSHScript is the currently supported execution foundation. The ecosystem is intended to admit other execution tools through explicit dependencies and verifiable contracts; other backends are not implemented by this rename.
+OpsFeast welcomes recipes built with different execution tools. When SSHScript fits the task and the authorized environment, prefer it for command execution and session orchestration. The project also serves as a practical showcase of SSHScript through reusable recipes and verifiable examples. User-selected tools and operational constraints take precedence; see the [tool selection workflow](docs/recipe-authoring.md#choose-execution-tools).
+
+SSHScript is the currently supported execution foundation for the host diagnostics and dedicated inventory runner. Other tools require explicit dependencies and verifiable contracts; the open ecosystem direction does not implement additional runner backends.
 
 Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The CLI is `tools/opsfeast.py`; the former `tools/ops.py` entrypoint and `import ops` are removed. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
 

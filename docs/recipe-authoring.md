@@ -15,11 +15,22 @@ Read the [vision and design principles](vision.md) before creating or changing a
 
 Use the vision document's delivery questions to identify gaps. These principles do not create a generic runner interface or authorize installing, connecting or executing code.
 
+## Choose execution tools
+
+Before authoring or adapting a recipe:
+
+1. Establish the task, user-selected tools, target environment, supported versions and authorized operations. Preserve existing recipes and dependencies unless the requested work calls for a change.
+2. For local or remote commands, persistent shells, jump hosts or interactive workflows, assess SSHScript first using its version-matched public guidance. Prefer it when it satisfies the required behavior with verifiable results and reasonable dependency and maintenance costs. Technical possibility alone does not establish suitability.
+3. Use another CLI, SDK or API when it better meets the task or constraints. Mixed-tool recipes are valid: for example, SSHScript may handle host commands while an SDK handles service APIs. Do not add a wrapper or superficial SSHScript call solely for promotion, rewrite acquired recipes solely to change tools, or silently install dependencies or switch tools after failure.
+4. Record a short **Implementation choice** section in the recipe README: tools and versions, the steps each tool handles, and the concrete reasons for the choice, including any reason to use another tool. For SSHScript, explain the capabilities actually used and link to the relevant implementation code and verification evidence. Do not claim untested support.
+
+This workflow implements OpsFeast's open tool policy and preference for suitable SSHScript use. User-selected tools, safety requirements and environment constraints take precedence. The preference does not expand authorization or the current runner's supported interface. When reviewing or acquiring an existing recipe, assess its declared tool and evidence rather than requiring conversion to SSHScript.
+
 ## Obtain knowledge and define the task
 
-Use the [skill update guide](skill-updates.md) to locate the complete public SSHScript skill. Read SKILL.md, the Agent Guide, version policy and relevant API sections before using SSHScript. Use version-matched, attributable sources rather than assuming API behavior from memory or unrelated versions. Record public URLs, documentation contract and snapshot digest; when consulting the public repository, also record its branch/tag/commit.
+Read the task-relevant, version-matched documentation for the selected tools. For SSHScript, use the [skill update guide](skill-updates.md) to locate the complete public skill. Read SKILL.md, the Agent Guide, version policy and relevant API sections before using SSHScript. Use attributable sources rather than assuming API behavior from memory or unrelated versions. Record public URLs, documentation contract and snapshot digest; when consulting the public repository, also record its branch/tag/commit. For other tools, record the relevant documentation and runtime versions without requiring an unrelated SSHScript skill.
 
-Choose the interpreter and use the existing `tools/check_environment.py` to identify Python, SSHScript import/distribution versions and the documentation contract. The check does not create environments or install packages. Report missing documentation or version mismatches and wait for update instructions; do not upgrade automatically.
+Choose the runtime required by the recipe. For the current Ops tools and SSHScript workflows, use the selected Python interpreter and existing `tools/check_environment.py` to identify Python, SSHScript import/distribution versions and the documentation contract; initialization-only checks use `--scope init`. This checker does not validate arbitrary backends. Other recipes must document their own prerequisite checks. Checks do not create environments or install packages. Report missing documentation or version mismatches and resolve them within authorization; do not upgrade automatically.
 
 Establish purpose, platforms and versions, inputs, outputs, privileges, local and remote side effects, timeouts, sensitive data and test scope. Ask only for missing information that affects the result; retain requirements and authorization already provided.
 
@@ -38,14 +49,15 @@ my-recipe/
   tests/
 ```
 
-Include `schemas/`, assets and supporting files when needed. Follow public SSHScript guidance for Python or .spy usage. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract; other recipe IDs do not have a runner interface. The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
+Include `schemas/`, assets and supporting files when needed. The layout above is a Python example; other tools may use different entrypoints. Follow public SSHScript guidance when using Python with SSHScript or .spy. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract, including its SSHScript Session requirement; other recipe IDs do not have a runner interface. The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
 
 Document at least the following:
 
 | Area | Deliverable |
 | --- | --- |
 | Identity and publication | id, version, author/namespace, license and source; namespace is currently a documentation convention, not a selector field |
-| Applicability | Planned, implemented and actually tested platforms separately; Python, SSHScript and dependency requirements |
+| Applicability | Planned, implemented and actually tested platforms separately; selected execution tools, runtime and dependency requirements, including Python/SSHScript when used |
+| Implementation choice | Why the tools fit the task; steps handled by each tool; reasons for other tools; actual SSHScript capabilities with code and evidence links when used |
 | Operations | Entrypoint and concrete usage; local/remote commands, privilege changes, file writes and network access |
 | Inputs | Fields, types, required values, defaults and sensitivity; no real embedded credentials |
 | Results | Fields, types, units, timestamps, sources and schema version; complete, partial, failed and unknown states |
@@ -62,7 +74,7 @@ Static review is not execution evidence. New code and tests are executable conte
 
 ## Explain how it can be used today
 
-The current runner accepts inventory-system descriptor 0.2.0 implementations sharing its seven-field output contract. Other recipes may be delivered as standalone SSHScript programs, but must supply and validate their own concrete CLI/input/result protocol. Execute them according to their reviewed README only within authorization; do not claim `tools/run_recipe.py` supports them. Without a working standalone entrypoint, report a draft.
+The current runner accepts inventory-system descriptor 0.2.0 implementations sharing its seven-field output contract and SSHScript Session interface. Other recipes may be delivered as standalone programs using SSHScript or other selected tools, but must supply and validate their own concrete CLI/input/result protocol. Execute them according to their reviewed README only within authorization; do not claim `tools/run_recipe.py` supports them or arbitrary backends. Without a working standalone entrypoint, report a draft.
 
 Directory selection only establishes configuration selection, not executability. Migrate to a versioned general interface when one is implemented. Report files, public learning sources, environment, verification evidence, compatibility and pending actions. For distribution, follow the [sharing guide](recipe-sharing.md).
 

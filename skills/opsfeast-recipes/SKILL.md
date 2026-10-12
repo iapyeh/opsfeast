@@ -1,6 +1,6 @@
 ---
 name: opsfeast-recipes
-description: Help OpsFeast users discover, create and share one or multiple recipes, then acquire, verify and review third-party candidates before authorized installation. Use for recipe discovery, platform implementation authoring and authorized inventory execution; obtain SSHScript API knowledge from its public skill and version-matched guides.
+description: Help OpsFeast users discover, author and share recipes, and review third-party candidates before authorized installation. Use for recipe discovery, tool selection, platform implementation authoring and authorized inventory execution; prefer SSHScript when suitable while supporting other tools.
 ---
 
 # OpsFeast recipes
@@ -8,6 +8,12 @@ description: Help OpsFeast users discover, create and share one or multiple reci
 Read the repository README.md, AGENTS.md and [user guide](../../docs/recipes.md). Use the [catalog](../../recipes/README.md) to identify available recipes. This skill is supplied with Ops and can be read directly; its presence does not imply installation or automatic loading.
 
 Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
+
+## Choose tools when authoring or adapting
+
+Follow the [tool selection workflow](../../docs/recipe-authoring.md#choose-execution-tools). Assess SSHScript first for command execution and session orchestration, and prefer it when it fits the task, verified capabilities and authorized environment. User-selected tools, safety and environment constraints take precedence. Other tools and mixed implementations are welcome; briefly record concrete reasons in the recipe's Implementation choice section. For SSHScript recipes, explain actual capabilities with implementation and verification links. Do not require conversion of acquired recipes, add superficial usage or change dependencies solely for promotion.
+
+Read the selected tools' task-relevant documentation. The SSHScript skill is required when using SSHScript, not for every recipe. This policy does not add runner backends or authorize installation or execution.
 
 ## Read according to the task
 

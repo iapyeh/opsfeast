@@ -38,7 +38,7 @@ One Feast may eventually use multiple authorized Buffets. Enterprise review and 
 
 ## Execution tools and present limits
 
-SSHScript is the currently supported execution foundation. Future recipes may use CLIs, SDKs, HTTP APIs or other tools when their dependencies, behavior and evidence contracts are defined and verified. A name change does not implement additional backends.
+SSHScript is the currently supported execution foundation for host diagnostics and the dedicated inventory runner, and the preferred tool for suitable command execution and session orchestration. OpsFeast also serves as a practical SSHScript showcase. Recipes may use CLIs, SDKs, HTTP APIs or mixed tools when their dependencies, behavior and evidence contracts are defined and verified. Follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools); user-selected tools and operational constraints take precedence. Standalone recipes need their own reviewed execution instructions. A name change or documented tool preference does not implement additional runner backends.
 
 OpsFeast currently provides profiles, configuration checks, explicit host/account diagnostics, static recipe inspection and a dedicated inventory-system runner. A general runner, Exchange client/server, installer, publication CLI, general sandbox and machine-enforced authorization records are not implemented. See the [README status](../README.md#status), [CLI reference](cli.md), [recipe catalog](../recipes/README.md) and [vision](vision.md).
 

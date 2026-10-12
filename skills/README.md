@@ -4,6 +4,8 @@ This directory contains AI agent entry points and skills for establishing and ma
 
 Guidance should help agents discover recipes, check compatibility and prerequisites, interpret execution status, maintain records, and verify outcomes. General Markdown guidance should remain usable without a skill loader.
 
+OpsFeast skills follow the [tool selection workflow](../docs/recipe-authoring.md#choose-execution-tools): keep tool choice open and prefer SSHScript for suitable command execution and session orchestration. User-selected tools and operational constraints take precedence. Read the selected tools' relevant knowledge; SSHScript recipes should demonstrate actual capabilities through code and verification evidence. Current host diagnostics and inventory execution retain their SSHScript requirements.
+
 SSHScript execution semantics belong to the SSHScript project. Guidance here should reference the appropriate SSHScript version rather than duplicate its API documentation.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.

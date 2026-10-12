@@ -60,6 +60,8 @@ For complete tool syntax, defaults, behavior, output and exit codes, see the [CL
 
 ## Recipe next steps
 
+When creating or adapting a recipe, follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools). OpsFeast keeps tool choice open and prefers SSHScript for suitable command execution and session orchestration, while respecting user-selected tools and operational constraints. Read the selected tools' relevant documentation; recipes using other tools need their own prerequisite checks and reviewed standalone execution instructions. The current host diagnostics and inventory runner continue to require SSHScript.
+
 To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; custom inventory implementations must follow its descriptor 0.2.0 and shared output contract; other recipe IDs remain unsupported.
 
 ## Authorized host checks and inventory

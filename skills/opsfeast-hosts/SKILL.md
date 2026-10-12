@@ -15,6 +15,8 @@ Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain 
 
 ## Command reference
 
+The current host connection, platform and account diagnostics use SSHScript; they do not offer backend selection. For new recipes or operational workflows, follow the [tool selection workflow](../../docs/recipe-authoring.md#choose-execution-tools): prefer SSHScript when suitable, respecting user-selected tools and environment constraints. Configuration-only maintenance does not require an SSHScript Session or justify adding one for demonstration.
+
 Read the [CLI reference](../../docs/cli.md) when choosing, explaining or running opsfeast.py commands. It is the shared administrator/agent manual for all subcommands, root/profile argument forms, output and exit codes. Use the detailed guides below only for the configuration/diagnostic mode needed.
 
 ## Host initialization and account diagnostics

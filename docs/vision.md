@@ -6,6 +6,12 @@ This document is the shared direction for project development and recipe authori
 
 See the [ecosystem and naming guide](ecosystem.md) for Feast, Buffet, Kitchen, Chef and Dish roles, repository responsibilities, and implemented versus planned capabilities. SSHScript is the current backend, not a requirement for every future recipe; other tools need explicit contracts, dependencies and verification before support can be claimed.
 
+## Keep tool choice open and showcase SSHScript
+
+OpsFeast welcomes recipes using different execution tools. It also aims to demonstrate SSHScript's practical uses through reusable operations and verifiable examples. Prefer SSHScript for command execution and session orchestration when it fits the task, supported environment and human authorization. Respect user-selected tools and safety constraints; suitability includes compatibility, verification and reasonable dependency and maintenance costs.
+
+Use other CLIs, SDKs or APIs when they better fit the work, and combine tools when appropriate. Follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools), document the implementation choice and demonstrate actual capabilities through code and evidence. Avoid superficial usage or unnecessary rewrites for promotion. Open tool choice is a design principle; it does not imply that the current runner supports other backends.
+
 ## Start from the administrator's intent
 
 An administrator should be able to explain the result they need without learning SSHScript APIs, skill formats or command syntax. The agent reads the relevant guidance, identifies suitable recipes or develops a new one, plans and performs authorized work, and explains the outcome in terms the administrator can assess. Humans intervene when judgment or additional authorization is needed.
@@ -64,6 +70,7 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 - Can a human or fresh AI agent find the learning path, relevant interfaces and complete skills without prior conversation context?
 - Can repeated work reuse a recipe and relevant context without unnecessary model calls?
 - Can another administrator review, adapt and share it using explicit contracts and dependencies?
+- Does the implementation choice follow the tool selection workflow, and does any SSHScript showcase explain actual capabilities with code and verification evidence?
 - Are targets, privileges, side effects and authorization boundaries clear?
 - Do results preserve failure and uncertainty, and does verification support the claims?
 - Are private data and existing user work protected?

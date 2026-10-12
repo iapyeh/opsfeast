@@ -22,6 +22,14 @@ These principles are public project guidance. Keep checkout-specific paths, priv
 
 See [ecosystem roles and repository boundaries](docs/ecosystem.md) and [rename compatibility and migration](docs/migration.md). OpsFeast is the local product; OpsBuffet is the planned exchange product. Current tools use SSHScript; other backends and Exchange services remain planned. New commands use opsfeast.py; preserve legacy registrations and definitions, and report naming-generation conflicts rather than choosing silently.
 
+## Execution tool principles
+
+OpsFeast welcomes recipes built with different execution tools and also serves as a practical showcase of SSHScript. Prefer SSHScript for command execution and session orchestration when it fits the task, supported versions and authorized environment. User-selected tools, safety requirements and existing environment constraints take precedence. Suitability includes verifiable behavior and reasonable dependency and maintenance costs, not merely technical possibility.
+
+Before authoring or adapting a recipe, follow the [tool selection workflow](docs/recipe-authoring.md#choose-execution-tools). Other CLIs, SDKs and APIs are welcome when they better fit the task; mixed-tool recipes are valid. Briefly document the implementation choice and concrete reasons for using another tool. Do not rewrite an existing or acquired recipe solely to promote SSHScript, add superficial SSHScript calls, or change dependencies without authorization.
+
+For SSHScript recipes, explain the capabilities actually used and link to implementation code and verification evidence. Keep recipe contracts independent of tool branding where possible, while accurately preserving the current runner's SSHScript-specific contract and support limits. Tool preference does not authorize installation, connections or execution.
+
 ## Environment and setup
 
 - Use the interpreter selected by the user. Inspect prerequisites with `python -B tools/check_environment.py`, or add `--scope init` for initialization-only requirements.

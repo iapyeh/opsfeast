@@ -4,11 +4,11 @@ This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent 
 
 ## Available recipes
 
-| Recipe | Purpose | Implemented platform | Verification evidence | Usage |
-| --- | --- | --- | --- | --- |
-| [inventory-system](inventory/system/README.md) 0.2.0 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/SSH collection unverified | Dedicated runner, SSHScript ==5.0.0; see recipe README |
+| Recipe | Purpose | Implemented platform | Execution tools and showcase | Verification evidence | Usage |
+| --- | --- | --- | --- | --- | --- |
+| [inventory-system](inventory/system/README.md) 0.2.0 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS | SSHScript ==5.0.0 for local/SSH Session command collection; [implementation choice](inventory/system/README.md#implementation-choice) | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/SSH collection unverified | Dedicated runner; see recipe README |
 
-No other recipes are currently supplied, and there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, evidence and usage. Author declarations are not substitutes for actual testing.
+No other recipes are currently supplied, and there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, execution tools, actual showcased capabilities, evidence and usage. Author declarations are not substitutes for actual testing.
 
 ## Custom and third-party content
 
@@ -23,7 +23,7 @@ Users may create recipes in their own working directories or repositories withou
 
 Recipe authors should follow the shared [vision and design principles](../docs/vision.md) and [authoring guide](../docs/recipe-authoring.md). Design for human intent, repeatable execution with less model work, community reuse, clear authorization and outcomes supported by evidence.
 
-Each recipe should document its purpose, supported and tested platforms, SSHScript compatibility, dependencies, required permissions, inputs, outputs, side effects and verification method.
+Each recipe should document its purpose, supported and tested platforms, selected tools and compatibility, dependencies, required permissions, inputs, outputs, side effects and verification method. Follow the [tool selection workflow](../docs/recipe-authoring.md#choose-execution-tools) and explain the implementation choice. SSHScript recipes should link actual capabilities to code and evidence; other tools and mixed recipes are welcome, with their own reviewed standalone usage where the current runner does not apply.
 
 Collection recipes should retain observation sources and timestamps and distinguish success, permission denial, unsupported operations, timeouts and parsing failures.
 

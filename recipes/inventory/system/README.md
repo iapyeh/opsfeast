@@ -4,6 +4,14 @@ Recipe version 0.2.0 provides Linux, FreeBSD and macOS implementations under one
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
+## Implementation choice
+
+This recipe uses Python and SSHScript ==5.0.0 to collect host commands through the runner's local or SSH Session. SSHScript fits the command-oriented inventory task and reuses the configured connection and jump-host workflow. Platform implementations share the same Session interface and result contract; platform-specific parsing and report construction remain ordinary Python.
+
+The [runner](../../../tools/run_recipe.py) creates the Session, connects through the configured hops when needed, passes it to the selected collector and requests strict cleanup. The shared [command probe](main.py) uses `session.exec_command` with a command timeout and records command output and failure states; the [macOS collector](implementations/macos.py) demonstrates platform-specific commands using that probe. This is a practical example of Session-based collection and bounded command execution, not a demonstration of su/sudo or interactive consoles.
+
+The [verification section](#results-and-verification) distinguishes synthetic tests and local macOS execution from unverified real SSH and native Linux/FreeBSD collection. Connection and cleanup code alone does not establish remote validation or prove remote-process termination. See the [tool selection workflow](../../../docs/recipe-authoring.md#choose-execution-tools) for other recipes; this runner still requires its documented SSHScript interface.
+
 ## Collection contract
 
 | Field | Linux | FreeBSD | macOS |
