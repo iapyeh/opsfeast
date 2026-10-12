@@ -7,7 +7,7 @@ description: Help OpsFeast users discover, author and share recipes, and review 
 
 Read the repository README.md, AGENTS.md and [user guide](../../docs/recipes.md). Use the [catalog](../../recipes/README.md) to identify available recipes. This skill is supplied with Ops and can be read directly; its presence does not imply installation or automatic loading.
 
-Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
+Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; attach registers existing directories and detach unregisters while retaining them, with main protected and a validated main fallback required when detaching the default (see [profiles](../../docs/profiles.md)); [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
 
 ## Choose tools when authoring or adapting
 

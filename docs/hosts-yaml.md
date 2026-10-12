@@ -39,7 +39,7 @@ python tools/opsfeast.py check
 python tools/opsfeast.py dump hosts.localhost
 # 自訂位置或登記既有環境：
 python tools/opsfeast.py init /srv/feasts/main
-python tools/opsfeast.py add /srv/existing-ops
+python tools/opsfeast.py attach /srv/existing-ops
 ```
 
 `init` 在所選管理目錄內建立 `feast.yaml` 定義檔：
@@ -51,7 +51,7 @@ kind: opsfeast
 
 登記與預設 profile 記錄於 checkout 的 `.opsfeast.yaml`（schema 2）。Checkout 內的目錄保存相對路徑，外部保存絕對路徑。兩個工具省略目錄時使用預設 profile；--profile NAME 只影響本次執行，明確目錄與 --profile 不可同時指定。不存在或無效的登記不自動回退到其他目錄。
 
-第一個成功登記的環境成為預設，後續新增不切換。重複初始化保留原 profile 名稱與設定，失敗不更新登記。`add` 唯讀檢查既有環境後登記，不建立或改寫其內容；舊環境只有 hosts.yaml 也可加入，若有定義檔則須有效。舊 schema 1 定位檔視為 default，唯讀操作不改寫它；後續登記或切換時寫成 schema 2，不搬移資料。
+第一個成功登記的環境成為預設，後續新增不切換。重複初始化保留原 profile 名稱與設定，失敗不更新登記。`attach` 唯讀檢查既有環境後登記，不建立或改寫其內容；舊環境只有 hosts.yaml 也可加入，若有定義檔則須有效。舊 schema 1 定位檔視為 default，唯讀操作不改寫它；後續登記或切換時寫成 schema 2，不搬移資料。
 
 完整命名、互動選擇、遷移與路徑規則見 [管理環境指南](profiles.md)。管理入口使用 `tools/opsfeast.py`；舊命令中的單一名稱參數如今代表 `feasts/<name>`，若要指定目前目錄下的路徑需使用 `./name`。
 

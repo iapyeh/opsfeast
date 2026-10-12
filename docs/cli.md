@@ -13,7 +13,7 @@ Run examples from the repository checkout. `python` means the interpreter select
 
 | Operation | Controller requirements |
 | --- | --- |
-| Profiles, init, add, use, check, dump, inspect-recipe | Python 3.11+ and PyYAML; no SSHScript Session |
+| Profiles, init, attach, detach, use, check, dump, inspect-recipe | Python 3.11+ and PyYAML; no SSHScript Session |
 | Standalone test-connection | Python 3.11+, PyYAML and the supported SSHScript command contract (documented minimum 4.0.1) |
 | Host-init, test-host, test-su, test-sudo, test-connection --host-init, inventory | Python 3.11+, PyYAML and matching SSHScript import/distribution **5.0.0** |
 
@@ -42,7 +42,7 @@ The CLI has two forms for an explicit root:
 | opsfeast.py host-init, test-host, test-su, test-sudo | Optional `--root ROOT` |
 | run_recipe.py | `--root ROOT` |
 | opsfeast.py init | Optional name or path; `--profile` names the registration |
-| opsfeast.py add | Required existing directory; `--profile` names the registration |
+| opsfeast.py attach | Required existing directory; `--profile` names the registration |
 
 Explicit relative directory paths use the current shell directory; registered relative locations use the checkout. `init inventory` is a name under the checkout's `feasts/`; `init ./inventory` is a path under the shell directory. See [profiles](profiles.md) for registration conflicts, legacy directories and locator migration.
 
@@ -53,8 +53,9 @@ Run `python -B tools/opsfeast.py COMMAND --help` for that command's parser help.
 | Command syntax after tools/opsfeast.py | Purpose and behavior |
 | --- | --- |
 | `init [NAME_OR_PATH] [--profile NAME]` | Create a management scaffold, validate it, then register it. Default: feasts/main, profile main. Preserve existing configuration. |
-| `add ROOT [--profile NAME]` | Validate/register an existing directory without creating or changing its scaffold. |
-| `profiles` | List registrations and show the selected default. No registrations is a normal result. |
+| `attach ROOT [--profile NAME]` | Validate/register an existing directory without creating or changing its scaffold. |
+| `profiles` | List registrations, basic directory status and selected default. Missing entries remain registered; no registrations is a normal result. |
+| `detach NAME` | Remove one registration while preserving its directory/data. Main is protected; removing the current default validates and switches to main in one registry write. |
 | `use [NAME]` | Change the default to a registered environment. Omitted NAME opens an interactive selector; noninteractive use requires a name. |
 | `check [ROOT] [--profile NAME]` | Validate YAML, duplicate definitions, connections/users/vars, include/jump cycles, recipe selections and path boundaries. Does not connect or validate complete recipe execution contracts. |
 | `inspect-recipe [RECIPE] [--platform OS_NAME ...] [--details | --json]` | Read recipe metadata, declared platform coverage, entrypoint/version status and verification evidence. Omitted RECIPE discovers checkout recipes; repeat --platform for desired OS names. No management profile, SSHScript import or connection. |
@@ -66,7 +67,7 @@ Run `python -B tools/opsfeast.py COMMAND --help` for that command's parser help.
 | `test-su HOST USER ... [--root ROOT] [--profile NAME]` | Independently test connection-user → each target. At least one target is required. |
 | `test-su HOST --chain USER ... [--chain USER ...] [--root ROOT] [--profile NAME]` | Test each ordered chain from a fresh connection identity. Repeat --chain for separate chains. |
 
-Profile/configuration commands and inspect-recipe do not connect or execute recipes. Init/add preserve an existing default; the first successful registration becomes the default. Use changes only the selected profile. In interactive registration, a conflicting name may prompt for another name; noninteractive conflicts fail without waiting. Init failure may leave newly created scaffold files for correction, but does not register a failed setup.
+Profile/configuration commands and inspect-recipe do not connect or execute recipes. Detach never deletes management data or auto-creates/attaches main. Unknown names or an unavailable main fallback fail before writing; see [profile lifecycle](profiles.md#detach-a-registration). Init/attach preserve an existing default; the first successful registration becomes the default. Use changes only the selected profile. Profiles status is a basic location/definition/entry-file check, not full YAML/recipe or host verification. In interactive registration, a conflicting name may prompt for another name; noninteractive conflicts fail without waiting. Init failure may leave newly created scaffold files for correction, but does not register a failed setup.
 
 ### Inspect recipes and platform gaps
 
@@ -289,7 +290,7 @@ Su/sudo JSON includes per-step `identity_verification` (expected/actual username
 | Actual diagnostic failure; inventory partial/unsupported/skipped/failed; configuration/save error | 1 |
 | Invalid CLI syntax/options rejected by argparse | 2 |
 
-Profiles/init/add/use/check print human-readable text. Dump and host diagnostics print JSON. Inventory prints summary JSON and saves full reports. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; add/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
+Profiles/init/attach/detach/use/check print human-readable text. Dump and host diagnostics print JSON. Inventory prints summary JSON and saves full reports. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
 
 Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries without su/sudo. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
 

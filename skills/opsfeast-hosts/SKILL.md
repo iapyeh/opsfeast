@@ -45,11 +45,15 @@ Use the selected interpreter instead of assuming `python`. New commands accept `
 - Test-su requires targets excluding the actual connection account. Space-separated targets are independent; each repeated --chain is an independent ordered chain. Do not mix forms. Missing required credentials are skipped; failed/skipped predecessors prevent remaining chain steps. Other groups use fresh sessions and continue.
 - Report verified identities, entry/command/cleanup failures and skipped reasons separately. Shell sudo success does not establish command-specific privileges or prove password consumption. Test-host partial/skipped can return exit code zero; inspect JSON statuses rather than treating zero as all tests verified. Native SSH/su/sudo support has not been established by synthetic tests.
 
+## Profile lifecycle
+
+Use attach PATH [--profile NAME] for existing directories (the former add command is removed), init [NAME] to create/reuse a Feast, and use NAME to choose the default. Init without a name means main. Detach NAME removes only a registration and preserves all directory contents; never detach main, auto-delete missing registrations or auto-attach a directory just because it exists. Detaching the current default requires a registered usable main and changes the fallback/removal in one atomic registry write. If main is absent/invalid, fail without modifications; explicitly repair it or use another profile before detaching. Profiles basic available/missing/invalid/unavailable status is not full configuration or connection evidence. Read the [profile guide](../../docs/profiles.md#detach-a-registration) and [CLI reference](../../docs/cli.md); registry operations do not authorize host execution.
+
 ## 工作入口與編輯範圍
 
 連線診斷可加 `--verbose`（進度）、`--debug`（篩選後的有效設定）及 `--traceback`（不含原文、source 與 locals 的堆疊）。JSON 的 hops 與 error.hop 區分每跳；key_source 指出 identity_file 從哪一個 parent 主機讀取。這些是 Ops 自己的診斷，不等同啟用 SSHScript 原始 DEBUG log。診斷寫 stderr，stdout 保持 JSON；不要為了除錯回貼密碼、代理命令或 token，也不要只憑提示就聲稱已找到根因。
 
-- 以使用者提供的管理根目錄為入口，讀取其中的 `hosts.yaml`。沒有明確根目錄時，依工具所在 checkout 的 `.opsfeast.yaml` 使用預設 profile，或使用 --profile NAME 選取；缺少登記或位置無效時明確回報，不自行改查其他目錄。無參數 init 新建 feasts/main，具名 init 新建 feasts/<name>；帶路徑分隔符的參數是自訂路徑。既有目錄用 add <directory> 驗證登記，不能為了登記執行 init 改動它。新增不切換預設；use NAME 才切換。名稱衝突須詢問使用者，非互動時以 --profile 指定選定名稱。細節見 [管理環境指南](../../docs/profiles.md)。
+- 以使用者提供的管理根目錄為入口，讀取其中的 `hosts.yaml`。沒有明確根目錄時，依工具所在 checkout 的 `.opsfeast.yaml` 使用預設 profile，或使用 --profile NAME 選取；缺少登記或位置無效時明確回報，不自行改查其他目錄。無參數 init 新建 feasts/main，具名 init 新建 feasts/<name>；帶路徑分隔符的參數是自訂路徑。既有目錄用 attach <directory> 驗證登記，不能為了登記執行 init 改動它。新增不切換預設；use NAME 才切換。名稱衝突須詢問使用者，非互動時以 --profile 指定選定名稱。細節見 [管理環境指南](../../docs/profiles.md)。
 - 確認要建立、修改或查詢的主機 ID 與目標。已提供的資料不重複詢問；只詢問會影響結果的缺漏。
 - 先讀既有入口及相關 include，保留主機 ID、分檔方式、註解與不相關設定。修改主機定義所在的來源檔案，不在入口建立重複主機作為覆寫。
 - 真實資料寫入使用者的管理環境；repository 文件和範例只使用合成資料。維護 OpsFeast 文件不代表可修改 SSHScript library；遵守當前目錄的 AGENTS.md。

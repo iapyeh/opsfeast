@@ -45,6 +45,10 @@ Migration is unnecessary for continued use. Perform it only after reviewing the 
 
 The tools do not provide a migration command or automatically rewrite private data. A newer definition schema should be introduced only for an actual contract change, not for a brand rename.
 
+## Profile command names
+
+The former add ROOT command is replaced by attach ROOT, retaining --profile NAME for registration naming. There is no add alias. Detach NAME unregisters an exact name without deleting its management directory; main cannot be detached. Removing the selected default first validates a registered usable main and switches to it atomically, or fails without changing the registry. Profiles now shows basic location status, retaining missing registrations. Registry/definition filename and schema compatibility remain unchanged; see [profiles](profiles.md).
+
 ## Host group field
 
 Host membership uses `group: NAME` for one group or `group: [NAME, ...]` for multiple groups. Rename the former `groups` key to `group`, retaining its values and comments; groups is not an alias, and configurations with either the old key alone or both names fail with a migration hint. Omitted group or group: [] means no membership. Run check after updating the defining YAML files, including includes; see [host groups](hosts-yaml.md#host-groups). No connection or recipe execution is required to validate the migration.

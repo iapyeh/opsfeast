@@ -124,6 +124,21 @@ def save_profiles(data):
             temporary.unlink(missing_ok=True)
 
 
+def registered_root(data, name):
+    if name not in data['profiles']:
+        raise ConfigError(f'unknown profile: {name}')
+    root = profile_root(data['profiles'][name]['root'])
+    if not root.is_dir():
+        raise ConfigError(f'management directory not found: {root}')
+    definition = definition_path(root)
+    if definition.exists() or definition.is_symlink():
+        instance_definition(root)
+    entry = root / 'hosts.yaml'
+    if not entry.is_file() or not entry.resolve().is_relative_to(root):
+        raise ConfigError(f'management entry hosts.yaml missing or outside root: {root}')
+    return root
+
+
 def resolve_root(root=None, profile=None):
     if root is not None:
         if profile is not None:
@@ -137,17 +152,7 @@ def resolve_root(root=None, profile=None):
     name = profile if profile is not None else data['default_profile']
     if name is None:
         raise ConfigError('no registered profiles; run opsfeast.py init or specify a directory')
-    if name not in data['profiles']:
-        raise ConfigError(f'unknown profile: {name}')
-    root = profile_root(data['profiles'][name]['root'])
-    if not root.is_dir():
-        raise ConfigError(f'management directory not found: {root}')
-    definition = definition_path(root)
-    if definition.exists() or definition.is_symlink():
-        instance_definition(root)
-    elif not (root / 'hosts.yaml').is_file():
-        raise ConfigError(f'management entry hosts.yaml missing: {root}')
-    return root
+    return registered_root(data, name)
 
 
 def init_plan(argument=None, profile=None):
@@ -206,13 +211,49 @@ def register_profile(root, name, data):
 def list_profiles(data=None, numbered=False):
     data = load_profiles() if data is None else data
     if not data['profiles']:
-        print('No registered profiles. Run opsfeast.py init or opsfeast.py add <directory> first.')
+        print('No registered profiles. Run opsfeast.py init or opsfeast.py attach <directory> first.')
         return
-    print('PROFILE  ROOT  DEFAULT')
+    print('PROFILE  ROOT  STATUS  DEFAULT')
     for index, (name, item) in enumerate(data['profiles'].items(), 1):
         prefix = f'{index}. ' if numbered else ''
         mark = (' [current default]' if numbered else ' *') if name == data['default_profile'] else ''
-        print(f"{prefix}{name}  {profile_root(item['root'])}{mark}")
+        root = profile_root(item['root'])
+        status = 'available'
+        try:
+            registered_root(data, name)
+        except ConfigError:
+            try:
+                root.stat()
+                status = 'invalid'
+            except FileNotFoundError:
+                status = 'missing'
+            except OSError:
+                status = 'unavailable'
+        except OSError:
+            status = 'unavailable'
+        print(f"{prefix}{name}  {root}  {status}{mark}")
+
+
+def detach_profile(name):
+    name = profile_name(name)
+    if name == 'main':
+        raise ConfigError('main is a reserved profile and cannot be detached')
+    data = load_profiles()
+    if name not in data['profiles']:
+        raise ConfigError(f'unknown profile: {name}')
+    root = profile_root(data['profiles'][name]['root'])
+    was_default = data['default_profile'] == name
+    if was_default:
+        if 'main' not in data['profiles']:
+            raise ConfigError('cannot detach the default profile: main is not registered; use another profile first')
+        registered_root(data, 'main')
+        data['default_profile'] = 'main'
+    del data['profiles'][name]
+    save_profiles(data)
+    print(f'Detached profile: {name}  {root}')
+    print(f'Default profile: {data["default_profile"]}')
+    print('Management directory and its contents preserved; no connection or recipe execution performed.')
+    return 0
 
 
 def use_profile(name=None):
@@ -1018,9 +1059,11 @@ def main(argv=None):
     inspection_output.add_argument('--details', action='store_true', help='show the full human-readable report instead of a focused summary')
     use = commands.add_parser('use', help='select the default profile')
     use.add_argument('profile', nargs='?')
-    add = commands.add_parser('add', help='validate and register an existing management directory without modifying it')
-    add.add_argument('root', type=Path)
-    add.add_argument('--profile', help='registration name (default: directory name)')
+    attach = commands.add_parser('attach', help='validate and register an existing management directory without modifying it')
+    attach.add_argument('root', type=Path)
+    attach.add_argument('--profile', help='registration name (default: directory name)')
+    detach = commands.add_parser('detach', help='remove a profile registration and preserve its directory; main is protected')
+    detach.add_argument('profile', help='exact registered profile name; main cannot be detached')
     for command in ('init', 'check', 'dump', 'test-connection'):
         command_parser = commands.add_parser(command)
         if command == 'dump':
@@ -1061,7 +1104,9 @@ def main(argv=None):
             return 0
         if args.command == 'use':
             return use_profile(args.profile)
-        if args.command == 'add':
+        if args.command == 'detach':
+            return detach_profile(args.profile)
+        if args.command == 'attach':
             root = args.root.expanduser().resolve(strict=True)
             definition = definition_path(root)
             if definition.exists() or definition.is_symlink():

@@ -78,13 +78,13 @@ class ProfileTests(unittest.TestCase):
 
     def test_same_directory_keeps_name_through_symlink(self):
         root = self.existing('existing/inventory')
-        self.assertEqual(self.cli('add', str(root), '--profile', 'special')[0], 0)
+        self.assertEqual(self.cli('attach', str(root), '--profile', 'special')[0], 0)
         link = self.root / 'alias'
         link.symlink_to(root, target_is_directory=True)
-        self.assertEqual(self.cli('add', str(link))[0], 0)
+        self.assertEqual(self.cli('attach', str(link))[0], 0)
         self.assertEqual(self.cli('init', str(root))[0], 0)
         self.assertEqual(list(ops.load_profiles()['profiles']), ['special'])
-        self.assertEqual(self.cli('add', str(root), '--profile', 'different')[0], 1)
+        self.assertEqual(self.cli('attach', str(root), '--profile', 'different')[0], 1)
 
     def test_collision_suggests_name_and_never_creates_new_root(self):
         self.assertEqual(self.cli('init', 'inventory')[0], 0)
@@ -182,7 +182,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_existing_default_profile_preserved_when_main_is_created(self):
         root = self.existing('checkout/feasts/default')
-        self.assertEqual(self.cli('add', str(root))[0], 0)
+        self.assertEqual(self.cli('attach', str(root))[0], 0)
         before = self.snapshot(root)
         self.assertEqual(self.cli('init')[0], 0)
         self.assertEqual(list(ops.load_profiles()['profiles']), ['default', 'main'])
@@ -192,33 +192,33 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(self.snapshot(root), before)
         code, output, errors = self.cli('use', interactive=True, answers=['main'])
         self.assertEqual(code, 0, errors)
-        self.assertIn('default  ' + str(root) + ' [current default]', output)
+        self.assertIn('default  ' + str(root) + '  available [current default]', output)
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
-    def test_add_legacy_and_modern_directory_preserves_all_contents(self):
+    def test_attach_legacy_and_modern_directory_preserves_all_contents(self):
         for name, definition in (('legacy', False), ('modern', True)):
             root = self.existing(name, definition)
             (root / 'notes.txt').write_text('human note')
             before = self.snapshot(root)
             with contextlib.chdir(self.root):
-                self.assertEqual(self.cli('add', name)[0], 0)
+                self.assertEqual(self.cli('attach', name)[0], 0)
             self.assertEqual(ops.resolve_root(profile=name), root)
             self.assertEqual(self.snapshot(root), before)
             self.assertFalse((root / 'observations').exists())
         self.assertEqual(ops.load_profiles()['default_profile'], 'legacy')
 
-    def test_add_missing_invalid_and_collision_preserve_registry(self):
+    def test_attach_missing_invalid_and_collision_preserve_registry(self):
         self.cli('init')
         before = self.pointer.read_bytes()
         invalid = self.existing('invalid')
         (invalid / 'hosts.yaml').write_text('hosts: []')
         for root in (self.root / 'missing', invalid):
-            self.assertEqual(self.cli('add', str(root))[0], 1)
+            self.assertEqual(self.cli('attach', str(root))[0], 1)
             self.assertEqual(self.pointer.read_bytes(), before)
         duplicate = self.existing('shared/main')
-        self.assertEqual(self.cli('add', str(duplicate))[0], 1)
+        self.assertEqual(self.cli('attach', str(duplicate))[0], 1)
         self.assertEqual(self.pointer.read_bytes(), before)
-        self.assertEqual(self.cli('add', str(duplicate), '--profile', 'shared.main')[0], 0)
+        self.assertEqual(self.cli('attach', str(duplicate), '--profile', 'shared.main')[0], 0)
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_registry_validation_and_atomic_save_failure(self):
@@ -274,6 +274,147 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(path.parent, self.checkout / 'feasts' / profile / 'observations')
             paths.append(path)
         self.assertTrue(all(p.is_file() for p in paths))
+
+
+    def test_detach_preserves_directory_and_can_reattach(self):
+        self.cli('init')
+        self.cli('init', 'inventory')
+        root = self.checkout / 'feasts/inventory'
+        (root / 'records/human-note.md').write_text('Synthetic note to preserve.')
+        before = self.snapshot(root)
+        code, output, errors = self.cli('detach', 'inventory')
+        self.assertEqual(code, 0)
+        self.assertEqual(errors, '')
+        self.assertIn('Management directory and its contents preserved', output)
+        self.assertEqual(self.snapshot(root), before)
+        self.assertNotIn('inventory', ops.load_profiles()['profiles'])
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
+        self.assertEqual(self.cli('attach', str(root))[0], 0)
+        self.assertEqual(self.snapshot(root), before)
+        self.assertEqual(ops.resolve_root(profile='inventory'), root)
+
+    def test_detach_default_switches_to_valid_main_in_one_registry_write(self):
+        self.cli('init')
+        self.cli('init', 'inventory')
+        self.cli('use', 'inventory')
+        save = ops.save_profiles
+        with patch.object(ops, 'save_profiles', wraps=save) as writer:
+            code, output, _ = self.cli('detach', 'inventory')
+        self.assertEqual(code, 0)
+        self.assertIn('Default profile: main', output)
+        writer.assert_called_once()
+        self.assertEqual(ops.load_profiles()['default_profile'], 'main')
+        self.assertEqual(ops.resolve_root(), self.checkout / 'feasts/main')
+        self.assertTrue((self.checkout / 'feasts/inventory').is_dir())
+
+    def test_main_is_protected_and_unknown_names_do_not_write(self):
+        self.assertEqual(self.cli('detach', 'main')[0], 1)
+        self.assertFalse(self.pointer.exists())
+        self.cli('init')
+        before = self.pointer.read_bytes()
+        for name in ('main', 'unknown', 'ma'):
+            code, _, error = self.cli('detach', name)
+            self.assertEqual(code, 1)
+            self.assertIn('reserved' if name == 'main' else 'unknown profile', error)
+            self.assertEqual(self.pointer.read_bytes(), before)
+
+    def test_detach_default_refuses_when_main_not_registered(self):
+        self.cli('init', 'inventory')
+        before = self.pointer.read_bytes()
+        code, _, error = self.cli('detach', 'inventory')
+        self.assertEqual(code, 1)
+        self.assertIn('main is not registered', error)
+        self.assertEqual(self.pointer.read_bytes(), before)
+        self.assertFalse((self.checkout / 'feasts/main').exists())
+
+    def test_default_detach_accepts_a_registered_legacy_hosts_only_main(self):
+        self.cli('init', 'inventory')
+        root = self.existing('legacy-main', definition=False)
+        before = self.snapshot(root)
+        self.assertEqual(self.cli('attach', str(root), '--profile', 'main')[0], 0)
+        self.assertEqual(self.cli('detach', 'inventory')[0], 0)
+        self.assertEqual(ops.resolve_root(), root)
+        self.assertEqual(self.snapshot(root), before)
+        self.assertFalse((root / 'feast.yaml').exists())
+
+    def test_detach_default_rejects_missing_or_invalid_main_before_writing(self):
+        self.cli('init')
+        self.cli('init', 'inventory')
+        self.cli('use', 'inventory')
+        before = self.pointer.read_bytes()
+        main = self.checkout / 'feasts/main'
+        saved = self.checkout / 'main-offline'
+        main.rename(saved)
+        self.assertEqual(self.cli('detach', 'inventory')[0], 1)
+        self.assertEqual(self.pointer.read_bytes(), before)
+        self.assertFalse(main.exists())
+        saved.rename(main)
+        definition = (main / 'feast.yaml').read_bytes()
+        (main / 'feast.yaml').write_text('schema_version: 1\nkind: wrong')
+        self.assertEqual(self.cli('detach', 'inventory')[0], 1)
+        self.assertEqual(self.pointer.read_bytes(), before)
+        (main / 'feast.yaml').write_bytes(definition)
+        (main / 'hosts.yaml').unlink()
+        self.assertEqual(self.cli('detach', 'inventory')[0], 1)
+        self.assertEqual(self.pointer.read_bytes(), before)
+        (main / 'hosts.yaml').symlink_to(self.existing('outside') / 'hosts.yaml')
+        self.assertEqual(self.cli('detach', 'inventory')[0], 1)
+        self.assertEqual(self.pointer.read_bytes(), before)
+
+    def test_missing_nondefault_profile_is_listed_and_detachable(self):
+        self.cli('init')
+        self.cli('init', 'inventory')
+        root = self.checkout / 'feasts/inventory'
+        relocated = self.checkout / 'inventory-offline'
+        root.rename(relocated)
+        before = self.pointer.read_bytes()
+        code, output, _ = self.cli('profiles')
+        self.assertEqual(code, 0)
+        self.assertIn(str(root) + '  missing', output)
+        self.assertEqual(self.pointer.read_bytes(), before)
+        self.assertIn('inventory', ops.load_profiles()['profiles'])
+        self.assertEqual(self.cli('detach', 'inventory')[0], 0)
+        self.assertTrue(relocated.is_dir())
+        self.assertFalse(root.exists())
+
+    def test_profiles_basic_status_is_read_only_and_not_a_connection_check(self):
+        self.cli('init')
+        root = self.checkout / 'feasts/main'
+        (root / 'feast.yaml').write_text('schema_version: 9')
+        before = self.pointer.read_bytes()
+        code, output, _ = self.cli('profiles')
+        self.assertEqual(code, 0)
+        self.assertIn(str(root) + '  invalid', output)
+        self.assertEqual(self.pointer.read_bytes(), before)
+
+    def test_detach_write_failure_keeps_registry_and_directories(self):
+        self.cli('init')
+        self.cli('init', 'inventory')
+        self.cli('use', 'inventory')
+        before = self.pointer.read_bytes()
+        with patch.object(ops.os, 'replace', side_effect=OSError('synthetic atomic write failure')):
+            self.assertEqual(self.cli('detach', 'inventory')[0], 1)
+        self.assertEqual(self.pointer.read_bytes(), before)
+        self.assertEqual(list(self.checkout.glob('.opsfeast-*.tmp')), [])
+        self.assertTrue((self.checkout / 'feasts/inventory').is_dir())
+
+    def test_detach_updates_active_legacy_registry_and_keeps_definitions(self):
+        self.cli('init')
+        self.cli('init', 'inventory')
+        legacy = self.checkout / '.my-ops.yaml'
+        self.pointer.rename(legacy)
+        root = self.checkout / 'feasts/inventory'
+        before = self.snapshot(root)
+        self.assertEqual(self.cli('detach', 'inventory')[0], 0)
+        self.assertTrue(legacy.is_file())
+        self.assertFalse(self.pointer.exists())
+        self.assertEqual(self.snapshot(root), before)
+
+    def test_attach_has_no_add_alias(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+            ops.main(['add', str(self.root)])
+        self.assertEqual(raised.exception.code, 2)
+        self.assertFalse(self.pointer.exists())
 
 
 if __name__ == '__main__':

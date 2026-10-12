@@ -35,7 +35,7 @@ For SSHScript recipes, explain the capabilities actually used and link to implem
 - Use the interpreter selected by the user. Inspect prerequisites with `python -B tools/check_environment.py`, or add `--scope init` for initialization-only requirements.
 - Report missing dependencies and propose installation using the relevant requirements file. Do not rebuild or upgrade an existing user environment automatically.
 - Establish the authorized setup scope before creating environments, installing packages, downloading skills or initializing management directories. A repository path alone does not authorize installation. Do not request repeated approval for already authorized steps.
-- Follow the [profile guide](docs/profiles.md): init creates, add validates and registers existing directories, and use switches the default. Both tools accept --profile for one invocation without changing that default. Preserve existing registrations; noninteractive commands must not wait for input.
+- Follow the [profile guide](docs/profiles.md): init creates, attach validates and registers existing directories, detach removes registrations while preserving data, and use switches the default. Main is protected from detach; detaching the current default requires a valid registered main and switches to it atomically. Both tools accept --profile for one invocation without changing that default. Preserve existing registrations; noninteractive commands must not wait for input.
 - Report the interpreter, environment checks, skill status, management directory and hosts.yaml location. Setup does not authorize connections, proxy commands, privilege changes or recipe execution.
 
 ## SSHScript knowledge and skills
@@ -74,6 +74,16 @@ Write new repository documentation and skills in English at this stage; existing
 
 Make all new or revised documentation and skills AI-friendly while keeping them readable for humans. Follow the [documentation principles](docs/vision.md#write-ai-friendly-documentation-for-humans-and-agents): provide discoverable entrypoints and task routing, accurate interfaces and result interpretation, complete skill sources and update procedures where relevant, and explicit implementation and verification limits. Link to canonical details rather than duplicating them; a fresh agent must not need earlier conversations or automatic skill discovery to follow the workflow.
 
-Review the complete change and run checks appropriate to its scope. Preserve unrelated files, stage an explicit allowlist and inspect the staged diff before commits. Commit, push, merge and release only within the user's authorized scope; a task-specific grant does not authorize unrelated work or publication.
+### Before every commit
+
+This completion gate applies to every task in this repository. Before committing, review the complete pending change and confirm that all applicable delivery work is finished:
+
+1. **Human and AI-agent documentation:** complete the relevant guides, CLI reference, examples and migration notes. They must describe the final behavior, configuration, inputs, outputs, failure/skipped states and verification limits, and remain discoverable without earlier conversations.
+2. **AI-agent skills:** complete updates to the affected SKILL.md files and linked references so agents can use the final interfaces and workflows accurately.
+3. **CI test programs:** include public, reproducible tests for changed behavior, including relevant success, failure and boundary cases. Run the checks required by the complete change and record their results and limitations. Test coverage must exist even when a CI workflow has not yet been configured; adding a workflow is a separate task.
+
+Do not commit while any applicable documentation, skill or test work remains unfinished. For a category unaffected by the change, explicitly record that no update is needed and why; do not create unrelated edits or artificial tests merely to satisfy the categories. Select validation according to the change scope, so documentation-only work receives appropriate lightweight checks while functional changes receive their required full validation. This gate is a contributor procedure, not an automated enforcement mechanism.
+
+Preserve unrelated files, stage an explicit allowlist and inspect the staged diff before commits. Commit, push, merge and release only within the user's authorized scope; a task-specific grant does not authorize unrelated work or publication.
 
 _Last modified: 2026-10-12_

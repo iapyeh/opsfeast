@@ -94,7 +94,7 @@ The agent should follow the [skill update guide](skill-updates.md), compare the 
 
 To organize another group of hosts, ask your agent to create a named environment, such as `opsfeast.py init inventory`. Its data resides in `feasts/inventory/`. `opsfeast.py profiles` lists environments, and `opsfeast.py use inventory` changes the default. In an interactive terminal, `opsfeast.py use` lets you select one.
 
-When moving computers, handing over work or receiving a colleague's management directory, use `opsfeast.py add /path/to/existing-profile` to validate and register it. This does not create a scaffold or rewrite the directory's files. Choose a new profile name if there is a conflict. See the [profile guide](profiles.md) for naming and path rules.
+When moving computers, handing over work or receiving a colleague's management directory, use `opsfeast.py attach /path/to/existing-profile` to validate and register it. This does not create a scaffold or rewrite the directory's files. Choose a new profile name if there is a conflict. Detach NAME removes a registration while preserving data; main is protected, and removing the current default first validates main and switches to it. Profiles shows basic missing/invalid status without automatically deleting entries. See the [profile guide](profiles.md) for lifecycle, naming and path rules.
 
 ## Try it without reusing existing management data
 

@@ -81,7 +81,7 @@ class RenameTests(unittest.TestCase):
         root, registry = self.legacy()
         (self.checkout / '.opsfeast.yaml').write_bytes(registry.read_bytes())
         before = self.snapshot(self.checkout)
-        for args in (('profiles',), ('check',), ('init', 'new'), ('use', 'main'), ('add', str(root))):
+        for args in (('profiles',), ('check',), ('init', 'new'), ('use', 'main'), ('attach', str(root))):
             self.assertEqual(self.cli(*args), 1)
         self.assertEqual(self.snapshot(self.checkout), before)
         self.assertFalse((self.checkout / 'feasts/new').exists())
@@ -90,7 +90,7 @@ class RenameTests(unittest.TestCase):
         root, _ = self.legacy()
         (root / 'feast.yaml').write_text('schema_version: 1\nkind: opsfeast\n')
         before = self.snapshot(self.checkout)
-        for args in (('check',), ('check', str(root)), ('add', str(root)), ('init', str(root))):
+        for args in (('check',), ('check', str(root)), ('attach', str(root)), ('init', str(root))):
             self.assertEqual(self.cli(*args), 1)
         self.assertEqual(self.snapshot(self.checkout), before)
 
@@ -98,7 +98,7 @@ class RenameTests(unittest.TestCase):
         root, registry = self.legacy()
         (root / 'my-ops.yaml').write_text('schema_version: true\nkind: sshscript-ops\n')
         before = registry.read_bytes()
-        self.assertEqual(self.cli('add', str(root)), 1)
+        self.assertEqual(self.cli('attach', str(root)), 1)
         self.assertEqual(self.cli('init', str(root)), 1)
         self.assertEqual(registry.read_bytes(), before)
         self.assertFalse((root / 'feast.yaml').exists())
