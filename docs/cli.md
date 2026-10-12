@@ -97,14 +97,15 @@ These are declared capabilities and static checks. They do not establish publish
 
 All host-test/init commands accept `--timeout SECONDS`, default 30, a positive finite number. It bounds connection stages/commands and authenticated entry/exit where applicable, **not the complete run**. SSHScript base-shell/capability setup and recovery have separate contract limits.
 
-Only test-connection additionally accepts:
+All host-test/init commands additionally accept:
 
 | Option | Behavior |
 | --- | --- |
 | `-v`, `--verbose` | Progress on stderr. |
-| `--debug` | Safe effective connection details on stderr, implying verbose; does not enable SSHScript's raw DEBUG log. |
+| `--debug` | Safe connection details and, for su/sudo, actor/target and credential-source details on stderr, implying verbose; does not enable SSHScript's raw DEBUG log. |
 | `--traceback` | Exception frames without source text, locals or exception messages. |
-| `--host-init` | Also perform a fresh host-init after connecting; currently uses a separate connection. |
+
+Only test-connection accepts `--host-init`: also perform a fresh host-init after connecting; currently uses a separate connection.
 
 Test-connection JSON includes host, connected, hops, commands and success. Each hop records its connection result; key_source identifies where identity_file is read. Commands retain stdout/stderr/exitcode or error. Success requires both commands and strict cleanup to succeed; connected alone is insufficient. With --host-init, initialization must also succeed.
 
@@ -146,7 +147,9 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as service-user 
 
 USER is the account **executing sudo**. TARGET is the identity sudo should enter. Other actors first require verified su entry from the connection account. Results identify whether failure happened at su entry/identity or sudo entry/identity. Independent actors use fresh connections.
 
-Sudo uses `users.<actor>.vars.sudo.password`; host `vars.sudo.password` is fallback only for the actual connection identity. It never implicitly borrows users.<actor>.password. `--run-as` selects the diagnostic target; `vars.sudo.user` is not used. Standalone test-sudo can attempt passwordless sudo when no sudo password is set. These tests establish authenticated shell/identity access, not permissions for every command. Success does not prove password consumption: policy or authentication cache can avoid a prompt.
+Sudo selects the first non-null password in this order: `users.<actor>.vars.sudo.password`, host `vars.sudo.password` (only for the actual connection identity), then `users.<actor>.password`. Explicit overrides take precedence; a failed authentication never triggers retries with lower-priority sources. `--run-as` selects the diagnostic target; `vars.sudo.user` is not used. Standalone test-sudo can attempt passwordless sudo when no sudo password is set. These tests establish authenticated shell/identity access, not permissions for every command. Success does not prove password consumption: policy or authentication cache can avoid a prompt.
+
+To investigate a failed test, add `--debug --traceback`. JSON steps include `password_source` and `password_supplied` when su/sudo credentials are selected; no password value is emitted. A PermissionError during authenticated entry is categorized as `authentication_rejected_or_password_required`: the public SSHScript contract includes explicit rejection, a second password request, or a password request when none was supplied. This category does not identify the exact host-policy cause or prove an incorrect password. Review the failed stage and selected credential source first. Tracebacks contain frames only; exception messages and raw privileged output remain omitted. Progress/debug/traceback output goes to stderr; stdout remains JSON.
 
 ### Su: independent targets and ordered chains
 
@@ -164,7 +167,7 @@ connection-user → user3 → user2
 
 Each --chain group starts a fresh connection. A failed/skipped prerequisite prevents remaining steps in that chain, while other groups continue. Independent lists and chain groups cannot be mixed. The connection account cannot be a target; independent duplicates and adjacent chain duplicates are rejected, while nonadjacent chain repeats are allowed.
 
-Su uses each target's `users.<target>.password`. Missing required credentials produce skipped tests; passwordless su is not probed. Identity queries verify effective UID against the requested account. Context exit and strict Session cleanup are checked separately. Bash and id are required by the SSHScript authenticated-console contract. Ops does not prompt interactively for passwords.
+Su uses the same selection rule for the target account: `users.<target>.vars.su.password`, host `vars.su.password` only if that target is the actual connection account, then `users.<target>.password`. Test-su excludes the connection account, so its targets use the account override or account password; host su credentials are never borrowed for other targets. Each chain step and the su prerequisite for another sudo actor use this rule. Missing required credentials produce skipped tests; passwordless su is not probed. Identity queries verify effective UID against the requested account. Context exit and strict Session cleanup are checked separately. Bash and id are required by the SSHScript authenticated-console contract. Ops does not prompt interactively for passwords.
 
 Privilege-test JSON includes host, test, status, connection_user when identified, and groups. Each group contains its accounts, chain/independent mode, steps and status. Steps retain from_user, to_user, operation, verified identity or skipped reason/failure stage. Errors omit credential-bearing exception text and raw privileged output.
 
@@ -174,7 +177,7 @@ Privilege-test JSON includes host, test, status, connection_user when identified
 python -B tools/opsfeast.py test-host host-01 --profile inventory
 ```
 
-Test-host always tests login/hostname/date. It then reuses or initializes facts, tests sudo **only for the connection identity and only with an explicit sudo password**, and independently tests su to other accounts declared in users. It does not enumerate accounts, test chains, attempt passwordless sudo or execute recipes.
+Test-host always tests login/hostname/date. It then reuses or initializes facts, tests sudo **only for the connection identity and only with a password selected by the precedence rule (including the account password)**, and independently tests su to other accounts declared in users. It does not enumerate accounts, test chains, attempt passwordless sudo or execute recipes.
 
 If connection establishment fails, remaining tests are skipped. Host-init failure does not prevent account diagnostics. One account-test failure does not stop other independent groups. Test-host uses separate connections for the diagnostic phases/groups; it is not one atomic remote transaction.
 

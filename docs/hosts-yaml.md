@@ -303,7 +303,7 @@ python tools/opsfeast.py dump hosts.host-01.users.appuser /srv/feasts/main
 python tools/opsfeast.py dump hosts.host-01.users.appuser.vars /srv/feasts/main
 ```
 
-`check` 驗證 users 的欄位、帳號名稱、密碼與變數型別，不驗證帳號存在或密碼正確。`dump` 可取得原樣設定；通用 recipe 執行器尚未實作；inventory-system 的最小 runner 只使用登入帳號。`init`、`check`、`dump` 不會登入；`test-connection` 僅使用登入帳號，不執行 su。既有 `vars.sudo` 仍可使用，保持原有 recipe 輸入語意；不自動把 users 密碼套用為 sudo 密碼。
+`check` 驗證 users 的欄位、帳號名稱、密碼與變數型別，不驗證帳號存在或密碼正確。`dump` 可取得原樣設定；通用 recipe 執行器尚未實作；inventory-system 的最小 runner 只使用登入帳號。`init`、`check`、`dump` 不會登入；`test-connection` 僅使用登入帳號，不執行 su。既有 `vars.sudo` 仍可使用，保持原有 recipe 輸入語意；Host diagnostics select su/sudo credentials using the precedence rules in [host diagnostics](host-diagnostics.md#credential-precedence), including account-password fallback.
 
 ## 每台主機的變數
 
@@ -437,8 +437,8 @@ Host configuration/path rules and inventory-system descriptor/result schema 0.2.
 
 ## Diagnostic credential interpretation
 
-New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su uses users.<target>.password. Sudo uses users.<actor>.vars.sudo.password, with host-level vars.sudo.password as fallback only for the actual connection account. Login passwords are never implicitly reused for sudo; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
+New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su and sudo use the [credential precedence rules](host-diagnostics.md#credential-precedence): account-specific operation override, host operation override only for the actual connection account, then that account's password. Su selects the target account; sudo selects the actor. Su overrides use vars.su.password, while sudo overrides use vars.sudo.password; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
 
-Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured sudo password. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
+Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured password selected by the precedence rule, including account-password fallback. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
 
 _Last modified: 2026-10-12_

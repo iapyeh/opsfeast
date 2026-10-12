@@ -153,6 +153,71 @@ class PrivilegeTests(HostTests):
         self.events=[]
         self.factory=lambda: FakeConsole('login',self.events)
 
+    def test_sudo_cli_diagnostics_preserve_json_and_omit_secrets(self):
+        self.write({'local': True}, {'login': {'password': 'login-secret'}},
+                   {'sudo': {'password': 'sudo-secret'}})
+        factory = lambda: FakeConsole('login', self.events, {'root'})
+        for flags in ([], ['--verbose'], ['--debug', '--traceback']):
+            with patch.object(hr, 'runtime_class', return_value=factory), \
+                    contextlib.redirect_stdout(io.StringIO()) as out, \
+                    contextlib.redirect_stderr(io.StringIO()) as err:
+                code = ops.main(['test-sudo', 'h', '--root', str(self.root), *flags])
+            self.assertEqual(code, 1)
+            step = json.loads(out.getvalue())['groups'][0]['steps'][0]
+            self.assertEqual(step['stage'], 'sudo_entry')
+            self.assertEqual(step['password_source'], 'vars.sudo.password')
+            self.assertEqual(step['error']['reason'], 'authentication_rejected_or_password_required')
+            for secret in ('login-secret', 'sudo-secret', 'secret-password'):
+                self.assertNotIn(secret, out.getvalue() + err.getvalue())
+            if flags:
+                self.assertIn('sudo_entry', err.getvalue())
+            else:
+                self.assertEqual(err.getvalue(), '')
+            if '--debug' in flags:
+                self.assertIn('DEBUG', err.getvalue())
+                self.assertIn('Traceback (frames only)', err.getvalue())
+                self.assertIn('in __enter__', err.getvalue())
+        # Diagnostic settings must not leak into later invocations.
+        self.assertEqual(hr._diagnostics.get(), (False, False, False))
+
+    def test_sudo_password_sources_and_missing_password(self):
+        for users, variables, expected in (
+                ({'login': {'vars': {'sudo': {'password': 'actor-secret'}}}},
+                 {'sudo': {'password': 'host-secret'}}, 'users.<account>.vars.sudo.password'),
+                ({'login': {'password': 'login-secret'}}, {}, 'users.<account>.password'),
+                ({}, {}, 'none')):
+            self.write({'local': True}, users, variables)
+            report = hr.privilege_test(self.config, 'h', 'sudo', session_class=self.factory)
+            step = report['groups'][0]['steps'][0]
+            self.assertEqual(step['password_source'], expected)
+            self.assertEqual(step['password_supplied'], expected != 'none')
+
+    def test_all_host_diagnostic_commands_accept_flags_and_trace_failures(self):
+        for command, extra in (('host-init', []), ('test-su', ['user2']), ('test-host', [])):
+            with patch.object(hr, 'runtime_class', return_value=Mock(side_effect=TimeoutError('private-token'))), \
+                    contextlib.redirect_stdout(io.StringIO()) as out, \
+                    contextlib.redirect_stderr(io.StringIO()) as err:
+                code = ops.main([command, 'h', *extra, '--root', str(self.root),
+                                 '-v', '--debug', '--traceback'])
+            self.assertEqual(code, 1)
+            self.assertEqual(json.loads(out.getvalue())['status'], 'failed')
+            self.assertIn('Traceback (frames only)', err.getvalue())
+            self.assertNotIn('private-token', out.getvalue() + err.getvalue())
+
+    def test_cleanup_and_command_failures_emit_safe_tracebacks(self):
+        session = Mock()
+        session.exec_command.side_effect = PermissionError('command-secret')
+        session.close.side_effect = RuntimeError('cleanup-secret')
+        with hr.diagnostic_options(debug=True, show_traceback=True), \
+                contextlib.redirect_stderr(io.StringIO()) as err:
+            report = hr.test_host(self.config, 'h', session_class=Mock(return_value=session))
+        self.assertEqual(report['status'], 'failed')
+        self.assertIn('session_cleanup: failed', err.getvalue())
+        self.assertIn('hostname: failed', err.getvalue())
+        self.assertIn('Traceback (frames only)', err.getvalue())
+        for secret in ('command-secret', 'cleanup-secret'):
+            self.assertNotIn(secret, err.getvalue() + json.dumps(report))
+
     def test_independent_and_repeated_chains(self):
         report=hr.privilege_test(self.config,'h','su',['user2','user3'],session_class=self.factory)
         self.assertEqual(report['status'],'success')
@@ -176,10 +241,13 @@ class PrivilegeTests(HostTests):
             with self.assertRaises(ops.ConfigError):
                 hr.privilege_test(self.config,'h','su',targets,chains,session_class=self.factory)
 
-    def test_default_sudo_no_implicit_login_password(self):
+    def test_default_sudo_uses_login_password_fallback(self):
         report=hr.privilege_test(self.config,'h','sudo',session_class=self.factory,password_required=True)
-        self.assertEqual(report['status'],'skipped')
-        self.assertFalse(any(e[0]=='sudo' for e in self.events))
+        self.assertEqual(report['status'],'success')
+        event=next(e for e in self.events if e[0]=='sudo')
+        self.assertEqual(event[3]['password'],'login-secret')
+        self.assertNotIn('login-secret',json.dumps(report))
+        self.events.clear()
         self.write({'local':True}, variables={'sudo':{'password':'sudo-secret'}})
         report=hr.privilege_test(self.config,'h','sudo',session_class=self.factory,password_required=True)
         self.assertEqual(report['status'],'success')
@@ -191,6 +259,82 @@ class PrivilegeTests(HostTests):
         report=hr.privilege_test(self.config,'h','sudo',['user2','user3'],run_as='service',session_class=self.factory)
         self.assertEqual(report['status'],'success')
         self.assertEqual([(e[1],e[2]) for e in self.events if e[0]=='sudo'],[('user2','service'),('user3','service')])
+
+    def test_privilege_credentials_priority_scope_empty_and_invalid(self):
+        for mode in ('sudo', 'su'):
+            for user in ('login', 'user2'):
+                cases = (
+                    ({'password': 'account-secret', 'vars': {mode: {'password': 'override-secret'}}},
+                     {mode: {'password': 'host-secret'}}, 'override-secret', f'users.<account>.vars.{mode}.password'),
+                    ({'password': 'account-secret'}, {mode: {'password': 'host-secret'}},
+                     'host-secret' if user == 'login' else 'account-secret',
+                     f'vars.{mode}.password' if user == 'login' else 'users.<account>.password'),
+                    ({'password': 'account-secret'}, {}, 'account-secret', 'users.<account>.password'),
+                    ({'password': 'account-secret', 'vars': {mode: {'password': ''}}}, {}, '',
+                     f'users.<account>.vars.{mode}.password'),
+                    ({'password': 'account-secret', 'vars': {mode: {'password': None}}}, {},
+                     'account-secret', 'users.<account>.password'),
+                    ({}, {}, None, 'none'),
+                )
+                for account, variables, expected, source in cases:
+                    with self.subTest(mode=mode, user=user, source=source):
+                        self.write({'local': True}, {user: account}, variables)
+                        self.assertEqual(hr.privilege_password(self.config, 'h', user, mode, 'login'),
+                                         (expected, source))
+                for invalid in (False, 123, []):
+                    self.write({'local': True}, {user: {'password': 'valid-secret',
+                                                      'vars': {mode: {'password': invalid}}}})
+                    with self.assertRaises(ops.ConfigError):
+                        hr.privilege_password(self.config, 'h', user, mode, 'login')
+
+    def test_su_chains_and_sudo_prerequisite_use_target_su_override(self):
+        self.write({'local': True}, {
+            'login': {'password': 'login-secret'},
+            'user2': {'password': 'two-secret', 'vars': {'su': {'password': 'su-override'}}},
+            'user3': {'password': 'three-secret'}},
+            {'su': {'password': 'host-su-secret'}, 'sudo': {'password': 'host-sudo-secret'}})
+        report = hr.privilege_test(self.config, 'h', 'su', chains=[['user2', 'user3']], session_class=self.factory)
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual([e[3]['password'] for e in self.events if e[0] == 'su'],
+                         ['su-override', 'three-secret'])
+        self.events.clear()
+        report = hr.privilege_test(self.config, 'h', 'sudo', ['user2'], session_class=self.factory)
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(next(e[3]['password'] for e in self.events if e[0] == 'su'), 'su-override')
+        self.assertEqual(next(e[3]['password'] for e in self.events if e[0] == 'sudo'), 'two-secret')
+        for secret in ('su-override', 'two-secret', 'host-su-secret', 'host-sudo-secret'):
+            self.assertNotIn(secret, json.dumps(report))
+
+    def test_su_uses_only_su_override_and_reports_source_without_value(self):
+        self.write({'local': True}, {'user2': {'password': 'account-secret', 'vars': {
+            'su': {'password': 'su-secret'}, 'sudo': {'password': 'sudo-secret'}}}})
+        with patch.object(hr, 'runtime_class', return_value=self.factory), \
+                contextlib.redirect_stdout(io.StringIO()) as out, \
+                contextlib.redirect_stderr(io.StringIO()) as err:
+            code = ops.main(['test-su', 'h', 'user2', '--root', str(self.root), '--debug'])
+        self.assertEqual(code, 0)
+        step = json.loads(out.getvalue())['groups'][0]['steps'][0]
+        self.assertEqual(step['password_source'], 'users.<account>.vars.su.password')
+        self.assertTrue(step['password_supplied'])
+        self.assertEqual(next(e[3]['password'] for e in self.events if e[0] == 'su'), 'su-secret')
+        for secret in ('account-secret', 'su-secret', 'sudo-secret'):
+            self.assertNotIn(secret, out.getvalue() + err.getvalue())
+
+    def test_rejected_override_is_not_retried_with_fallback_password(self):
+        self.write({'local': True}, {'login': {'password': 'login-secret',
+                                             'vars': {'sudo': {'password': 'override-secret'}}}})
+        factory = lambda: FakeConsole('login', self.events, {'root'})
+        report = hr.privilege_test(self.config, 'h', 'sudo', session_class=factory)
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual([e[3]['password'] for e in self.events if e[0] == 'sudo'], ['override-secret'])
+
+    def test_test_host_skips_sudo_when_all_password_sources_missing(self):
+        self.write({'local': True}, {'login': {}, 'user2': {'password': 'two-secret'}})
+        with patch.object(hr, 'initialize_host', return_value={'status': 'success'}):
+            report = hr.test_host(self.config, 'h', session_class=self.factory)
+        self.assertEqual(report['status'], 'partial')
+        self.assertEqual(report['tests']['test-sudo']['status'], 'skipped')
+        self.assertFalse(any(e[0] == 'sudo' for e in self.events))
 
     def test_group_cleanup_failure_is_failed_and_other_groups_continue(self):
         count = 0
@@ -213,11 +357,11 @@ class PrivilegeTests(HostTests):
         self.assertEqual(report['groups'][0]['steps'][0]['stage'],'su_identity')
         self.assertEqual(report['status'],'failed')
 
-    def test_test_host_skips_sudo_and_tests_only_other_accounts(self):
+    def test_test_host_uses_login_password_and_tests_only_other_accounts(self):
         with patch.object(hr,'initialize_host',return_value={'status':'success','selection_source':'cache'}):
             report=hr.test_host(self.config,'h',session_class=self.factory)
-        self.assertEqual(report['status'],'partial')
-        self.assertEqual(report['tests']['test-sudo']['status'],'skipped')
+        self.assertEqual(report['status'],'success')
+        self.assertEqual(report['tests']['test-sudo']['status'],'success')
         self.assertEqual([g['accounts'] for g in report['tests']['test-su']['groups']],[['user2'],['user3']])
 
     def test_cli_repeated_chain_and_explicit_refresh(self):

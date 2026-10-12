@@ -135,7 +135,7 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as root
 python -B tools/run_recipe.py host-01 --recipe inventory/system --hosts host-02 host-03
 ```
 
-Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when an explicit sudo password is configured, and independently tests su to other declared accounts. Direct host-init always refreshes facts. Runner automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. A general recipe runner and extension installer remain planned.
+Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when the credential precedence rule selects a password (including the account password), and independently tests su to other declared accounts. Direct host-init always refreshes facts. Runner automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. A general recipe runner and extension installer remain planned.
 
 ## Find, create and share recipes
 

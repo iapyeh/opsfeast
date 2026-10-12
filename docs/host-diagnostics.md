@@ -29,7 +29,7 @@ python -B tools/opsfeast.py test-su host-01 --chain user2 user3 --chain user3 us
 
 The first command independently tests connection-user → user2 and connection-user → user3. Each repeated `--chain` starts a fresh connection: the second command tests connection-user → user2 → user3, then connection-user → user3 → user2. A failed chain step prevents later steps in that chain, while other groups continue. Chains cannot be mixed with independent usernames. At least one target is required, and the actual connection account cannot appear in any chain/list. Independent duplicates and adjacent chain duplicates are rejected; nonadjacent chain repeats are allowed.
 
-Target passwords come only from `hosts.<host>.users.<target>.password`. Missing credentials produce skipped steps; these diagnostics do not probe passwordless su. No interactive password prompt is issued by Ops.
+Su selects the target account password using the [credential precedence rules](#credential-precedence) below. Each independent target, chain step and su prerequisite for another sudo actor uses the same rule. Missing credentials produce skipped steps; these diagnostics do not probe passwordless su. No interactive password prompt is issued by Ops.
 
 ## Sudo tests
 
@@ -40,9 +40,25 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as service-user 
 
 Omitting usernames tests the actual connection account. Supplied usernames are independent **sudo actors**; `--run-as` is the sudo target, default root. For another actor, Ops first enters that account through su and verifies identity, then tests sudo. A failed prerequisite is reported with a su stage, rather than a claim that sudo was attempted.
 
-Sudo passwords come from `users.<actor>.vars.sudo.password`. The actual connection account may use host-level `vars.sudo.password` as fallback. Login/su passwords are never automatically used as sudo passwords. An explicitly configured account-level sudo password takes precedence. Standalone `test-sudo` can test passwordless sudo when no sudo password is configured. Successful entry does not prove that a supplied password was consumed; sudo policy/cache may avoid a password prompt.
+Sudo selects the actor password using the [credential precedence rules](#credential-precedence) below. Standalone `test-sudo` can test passwordless sudo when no sudo password is configured. Successful entry does not prove that a supplied password was consumed; sudo policy/cache may avoid a password prompt.
 
 Tests enter an authenticated shell and query effective UID/name, compare UID with the requested account, then verify return to the connection identity. They test shell access, not command-specific sudo rules. Bash and id are required by the SSHScript authenticated-console contract. Authentication/identity/cleanup errors remain separate from skipped steps; exception messages, passwords and raw privileged outputs are omitted.
+
+All host diagnostics accept `-v`/`--verbose`, `--debug` and `--traceback`; see [diagnostic options](cli.md#connection-diagnostics-and-options). For example, add `--debug --traceback` to test-sudo to inspect the actor, target, whether a sudo password was supplied and its configuration source, plus frames for caught failures. A PermissionError at su/sudo entry does not by itself prove the password is wrong: entry may reject authentication, request a password again, or request one when none was supplied. Keep the reported stage and credential source when investigating; the tool does not report a verified native policy cause.
+
+## Credential precedence
+
+Select the first non-null password before entering the authenticated context:
+
+| Priority | Sudo (executing actor) | Su (target account) |
+| --- | --- | --- |
+| 1 | `users.<actor>.vars.sudo.password` | `users.<target>.vars.su.password` |
+| 2 | Host `vars.sudo.password`, only when actor is the actual connection account | Host `vars.su.password`, only when target is the actual connection account |
+| 3 | `users.<actor>.password` | `users.<target>.password` |
+
+Test-su excludes the actual connection account, so its targets use priority 1 or 3. Host credentials must not be reused for another actor or target, including after a chain transition. Sudo uses the actor's credentials, not the --run-as account's credentials. Su overrides also apply to prerequisites in test-sudo and tests within test-host.
+
+Missing or null passwords allow the next source; an empty string is an explicitly supplied password. Invalid selected settings fail rather than silently falling through. Authentication failure never triggers a retry with another source. If all sources are absent, standalone test-sudo may attempt passwordless entry; su and test-host sudo are skipped. JSON reports and debug output identify credential sources without exposing values. A source of users.<account>.password now allows test-host to attempt sudo where it previously skipped it; review that behavior when authorizing diagnostics. This selection rule does not grant authorization to connect or test accounts.
 
 ## Test one host
 
@@ -53,7 +69,7 @@ python -B tools/opsfeast.py test-host host-01 --root /srv/feasts/main
 `test-host` always tests hostname/date and performs the following:
 
 1. Reuse successful, target-matching host-init data; otherwise initialize it.
-2. Test sudo only for the actual connection account, only when an explicit sudo password is configured. Missing password is skipped; passwordless sudo is not attempted.
+2. Test sudo only for the actual connection account, only when the precedence rule selects a configured password (including the account password). Missing password is skipped; passwordless sudo is not attempted.
 3. Independently test su from the connection account to other accounts declared in `users`. It does not enumerate system accounts or test chains.
 
 A connection failure skips all subsequent tests. A platform-probe failure does not prevent account diagnostics. Tests use fresh connections for independent groups. All results are returned in one JSON report, including cache/probe provenance and original facts timestamp. The summary is success, partial (some tests skipped) or failed. Individual diagnostics may also report skipped. Any actual failure returns exit code 1; success/partial/skipped return 0. Skipped never means verified.

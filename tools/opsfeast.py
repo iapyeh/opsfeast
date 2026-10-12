@@ -876,6 +876,9 @@ def main(argv=None):
         diagnostic.add_argument('--root', type=Path, help='management directory (default: selected profile)')
         diagnostic.add_argument('--profile', help='profile for this invocation')
         diagnostic.add_argument('--timeout', type=positive_timeout, default=30)
+        diagnostic.add_argument('-v', '--verbose', action='store_true', help='show diagnostic progress on stderr')
+        diagnostic.add_argument('--debug', action='store_true', help='show safe connection and credential-source details on stderr; implies verbose')
+        diagnostic.add_argument('--traceback', action='store_true', help='show exception frames without source, locals or exception text')
     args = parser.parse_args(argv)
     try:
         if args.command == 'inspect-recipe':
@@ -904,15 +907,16 @@ def main(argv=None):
         else:
             args.root = resolve_root(args.root, args.profile)
         if args.command in ('host-init', 'test-su', 'test-sudo', 'test-host'):
-            from host_runtime import load_config, initialize_host, privilege_test, test_host
+            from host_runtime import load_config, initialize_host, privilege_test, test_host, diagnostic_options
             config = load_config(args.root, args.host)
-            if args.command == 'host-init':
-                report = initialize_host(config, args.host, args.timeout, refresh=True)
-            elif args.command == 'test-host':
-                report = test_host(config, args.host, args.timeout)
-            else:
-                report = privilege_test(config, args.host, args.command[5:], args.usernames,
-                                        getattr(args, 'chain', None), getattr(args, 'run_as', 'root'), args.timeout)
+            with diagnostic_options(args.verbose, args.debug, args.traceback):
+                if args.command == 'host-init':
+                    report = initialize_host(config, args.host, args.timeout, refresh=True)
+                elif args.command == 'test-host':
+                    report = test_host(config, args.host, args.timeout)
+                else:
+                    report = privilege_test(config, args.host, args.command[5:], args.usernames,
+                                            getattr(args, 'chain', None), getattr(args, 'run_as', 'root'), args.timeout)
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return 1 if report['status'] == 'failed' else 0
         if args.command == 'test-connection' and args.host_init:
@@ -948,6 +952,8 @@ def main(argv=None):
         print('No SSH connection or recipe execution performed; platform, authentication and full recipe contracts are not validated.')
         return 0
     except (ConfigError, OSError, RuntimeError, RecursionError) as exc:
+        if getattr(args, 'traceback', False):
+            diagnostic_traceback(exc)
         print(f'ERROR: {exc}', file=sys.stderr)
         return 1
 

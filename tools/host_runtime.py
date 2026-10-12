@@ -1,5 +1,6 @@
 """Shared, read-only host discovery and authenticated diagnostics (SSHScript 5.0)."""
 from contextlib import ExitStack, contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -8,10 +9,43 @@ from pathlib import Path
 import re
 import shlex
 import tempfile
+import sys
 
-from opsfeast import ConfigError, Validator, connection_plan, connection_error
+from opsfeast import ConfigError, Validator, connection_plan, connection_error, diagnostic_traceback
 
 FACTS_VERSION = '0.1.0'
+_diagnostics = ContextVar('host_diagnostics', default=(False, False, False))
+
+
+@contextmanager
+def diagnostic_options(verbose=False, debug=False, show_traceback=False):
+    token = _diagnostics.set((verbose or debug, debug, show_traceback))
+    try:
+        yield
+    finally:
+        _diagnostics.reset(token)
+
+
+def progress(stage, **details):
+    verbose, debug, _ = _diagnostics.get()
+    if verbose:
+        print(stage, file=sys.stderr)
+    if debug and details:
+        print('DEBUG ' + json.dumps(details, ensure_ascii=False), file=sys.stderr)
+
+
+def diagnostic_error(exc, stage=None):
+    error = connection_error(exc)
+    if isinstance(exc, PermissionError):
+        error['reason'] = 'permission_denied'
+        if stage in ('sudo_entry', 'su_entry'):
+            error['reason'] = 'authentication_rejected_or_password_required'
+            error['hint'] = ('Check the selected credential source and account policy; '
+                             'this error does not establish that the password is incorrect.')
+    progress(f'{stage or "operation"}: failed ({error["type"]}, {error.get("reason", "unknown")})')
+    if _diagnostics.get()[2]:
+        diagnostic_traceback(exc)
+    return error
 
 
 def now():
@@ -43,6 +77,7 @@ def connected(config, host, session_class, timeout, report):
     local = None
     try:
         plan = connection_plan(config, host, session_class)
+        progress('connection settings', hop_count=len(plan), timeout=timeout)
         local = session_class()
         session = local
         report['hops'] = []
@@ -51,6 +86,10 @@ def connected(config, host, session_class, timeout, report):
             report['hops'].append(hop)
             options = dict(settings)
             hostname = options.pop('hostname')
+            progress(f'connection hop {index}', hop=index, hostname=hostname,
+                     user=options.get('username'), password_supplied='password' in options,
+                     identity_file=bool(options.get('pkey_path')),
+                     proxy_command=bool(options.get('proxyCommand')))
             session = session.connect(hostname, ssh_config=False, timeout=timeout,
                                       banner_timeout=timeout, auth_timeout=timeout, **options)
             hop['connected'] = True
@@ -59,8 +98,10 @@ def connected(config, host, session_class, timeout, report):
     finally:
         if local is not None:
             try:
+                progress('session cleanup')
                 local.close(strict=True)
             except Exception as exc:
+                diagnostic_error(exc, 'session_cleanup')
                 report['cleanup_error'] = type(exc).__name__
                 report['status'] = 'failed'
 
@@ -80,6 +121,7 @@ def line(text):
 
 
 def query(session, argv, timeout):
+    progress('command: ' + shlex.join(argv))
     return output(session.exec_command(argv, check=False, command_timeout=timeout))
 
 
@@ -170,7 +212,7 @@ def discover(session, host, timeout):
             state = ('timeout' if isinstance(exc, TimeoutError) or type(exc).__name__ == 'CommandTimeoutError' else
                      'parsing_failed' if isinstance(exc, ValueError) else
                      'permission_denied' if isinstance(exc, PermissionError) else 'command_failed')
-            item.update(status=state, error=connection_error(exc))
+            item.update(status=state, error=diagnostic_error(exc))
         report['fields'][key] = item['status']
         report['sources'].append(item)
         return report['facts'].get(key)
@@ -196,7 +238,7 @@ def discover(session, host, timeout):
                 release = parse_release(output(result))
                 item['status'] = 'success'
             except Exception as exc:
-                item.update(status='unavailable', error=connection_error(exc))
+                item.update(status='unavailable', error=diagnostic_error(exc))
             report['sources'].append(item)
             break
         for key, source in (('distribution_id', 'ID'), ('distribution_name', 'NAME'), ('distribution_version', 'VERSION_ID')):
@@ -236,7 +278,7 @@ def initialize_host(config, host, timeout=30, session_class=None, refresh=False)
         with connected(config, host, session_class or runtime_class(), timeout, report) as session:
             report.update(discover(session, host, timeout))
     except Exception as exc:
-        report.update(status='failed', reason_code='host_init_failed', error=connection_error(exc))
+        report.update(status='failed', reason_code='host_init_failed', error=diagnostic_error(exc))
     report.update(target_fingerprint=target_fingerprint(config, host), selection_source='probe')
     if report['status'] == 'failed' and previous:
         report['previous_success'] = {k: previous[k] for k in ('observed_at', 'facts')}
@@ -265,15 +307,22 @@ def identity(session, timeout, console=False, target=None):
     return {'username': name, 'effective_uid': int(uid)}
 
 
-def sudo_password(config, host, user):
+def privilege_password(config, host, user, mode, connection_user):
+    """Select one credential before entry; never retry lower-priority sources."""
     account = config.hosts[host].get('users', {}).get(user, {})
-    value = account.get('vars', {}).get('sudo', {})
-    if not isinstance(value, dict):
-        raise ConfigError('sudo settings must be a mapping')
-    password = value.get('password')
-    if password is not None and not isinstance(password, str):
-        raise ConfigError('sudo password must be a string')
-    return password
+    sources = [(account.get('vars', {}).get(mode, {}), f'users.<account>.vars.{mode}.password')]
+    if user == connection_user:
+        sources.append((config.hosts[host].get('vars', {}).get(mode, {}), f'vars.{mode}.password'))
+    sources.append((account, 'users.<account>.password'))
+    for settings, source in sources:
+        if not isinstance(settings, dict):
+            raise ConfigError(f'{mode} settings must be a mapping')
+        password = settings.get('password')
+        if password is not None:
+            if not isinstance(password, str):
+                raise ConfigError(f'{mode} password must be a string')
+            return password, source
+    return None, 'none'
 
 
 def privilege_test(config, host, mode, targets=None, chains=None, run_as='root', timeout=30, session_class=None,
@@ -322,49 +371,49 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                             stage = 'su_entry'
                             try:
                                 if mode == 'su' or target != login['username']:
-                                    password = config.hosts[host].get('users', {}).get(target, {}).get('password')
+                                    password, source = privilege_password(config, host, target, 'su', login['username'])
+                                    step.update(password_source=source, password_supplied=password is not None)
                                     if password is None:
                                         step['reason_code'] = 'missing_su_password'
                                         failed = True
                                         continue
+                                    progress('su_entry', actor=current, target=target, password_source=source, password_supplied=True)
                                     actor = stack.enter_context(actor.su(target, password=password, enter_timeout=timeout))
                                     stage = 'su_identity'
+                                    progress(stage)
                                     step['identity'] = identity(actor, timeout, console=True, target=target)
                                 if mode == 'sudo':
                                     stage = 'sudo_entry'
-                                    password = sudo_password(config, host, target)
-                                    # Host-level sudo settings belong to actual login identity, including alias/local.
-                                    if target == login['username'] and password is None:
-                                        value = config.hosts[host].get('vars', {}).get('sudo', {})
-                                        if not isinstance(value, dict):
-                                            raise ConfigError('sudo settings must be a mapping')
-                                        password = value.get('password')
-                                        if password is not None and not isinstance(password, str):
-                                            raise ConfigError('sudo password must be a string')
+                                    password, password_source = privilege_password(config, host, target, 'sudo', login['username'])
+                                    step.update(from_user=target, to_user=run_as, password_source=password_source,
+                                                password_supplied=password is not None)
                                     if password_required and password is None:
                                         step['reason_code'] = 'missing_sudo_password'
                                         continue
-                                    step.update(from_user=target, to_user=run_as)
+                                    progress(stage, actor=target, target=run_as, password_source=password_source,
+                                             password_supplied=password is not None)
                                     elevated = stack.enter_context(actor.sudo(username=run_as, password=password, enter_timeout=timeout))
                                     stage = 'sudo_identity'
+                                    progress(stage)
                                     step['identity'] = identity(elevated, timeout, console=True, target=run_as)
                                 step['status'] = 'success'
                                 current = target
                             except Exception as exc:
-                                step.update(status='failed', stage=stage, error=connection_error(exc))
+                                step.update(status='failed', stage=stage, error=diagnostic_error(exc, stage))
                                 failed = True
                     # Confirm exit to the original identity; otherwise this group failed.
+                    progress('parent identity verification')
                     if identity(session, timeout) != login:
                         raise RuntimeError('parent identity not restored')
                     item['status'] = ('failed' if any(s['status'] == 'failed' for s in item['steps']) else
                                       'skipped' if any(s['status'] == 'skipped' for s in item['steps']) else 'success')
             except Exception as exc:
-                item.update(status='failed', error=connection_error(exc))
+                item.update(status='failed', error=diagnostic_error(exc))
         report['status'] = 'failed' if any(g['status'] == 'failed' for g in report['groups']) else ('skipped' if any(g['status'] == 'skipped' for g in report['groups']) else 'success')
     except ConfigError:
         raise
     except Exception as exc:
-        report.update(status='failed', error=connection_error(exc))
+        report.update(status='failed', error=diagnostic_error(exc))
     report['finished_at'] = now()
     return report
 
@@ -381,10 +430,10 @@ def test_host(config, host, timeout=30, session_class=None):
                     query(session, [command], timeout)
                     connection['commands'].append({'command': command, 'status': 'success'})
                 except Exception as exc:
-                    connection['commands'].append({'command': command, 'status': 'failed', 'error': connection_error(exc)})
+                    connection['commands'].append({'command': command, 'status': 'failed', 'error': diagnostic_error(exc, command)})
             connection['status'] = 'success' if all(c['status'] == 'success' for c in connection['commands']) else 'failed'
     except Exception as exc:
-        connection['error'] = connection_error(exc)
+        connection['error'] = diagnostic_error(exc)
     if not connection['connected']:
         for name in ('host-init', 'test-sudo', 'test-su'):
             report['tests'][name] = {'status': 'skipped', 'reason_code': 'connection_failed'}
