@@ -40,7 +40,7 @@ The CLI has two forms for an explicit root:
 | --- | --- |
 | opsfeast.py check, dump, test-connection | Optional positional `ROOT` |
 | opsfeast.py host-init, test-host, test-su, test-sudo | Optional `--root ROOT` |
-| run_recipe.py | Optional positional `ROOT` |
+| run_recipe.py | `--root ROOT` |
 | opsfeast.py init | Optional name or path; `--profile` names the registration |
 | opsfeast.py add | Required existing directory; `--profile` names the registration |
 
@@ -186,32 +186,56 @@ Its JSON contains host, overall status, and tests keyed by test-connection, host
 ## tools/run_recipe.py: inventory execution
 
 ```text
-python -B tools/run_recipe.py HOST [ROOT]
-    [--profile NAME] [--recipe DIRECTORY]
-    [--hosts HOST ...] [--timeout SECONDS]
+python -B tools/run_recipe.py RECIPE
+    (--host HOST ... | --group GROUP ... | --all [--exclude HOST ...])
+    [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N] [--verbose | --quiet]
+
+python -B tools/run_recipe.py --recipe DIRECTORY
+    (--host HOST ... | --group GROUP ... | --all [--exclude HOST ...])
+    [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N] [--verbose | --quiet]
 ```
+
+`--host` and `--group` may be combined and repeated. `--all` cannot be combined with either.
 
 | Argument/option | Behavior |
 | --- | --- |
-| HOST | First host ID; required. |
-| ROOT | Optional positional management directory; otherwise use profile/default. |
-| --profile NAME | Select an environment for this invocation; cannot combine with ROOT. |
-| --recipe DIRECTORY | Override this host's recipe selectors with one inventory-system directory. |
-| --hosts HOST ... | Additional host IDs; duplicate IDs execute once, preserving first occurrence. |
+| RECIPE | Recipe directory as the first argument; required unless --recipe is supplied. |
+| --recipe DIRECTORY | Explicit recipe directory at any option position; cannot combine with leading RECIPE. |
+| --host HOST ... | One or more exact host IDs; repeatable. Never interpreted as groups. |
+| --group GROUP ... | One or more exact group names; repeatable. Never interpreted as host IDs. |
+| --all | Every enabled host in the merged configuration; exclusive with --host/--group. |
+| --exclude HOST ... | Exact host IDs to exclude for this run; requires --all. Unknown IDs fail before execution. |
+| --root ROOT | Management directory; otherwise use profile/default. Positional management roots are not accepted. |
+| --profile NAME | Select an environment for this invocation; cannot combine with --root. |
 | --timeout SECONDS | Positive finite per-stage/command budget, default 30; not a whole-run deadline. |
+| --threads N | Positive integer for concurrent hosts; default min(8, local logical CPU count), fallback 1. Use 1 for sequential execution. |
+| -v, --verbose | Force progress and waiting heartbeats on stderr, including when stdout is redirected. |
+| -q, --quiet | Suppress progress and waiting heartbeats; final JSON and errors remain. Exclusive with --verbose. |
 
 ```sh
-python -B tools/run_recipe.py host-01 --recipe inventory/system
-python -B tools/run_recipe.py host-01 /srv/feasts/main --recipe inventory/system --hosts host-02 host-03
-python -B tools/run_recipe.py host-01 --profile inventory
-python -B tools/run_recipe.py host-01 /srv/feasts/main --recipe ./recipes/custom-system
+python -B tools/run_recipe.py inventory/system --host host-01
+python -B tools/run_recipe.py inventory/system --host host-01 host-02 host-03 --root /srv/feasts/main
+python -B tools/run_recipe.py inventory/system --group web production --profile inventory
+python -B tools/run_recipe.py inventory/system --host smtp-01 --group nginx apache2
+python -B tools/run_recipe.py --all --recipe inventory/system
+python -B tools/run_recipe.py inventory/system --all --threads 4 --exclude host9 host10
+python -B tools/run_recipe.py community:inventory/system --group web
+python -B tools/run_recipe.py --host host-01 --recipe ./recipes/custom-system --root /srv/feasts/main
 ```
 
-Without --recipe, exactly one selected inventory-system recipe is required for the host. Other selected recipe IDs are not executed. With --recipe, host recipe selectors are bypassed; host/connection configuration still must be valid. A bad override fails without falling back to host selectors.
+Recipe and targets must both be explicit; omission is a usage error (exit 2), never an implicit all-host selection or fallback to hosts.yaml recipe settings. Put the positional recipe first, or use --recipe elsewhere, once only. For example, `--group web production inventory/system` treats all three values as group names and fails because no recipe was specified; it never guesses which value is a recipe. `--all inventory/system` is rejected with a hint to use --recipe. The spelling is `--recipe`.
+
+Use the optional host-level `group: web` string or `group: [web, production]` list in hosts.yaml; see [host groups](hosts-yaml.md#host-groups). Names are exact and case-sensitive, with no comma splitting, glob expansion or host:/group: prefix interpretation. A host and group may share a name: --host web selects only that host, while --group web selects its members.
+
+The runner resolves every selector before any execution. Unknown names, invalid configuration and an empty target set fail without executing any host. Expand repeated --host/--group options in argument order, with group members in merged YAML host order (includes first, then the declaring file). --all uses that merged order. Overlaps and repeated selectors execute each host once, preserving its first occurrence. Groups select a union, not an intersection; they do not inherit variables, connection settings or recipes. All targets use the selected environment and the existing per-host execution contract. Selection support here does not extend diagnostic commands to groups.
+
+The CLI executes the explicitly named inventory-system directory; matching host recipe vars apply, while unrelated recipe selectors are bypassed. Host/connection configuration must remain valid. A bad recipe fails without falling back to host selectors. The internal Python run(root, host, recipe=None) helper retains host-selector behavior for existing callers; this is not a CLI default. See [sources, inputs and controls](recipe-sources.md) for shorthand selections, default/source/host var precedence, enabled flags, excluded_hosts and skipped results.
+
+The previous positional HOST/ROOT, --hosts and optional recipe syntax is replaced. Migrate `run_recipe.py host-01 ROOT --recipe inventory/system --hosts host-02` to `run_recipe.py inventory/system --root ROOT --host host-01 host-02`. Existing YAML recipes lists and registrations are preserved; configuration checking still validates those lists.
 
 ### Recipe locations and platform selection
 
-`--recipe inventory/system` is relative to this checkout's recipes directory, independent of the management root/shell directory. Do not include `recipes/` in that CLI form. Explicit `./recipes/custom-system` is management-root-relative; absolute paths must remain in the repository recipes directory or management root. Missing checkout paths do not fall back to instance copies. YAML selectors still use `recipe: recipes/inventory/system` for checkout recipes. Include files remain management-root-bound.
+`inventory/system` (leading or --recipe) is relative to this checkout's recipes directory, independent of the management root/shell directory. Do not include `recipes/` in that CLI form. Explicit `./recipes/custom-system` is management-root-relative; absolute paths must remain in the repository recipes directory or management root. `:inventory/system` resolves from the selected management root recipes/; `community:inventory/system` uses recipe_sources.community.path registered in entry hosts.yaml. External named sources accept path/vars/enabled and can live outside the management root. Predefined recipe_sources.bundle/profile accept enabled/vars without path (an optional path must resolve exactly to the default root relative to entry hosts.yaml); they control bare checkout and :profile references respectively, including their legacy path forms. Omitted controls default enabled. Missing paths never fall back to another source. YAML selectors still use `recipe: recipes/inventory/system` for checkout recipes. Include files remain management-root-bound.
 
 For each host, execution follows:
 
@@ -223,9 +247,18 @@ For each host, execution follows:
 
 Allowed match fields are os_name, distribution_id, os_version, distribution_version, kernel_release and architecture. All conditions must match. Explicit priority ranks first, then number of conditions. Missing facts do not satisfy conditions. Version bounds compare dotted numeric components; vendor suffixes use exact conditions such as `=14.2-RELEASE`. File/list order does not break ties, and failed selected code does not trigger another implementation.
 
-Batch hosts run sequentially and independently. Failed/skipped/unsupported hosts do not stop later hosts. A per-host preflight/save error appears in the batch summary; a result file is not guaranteed for errors before collection or when saving fails.
+Batch hosts run independently in a thread pool, with concurrency set by --threads. The CPU-based default is a starting limit for SSH/command I/O, not a performance benchmark; tune it for the controller and targets. The actual worker count is capped at the selected host count. --threads 1 runs sequentially without a pool. Each worker creates, uses and closes its own Session and hops in that same thread; Sessions are not shared between hosts. Descriptor/implementation loading through runpy is serialized to protect process-wide import state, while collectors execute concurrently. Failed/skipped/unsupported hosts do not prevent other selected hosts from running. Final JSON retains target selection order even when completion order differs; host progress is emitted immediately and whole lines are serialized on stderr. The [index/total] progress prefix identifies selection position, not a completed-host counter. --threads limits active host tasks, not all internal threads or individual hop connections. Custom implementations that mutate shared process state or shared external files must be reviewed for concurrent use; use --threads 1 when that requirement is unknown. Separate invocations against the same management environment are not coordinated by this option. A per-host preflight/save error appears in the batch summary; a result file is not guaranteed for errors before collection or when saving fails.
 
 ### Saved results and stdout
+
+Progress is enabled automatically when `sys.stdout.isatty()` is true. It shows target selection, host index/count, connection hops, cached/discovered platform facts, implementation selection, collection, validation, cleanup, and saving. Every five seconds during a waiting stage, a heartbeat reports the current stage and elapsed time in that stage. This is a controller-side waiting indicator, not proof of remote-process health or a whole-run deadline. Messages are flushed immediately to stderr; stdout remains JSON. Redirected/piped stdout disables automatic progress; --verbose enables it explicitly and --quiet disables it in a terminal. The internal Python run helper is quiet unless a reporting context is supplied. Progress omits credentials, raw command output and third-party exception text.
+
+```text
+[1/3] "smtp-01": connecting hop 1/1 (per-stage timeout 30s)
+[1/3] "smtp-01": still connecting hop 1/1 (per-stage timeout 30s) (5s in this stage)
+[1/3] "smtp-01": collecting inventory with "linux"
+[1/3] "smtp-01": completed: success (inventory_complete)
+```
 
 Each run writes a new file without overwriting previous inventories or updating human records:
 
@@ -233,15 +266,17 @@ Each run writes a new file without overwriting previous inventories or updating 
 <management-root>/observations/inventory-system-<uuid>.json
 ```
 
-The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor/version is currently 0.2.0; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version.
+The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor remains 0.2.0; bundled recipe version is 0.2.1; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, descriptor SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version. Source/host-disabled skips do not load a runtime or write an inventory file; they return result_path: null. Completed reports include source_name/source_root/reference and variable_names, without input values.
 
 Seven common observations cover hostname, platform, system name/version, kernel name/release and architecture. Each retains value, state, observed_at, source_ids and error. Missing/failed values remain null with explicit states. A command returning zero does not establish successful parsing or cleanup. Raw inventory command output may appear in private source records.
 
-Single-host stdout is a JSON summary containing status, reason_code, message, detected_kernel, supported_platforms, recipe_id and result_path. Batch stdout is an object with a hosts array; each entry records host/status/reason/result_path, or a sanitized error type when no saved report is available.
+Single-host stdout is a JSON summary containing status, reason_code, message, detected_kernel, supported_platforms, recipe_id and result_path. Using --all or resolving more than one unique host produces batch stdout: an object with a hosts array; each entry records host/status/reason/result_path, or a sanitized error type when no saved report is available. A selection resolving to one host retains the single-host summary unless --all is used. Nonempty exclusions add excluded_hosts with host_disabled/cli_excluded reasons. Explicit disabled hosts remain skipped results; disabled group/all members are omissions. If filtering removes every target, return 1 with empty hosts plus exclusion evidence and an error on stderr.
 
 See the [inventory guide](../recipes/inventory/system/README.md), [recipe descriptor](../recipes/inventory/system/recipe.yaml), [result schema](../recipes/inventory/system/schema.json) and [synthetic example](../recipes/inventory/system/examples/result.synthetic.json) for authoring and data consumers. Old copied descriptors must be migrated to 0.2.0. Reviewed custom inventory entrypoints can execute; there is no arbitrary-recipe runner, extension-overlay installer or execution sandbox.
 
 ## Exit codes, output and side effects
+
+Su/sudo JSON includes per-step `identity_verification` (expected/actual username and effective UID, matched/status/message) and per-group `parent_identity_verification` for return to the original connection identity. See [identity evidence](host-diagnostics.md#read-the-identity-evidence) for failed/incomplete/not-run states and separate prerequisite su evidence. --verbose/--debug adds readable successful identity/restoration explanations on stderr; stdout remains JSON.
 
 | Command/result | Exit code |
 | --- | --- |

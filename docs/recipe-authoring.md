@@ -36,7 +36,7 @@ Establish purpose, platforms and versions, inputs, outputs, privileges, local an
 
 ## Create a complete recipe directory
 
-Place custom content in the user's designated working directory. To select it with existing configuration tools, it must reside within the management root and follow the [path rules](hosts-yaml.md). Creating a recipe does not authorize changes to the SSHScript library.
+Place custom content in the user's designated working directory. To select it, keep it inside the management root or register its external root explicitly with recipe_sources; follow the [source/path rules](recipe-sources.md). Creating a recipe does not authorize changes to the SSHScript library.
 
 Suggested layout:
 
@@ -77,5 +77,10 @@ Static review is not execution evidence. New code and tests are executable conte
 The current runner accepts inventory-system descriptor 0.2.0 implementations sharing its seven-field output contract and SSHScript Session interface. Other recipes may be delivered as standalone programs using SSHScript or other selected tools, but must supply and validate their own concrete CLI/input/result protocol. Execute them according to their reviewed README only within authorization; do not claim `tools/run_recipe.py` supports them or arbitrary backends. Without a working standalone entrypoint, report a draft.
 
 Directory selection only establishes configuration selection, not executability. Migrate to a versioned general interface when one is implemented. Report files, public learning sources, environment, verification evidence, compatibility and pending actions. For distribution, follow the [sharing guide](recipe-sharing.md).
+
+
+## Declared recipe inputs
+
+For inventory implementations, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Legacy implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
 _Last modified: 2026-10-12_

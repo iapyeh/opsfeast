@@ -45,6 +45,20 @@ Migration is unnecessary for continued use. Perform it only after reviewing the 
 
 The tools do not provide a migration command or automatically rewrite private data. A newer definition schema should be introduced only for an actual contract change, not for a brand rename.
 
+## Host group field
+
+Host membership uses `group: NAME` for one group or `group: [NAME, ...]` for multiple groups. Rename the former `groups` key to `group`, retaining its values and comments; groups is not an alias, and configurations with either the old key alone or both names fail with a migration hint. Omitted group or group: [] means no membership. Run check after updating the defining YAML files, including includes; see [host groups](hosts-yaml.md#host-groups). No connection or recipe execution is required to validate the migration.
+
+## Named recipe sources and input context
+
+Bare inventory/system keeps its checkout meaning; :inventory/system selects profile recipes/, and source:inventory/system selects an explicitly registered recipe_sources root in entry hosts.yaml. Existing recipes/... YAML and ./ instance paths remain supported. Source registrations do not widen include/output paths or authorize execution. Enabled source/host flags and --all --exclude add explicit skips/omissions without rewriting settings. See [sources and controls](recipe-sources.md).
+
+Host recipes lists now accept strings or mappings with vars. Vars-bearing inventory implementations must accept the context keyword and declare inputs.variables; legacy four-argument collectors remain valid without effective vars. The bundled recipe is 0.2.1, with descriptor/result schema 0.2.0 unchanged. Linux implementation is 0.1.2 and FreeBSD/macOS are 0.1.1. Required/type/bound checks and first-level overlay precedence are documented in the [input contract](recipe-sources.md#variables-and-implementation-context); no arbitrary-recipe runner or installer is added.
+
+## Inventory runner arguments
+
+The inventory runner now requires explicit recipe and target selection. Replace positional host/root arguments and --hosts with `run_recipe.py inventory/system --host HOST ... --root ROOT`. Use --group for group names, or exclusive --all for every configured host. A positional recipe must come first; --recipe DIRECTORY may appear at any option position. Omitting the recipe no longer uses host YAML selectors. See the [runner reference](cli.md#toolsrun_recipepy-inventory-execution) for the complete interface, examples and result behavior. Existing YAML recipe selections, profiles and private data are preserved.
+
 ## Git and local integrations
 
 New clones use https://github.com/iapyeh/opsfeast.git. Existing clones can update origin explicitly:

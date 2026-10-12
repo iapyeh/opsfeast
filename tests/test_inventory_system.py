@@ -1,12 +1,14 @@
 """Synthetic inventory and runner regressions; never contact SSH hosts."""
 import json
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 import io
 from pathlib import Path
 import runpy
 import shutil
 import sys
 import tempfile
+import threading
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -176,6 +178,47 @@ class RunnerTests(unittest.TestCase):
     def run_recipe(self):
         return runner.run(self.root, 'example', session_class=self.session_class)
 
+    def test_parallel_runner_owns_separate_sessions_facts_and_results(self):
+        (self.root / 'hosts.yaml').write_text('''hosts:
+  example:
+    connection: {local: true}
+  other:
+    connection: {local: true}
+''')
+        barrier = threading.Barrier(2)
+        sessions, owners = [], []
+        lock = threading.Lock()
+        def factory():
+            owner = threading.get_ident()
+            values = runner_outputs()
+            session = Mock()
+            def command(*args, **kwargs):
+                self.assertEqual(threading.get_ident(), owner)
+                return values(*args, **kwargs)
+            def close(strict=False):
+                self.assertTrue(strict)
+                self.assertEqual(threading.get_ident(), owner)
+            session.exec_command.side_effect = command
+            session.close.side_effect = close
+            with lock:
+                sessions.append(session)
+                owners.append(owner)
+            barrier.wait(timeout=3)
+            return session
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(runner.run, self.root, host, session_class=factory,
+                                   recipe='inventory/system') for host in ('example', 'other')]
+            results = [future.result() for future in futures]
+        self.assertEqual(len(set(owners)), 2)
+        self.assertEqual([report['host_id'] for report, _ in results], ['example', 'other'])
+        self.assertEqual([report['status'] for report, _ in results], ['success', 'success'])
+        self.assertNotEqual(results[0][1], results[1][1])
+        for report, path in results:
+            self.assertEqual(json.loads(path.read_text()), report)
+        self.assertEqual(len(list((self.root / 'observations/host-init').glob('*.json'))), 2)
+        for session in sessions:
+            session.close.assert_called_once_with(strict=True)
+
     def test_save_and_cleanup(self):
         report, path = self.run_recipe()
         self.assertEqual(report['status'], 'success')
@@ -239,7 +282,7 @@ class RunnerTests(unittest.TestCase):
         with patch.object(runner, 'load_runtime') as runtime, \
                 contextlib.redirect_stderr(io.StringIO()) as error, \
                 contextlib.redirect_stdout(io.StringIO()) as output:
-            code = runner.main(['example', str(self.root), '--recipe', 'recipes/inventory/system'])
+            code = runner.main(['--host', 'example', '--root', str(self.root), '--recipe', 'recipes/inventory/system'])
         self.assertEqual(code, 1)
         self.assertIn('omit the recipes/ prefix', error.getvalue())
         self.assertIn('inventory/system', error.getvalue())
@@ -348,17 +391,29 @@ class RunnerTests(unittest.TestCase):
         path = self.root / 'result.json'
         with patch.object(runner, 'run', return_value=(completed_report(), path)) as run:
             with contextlib.redirect_stdout(io.StringIO()) as output:
-                code = runner.main(['example', str(self.root), '--recipe', './recipes/inventory/system'])
+                code = runner.main(['--host', 'example', '--root', str(self.root), '--recipe', './recipes/inventory/system'])
         self.assertEqual(code, 0)
         run.assert_called_once_with(self.root, 'example', 30, recipe='./recipes/inventory/system')
         self.assertEqual(json.loads(output.getvalue())['result_path'], str(path))
+
+    def test_runner_progress_explains_stages_without_raw_output(self):
+        with contextlib.redirect_stderr(io.StringIO()) as err, runner.reporting(True, '[1/1] synthetic:'):
+            report, path = self.run_recipe()
+        for stage in ('validating configuration and recipe', 'preparing connection',
+                      'checking cached host facts', 'discovering host platform',
+                      'selecting platform implementation', 'collecting inventory',
+                      'validating inventory result', 'closing session', 'saving result'):
+            self.assertIn(stage, err.getvalue())
+        self.assertTrue(path.is_file())
+        self.assertEqual(report['status'], 'success')
+        self.assertIsNone(runner._progress.get())
 
     def test_main_unsupported_summary_matches_saved_result(self):
         (self.root / 'hosts.yaml').write_text('hosts: {example: {connection: {local: true}}}')
         self.session.exec_command.side_effect = [result('OpenBSD\n'), result('7.6\n'), result('amd64\n')]
         with patch.object(runner, 'load_runtime', return_value=(self.session_class, {'verification': 'mock'})), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
-            code = runner.main(['example', str(self.root), '--recipe', 'inventory/system'])
+            code = runner.main(['--host', 'example', '--root', str(self.root), '--recipe', 'inventory/system'])
         summary = json.loads(output.getvalue())
         saved = json.loads(Path(summary['result_path']).read_text())
         self.assertEqual(code, 1)
@@ -378,11 +433,11 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(ops.main(['init', str(self.root)]), 0)
             with patch.object(runner, 'run', return_value=(completed_report(), self.root / 'result.json')) as run, \
                     contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(runner.main(['example', '--recipe', 'inventory/system']), 0)
+                self.assertEqual(runner.main(['--host', 'example', '--recipe', 'inventory/system']), 0)
             run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='inventory/system')
             (checkout / '.my-ops.yaml').write_text('schema_version: 1\nroot: missing\n')
             with patch.object(runner, 'run') as run, contextlib.redirect_stderr(io.StringIO()):
-                self.assertEqual(runner.main(['example']), 1)
+                self.assertEqual(runner.main(['inventory/system', '--host', 'example']), 1)
             run.assert_not_called()
 
     def test_cleanup_failure_retains_observations(self):
@@ -444,7 +499,8 @@ class RunnerTests(unittest.TestCase):
         self.session.close.assert_called_once_with(strict=True)
 
     def test_runtime_mismatch_rejected(self):
-        with patch.object(runner, 'version', return_value='4.0.2'):
+        with patch.dict(sys.modules, {'sshscript': SimpleNamespace(__version__='5.0.0', Session=Mock())}), \
+                patch.object(runner, 'version', return_value='4.0.2'):
             with self.assertRaises(ops.ConfigError):
                 runner.load_runtime()
 

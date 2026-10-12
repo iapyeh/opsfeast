@@ -22,7 +22,15 @@ python -B -m unittest discover -s tests -p 'test_*.py'
 
 `test_recipe_inspection.py` covers read-only discovery without profile access, requested/planned/tested coverage gaps, full match-condition retention, unsupported runner IDs, missing/version-mismatched/invalid entrypoints, descriptor/entrypoint symlink escapes, malformed-recipe continuation, path semantics, concise default output, requested-platform focus/constraints, opt-in full details and CLI status/output. Synthetic entrypoints contain a raising top-level statement to prove inspection never executes them. The bundled inventory descriptor is also inspected with the existing static validator. No host is contacted.
 
+## Recipe source and input tests
+
+`test_recipe_sources.py` covers checkout/profile/external references, entry-only registrations and includes, home/relative roots, path and descriptor symlink escapes, directory/glob expansion, namespaced IDs, shorthand/mapping items, default/source/host vars with first-match precedence, deep-copy/shallow overlays, typed bounds, disabled/missing sources, disabled hosts/jumps, exact CLI exclusions and empty selections. Full inventory execution uses mocked Sessions; no dependencies are installed and no external host is contacted.
+
 ## Inventory and runner tests
+
+Runner progress tests cover automatic stdout TTY detection, verbose/quiet overrides, JSON separation, failed-host continuation with sanitized error types, collection stages, waiting heartbeats without sleeping, and worker/context cleanup on failure. Parallel tests additionally cover the worker limit, actual overlap, CPU-based default/cap/fallback, sequential mode, rejected --thread alias, out-of-order completion with ordered JSON, failure/context isolation, and separate Sessions, host facts and result files through the complete runner. All collection uses synthetic sessions; no network connections are made.
+
+`test_host_selection.py` covers optional/scalar/list group memberships, unchanged dump representation, rejected former groups keys, invalid group types, cross-include union ordering, duplicate removal, explicit --host/--group kinds, unknown-target rejection before execution, all-host selection including local/jump/ungrouped hosts, empty inventory, root/profile forwarding, leading/flag recipe syntax, required recipe/targets, invalid option combinations, single-host output and batch continuation after failures. Fixtures are temporary and synthetic; runner execution is mocked and no host is contacted.
 
 `test_inventory_system.py` covers Linux synthetic outputs, safe os-release parsing, missing-file fallback, permission denial, unsupported platforms, command and transport failures, timeout partial output, strict cleanup, recipe selection and manifest/version validation, output symlink rejection and repeated result preservation. These tests never contact SSH targets. The legacy Linux collector unsupported-platform path remains covered; SSHScript 5.0.0 credential-free quickstart was checked locally; full Linux/FreeBSD and SSH collection remain unverified. macOS now has a collector with separate local read-only validation.
 
@@ -39,5 +47,7 @@ Management-directory discovery tests cover default and custom initialization, sh
 Result summary tests cover detected kernels, reasons and messages for success, partial, unsupported and failed runs, cleanup-error precedence, and equality between CLI summaries and saved reports. CLI short paths select checkout recipes and bare `recipes/` prefixes are rejected before connecting with a correction hint; explicit `./` paths retain management-root semantics.
 
 `test_host_runtime.py` covers platform facts, cache refresh/invalidation, target changes, su/sudo identities, independent/repeated chains, credential precedence and account-password fallback, host credential scope, empty/null/invalid credentials, no retry after rejected overrides, missing credentials, test-host aggregation, safe diagnostic flags/tracebacks, three-platform runner dispatch, implementation versions and batch continuation. All account/SSH tests are synthetic; no real privileged accounts are tested.
+
+Identity-output tests cover CLI success explanations without credential disclosure, expected/actual UID evidence on mismatch, incomplete target lookup, same-UID account aliases, separate prerequisite su/final sudo evidence, not-run entry/skipped checks, and failed parent restoration. These use synthetic consoles and do not establish native su/sudo behavior.
 
 _Last modified: 2026-10-12_

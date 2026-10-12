@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import fnmatch
 import getpass
 import json
 import math
 import os
 from pathlib import Path
+import re
 import sys
 import tempfile
 import traceback
@@ -294,6 +296,17 @@ def string(value, where):
     return value
 
 
+def group_names(value, where):
+    """Validate membership without rewriting the user's scalar/list representation."""
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        raise ConfigError(f'{where}: expected a string or list of strings')
+    for name in value:
+        string(name, where + ': group name')
+    return value
+
+
 def plain_values(value, where, active=None):
     """Keep vars JSON-like; reject dates, binary values, and recursive YAML aliases."""
     active = set() if active is None else active
@@ -308,6 +321,8 @@ def plain_values(value, where, active=None):
             for item in value:
                 plain_values(item, where, active)
         active.remove(id(value))
+    elif type(value) is float and not math.isfinite(value):
+        raise ConfigError(f'{where}: non-finite numbers are not supported')
     elif value is not None and type(value) not in (str, int, float, bool):
         raise ConfigError(f'{where}: unsupported YAML value type; quote date-like strings')
 
@@ -324,6 +339,11 @@ class Validator:
         self.active = []
         self.edges = {}
         self.selected = {}
+        self.recipe_sources = {}
+        self.default_recipe_sources = {name: {'enabled': True, 'vars': {}} for name in ('bundle', 'profile')}
+        self.recipe_entries = {}
+        self.recipe_skips = {}
+        self.execution_recipe = None
         self.notes = []
 
     def inside(self, path):
@@ -339,22 +359,62 @@ class Validator:
         path = Path(text)
         return self.inside(path if path.is_absolute() else source.parent / path)
 
-    def recipe_scope(self, text, source):
-        """Bare recipes/... selects this checkout; explicit local paths stay local."""
+    def recipe_location(self, text, source, cli=False, check_exists=True):
+        """Resolve one source explicitly; never fall back to another source."""
         string(text, f'{source}: recipe path')
+        if '://' in text:
+            raise ConfigError('remote recipe URLs are not supported')
         path = Path(text)
-        if text == 'recipes' or text.startswith('recipes/'):
-            scope = Validator(REPOSITORY_RECIPES)
-            relative = text[len('recipes'):].lstrip('/') or '.'
-            return scope, relative, scope.root / 'selection.yaml'
-        if path.is_absolute() and path.is_relative_to(REPOSITORY_RECIPES):
-            scope = Validator(REPOSITORY_RECIPES)
-            return scope, text, source
-        return self, text, source
+        info = {'name': 'repository', 'root': REPOSITORY_RECIPES, 'reference': text,
+                **self.default_recipe_sources['bundle']}
+        if ':' in text and not path.is_absolute() and not text.startswith(('./', '../')):
+            name, relative = text.split(':', 1)
+            if not relative or Path(relative).is_absolute() or relative.startswith('~'):
+                raise ConfigError('source-qualified recipe requires a nonempty relative path')
+            if name:
+                if name not in self.recipe_sources:
+                    raise ConfigError(f'unknown recipe source: {name}')
+                info.update(self.recipe_sources[name], name=name)
+            else:
+                info.update(self.default_recipe_sources['profile'], name='profile', root=self.root / 'recipes')
+            pattern = relative
+        elif text == 'recipes' or text.startswith('recipes/'):
+            if cli:
+                raise ConfigError('omit the recipes/ prefix from --recipe; use inventory/system')
+            pattern = text[len('recipes'):].lstrip('/') or '.'
+        elif path.is_absolute() and path.is_relative_to(REPOSITORY_RECIPES):
+            pattern = text
+        elif path.is_absolute() or text.startswith(('./', '../')):
+            info.update(self.default_recipe_sources['profile'], name='profile', root=self.root)
+            self.path(text, source)  # Check containment even when this source is disabled.
+            info['scope'] = self
+            info['pattern'], info['origin'] = text, source
+            return info
+        else:
+            pattern = text
+        # Validate relative containment even for a disabled/missing source,
+        # without requiring the source to exist or opening recipe files.
+        root = Path(info['root']).resolve()
+        candidate = Path(pattern)
+        candidate = (candidate if candidate.is_absolute() else root / candidate).resolve()
+        if not candidate.is_relative_to(root):
+            raise ConfigError('recipe path outside its source root')
+        info.update(root=root, pattern=pattern, origin=root / 'selection.yaml')
+        info['scope'] = Validator(root) if info['enabled'] and check_exists else None
+        return info
+
+    def recipe_scope(self, text, source):
+        info = self.recipe_location(text, source)
+        if not info['enabled']:
+            raise ConfigError('recipe source is disabled')
+        return info['scope'], info['pattern'], info['origin']
 
     def recipe_inside(self, path):
         if path.is_relative_to(REPOSITORY_RECIPES):
             return Validator(REPOSITORY_RECIPES).inside(path)
+        for item in self.recipe_sources.values():
+            if item['enabled'] and path.is_relative_to(item['root']):
+                return Validator(item['root']).inside(path)
         return self.inside(path)
 
     def load(self, path):
@@ -363,7 +423,43 @@ class Validator:
             raise ConfigError('include cycle: ' + ' -> '.join(map(str, self.active + [path])))
         if path in self.loaded:
             return
-        data = mapping(read_yaml(path), str(path), ('include', 'hosts'))
+        entry = path == self.inside(self.root / 'hosts.yaml') and not self.active
+        data = mapping(read_yaml(path), str(path), ('include', 'hosts', 'recipe_sources') if entry else ('include', 'hosts'))
+        if entry:
+            for name, settings in mapping(data.get('recipe_sources', {}), 'recipe_sources').items():
+                if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', name) or name == 'repository':
+                    raise ConfigError('recipe source names must be simple identifiers; repository is reserved')
+                where = f'{path}: recipe_sources.{name}'
+                if name in self.default_recipe_sources:
+                    settings = mapping(settings, where, ('path', 'enabled', 'vars'))
+                    if 'path' in settings:
+                        text = string(settings['path'], where + '.path')
+                        if '://' in text:
+                            raise ConfigError(f'{where}.path: must be a local default recipe root')
+                        supplied = Path(text).expanduser()
+                        supplied = (supplied if supplied.is_absolute() else path.parent / supplied).resolve()
+                        expected = (REPOSITORY_RECIPES if name == 'bundle' else self.root / 'recipes').resolve()
+                        if supplied != expected:
+                            raise ConfigError(f'{where}.path: must resolve to the default recipe root; register a separate source for another path')
+                    enabled = settings.get('enabled', True)
+                    if type(enabled) is not bool:
+                        raise ConfigError(f'{where}.enabled: expected a boolean')
+                    variables = mapping(settings.get('vars', {}), where + '.vars')
+                    plain_values(variables, where + '.vars')
+                    self.default_recipe_sources[name] = {'enabled': enabled, 'vars': variables}
+                    continue
+                settings = mapping(settings, where, ('path', 'enabled', 'vars'))
+                text = string(settings.get('path'), where + '.path')
+                if '://' in text:
+                    raise ConfigError(f'{where}: source path must be local')
+                enabled = settings.get('enabled', True)
+                if type(enabled) is not bool:
+                    raise ConfigError(f'{where}.enabled: expected a boolean')
+                variables = mapping(settings.get('vars', {}), where + '.vars')
+                plain_values(variables, where + '.vars')
+                location = Path(text).expanduser()
+                location = (location if location.is_absolute() else path.parent / location).resolve()
+                self.recipe_sources[name] = {'root': location, 'enabled': enabled, 'vars': variables}
         self.documents[path] = data
         includes = data.get('include', [])
         if not isinstance(includes, list):
@@ -379,7 +475,9 @@ class Validator:
             string(host, f'{path}: host ID')
             if host in self.hosts:
                 raise ConfigError(f'duplicate host {host}: {self.sources[host]} and {path}')
-            self.hosts[host] = mapping(config, f'{path}: {host}', ('connection', 'users', 'vars', 'recipes'))
+            if isinstance(config, dict) and 'groups' in config:
+                raise ConfigError(f'{path}: {host}: groups has been renamed to group; use group: NAME or group: [NAME, ...]')
+            self.hosts[host] = mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes'))
             self.sources[host] = path
         self.active.pop()
         self.loaded.add(path)
@@ -487,29 +585,47 @@ class Validator:
                         yield from expand(checked, rest, ancestry | {checked})
         return list(expand(start, parts[first:], {start}))
 
+    def recipe_selector(self, selector, where):
+        if isinstance(selector, str):
+            selector = {'recipe': selector}
+        selector = mapping(selector, where, ('recipe', 'directory', 'glob', 'recursive', 'vars'))
+        kinds = set(selector) & {'recipe', 'directory', 'glob'}
+        if len(kinds) != 1:
+            raise ConfigError(f'{where}: specify exactly one of recipe, directory, glob')
+        kind = next(iter(kinds))
+        string(selector[kind], where)
+        if 'recursive' in selector and (kind != 'directory' or type(selector['recursive']) is not bool):
+            raise ConfigError(f'{where}: recursive is a boolean for directory only')
+        variables = mapping(selector.get('vars', {}), where + '.vars')
+        plain_values(variables, where + '.vars')
+        return selector, kind
+
+    def recipe_candidates(self, selector, kind, info):
+        scope, pattern, source = info['scope'], info['pattern'], info['origin']
+        if kind == 'glob':
+            return scope.glob_dirs(pattern, source)
+        directory = scope.path(pattern, source)
+        if not directory.is_dir():
+            raise ConfigError('recipe/directory does not exist')
+        return [directory] if kind == 'recipe' else list(scope.descendants(directory, selector.get('recursive', False)))
+
     def recipes(self, host, config):
         source = self.sources[host]
         where = f'{source}: {host}.recipes'
         selectors = config.get('recipes', [])
         if not isinstance(selectors, list):
             raise ConfigError(f'{where}: expected a list')
-        selected, ids = [], {}
+        selected, ids, entries, skipped = [], {}, [], []
+        host_enabled = config.get('enabled', True)
         for selector in selectors:
-            selector = mapping(selector, where, ('recipe', 'directory', 'glob', 'recursive'))
-            kinds = set(selector) & {'recipe', 'directory', 'glob'}
-            if len(kinds) != 1:
-                raise ConfigError(f'{where}: specify exactly one of recipe, directory, glob')
-            kind = next(iter(kinds))
-            if 'recursive' in selector and (kind != 'directory' or type(selector['recursive']) is not bool):
-                raise ConfigError(f'{where}: recursive is a boolean for directory only')
-            scope, pattern, recipe_source = self.recipe_scope(selector[kind], source)
-            if kind == 'glob':
-                candidates = scope.glob_dirs(pattern, recipe_source)
-            else:
-                directory = scope.path(pattern, recipe_source)
-                if not directory.is_dir():
-                    raise ConfigError(f'{where}: recipe/directory does not exist: {directory}')
-                candidates = [directory] if kind == 'recipe' else list(scope.descendants(directory, selector.get('recursive', False)))
+            selector, kind = self.recipe_selector(selector, where)
+            info = self.recipe_location(selector[kind], source, check_exists=host_enabled)
+            if not host_enabled or not info['enabled']:
+                skipped.append({'reference': selector[kind], 'source': info['name'], 'status': 'skipped',
+                                'reason_code': 'host_disabled' if not host_enabled else 'source_disabled'})
+                continue
+            scope = info['scope']
+            candidates = self.recipe_candidates(selector, kind, info)
             matches = []
             for directory in candidates:
                 descriptor = scope.inside(directory / 'recipe.yaml')
@@ -524,19 +640,59 @@ class Validator:
                 if directory in selected:
                     continue
                 data = mapping(read_yaml(scope.inside(directory / 'recipe.yaml')), str(directory / 'recipe.yaml'))
-                # Full recipe schema is not yet defined. Validate IDs only when present.
                 if 'id' in data:
                     recipe_id = string(data['id'], str(directory / 'recipe.yaml') + ': id')
-                    if recipe_id in ids and ids[recipe_id] != directory:
-                        raise ConfigError(f'{where}: duplicate recipe ID {recipe_id}: {ids[recipe_id]} and {directory}')
-                    ids[recipe_id] = directory
+                    qualified = (info['name'], recipe_id)
+                    if qualified in ids and ids[qualified] != directory:
+                        raise ConfigError(f'{where}: duplicate recipe ID {recipe_id} in source {info["name"]}')
+                    ids[qualified] = directory
                 selected.append(directory)
-        self.selected[host] = selected
+                entries.append(dict(info, directory=directory, host_vars=selector.get('vars', {})))
+        self.selected[host], self.recipe_entries[host], self.recipe_skips[host] = selected, entries, skipped
+
+    def matching_recipe_vars(self, host, directory, selected_info):
+        # CLI selects one concrete directory. Do not validate/expand unrelated
+        # host selections; the first matching selector supplies its vars.
+        selectors = self.hosts[host].get('recipes', [])
+        if not isinstance(selectors, list):
+            return {}
+        for raw in selectors:
+            candidate = {'recipe': raw} if isinstance(raw, str) else raw
+            if not isinstance(candidate, dict):
+                continue
+            kinds = set(candidate) & {'recipe', 'directory', 'glob'}
+            if len(kinds) != 1:
+                continue
+            kind = next(iter(kinds))
+            text = candidate[kind]
+            if not isinstance(text, str):
+                continue
+            try:
+                info = self.recipe_location(text, self.sources[host], check_exists=False)
+                if info['name'] != selected_info['name'] or not info['enabled']:
+                    continue
+                scope = info['scope'] or Validator(info['root'])
+                if kind == 'glob':
+                    matches = directory in scope.glob_dirs(info['pattern'], info['origin'])
+                else:
+                    base = scope.path(info['pattern'], info['origin'])
+                    matches = (directory == base if kind == 'recipe' else
+                               directory != base and (directory.is_relative_to(base) if candidate.get('recursive') is True
+                                                      else directory.parent == base))
+            except (ConfigError, OSError):
+                continue
+            if matches:
+                selector, _ = self.recipe_selector(candidate, f'{self.sources[host]}: {host}.recipes')
+                return copy.deepcopy(selector.get('vars', {}))
+        return {}
 
     def check_connections(self):
         for host, config in self.hosts.items():
             where = f'{self.sources[host]}: {host}'
+            if type(config.get('enabled', True)) is not bool:
+                raise ConfigError(f'{where}.enabled: expected a boolean')
             self.edges[host] = self.connection(config.get('connection'), where + '.connection')
+            group_names(config.get('group', []), where + '.group')
             if 'users' in config:
                 users = mapping(config['users'], where + '.users')
                 for user, account in users.items():
@@ -563,9 +719,17 @@ class Validator:
 
 
 TEMPLATE = '''# Replace the example host ID and hostname before use.
-# Select recipes directly from the OpsFeast checkout with recipes/... paths.
+# Bare recipe names select this checkout; :names select this profile's recipes/.
+# Optional recipe_sources at this entrypoint registers external local roots.
+# recipe_sources:
+#   bundle: {enabled: true}  # Optional controls for checkout recipes; no path.
+#   profile: {enabled: true}  # Optional controls for :profile recipes; no path.
+#   community:
+#     path: ~/Download/recipes
+#     enabled: true
+#     vars: {command_timeout_seconds: 15}
 hosts:
-  # Each host ID maps to connection (required), users, vars and recipes (optional).
+  # Each host ID maps to connection (required), enabled, group, users, vars and recipes (optional).
   # Available fields, for example:
   # host-01:
   #   connection:
@@ -588,6 +752,8 @@ hosts:
   #     #   hostname: jump.example
   #     #   port: 22
   #     #   user: operator
+  #   enabled: true  # Optional; false disables the host and its use as a jump host.
+  #   group: web  # Optional; a string for one group or [web, production] for multiple.
   #   users:  # Optional account names, credentials and account-specific vars.
   #     operator:  # SSH login account selected by connection.user.
   #       password: example-login-password  # Optional string; omit for key auth.
@@ -602,7 +768,9 @@ hosts:
   #       user: root
   #       password: example-password
   #   recipes:  # Optional; select recipe directories from the checkout.
-  #     - recipe: recipes/inventory/system
+  #     - inventory/system
+  #     # - recipe: community:inventory/system
+  #     #   vars: {command_timeout_seconds: 15}
   #     # Use ./recipes/... for custom recipes inside this management directory.
   #     # Or select recipe directories with either of these entries:
   #     # - directory: recipes/inventory
@@ -666,6 +834,8 @@ def load_session_class():
 def connection_plan(config, host, session_class, contexts=None):
     """Resolve every hop before connecting; credentials belong to each hop's host."""
     def expand(connection, owner, source, host_id):
+        if host_id in config.hosts and not config.hosts[host_id].get('enabled', True):
+            raise ConfigError(f'host is disabled and cannot participate in a connection: {host_id}')
         if 'host' in connection:
             target = connection['host']
             return expand(config.hosts[target]['connection'], config.hosts[target], config.sources[target], target)
@@ -947,6 +1117,8 @@ def main(argv=None):
         print(f'OK: {len(result.loaded)} YAML files, {len(result.hosts)} hosts; configuration checks passed.')
         for host, recipes in result.selected.items():
             print(f'  {host}: {len(recipes)} selected recipes')
+            for skipped in result.recipe_skips.get(host, []):
+                print(f"    skipped {skipped['reference']}: {skipped['reason_code']}")
         for note in result.notes:
             print(f'NOTE: {note}')
         print('No SSH connection or recipe execution performed; platform, authentication and full recipe contracts are not validated.')

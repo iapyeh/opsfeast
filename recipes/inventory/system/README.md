@@ -1,6 +1,6 @@
 # inventory-system
 
-Recipe version 0.2.0 provides Linux, FreeBSD and macOS implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
+Recipe version 0.2.1 provides Linux, FreeBSD and macOS implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
@@ -31,16 +31,28 @@ No su/sudo, installation or target configuration changes are performed. Read acc
 ## Execute
 
 ```sh
-python -B tools/run_recipe.py host-01 --recipe inventory/system
-python -B tools/run_recipe.py host-01 /srv/feasts/main --recipe inventory/system --hosts host-02 host-03
-python -B tools/run_recipe.py host-01 --profile inventory
+python -B tools/run_recipe.py inventory/system --host host-01
+python -B tools/run_recipe.py inventory/system --host host-01 host-02 host-03 --root /srv/feasts/main
+python -B tools/run_recipe.py inventory/system --group web production --profile inventory
+python -B tools/run_recipe.py inventory/system --host smtp-01 --group nginx apache2
+python -B tools/run_recipe.py --all --recipe inventory/system
 ```
 
-`--hosts` adds host IDs to the first positional host; duplicate IDs are executed once. Each host has independent initialization, selection, cleanup and result files; a failure/skip does not stop other hosts. Batch execution is sequential. Aggregate exit code is zero only when all inventories succeed.
+Recipe and targets are required. Put the positional recipe first, or use --recipe DIRECTORY at any option position; using both is an error. --host selects exact host IDs and --group selects exact group names, with multiple/repeated values supported. Combine them for a union; duplicate hosts execute once. --all selects every enabled host (including local/jump/ungrouped hosts) and cannot be combined with either option. No target-kind guessing or recipe fallback is performed.
 
-The optional positional management root and `--profile` retain their existing mutually exclusive semantics. Without either, the selected default profile is used. Bare `--recipe inventory/system` selects this checkout's `recipes/inventory/system`; the CLI rejects the `recipes/` prefix. Explicit `--recipe ./recipes/custom-system` selects a directory relative to the management root. YAML `recipe: recipes/inventory/system` still selects the checkout, even from include files. Missing checkout content does not fall back to instance copies. Paths cannot escape their repository/management boundaries.
+Each host has independent initialization, selection, cleanup and result files; a failure/skip does not stop other hosts. Batch execution uses a bounded thread pool: --threads N sets concurrent hosts, default min(8, local logical CPU count), fallback 1 and capped by the host count. --threads 1 runs sequentially. Each host creates, uses and closes its own Session in its worker; implementation loading is serialized, but collection runs concurrently. Final JSON keeps selection order; progress follows actual worker activity. Review custom implementations for shared state/file writes before parallel use. Aggregate exit code is zero only when all inventories succeed. Unknown targets fail before execution. One resolved host uses the single-host summary; multiple hosts or --all use the batch summary.
 
-Without `--recipe`, exactly one selected recipe with ID `inventory-system` is required. With it, that host's recipe selectors are bypassed, but host/connection configuration is still validated. Other recipe IDs and general third-party interfaces remain unsupported.
+When stdout is a terminal, the runner automatically displays host/stage progress on stderr and a waiting heartbeat every five seconds. Use --verbose for progress when saving/piping stdout JSON, or --quiet to suppress progress. The waiting indicator does not establish remote health or completion; see [progress and output](../../../docs/cli.md#saved-results-and-stdout).
+
+Use --root for the management directory or --profile for a registered environment; they are mutually exclusive. Without either, use the default profile. A bare recipe path such as inventory/system selects this checkout's recipes/inventory/system; the CLI rejects the recipes/ prefix. Explicit ./recipes/custom-system selects a directory relative to the management root. YAML recipe: recipes/inventory/system still selects the checkout, even from include files. Use :inventory/system for profile recipes/ or community:inventory/system for a registered source. Source/host enabled flags and --all --exclude control execution; see [sources and inputs](../../../docs/recipe-sources.md). Missing content never falls back to another source. Paths cannot escape their repository/management boundaries.
+
+The CLI uses matching host recipe vars and bypasses unrelated selectors while validating host/connection configuration. Existing YAML selections remain usable by configuration checks and internal Python callers; other recipe IDs and general third-party interfaces remain unsupported. Migrate the former positional host/root and --hosts syntax using the [CLI reference](../../../docs/cli.md#toolsrun_recipepy-inventory-execution).
+
+## Recipe variables
+
+Bundled recipe 0.2.1 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
+
+Source/host-disabled skips happen before runtime/connection and have result_path null. They are not fabricated inventory files and return nonzero. Completed results record source provenance and variable names without values. Prior macOS local evidence belongs to recipe 0.2.0; the current input/context changes have synthetic coverage, without new native SSH evidence.
 
 ## Host initialization and selection
 
@@ -53,11 +65,11 @@ Implementations are declared explicitly in `recipe.yaml`:
 ```yaml
 implementations:
   - id: linux
-    version: 0.1.1
+    version: 0.1.2
     entrypoint: implementations/linux.py
     match: {os_name: linux}
   - id: ubuntu-24
-    version: 0.1.0
+    version: 0.1.1
     entrypoint: implementations/ubuntu_24.py
     match:
       os_name: linux
@@ -74,7 +86,7 @@ Matches rank by explicit integer `priority` (default 0), then number of conditio
 Each implementation is a recipe-relative `.py` file declaring one literal `VERSION` string matching its descriptor version, plus:
 
 ```python
-def collect(session, report, timeout, facts):
+def collect(session, report, timeout, facts, *, context=None):
     # Populate the seven observations, sources and execution_errors.
     ...
 ```

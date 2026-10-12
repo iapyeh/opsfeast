@@ -44,6 +44,16 @@ Sudo selects the actor password using the [credential precedence rules](#credent
 
 Tests enter an authenticated shell and query effective UID/name, compare UID with the requested account, then verify return to the connection identity. They test shell access, not command-specific sudo rules. Bash and id are required by the SSHScript authenticated-console contract. Authentication/identity/cleanup errors remain separate from skipped steps; exception messages, passwords and raw privileged outputs are omitted.
 
+### Read the identity evidence
+
+Each step retains `identity` and adds `identity_verification`: `expected` and `actual` username/effective_uid, `matched`, `status` and a short `message`. The expected UID comes from `id -u TARGET`; the actual identity comes from `id -un` and `id -u` inside the entered shell. Effective UID equality is the success criterion; account aliases may have different names but the same UID. Environment variables such as USER/HOME are not identity evidence.
+
+For example, a verified sudo-to-root step reports expected `{username: root, effective_uid: 0}`, actual `{username: root, effective_uid: 0}`, `matched: true`, and `status: success`. A UID mismatch retains both observed values with `matched: false` and `status: failed`. Incomplete checks retain available values with `matched: null`; entry failures and skipped steps have `status: not_run`, never implied success. When another sudo actor requires su first, `su_identity_verification` records that prerequisite separately from the final sudo check.
+
+The report's `connection_identity` records the original login name/UID. Each independent target or chain group includes `parent_identity_verification` with expected/actual identity and an explicit restoration result. This check runs after exiting the group's authenticated contexts; a chain reports restoration after the whole chain, not each intermediate exit. Restoration requires both name and UID to match the original connection identity. An unperformed or failed check remains explicit; successful restoration does not erase an operation or Session cleanup failure.
+
+Default stdout remains JSON. With --verbose/--debug, stderr also explains the expected/actual account and UID after successful verification and states whether the original identity was restored. Identity evidence verifies shell access; it does not establish command-specific permissions or whether a supplied password was consumed. These fields add explanation without additional probes or environment dumps.
+
 All host diagnostics accept `-v`/`--verbose`, `--debug` and `--traceback`; see [diagnostic options](cli.md#connection-diagnostics-and-options). For example, add `--debug --traceback` to test-sudo to inspect the actor, target, whether a sudo password was supplied and its configuration source, plus frames for caught failures. A PermissionError at su/sudo entry does not by itself prove the password is wrong: entry may reject authentication, request a password again, or request one when none was supplied. Keep the reported stage and credential source when investigating; the tool does not report a verified native policy cause.
 
 ## Credential precedence

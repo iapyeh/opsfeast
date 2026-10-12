@@ -1,11 +1,13 @@
 """FreeBSD system inventory; synthetic verification only."""
 from pathlib import Path
 import runpy
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 common = runpy.run_path(str(Path(__file__).resolve().parents[1] / 'main.py'))
 
 
-def collect(session, report, timeout, facts):
+def collect(session, report, timeout, facts, *, context=None):
+    if context is not None:
+        timeout = context.vars.get('command_timeout_seconds', timeout)
     common['observe'](report, 'platform', 'freebsd', 'success', ['host-init'])
     common['observe'](report, 'system_name', 'FreeBSD', 'success', ['host-init'])
     for field, argv in (('hostname', ['uname', '-n']), ('kernel_name', ['uname', '-s']),

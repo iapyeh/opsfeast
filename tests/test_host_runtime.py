@@ -153,6 +153,111 @@ class PrivilegeTests(HostTests):
         self.events=[]
         self.factory=lambda: FakeConsole('login',self.events)
 
+    def test_success_output_explains_su_sudo_and_restoration(self):
+        for mode, targets, expected in (('su', ['user2'], {'username': 'user2', 'effective_uid': 1002}),
+                                        ('sudo', [], {'username': 'root', 'effective_uid': 0})):
+            with self.subTest(mode=mode), patch.object(hr, 'runtime_class', return_value=self.factory), \
+                    contextlib.redirect_stdout(io.StringIO()) as out, \
+                    contextlib.redirect_stderr(io.StringIO()) as err:
+                code = ops.main(['test-' + mode, 'h', *targets, '--root', str(self.root), '--verbose'])
+                self.assertEqual(code, 0)
+                report = json.loads(out.getvalue())
+                check = report['groups'][0]['steps'][0]['identity_verification']
+                self.assertEqual(check['expected'], expected)
+                self.assertEqual(check['actual'], expected)
+                self.assertEqual(check['status'], 'success')
+                self.assertTrue(check['matched'])
+                parent = report['groups'][0]['parent_identity_verification']
+                self.assertTrue(parent['matched'])
+                self.assertEqual(parent['actual'], report['connection_identity'])
+                self.assertIn('Original connection identity restored.', err.getvalue())
+                self.assertIn('Identity verified: expected', err.getvalue())
+                self.assertNotIn('login-secret', out.getvalue() + err.getvalue())
+
+    def test_sudo_actor_prerequisite_has_separate_identity_evidence(self):
+        report = hr.privilege_test(self.config, 'h', 'sudo', ['user2'], session_class=self.factory)
+        step = report['groups'][0]['steps'][0]
+        self.assertEqual(step['su_identity_verification']['expected']['username'], 'user2')
+        self.assertEqual(step['identity_verification']['expected']['username'], 'root')
+        self.assertTrue(step['su_identity_verification']['matched'])
+        self.assertTrue(step['identity_verification']['matched'])
+
+    def test_identity_mismatch_retains_expected_and_actual_evidence(self):
+        def factory():
+            console = self.factory()
+            console.su = lambda *args, **kwargs: FakeConsole('user3', self.events)
+            return console
+        report = hr.privilege_test(self.config, 'h', 'su', ['user2'], session_class=factory)
+        step = report['groups'][0]['steps'][0]
+        check = step['identity_verification']
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(check['expected']['effective_uid'], 1002)
+        self.assertEqual(check['actual']['effective_uid'], 1003)
+        self.assertFalse(check['matched'])
+        self.assertEqual(check['status'], 'failed')
+        self.assertIn('does not match', check['message'])
+        self.assertTrue(report['groups'][0]['parent_identity_verification']['matched'])
+
+    def test_target_uid_lookup_failure_preserves_partial_evidence(self):
+        original = FakeConsole.__call__
+        def query_failure(console, command, **kwargs):
+            if command == 'id -u user2':
+                raise RuntimeError('private-query-output')
+            return original(console, command, **kwargs)
+        with patch.object(FakeConsole, '__call__', query_failure):
+            report = hr.privilege_test(self.config, 'h', 'su', ['user2'], session_class=self.factory)
+        check = report['groups'][0]['steps'][0]['identity_verification']
+        self.assertEqual(check['status'], 'failed')
+        self.assertIsNone(check['matched'])
+        self.assertIsNone(check['expected']['effective_uid'])
+        self.assertEqual(check['actual'], {'username': 'user2', 'effective_uid': 1002})
+        self.assertNotIn('private-query-output', json.dumps(report))
+
+    def test_account_alias_uid_match_remains_successful(self):
+        def factory():
+            console = self.factory()
+            console.su = lambda *args, **kwargs: FakeConsole('user3', self.events)
+            return console
+        with patch.dict(FakeConsole.uid, user3=1002):
+            report = hr.privilege_test(self.config, 'h', 'su', ['user2'], session_class=factory)
+        check = report['groups'][0]['steps'][0]['identity_verification']
+        self.assertEqual(report['status'], 'success')
+        self.assertTrue(check['matched'])
+        self.assertEqual(check['expected']['username'], 'user2')
+        self.assertEqual(check['actual']['username'], 'user3')
+
+    def test_skipped_and_entry_failed_identity_checks_stay_not_run(self):
+        for users, failures in (({'user2': {}}, set()),
+                                 ({'user2': {'password': 'two-secret'}}, {'user2'})):
+            with self.subTest(failures=failures):
+                self.write({'local': True}, users)
+                report = hr.privilege_test(self.config, 'h', 'su', ['user2'],
+                                          session_class=lambda: FakeConsole('login', self.events, failures))
+                check = report['groups'][0]['steps'][0]['identity_verification']
+                self.assertEqual(check['status'], 'not_run')
+                self.assertIsNone(check['matched'])
+                self.assertIsNone(check['actual']['effective_uid'])
+
+    def test_parent_mismatch_is_explicit_and_fails_diagnostic(self):
+        original = hr.identity
+        count = 0
+        def altered_identity(*args, **kwargs):
+            nonlocal count
+            actual = original(*args, **kwargs)
+            if not kwargs.get('console'):
+                count += 1
+                if count == 3:
+                    return {'username': 'user3', 'effective_uid': 1003}
+            return actual
+        with patch.object(hr, 'identity', side_effect=altered_identity):
+            report = hr.privilege_test(self.config, 'h', 'su', ['user2'], session_class=self.factory)
+        parent = report['groups'][0]['parent_identity_verification']
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(parent['status'], 'failed')
+        self.assertFalse(parent['matched'])
+        self.assertEqual(parent['expected']['username'], 'login')
+        self.assertEqual(parent['actual']['username'], 'user3')
+
     def test_sudo_cli_diagnostics_preserve_json_and_omit_secrets(self):
         self.write({'local': True}, {'login': {'password': 'login-secret'}},
                    {'sudo': {'password': 'sudo-secret'}})
@@ -399,7 +504,7 @@ class DispatchTests(unittest.TestCase):
             metadata=ops.read_yaml(bundle/'recipe.yaml')
             dispatch.validate(bundle,metadata)
             entry=bundle/'implementations/linux.py'
-            entry.write_text(entry.read_text().replace("VERSION = '0.1.1'","VERSION = '9'"))
+            entry.write_text(entry.read_text().replace("VERSION = '0.1.2'","VERSION = '9'"))
             with self.assertRaises(ops.ConfigError): dispatch.validate(bundle,metadata)
             entry.unlink(); entry.symlink_to(runner.BUNDLE/'implementations/linux.py')
             with self.assertRaises(ops.ConfigError): dispatch.validate(bundle,metadata)
@@ -417,8 +522,8 @@ class InventoryDispatchTests(unittest.TestCase):
                 report,path=runner.run(root,'h',recipe='inventory/system',session_class=Mock(return_value=session))
                 self.assertEqual(report['status'],'success')
                 self.assertEqual(report['recipe']['implementation_id'],platform)
-                self.assertEqual(report['recipe']['implementation_version'],'0.1.0')
-                self.assertEqual(report['recipe']['recipe_version'],'0.2.0')
+                self.assertEqual(report['recipe']['implementation_version'],'0.1.1')
+                self.assertEqual(report['recipe']['recipe_version'],'0.2.1')
                 self.assertEqual(report['schema_version'],'0.2.0')
                 self.assertEqual(json.loads(path.read_text()),report)
 
@@ -431,8 +536,9 @@ class InventoryDispatchTests(unittest.TestCase):
             self.assertEqual(report['status'],'skipped')
             self.assertEqual(report['reason_code'],'host_init_failed')
             self.assertNotIn('implementation_id',report['recipe'])
+            (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}, other: {connection: {local: true}}}')
             with patch.object(runner,'run',side_effect=[(report,root/'first.json'),(dict(report,status='success'),root/'second.json')]) as run,contextlib.redirect_stdout(io.StringIO()) as out:
-                self.assertEqual(runner.main(['h',str(root),'--hosts','other','--recipe','inventory/system']),1)
+                self.assertEqual(runner.main(['inventory/system','--root',str(root),'--host','h','other']),1)
             self.assertEqual(run.call_count,2)
             self.assertEqual(len(json.loads(out.getvalue())['hosts']),2)
 

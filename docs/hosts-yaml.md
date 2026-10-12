@@ -61,9 +61,30 @@ kind: opsfeast
 
 `check` 唯讀載入入口與 include，檢查 YAML 語法、重複鍵、欄位與型別、重複主機 ID、缺少引用、跳板與 include 循環、recipe 路徑邊界及選取。錯誤輸出來源和引用鏈，不輸出 YAML 原文或變數值。成功退出碼為 0，錯誤為 1。`init` 保留既有設定後若檢查失敗，也回傳 1，讓使用者修正；不覆寫有問題的檔案。
 
-Recipe 描述目前檢查為有效 YAML mapping，若有 `id` 則檢查型別與同一主機選取清單內的 ID 衝突；完整 recipe schema、必需變數、平台相容性及可執行入口仍未驗證。SSH config alias 會顯示尚需執行時檢查的提示，不讀取 SSH config 或驗證金鑰。`init`、`check`、`dump` 不連線、不執行 recipes、不產生觀測；只有明確呼叫 `test-connection` 才會執行以下連線測試。
+Check validates descriptor mappings and per-source ID conflicts. The inventory runner additionally checks implementation/version contracts and effective inputs.variables before creating the selected host Session; configuration check is not execution or host compatibility evidence.SSH config alias 會顯示尚需執行時檢查的提示，不讀取 SSH config 或驗證金鑰。`init`、`check`、`dump` 不連線、不執行 recipes、不產生觀測；只有明確呼叫 `test-connection` 才會執行以下連線測試。
 
 目錄遞迴及 `**` 不跟隨符號連結向下遍歷；直接選取根目錄內的連結目標可以接受，指向根目錄外則拒絕。工具拒絕 YAML `<<` 合併鍵及循環 alias；日期等非基本變數型別請以引號寫成字串。設定中的 `${...}` 仍原樣保存。
+
+## Host groups
+
+Each host may declare an optional `group` string or list of strings beside `connection`, `users`, `vars` and `recipes`. A host may belong to multiple groups; omitted group or `group: []` means no membership. Group names must be non-empty strings and match exactly, including case. Duplicate membership is accepted and never causes duplicate execution. Groups are derived from host memberships across the complete include tree; there is no top-level group definition, nesting, inheritance or group variable mapping.
+
+```yaml
+hosts:
+  web-01:
+    connection: {hostname: web-01.example}
+    group: [web, production]
+  web-02:
+    connection: {hostname: web-02.example}
+    group: web
+  db-01:
+    connection: {hostname: db-01.example}
+    group: [database, production]
+```
+
+`run_recipe.py inventory/system --group web` selects web-01 and web-02. `run_recipe.py inventory/system --group web production` selects their union (web-01, web-02 and db-01), running each host once. `--all` selects every configured host, including localhost and jump hosts regardless of membership. All examples require an authorized environment and recipe; see the [runner reference](cli.md#toolsrun_recipepy-inventory-execution) for complete commands, ordering, root/profile options and output.
+
+Use `--host NAME` for host IDs and `--group NAME` for group names, including when both share the same name. Unknown names fail before any host executes; the runner never guesses a target kind. Recipe and targets are required, and --all cannot be combined with --host/--group. `check` validates membership types without connecting. Groups only select targets in run_recipe.py; they do not change connection topology, authorize execution or add group support to diagnostic commands. Existing configurations without group remain valid. The former groups field is rejected with a migration hint; rename it to group, preserving its list values. If both names appear, validation fails. Scalar membership is treated as a one-element list for selection, while dump preserves the original string/list representation. Null, blank strings, numbers and non-string list members are rejected.
 
 ## 測試指定主機的連線
 
@@ -378,48 +399,36 @@ hosts:
 - 同一 YAML mapping 的重複鍵，以及不同檔案的重複主機 ID 都報錯，不能靜默覆寫。重複主機 ID 的錯誤應指出兩個來源。
 - 沒有檔案優先級、深層合併或主機覆寫規則。
 
-## recipes：單一工具、目錄與 glob
+## Recipe sources and selectors
 
-每個 recipe 是含 `recipe.yaml` 的完整目錄。選取的是 recipe 單位，不是隨意執行 `.spy`、README 或輔助檔案。初版使用明確的 mapping 選取形式，不把字串隱式猜成 ID、路徑或 glob：
+Read [recipe sources, inputs and execution controls](recipe-sources.md) for the canonical source/variable/disable/exclude contract. Root hosts.yaml may register recipe_sources with local path, enabled and vars; included files reference those registrations without defining new sources.
 
 ```yaml
-recipes:
-  - recipe: recipes/inventory/hostname
-  - directory: recipes/inventory/basic
-  - directory: recipes/services
-    recursive: true
-  - glob: recipes/inventory/storage/basic-*-storage
+recipe_sources:
+  community:
+    path: ~/Download/recipes
+    vars: {command_timeout_seconds: 15}
+
+hosts:
+  host1:
+    enabled: true
+    connection: {hostname: host1.example}
+    recipes:
+      - inventory/system
+      - ":inventory/system"
+      - recipe: community:inventory/system
+        vars: {command_timeout_seconds: 10}
 ```
 
-| 選取形式 | 規則 |
-| --- | --- |
-| `recipe` | 指向單一 recipe 目錄 |
-| `directory` | 選取目錄下直接子目錄中的 recipes；預設不遞迴 |
-| `directory` 加 `recursive: true` | 遞迴選取該目錄下的 recipes |
-| `glob` | 比對 recipe 目錄路徑；`*` 與 `?` 不跨 `/`，`**` 可跨目錄層級 |
+Bare inventory/system selects checkout recipes; :inventory/system selects the profile's recipes/; community:inventory/system selects the registered community root. Legacy recipes/... still selects the checkout, while ./ paths retain declaring-YAML semantics. String items select one recipe; mappings use exactly one of recipe/directory/glob, with optional vars and directory-only recursive. Same-directory duplicates retain their first selection/vars; duplicate IDs within one source fail, while separate sources have independent identities.
 
-每個選取項目只能使用 `recipe`、`directory`、`glob` 其中一種；`recursive` 只適用於 `directory`。`recipes` 或 `recipes/...` 路徑與 glob 以**工具所在 checkout**為基準，include YAML 也使用相同規則。其他相對路徑（例如 `./recipes/custom`、`../recipes/custom`）以**宣告該項目的 YAML 所在目錄**為基準，限定在管理根目錄內。絕對路徑可指向 checkout 的 recipes 目錄或管理根目錄內；不搜尋其他 checkout。
+Include and output paths remain inside the management root. Recipe paths remain inside their chosen checkout/profile/registered source after symlink resolution; inventory entrypoints/helpers remain inside their recipe directory. Registration does not authorize installation or execution, and path validation is not a sandbox.
 
-按清單順序展開；每組匹配結果按相對該來源根目錄的路徑排序。重複選到同一實際 recipe 目錄，只保留第一次；不同 recipe 宣告相同 ID 則報錯。沒有匹配項目或缺少有效 recipe 描述時報錯，不能回報空操作成功。Recipe 描述的完整欄位規格待定。
-
-先展開清單，再檢查相容性、變數、權限與副作用。選取目錄或 glob 不等於授權所有修改操作；新增 recipe 可能改變下次選取結果。每次執行應記錄實際選中的 recipe ID、版本與執行狀態。
-
-## 路徑邊界
-
-管理根目錄由使用者提供，不能由 include 的檔案重新定義。**Include 必須位於管理根目錄內；repository recipe 必須位於工具所在 checkout 的 recipes 目錄內，自訂 recipe 必須位於管理根目錄內。** 兩者分別驗證，不能用 recipe 的外部來源放寬 include 或輸出路徑。
-
-- `recipes/...` 先依工具所在 checkout 解析；其餘相對路徑依來源 YAML 所在目錄解析，再正規化並解析符號連結。
-- 允許 `..`，但最終路徑不得離開所選來源的根目錄；repository recipe 不能跳到 checkout 的 tools 或其他目錄。
-- Include 的絕對路徑只接受管理根目錄內的檔案；recipe 的絕對路徑也接受 checkout 的 recipes 目錄內。為便於搬移，範例與新設定優先使用相對路徑。
-- 以路徑元件判斷包含關係，不能用字串前綴；`/srv/feasts/main-other/` 不在 `/srv/feasts/` 內。
-- Glob 在展開前檢查搜尋範圍，不能先遍歷根目錄外；展開後再檢查每個匹配項目與符號連結。目錄遞迴也遵守相同規則。
-- 找不到必要檔案或目錄時報錯，不建立替代路徑，也不略過檢查。
-
-這個限制管的是要載入或執行的設定及 recipe 路徑，不限制 `vars.application.config_path` 等目標主機資料值。金鑰路徑也屬於另一個連線層契約。
+Source enabled: false yields explicit source_disabled skips, even when files are absent. Host enabled: false removes --all/group targets and disallows its use as a jump host; an explicit host request reports host_disabled. Fields/references remain validated. --all --exclude HOST ... excludes targets for one run and does not disable their use as jump hosts. See the [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) for output and exit codes.
 
 ## include 與變數插值不同
 
-`include` 載入檔案；插值是在值中引用另一個值，例如未來可能把 `${vars.app_root}/config.yaml` 展開成實際路徑。**初版不支援 `${...}` 插值**，字串原樣保留，也沒有全域 vars、變數繼承或 recipe 的 `exclude` 規則。
+`include` 載入檔案；插值是在值中引用另一個值，例如未來可能把 `${vars.app_root}/config.yaml` 展開成實際路徑。**初版不支援 `${...}` 插值**，字串原樣保留，Recipe vars use the explicit overlay rules in the [source guide](recipe-sources.md); there is no host/account-variable inheritance or interpolation. --exclude filters host targets only.
 
 將來可在載入完成後加入插值解析步驟，但必須透過格式版本或明確啟用機制引入，避免把既有密碼或字串中的 `${...}` 意外當成引用。目前不新增未定義的版本欄位。
 

@@ -248,8 +248,8 @@ class ProfileTests(unittest.TestCase):
                   'supported_platforms': ['linux'], 'recipe': {'id': 'inventory-system'}}
         with patch.object(run_recipe, 'run', return_value=(report, path)) as run, \
                 contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(run_recipe.main(['localhost', '--profile', 'inventory']), 0)
-        run.assert_called_once_with(path.parent, 'localhost', 30, recipe=None)
+            self.assertEqual(run_recipe.main(['inventory/system', '--host', 'localhost', '--profile', 'inventory']), 0)
+        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='inventory/system')
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_profile_boundaries_and_result_directories(self):

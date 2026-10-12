@@ -57,6 +57,7 @@ Use the selected interpreter instead of assuming `python`. New commands accept `
 
 ## 不可改變的設定語意
 
+- Host-level `group` is an optional non-empty string or list of non-empty group names; one host may belong to multiple groups, including memberships declared in included files. Omitted/empty lists mean no membership; a scalar is treated as a one-element list for selection without rewriting stored configuration. Reject the former groups field with a migration hint, including when both names are present. Groups only select runner targets and do not inherit connection settings, variables or recipes. Read [host groups](../../docs/hosts-yaml.md#host-groups) and the [runner reference](../../docs/cli.md#toolsrun_recipepy-inventory-execution) for mixed host/group unions, explicit --host/--group options, required recipe selection, exclusive --all and deduplication. Diagnostic commands still require individual host IDs. Group/all selection does not authorize execution.
 - `hosts` 的鍵是穩定主機 ID；`connection.hostname` 是 DNS 或 IP。
 - 新建的 init 樣板包含 `localhost: {connection: {local: true}, users: {}, vars: {}, recipes: []}`。本機 connection 只接受 `local: true`，不建立 SSH 連線，不能作為跳板或混用 SSH 欄位；既有設定仍保留，不自行覆寫。
 - 明確 SSH 連線可使用 `connection.proxy_command` 非空字串，不能與同一層的 `via` 或 `ssh_config_alias` 混用。命令原樣保存，不展開 `%h`、`%p` 或 shell 變數；使用具體目標值。check 只驗證設定；明確要求 test-connection 時可啟動代理並測試連線。
@@ -68,21 +69,24 @@ Use the selected interpreter instead of assuming `python`. New commands accept `
 - `vars.sudo.user` 是 sudo 的目標帳號；`vars.sudo.password` 是驗證密碼，通常屬於登入帳號。初版可保存明文；不自動輸出這些值到日誌、觀測或紀錄。
 - 根層 `include` 是明確的本機 YAML 路徑清單，可遞迴，不接受 glob、URL 或 `!include`。同一實際檔案只載入一次；載入中的循環必須報錯。
 - 重複 mapping 鍵或跨檔案主機 ID 都報錯，沒有載入優先級或覆寫。一般 YAML parser 可能默默採最後一個鍵；驗證時需確認使用的 parser 能拒絕重複鍵，否則揭露檢查限制。
+- Recipe items accept shorthand strings or selector mappings with optional vars. Read [recipe sources and controls](../../docs/recipe-sources.md) for entry-only recipe_sources, checkout/profile/named references, shallow default/source/host input overlays and typed runner validation. Predefined recipe_sources.bundle/profile accept enabled/vars without path; optional path assertions must resolve to their fixed defaults from entry hosts.yaml. They do not create bundle:/profile: aliases. Host/source enabled flags default true; disabled hosts cannot be jump hosts. Source disable is an explicit skip, not a fallback or unknown-source exemption. --all --exclude is one-invocation target filtering only.
 - `recipes` 是選取 mapping 的清單：`recipe` 指完整 recipe 目錄；`directory` 選直接子目錄，只有 `recursive: true` 時遞迴；`glob` 比對 recipe 目錄，`*`、`?` 不跨 `/`，`**` 可跨層級。
-- 每個 recipe 目錄含 `recipe.yaml`，不直接把任意檔案當 recipe。依選取清單順序及組內路徑排序展開；同一實際目錄保留第一次，不同目錄同 ID 報錯；空匹配報錯。
+- 每個 recipe 目錄含 `recipe.yaml`，不直接把任意檔案當 recipe。依選取清單順序及組內路徑排序展開；同一實際目錄保留第一次，同一來源內不同目錄同 ID 報錯，不同來源可有相同 ID；空匹配報錯。
 - `${...}` 目前是原樣字串；不加入未定案的版本、全域 vars、exclude 或變數存取 API。
 
 ## 路徑與引用檢查
 
 Include 的相對路徑以**宣告它的 YAML 所在目錄**為基準。Recipe 的 `recipes/...` 固定以工具所在 checkout 為基準，無需複製到 instance；其餘相對路徑（例如 `./recipes/...`）才以宣告 YAML 的目錄為基準。維持來源檔案資訊，不能合併後一律改用入口 YAML 的目錄。
 
-Include 與自訂 recipe 以管理根目錄為邊界；repository recipe 以工具所在 checkout 的 recipes 目錄為邊界。解析相對路徑、`..` 與符號連結後，實際路徑必須仍在各自邊界內；recipe 的絕對路徑可位於這兩個邊界內。不可因此放寬 include 或結果輸出的邊界。用路徑元件而非字串前綴檢查。Glob 或遞迴選取不能先搜尋外部再過濾，每個結果也需檢查邊界。新設定優先用相對路徑。
+Include 與自訂 recipe 以管理根目錄為邊界；repository recipe 以工具所在 checkout 的 recipes 目錄為邊界。 Registered named sources permit external recipe roots, but never widen include/output boundaries; profile :paths remain inside profile recipes/.解析相對路徑、`..` 與符號連結後，實際路徑必須仍在各自邊界內；recipe 的絕對路徑可位於這兩個邊界內。不可因此放寬 include 或結果輸出的邊界。用路徑元件而非字串前綴檢查。Glob 或遞迴選取不能先搜尋外部再過濾，每個結果也需檢查邊界。新設定優先用相對路徑。
 
 這個邊界不適用於目標主機的變數值。`identity_file` 是連線層設定，test-connection 將 identity_file 原樣傳給 SSHScript pkey_path，從呼叫 connect 的 parent Session 所在主機讀取 RSA 私鑰：直連讀 localhost，經由跳板時讀前一跳主機（SFTP 原始登入帳號）。不以 YAML 目錄解析相對路徑、不展開 ~，建議 parent 主機上的絕對路徑；不能將它替換成始終在 localhost 讀取的 key_filename。
 
 全部設定載入後，檢查 `via.host` 是否存在、跳板圖是否循環，以及選取的 recipes 是否存在。錯誤指出來源檔案、主機 ID 或欄位與引用鏈；不要為修正錯誤自行編造主機、密碼或 recipe。
 
 ## 完成設定維護
+
+For su/sudo result interpretation, read [identity evidence](../../docs/host-diagnostics.md#read-the-identity-evidence). Report each step's expected/actual username and effective UID, matched/status, and the group's parent identity restoration. Keep prerequisite su evidence separate from final sudo evidence. Entry/skipped checks marked not_run and incomplete checks with matched null are not verified success; environment variables do not prove identity. --verbose/--debug explain successful verification on stderr while stdout remains JSON.
 
 使用 `tools/opsfeast.py check` 檢查本次修改，若缺少 Python 或 PyYAML 明確回報，不虛構成功結果。檢查涵蓋 YAML 語法、重複鍵、跨檔案引用、路徑邊界與 recipe 選取規則。使用安全的 YAML 載入方式，不執行自訂標籤。若所選 recipes 不存在，明確回報選取尚無法驗證，不把草案稱為可執行環境。
 

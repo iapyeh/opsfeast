@@ -293,18 +293,47 @@ def username(value):
     return value
 
 
-def identity(session, timeout, console=False, target=None):
+def identity(session, timeout, console=False, target=None, verification=None):
     def run(argv):
         return output(session(shlex.join(argv), check=False, command_timeout=timeout)) if console else query(session, argv, timeout)
     name = line(run(['id', '-un']))
+    if verification is not None:
+        verification['actual']['username'] = name
     uid = line(run(['id', '-u']))
     if not uid.isdecimal():
         raise RuntimeError('invalid effective UID')
+    if verification is not None:
+        verification['actual']['effective_uid'] = int(uid)
     if target is not None:
         expected_uid = line(run(['id', '-u', username(target)]))
+        if verification is not None and expected_uid.isdecimal():
+            verification['expected']['effective_uid'] = int(expected_uid)
+            verification['matched'] = uid == expected_uid
         if not expected_uid.isdecimal() or uid != expected_uid:
             raise RuntimeError('effective UID mismatch')
     return {'username': name, 'effective_uid': int(uid)}
+
+
+def identity_check(expected):
+    return {'status': 'not_run', 'expected': dict(expected),
+            'actual': {'username': None, 'effective_uid': None}, 'matched': None,
+            'message': 'Identity verification has not run.'}
+
+
+def verify_target_identity(session, timeout, target, record):
+    try:
+        actual = identity(session, timeout, console=True, target=target, verification=record)
+    except Exception:
+        record['status'] = 'failed'
+        record['message'] = ('Effective UID does not match the requested account.' if record['matched'] is False
+                             else 'Could not complete effective identity verification.')
+        progress(record['message'])
+        raise
+    record.update(status='success', matched=True,
+                  message='Effective UID matches the requested account; shell identity verified.')
+    progress(f"Identity verified: expected {target} (UID {record['expected']['effective_uid']}), "
+             f"actual {actual['username']} (UID {actual['effective_uid']}).")
+    return actual
 
 
 def privilege_password(config, host, user, mode, connection_user):
@@ -348,11 +377,13 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
         if report.get('cleanup_error'):
             return report
         report['connection_user'] = login['username']
+        report['connection_identity'] = login
         if mode == 'su' and any(login['username'] in c for c in ([targets] if targets else chains)):
             raise ConfigError('test-su cannot target the connection account')
         groups = chains if chains else [[t] for t in (targets or [login['username']])]
         for group in groups:
             item = {'mode': 'chain' if chains else 'independent', 'accounts': group, 'steps': [], 'status': 'failed'}
+            item['parent_identity_verification'] = identity_check(login)
             report['groups'].append(item)
             current = login['username']
             try:
@@ -364,6 +395,8 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                         failed = False
                         for target in group:
                             step = {'from_user': current, 'to_user': target, 'operation': 'su' if mode == 'su' else 'sudo', 'status': 'skipped'}
+                            step['identity_verification'] = identity_check(
+                                {'username': target if mode == 'su' else run_as, 'effective_uid': None})
                             item['steps'].append(step)
                             if failed:
                                 step['reason_code'] = 'previous_step_failed'
@@ -381,7 +414,12 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                                     actor = stack.enter_context(actor.su(target, password=password, enter_timeout=timeout))
                                     stage = 'su_identity'
                                     progress(stage)
-                                    step['identity'] = identity(actor, timeout, console=True, target=target)
+                                    if mode == 'sudo':
+                                        step['su_identity_verification'] = identity_check(
+                                            {'username': target, 'effective_uid': None})
+                                    step['identity'] = verify_target_identity(
+                                        actor, timeout, target, step['su_identity_verification'] if mode == 'sudo'
+                                        else step['identity_verification'])
                                 if mode == 'sudo':
                                     stage = 'sudo_entry'
                                     password, password_source = privilege_password(config, host, target, 'sudo', login['username'])
@@ -395,7 +433,8 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                                     elevated = stack.enter_context(actor.sudo(username=run_as, password=password, enter_timeout=timeout))
                                     stage = 'sudo_identity'
                                     progress(stage)
-                                    step['identity'] = identity(elevated, timeout, console=True, target=run_as)
+                                    step['identity'] = verify_target_identity(elevated, timeout, run_as,
+                                                                               step['identity_verification'])
                                 step['status'] = 'success'
                                 current = target
                             except Exception as exc:
@@ -403,7 +442,18 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                                 failed = True
                     # Confirm exit to the original identity; otherwise this group failed.
                     progress('parent identity verification')
-                    if identity(session, timeout) != login:
+                    parent_check = item['parent_identity_verification']
+                    try:
+                        restored = identity(session, timeout)
+                    except Exception:
+                        parent_check.update(status='failed', message='Could not verify return to the connection identity.')
+                        raise
+                    parent_check.update(actual=restored, matched=restored == login,
+                                        status='success' if restored == login else 'failed',
+                                        message=('Original connection identity restored.' if restored == login
+                                                 else 'Original connection identity was not restored.'))
+                    progress(parent_check['message'])
+                    if restored != login:
                         raise RuntimeError('parent identity not restored')
                     item['status'] = ('failed' if any(s['status'] == 'failed' for s in item['steps']) else
                                       'skipped' if any(s['status'] == 'skipped' for s in item['steps']) else 'success')

@@ -9,6 +9,7 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 ## Command-line tools
 
+- **[Recipe sources and inputs](recipe-sources.md)**: checkout/profile/registered roots, shorthand selections, variable contracts, enabled flags and per-run exclusions.
 - **[Complete CLI reference](cli.md)**: opsfeast.py subcommands, run_recipe.py options, defaults, platform dispatch, cache behavior, outputs, storage and exit codes for humans and agents.
 - [Host initialization and diagnostics](host-diagnostics.md): detailed platform/credential semantics and su/sudo verification limits.
 

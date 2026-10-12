@@ -1,7 +1,7 @@
 # Inventory descriptor 0.2.0; shared output contract 0.2.0.
 descriptor_version: 0.2.0
 id: inventory-system
-version: 0.2.0
+version: 0.2.1
 status: implemented
 title: System inventory
 description: Collect system identity, operating system version, kernel, and architecture.
@@ -44,8 +44,12 @@ inputs:
   - host-id
   optional:
   - command-timeout-seconds
-  note: 'CLI: host root --timeout SECONDS; default 30 seconds per connection stage/command,
-    not whole run.'
+  note: 'CLI: RECIPE --host HOST --timeout SECONDS; default 30 seconds per connection stage/command, not whole run.'
+  variables:
+    command_timeout_seconds:
+      type: number
+      minimum: 0
+      exclusive_minimum: true
 output:
   format: json
   schema_version: 0.2.0
@@ -81,12 +85,12 @@ output:
 verification:
   synthetic_example: examples/result.synthetic.json
   parser_tests: tests/test_inventory_system.py and tests/test_host_runtime.py
-  local_execution: 2026-10-11 macOS local host-init and inventory success; Linux/FreeBSD
+  local_execution: Historical recipe 0.2.0, 2026-10-11 macOS local host-init and inventory success; Linux/FreeBSD
     not tested
   ssh_execution: not-tested
 implementations:
 - id: linux
-  version: 0.1.1
+  version: 0.1.2
   entrypoint: implementations/linux.py
   match:
     os_name: linux
@@ -95,7 +99,7 @@ implementations:
     ssh: not-tested
     local: not-tested
 - id: freebsd
-  version: 0.1.0
+  version: 0.1.1
   entrypoint: implementations/freebsd.py
   match:
     os_name: freebsd
@@ -104,7 +108,7 @@ implementations:
     ssh: not-tested
     local: not-tested
 - id: macos
-  version: 0.1.0
+  version: 0.1.1
   entrypoint: implementations/macos.py
   match:
     os_name: macos
