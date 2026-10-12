@@ -28,7 +28,7 @@ python -B tools/run_recipe.py --help
 
 Environment checks only report readiness. Tools do not automatically create Python environments, install dependencies, upgrade SSHScript or download skills. See [getting started](getting-started.md) for setup and [host configuration](hosts-yaml.md) for connection/key/jump-host rules.
 
-The former tools/ops.py remains a compatibility entrypoint. New checkouts use .opsfeast.yaml and feasts/; an existing .my-ops.yaml remains active. Named init reuses registered roots. New feast.yaml definitions use kind: opsfeast; legacy my-ops.yaml definitions use kind: sshscript-ops. Both naming generations together are a conflict. See [rename compatibility and migration](migration.md).
+The former tools/ops.py entrypoint is removed; use tools/opsfeast.py. New checkouts use .opsfeast.yaml and feasts/; an existing .my-ops.yaml remains active. Named init reuses registered roots. New feast.yaml definitions use kind: opsfeast; legacy my-ops.yaml definitions use kind: sshscript-ops. Both naming generations together are a conflict. See [rename compatibility and migration](migration.md).
 
 ## Choose the management environment
 

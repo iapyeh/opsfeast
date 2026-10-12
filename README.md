@@ -8,7 +8,7 @@ A **Feast** is your private management instance: configuration, selected recipes
 
 SSHScript is the currently supported execution foundation. The ecosystem is intended to admit other execution tools through explicit dependencies and verifiable contracts; other backends are not implemented by this rename.
 
-Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The new CLI is `tools/opsfeast.py`; `tools/ops.py` remains a compatibility entrypoint. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
+Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The CLI is `tools/opsfeast.py`; the former `tools/ops.py` entrypoint and `import ops` are removed. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
 
 Read the **[command-line reference](docs/cli.md)** for every opsfeast.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
 

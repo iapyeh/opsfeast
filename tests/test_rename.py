@@ -136,19 +136,13 @@ class RenameTests(unittest.TestCase):
         self.assertEqual((root / 'hosts.yaml').read_bytes(), before)
         self.assertFalse((self.checkout / 'feasts/main').exists())
 
-    def test_legacy_import_is_the_canonical_module(self):
-        import ops
-        self.assertIs(ops, opsfeast)
-        self.assertIs(ops.resolve_root, opsfeast.resolve_root)
-
-    def test_both_cli_entrypoints_use_the_same_isolated_registry(self):
+    def test_new_cli_uses_an_isolated_registry(self):
         tools = self.checkout / 'tools'
         tools.mkdir()
         source = Path(__file__).resolve().parents[1] / 'tools'
-        for name in ('ops.py', 'opsfeast.py'):
-            shutil.copyfile(source / name, tools / name)
-        for name, args in (('opsfeast.py', ['init']), ('ops.py', ['profiles']), ('ops.py', ['init'])):
-            result = subprocess.run([sys.executable, '-B', str(tools / name), *args],
+        shutil.copyfile(source / 'opsfeast.py', tools / 'opsfeast.py')
+        for args in (['init'], ['profiles'], ['init']):
+            result = subprocess.run([sys.executable, '-B', str(tools / 'opsfeast.py'), *args],
                                     cwd='/', capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.checkout / '.opsfeast.yaml').is_file())

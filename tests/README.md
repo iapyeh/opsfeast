@@ -16,7 +16,7 @@ python -B -m unittest discover -s tests -p 'test_*.py'
 
 ## Rename compatibility tests
 
-`test_rename.py` verifies both CLI entrypoints and the shared import alias, old registry/definition preservation, schema-1 locator upgrades, reuse of registered roots, mixed-generation conflicts, invalid legacy definitions, dangling symlink rejection and explicit filename migration. Fixtures and subprocess checkouts are temporary and synthetic; no real user environment is changed.
+`test_rename.py` verifies the new CLI in an isolated checkout, old registry/definition preservation, schema-1 locator upgrades, reuse of registered roots, mixed-generation conflicts, invalid legacy definitions, dangling symlink rejection and explicit filename migration. Fixtures and subprocess checkouts are temporary and synthetic; no real user environment is changed.
 
 ## Recipe inspection tests
 

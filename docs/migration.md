@@ -7,7 +7,7 @@ The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local check
 | Former name | New default | Compatibility |
 | --- | --- | --- |
 | SSHScript Ops / sshscript-ops | OpsFeast / opsfeast | Update clone URLs and repository references. |
-| tools/ops.py / Python import ops | tools/opsfeast.py / import opsfeast | ops.py delegates CLI execution; import ops returns the canonical opsfeast module. |
+| tools/ops.py / Python import ops | tools/opsfeast.py / import opsfeast | Old CLI/import names are removed; update callers to the new names. |
 | skills/sshscript-ops-hosts | skills/opsfeast-hosts | Update skill paths/names and install complete candidates through the agent platform's procedure when authorized. |
 | skills/sshscript-ops-recipes | skills/opsfeast-recipes | Update skill paths/names; linked guides remain part of the complete skill. |
 | .my-ops.yaml | .opsfeast.yaml | Read and update the existing legacy registry if it is the only one. New checkouts use the new filename. |
@@ -16,7 +16,7 @@ The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local check
 
 The SSHScript library, public skill snapshot, source provenance, recipe IDs and recipe/result versions keep their original identity. There is no new pip-installed OpsFeast package or bare opsfeast executable in this rename; use the Python script entrypoint.
 
-The earlier tools/my_ops.py entrypoint remains removed. Compatibility applies to tools/ops.py, not to every historical script name.
+The earlier tools/my_ops.py and tools/ops.py entrypoints are removed. Configuration/data compatibility remains supported; CLI and Python callers must use opsfeast.py / opsfeast.
 
 ## Use an existing checkout without data migration
 
@@ -27,7 +27,7 @@ python -B tools/opsfeast.py profiles
 python -B tools/opsfeast.py check --profile main
 ```
 
-Choose an existing profile name from profiles; old schema-1 locators expose the name default, not main. Both commands are read-only and do not connect. The old tools/ops.py entrypoint uses the same configuration and behavior.
+Choose an existing profile name from profiles; old schema-1 locators expose the name default, not main. Both commands are read-only and do not connect. Update old commands to tools/opsfeast.py and Python imports to opsfeast; no ops.py wrapper is provided.
 
 Only one registry may exist at a time: .opsfeast.yaml or .my-ops.yaml. Both together fail with a conflict instead of silently preferring one. The same rule applies to feast.yaml and my-ops.yaml within a Feast. Symlinks, wrong entry types and unsupported definitions remain errors; dangling symlinks count as present.
 
