@@ -1,0 +1,32 @@
+descriptor_version: 0.3.0
+id: check-port
+version: 0.1.0
+title: Check a TCP port from the selected host
+description: Connect once to an explicit IP address and port from the selected host; TCP success does not prove application health.
+runner:
+  contract: python-session
+  version: 0.1.0
+  entrypoint: main.py
+platforms:
+  implemented: [linux, freebsd, macos]
+  tested: []
+  planned: []
+dependencies:
+  controller: [Python 3.11+, PyYAML 6.0.3, SSHScript 5.0.0]
+  target: [python3 on PATH with standard library]
+permissions: {sudo: false, su: false}
+side_effects:
+  - One TCP connection attempt from each selected host to the supplied IP and port.
+  - Runner saves raw JSON in the Feast observations directory.
+inputs:
+  variables:
+    port: {type: integer, required: true, minimum: 1, maximum: 65535}
+    address: {type: string, default: '127.0.0.1'}
+    connect_timeout_seconds: {type: number, default: 3, minimum: 0, exclusive_minimum: true, maximum: 60}
+output:
+  schema_version: 0.1.0
+verification:
+  synthetic: tested
+  local: not-tested
+  ssh: not-tested
+# Last modified: 2026-10-13

@@ -1,0 +1,20 @@
+{
+  "run_contract": "0.1.0",
+  "schema_version": "0.1.0",
+  "host_id": "synthetic-host",
+  "evidence_kind": "mock",
+  "started_at": "2026-10-13T00:00:00+00:00",
+  "completed_at": "2026-10-13T00:00:01+00:00",
+  "status": "success",
+  "reason_code": "port_refused",
+  "message": "TCP connection was refused.",
+  "data": {
+    "probe_from": "synthetic-host",
+    "address": "127.0.0.1",
+    "port": 8888,
+    "protocol": "tcp",
+    "state": "refused",
+    "reachable": false
+  },
+  "retention": {"status": "skipped", "reason_code": "no_retention_adapter"}
+}

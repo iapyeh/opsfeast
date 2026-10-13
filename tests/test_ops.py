@@ -135,7 +135,9 @@ class OpsTests(unittest.TestCase):
                          '{glob: "recipes/**/system"}'):
             with self.subTest(selector=selector):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/inventory/system}}]}}}}')
-                self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'inventory/system'])
+                expected = ([ops.REPOSITORY_RECIPES / 'check/port', ops.REPOSITORY_RECIPES / 'inventory/system']
+                            if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'inventory/system'])
+                self.assertEqual(self.check().selected['web'], expected)
 
     def test_checkout_boundary_does_not_allow_include_or_recipe_escape(self):
         for recipe in ('recipes/../../outside', 'recipes/../tools', 'recipes/../tools/*'):

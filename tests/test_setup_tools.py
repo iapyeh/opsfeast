@@ -63,6 +63,17 @@ class BundleTests(unittest.TestCase):
         self.assertEqual((self.installed / 'SKILL.md').read_text(), 'local edit')
         self.assertEqual((self.installed / 'SOURCE.json').read_bytes(), source)
 
+    def test_default_check_uses_central_skill_source(self):
+        bundle.stage(self.content, self.root / 'skills')
+        with patch.object(bundle, 'ROOT', self.root):
+            self.assertEqual(bundle.check(self.content)['status'], 'unchanged')
+
+    def test_default_check_does_not_fall_back_to_agent_copy(self):
+        bundle.stage(self.content, self.root / '.agents/skills')
+        with patch.object(bundle, 'ROOT', self.root):
+            with self.assertRaises(FileNotFoundError):
+                bundle.check(self.content)
+
     def test_changed_contract_reported_without_replacement(self):
         report = bundle.check(archive_bytes(contract='6.0.0'), self.installed)
         self.assertTrue(report['bundle_changed'])
@@ -126,6 +137,24 @@ class BundleTests(unittest.TestCase):
 
 
 class EnvironmentTests(unittest.TestCase):
+    def test_central_skill_source_and_missing_reference(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            bundle.stage(archive_bytes(), root / 'skills')
+            with patch.object(environment, 'ROOT', root), \
+                    patch.object(environment, 'inspect_package', return_value={'ready': True}):
+                self.assertTrue(environment.inspect_environment()['ready'])
+                (root / 'skills/sshscript/references/api-guide.md').unlink()
+                self.assertFalse(environment.inspect_environment()['skill']['ready'])
+
+    def test_agent_copy_does_not_replace_missing_source(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            bundle.stage(archive_bytes(), root / '.agents/skills')
+            with patch.object(environment, 'ROOT', root), \
+                    patch.object(environment, 'inspect_package', return_value={'ready': True}):
+                self.assertFalse(environment.inspect_environment()['ready'])
+
     def test_import_distribution_mismatch_and_missing_package(self):
         module = SimpleNamespace(__version__='5.0.0', __file__='/synthetic/module.py')
         with patch.object(environment, 'import_module', return_value=module), \

@@ -3,7 +3,7 @@
 OpsFeast provides two command-line entrypoints:
 
 - **`tools/opsfeast.py` prepares and diagnoses the host environment.** It inspects recipe metadata and platform coverage, manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
-- **`tools/run_recipe.py` collects system inventory.** Select one recipe for a mixed Linux, FreeBSD, macOS and ESXi fleet; the runner selects each host's implementation automatically and saves results with version and source evidence.
+- **`tools/run_recipe.py` executes inventory and compatible Python-session recipes.** Inventory automatically selects each host's platform implementation. General recipes use one execute entrypoint. Both accept typed invocation inputs and save versioned raw results; only inventory has structured retention. See [the general contract](recipe-execution.md).
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
@@ -15,7 +15,7 @@ Run examples from the repository checkout. `python` means the interpreter select
 | --- | --- |
 | Profiles, init, attach, detach, use, check, dump, inspect-recipe | Python 3.11+ and PyYAML; no SSHScript Session |
 | Standalone test-connection | Python 3.11+, PyYAML and the supported SSHScript command contract (documented minimum 4.0.1) |
-| Host-init, test-host, test-su, test-sudo, test-connection --host-init, inventory | Python 3.11+, PyYAML and matching SSHScript import/distribution **5.0.0** |
+| Host-init, test-host, test-su, test-sudo, test-connection --host-init, run_recipe.py | Python 3.11+, PyYAML and matching SSHScript import/distribution **5.0.0** |
 
 The full environment check expects PyYAML 6.0.3 and SSHScript 5.0.0:
 
@@ -104,7 +104,7 @@ Default human output is a short recipe summary: identity/version, purpose and im
 
 Coverage compares declarations: `not_declared_implemented` lists requested OS names absent from platforms.implemented; `planned_not_implemented` lists pending declared platforms; `implemented_not_declared_tested` lists implementations without a tested-platform declaration. For the current inventory recipe, requesting openbsd exposes that missing declaration, while Linux/FreeBSD remain implemented but lack local/SSH execution evidence. Requested values are exact os_name labels such as linux, freebsd or macos; repeat the option, rather than using commas. A platform gap is informational and does not change the exit code.
 
-Inspection reads YAML and parses Python VERSION literals without importing or executing entrypoints. Missing files, invalid syntax, version mismatches and escaping descriptor/entrypoint symlinks are reported. For inventory-system, it also uses the current runner's descriptor validator; other recipe IDs are inspectable but report `unsupported-recipe-id`, since no general runner or descriptor schema exists. One bad discovered recipe does not hide the others; any inspection error returns 1, and a completed inspection returns 0. Command/path errors use stderr; completed reports use stdout, including failed per-recipe reports in JSON mode.
+Inspection reads YAML and parses Python VERSION literals without importing or executing entrypoints. Missing files, invalid syntax, version mismatches and escaping descriptor/entrypoint symlinks are reported. For inventory-system, it also uses the current runner's descriptor validator; Python-session descriptors are statically validated (entrypoint path, literal VERSION, execute signature and input definitions) and report valid-python-session or invalid-python-session. Other contracts remain unsupported-recipe-id; there is no arbitrary backend loader. One bad discovered recipe does not hide the others; any inspection error returns 1, and a completed inspection returns 0. Command/path errors use stderr; completed reports use stdout, including failed per-recipe reports in JSON mode.
 
 These are declared capabilities and static checks. They do not establish publisher authenticity, installed dependencies, actual host applicability, platform detection or successful execution. Match conditions may restrict OS/distribution/version/architecture even when a platform name is listed. Read recorded verification and review code before authorized execution.
 
@@ -200,14 +200,18 @@ Its JSON contains host, overall status, and tests keyed by test-connection, host
 
 ## tools/run_recipe.py: inventory execution
 
+This section covers shared selection/execution options for inventory and general Python-session recipes. Use [the general execution/authoring contract](recipe-execution.md) for descriptor 0.3.0, execute, raw results and limits. Inventory-specific platform/retention behavior below applies only to inventory-system.
+
 ```text
 python -B tools/run_recipe.py RECIPE
     (--host HOST ... | --group GROUP ... | --all [--exclude HOST ...])
     [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N] [--verbose | --quiet]
+    [--vars-file JSON_FILE] [--var NAME=VALUE ...]
 
 python -B tools/run_recipe.py --recipe DIRECTORY
     (--host HOST ... | --group GROUP ... | --all [--exclude HOST ...])
     [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N] [--verbose | --quiet]
+    [--vars-file JSON_FILE] [--var NAME=VALUE ...]
 ```
 
 `--host` and `--group` may be combined and repeated. `--all` cannot be combined with either.
@@ -222,6 +226,8 @@ python -B tools/run_recipe.py --recipe DIRECTORY
 | --exclude HOST ... | Exact host IDs to exclude for this run; requires --all. Unknown IDs fail before execution. |
 | --root ROOT | Management directory; otherwise use profile/default. Positional management roots are not accepted. |
 | --profile NAME | Select an environment for this invocation; cannot combine with --root. |
+| --var NAME=VALUE | Invocation input override; repeat with unique names. Strings stay literal; other declared types use JSON. Overrides --vars-file and configured values. |
+| --vars-file JSON_FILE | One UTF-8 JSON object of invocation inputs; relative to the shell directory with ~ expansion. Reject duplicate keys/non-finite data; no configuration writes. |
 | --timeout SECONDS | Positive finite per-stage/command budget, default 30; not a whole-run deadline. |
 | --threads N | Positive integer for concurrent hosts; default min(8, local logical CPU count), fallback 1. Use 1 for sequential execution. |
 | -v, --verbose | Force progress and waiting heartbeats on stderr, including when stdout is redirected. |
@@ -244,7 +250,7 @@ Use the optional host-level `group: web` string or `group: [web, production]` li
 
 The runner resolves every selector before any execution. Unknown names, invalid configuration and an empty target set fail without executing any host. Expand repeated --host/--group options in argument order, with group members in merged YAML host order (includes first, then the declaring file). --all uses that merged order. Overlaps and repeated selectors execute each host once, preserving its first occurrence. Groups select a union, not an intersection; they do not inherit variables, connection settings or recipes. All targets use the selected environment and the existing per-host execution contract. Selection support here does not extend diagnostic commands to groups.
 
-The CLI executes the explicitly named inventory-system directory; matching host recipe vars apply, while unrelated recipe selectors are bypassed. Host/connection configuration must remain valid. A bad recipe fails without falling back to host selectors. The internal Python run(root, host, recipe=None) helper retains host-selector behavior for existing callers; this is not a CLI default. See [sources, inputs and controls](recipe-sources.md) for shorthand selections, default/source/host var precedence, enabled flags, excluded_hosts and skipped results.
+The CLI executes the explicitly named compatible inventory-system or Python-session recipe directory; matching host recipe vars apply, while unrelated recipe selectors are bypassed. Host/connection configuration must remain valid. A bad recipe fails without falling back to host selectors. The internal Python run(root, host, recipe=None) helper retains host-selector behavior for existing callers; this is not a CLI default. See [sources, inputs and controls](recipe-sources.md) for shorthand selections, default/source/host/file/CLI var precedence, enabled flags, excluded_hosts and skipped results.
 
 The previous positional HOST/ROOT, --hosts and optional recipe syntax is replaced. Migrate `run_recipe.py host-01 ROOT --recipe inventory/system --hosts host-02` to `run_recipe.py inventory/system --root ROOT --host host-01 host-02`. Existing YAML recipes lists and registrations are preserved; configuration checking still validates those lists.
 
@@ -275,7 +281,7 @@ Progress is enabled automatically when `sys.stdout.isatty()` is true. It shows t
 [1/3] "smtp-01": completed: success (inventory_complete)
 ```
 
-Each run writes a new file without overwriting previous inventories or updating human records:
+Each inventory-system run writes a new file without overwriting previous inventories or updating human records:
 
 ```text
 <management-root>/observations/inventory-system-<uuid>.json
@@ -287,7 +293,7 @@ Seven common observations cover hostname, platform, system name/version, kernel 
 
 Single-host stdout is a JSON summary containing status, reason_code, message, detected_kernel, supported_platforms, recipe_id and result_path. Using --all or resolving more than one unique host produces batch stdout: an object with a hosts array; each entry records host/status/reason/result_path, or a sanitized error type when no saved report is available. A selection resolving to one host retains the single-host summary unless --all is used. Nonempty exclusions add excluded_hosts with host_disabled/cli_excluded reasons. Explicit disabled hosts remain skipped results; disabled group/all members are omissions. If filtering removes every target, return 1 with empty hosts plus exclusion evidence and an error on stderr.
 
-See the [inventory guide](../recipes/inventory/system/README.md), [recipe descriptor](../recipes/inventory/system/recipe.yaml), [result schema](../recipes/inventory/system/schema.json) and [synthetic example](../recipes/inventory/system/examples/result.synthetic.json) for authoring and data consumers. Old copied descriptors must be migrated to 0.2.0. Reviewed custom inventory entrypoints can execute; there is no arbitrary-recipe runner, extension-overlay installer or execution sandbox.
+See the [inventory guide](../recipes/inventory/system/README.md), [recipe descriptor](../recipes/inventory/system/recipe.yaml), [result schema](../recipes/inventory/system/schema.json) and [synthetic example](../recipes/inventory/system/examples/result.synthetic.json) for authoring and data consumers. Old copied descriptors must be migrated to 0.2.0. Reviewed custom inventory entrypoints and compatible Python-session recipes can execute; there is no arbitrary backend loader, extension-overlay installer or execution sandbox. General recipes return data in stdout summaries and save observations/recipe-run-<UUID>.json with skipped no_retention_adapter; read [general result semantics](recipe-execution.md#results-failure-states-and-storage).
 
 ## Exit codes, output and side effects
 
@@ -301,10 +307,11 @@ Su/sudo JSON includes per-step `identity_verification` (expected/actual username
 | Host-init success | 0 |
 | Su/sudo/test-host success, partial or skipped | 0; inspect JSON for skipped tests |
 | Inventory: every selected host fully successful | 0 |
-| Actual diagnostic failure; inventory partial/unsupported/skipped/failed; configuration/save error | 1 |
+| Python-session recipes: every selected host returns success with successful cleanup/save | 0; inspect data to assess the operation's observation |
+| Actual diagnostic failure; recipe partial/unsupported/skipped/failed; configuration/save error | 1 |
 | Invalid CLI syntax/options rejected by argparse | 2 |
 
-Profiles/init/attach/detach/use/check print human-readable text. Dump and host diagnostics print JSON. Inventory prints summary JSON and saves full reports plus eligible retained observations. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results and retained data. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
+Profiles/init/attach/detach/use/check print human-readable text. Dump and host diagnostics print JSON. Recipe execution prints summary JSON and saves full reports; inventory additionally saves eligible retained observations. Python-session results include data and explicit skipped no_retention_adapter. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results and retained data. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
 
 Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries; missing identity probes may use supplied explicit sudo capability or identity_sudo true. It does not su to alternate actors. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
 
@@ -312,7 +319,7 @@ Setup/checks do not authorize connections, proxy commands, account switches or r
 
 Prepare/register an environment, edit hosts.yaml, and run check. For an authorized readiness check, use test-host and interpret every test state. Explicitly refresh host-init after known OS/endpoint changes. For authorized inventory, select the same recipe for the fleet and read each host's result, selected implementation/version and partial/error evidence. Keep configuration, credentials, observations and human notes in the management environment.
 
-Agents should use --profile or an explicit root for unattended work, explicit profile names instead of interactive use, and the user's chosen interpreter. Read the [hosts skill](../skills/opsfeast-hosts/SKILL.md) for diagnostics and the [recipes skill](../skills/opsfeast-recipes/SKILL.md) for inventory. Reuse existing authorization and context; ask only for missing information that affects correctness or scope.
+Agents should use --profile or an explicit root for unattended work, explicit profile names instead of interactive use, and the user's chosen interpreter. Read the [hosts skill](../skills/opsfeast-hosts/SKILL.md) for diagnostics and the [recipes skill](../skills/opsfeast-recipes/SKILL.md) for recipe selection, parameterized execution and authoring. Reuse existing authorization and context; ask only for missing information that affects correctness or scope.
 
 Synthetic tests cover configuration, dispatch, cache, account transitions, batch continuation and failure/cleanup handling. macOS local read-only initialization/inventory has been verified. Real Linux/FreeBSD collection, SSH and native su/sudo remain unverified; compatible metadata and synthetic success do not establish those outcomes.
 

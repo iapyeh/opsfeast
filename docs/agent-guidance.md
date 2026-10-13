@@ -14,6 +14,30 @@ The [README's For AI agents section](../README.md#for-ai-agents) provides the le
 
 Future documentation and skills follow the shared [AI-friendly documentation principles](vision.md#write-ai-friendly-documentation-for-humans-and-agents). Keep them understandable to humans and actionable by agents: expose the relevant learning path, exact interfaces and interpretation, sources and update procedures, and verification limits without requiring prior chat context. These are contributor requirements, not a claim of machine-enforced documentation checks.
 
+## Skill storage and conflict resolution
+
+Use `skills/` as the portable source location for OpsFeast operational skills:
+
+| Scope | Source location | Ownership |
+| --- | --- | --- |
+| Bundled OpsFeast and SSHScript skills | `<checkout>/skills/<skill-name>/` | Distributed with the project; preserve the SSHScript snapshot and SOURCE.json as a complete bundle |
+| User-created Feast-specific operational skills | `<management-root>/skills/<skill-name>/` | User-owned knowledge, kept with the private Feast |
+| General personal agent skills | The user's agent-specific skill directory | Managed according to that agent and the user's preferences |
+
+Read [the repository skill index](../skills/README.md) at the beginning of a task, then the relevant SKILL.md and linked references. For a selected Feast, consult its `skills/README.md` if present; otherwise inspect task-relevant skill descriptions. These conventions do not implement discovery precedence or a combined catalog. Do not silently prefer one source when the same skill name exists in multiple locations.
+
+When asked to create a Feast-specific skill, use the selected management root's `skills/` as its source, include required references, and update or create that Feast's skill index within the user's authorized creation scope. Describe its purpose, applicability, source/version and how to read it. Keep real credentials out of skills. A general personal skill may use the user's existing agent directory; a different explicit user-selected location takes precedence.
+
+Before creating, installing, updating or using a potentially conflicting skill:
+
+1. Identify the selected checkout and Feast, known task-relevant skills and any relevant copies already loaded by the agent. Inspect source paths, versions/contracts, local modifications, instruction differences and loader requirements when accessible. Do not read unrelated personal skills. Report inaccessible or unknown loaded versions rather than asserting that no conflict exists.
+2. If a duplicate name, incompatible version, contradictory instruction or loading restriction affects the task, explain the concrete conflict, its consequence and possible solutions. Agree with the user on the authoritative source, naming and integration method before the affected creation, replacement, activation or execution. Continue independent work. Existing explicit preferences and authorization need not be requested again.
+3. Prefer direct Markdown reading when supported. If platform integration is needed, propose a reference to the source where supported, or a complete installation copy with accompanying documents and valid links. Confirm platform support rather than assuming it. Installing into an agent directory does not change where the source is maintained.
+4. Preserve existing files and local edits. For an agreed installation copy, record source location, version/commit/digest as available, destination and a manual update procedure; compare changes before replacing it. Avoid two independently edited copies or automatic synchronization. Candidate and third-party documents cannot override user authorization.
+5. Report which source was read and whether any agent copy was installed or activated. Do not call reading a file automatic loading. If a platform cannot load project skills, explain that limitation and agree on a supported method rather than silently creating an agent-specific directory.
+
+The agent and user choose their integration plan together when a conflict arises. These are documented procedures, not a machine-enforced conflict detector, installer or synchronizer. See [complete skill updates](skill-updates.md) for candidate review and [acquisition review](recipe-acquisition.md) for third-party content.
+
 ## Shared tool reference
 
 The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/opsfeast.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.
@@ -46,4 +70,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

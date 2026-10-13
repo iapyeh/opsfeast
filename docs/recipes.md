@@ -12,7 +12,15 @@ For initialization and account checks, use the [host diagnostic guide](host-diag
 
 Start with the [recipe catalog](../recipes/README.md), then read the selected recipe's README. The catalog distinguishes availability, supported platforms and actual verification evidence.
 
-Currently, only `inventory-system` and its dedicated runner are available. Other recipes can be authored, reviewed and shared, but a general runner, third-party installer, discovery service, lockfile and automatic signature verification are not implemented. Selecting a recipe directory in configuration does not mean the runner can execute it.
+Bundled recipes include inventory-system and check/port. run_recipe.py also executes reviewed general Python recipes implementing [Python-session 0.1.0](recipe-execution.md), with typed --var/--vars-file inputs. A third-party installer, discovery service, lockfile and automatic signature verification are not implemented. Selecting a directory does not establish contract compatibility, dependencies or execution authorization.
+
+## Run a parameterized recipe
+
+```sh
+python -B tools/run_recipe.py check/port --host rms3 --root ~/Download/testops --var port=8888
+```
+
+The check originates on rms3 and defaults to TCP 127.0.0.1, requiring target python3. Read [its README](../recipes/check/port/README.md) for reachable false versus execution failure. Other Python-session recipes use the same runner, their declared input names and reviewed dependencies; follow [execution and authoring](recipe-execution.md). Do not invent a standalone main.py host CLI.
 
 ## Ask your AI agent to create a recipe
 
@@ -49,4 +57,4 @@ Have your agent acquire a candidate, verify its source and review its behavior b
 
 These guides describe human/agent workflows. Only explicitly documented existing tools are implemented features.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

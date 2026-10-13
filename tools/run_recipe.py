@@ -1,4 +1,4 @@
-"""Run one selected inventory-system recipe from the checkout and save its result."""
+"""Run one selected inventory or Python-session recipe and save its result."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -15,9 +15,10 @@ import tempfile
 import time
 from uuid import uuid4
 
-from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint
+from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint, connected, now
 from recipe_dispatch import validate, select, bundle_digest, validate_observations
-from recipe_inputs import RecipeContext, prepare_vars, supports_context
+from recipe_inputs import RecipeContext, prepare_vars, supports_context, cli_variables, json_object
+import recipe_contract
 from host_identity import probe_identity, WARNING as IDENTITY_WARNING
 from observation_store import retain
 
@@ -120,7 +121,7 @@ def save_report(path, report):
             os.unlink(temporary)
 
 
-def preflight(root, host, recipe=None):
+def preflight(root, host, recipe=None, cli_vars=None, assignments=()):
     config = Validator(root)
     config.load(config.root / 'hosts.yaml')
     config.check_connections()
@@ -158,26 +159,84 @@ def preflight(root, host, recipe=None):
     if not descriptor.is_file():
         raise ConfigError('selected recipe directory must contain recipe.yaml')
     metadata = mapping(read_yaml(descriptor), str(descriptor))
-    if metadata.get('id') != 'inventory-system':
-        raise ConfigError('this minimal runner only supports inventory-system')
-    validate(directory, metadata)
-    variables = prepare_vars(metadata, info['vars'], host_vars)
-    if variables and any(not supports_context(directory / entry['entrypoint']) for entry in metadata['implementations']):
+    inventory = metadata.get('id') == 'inventory-system'
+    if inventory:
+        validate(directory, metadata)
+    else:
+        recipe_contract.validate(directory, metadata)
+    variables = prepare_vars(metadata, info['vars'], host_vars, cli_variables(metadata, cli_vars, assignments))
+    if inventory and variables and any(not supports_context(directory / entry['entrypoint']) for entry in metadata['implementations']):
         raise ConfigError('implementations receiving vars must accept collect(..., context=...)')
-    config.execution_recipe = dict(info, effective_vars=variables)
+    config.execution_recipe = dict(info, effective_vars=variables, metadata=metadata)
     # The shared report helper is still internal to the trusted runner.
     digest = bundle_digest(directory)
-    cache_path(config, host)
+    if inventory:
+        cache_path(config, host)
     output_dir = config.root / 'observations'
     if output_dir.is_symlink() or (output_dir.exists() and not output_dir.is_dir()):
         raise ConfigError('observations must be a real directory within management root')
     return config, directory, digest, output_dir
 
 
-def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
+def run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime):
+    info = config.execution_recipe
+    metadata = info['metadata']
+    entry = directory / metadata['runner']['entrypoint']
+    source_root = REPOSITORY_ROOT.resolve() if info['name'] == 'repository' else info['root']
+    report = {
+        'run_contract': recipe_contract.VERSION, 'schema_version': metadata['output']['schema_version'],
+        'host_id': host, 'started_at': now(), 'completed_at': None,
+        'status': 'failed', 'reason_code': 'execution_failed', 'message': 'Recipe execution failed.', 'data': {},
+        'detected_kernel': None, 'supported_platforms': metadata.get('platforms', {}).get('implemented', []),
+        'evidence_kind': 'mock' if runtime is None else ('local' if config.hosts[host]['connection'].get('local') else 'ssh'),
+        'runtime': runtime or {'verification': 'mock'}, 'hops': [], 'execution_errors': [],
+        'host_metadata': {key: config.hosts[host][key] for key in ('label', 'description') if key in config.hosts[host]},
+        'recipe': {'id': metadata['id'], 'version': metadata['version'], 'recipe_version': metadata['version'],
+                   'runner_contract': recipe_contract.CONTRACT, 'runner_version': recipe_contract.VERSION,
+                   'entrypoint': metadata['runner']['entrypoint'],
+                   'implementation_sha256': hashlib.sha256(entry.read_bytes()).hexdigest(),
+                   'descriptor_sha256': hashlib.sha256((directory / 'recipe.yaml').read_bytes()).hexdigest(),
+                   'bundle_sha256': digest, 'installed_path': directory.relative_to(source_root).as_posix(),
+                   'source_name': info['name'], 'source_root': str(info['root']),
+                   'reference': info['reference'], 'resolved_path': str(directory),
+                   'variable_names': sorted(info['effective_vars']), 'selection_source': 'cli'},
+        'retention': {'status': 'skipped', 'reason_code': 'no_retention_adapter'},
+    }
+    stage = 'connection'
+    try:
+        progress('preparing recipe connection')
+        with connected(config, host, session_class, timeout, report) as session:
+            stage = 'implementation_loading'
+            with _implementation_lock:
+                selected = runpy.run_path(str(entry))
+            if selected.get('VERSION') != metadata['version'] or not callable(selected.get('execute')):
+                raise ConfigError('recipe runtime VERSION or execute does not match contract')
+            stage = 'execution'
+            progress('executing recipe ' + json.dumps(metadata['id'], ensure_ascii=True))
+            context = RecipeContext(host, info['effective_vars'])
+            result = selected['execute'](session, context=context, timeout=timeout)
+            stage = 'result_validation'
+            report.update(recipe_contract.validate_result(result))
+    except (Exception, SystemExit) as exc:
+        report.update(status='failed', reason_code='invalid_result' if stage == 'result_validation' else 'execution_failed',
+                      message='Recipe result is invalid.' if stage == 'result_validation' else 'Recipe execution failed.')
+        # Custom exception text may contain input values; preserve type/stage only.
+        report['execution_errors'].append({'stage': stage, 'type': type(exc).__name__})
+    if 'cleanup_error' in report:
+        report.update(status='failed', reason_code='cleanup_failed', message='Session cleanup failed.')
+        report['execution_errors'].append({'stage': 'cleanup', 'type': report['cleanup_error']})
+    report['completed_at'] = now()
+    output_dir.mkdir(exist_ok=True)
+    path = output_dir / f'recipe-run-{uuid4()}.json'
+    progress('saving recipe result')
+    save_report(path, report)
+    return report, path
+
+
+def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, cli_vars=None, assignments=()):
     timeout = positive_timeout(timeout)
     progress('validating configuration and recipe')
-    config, directory, digest, output_dir = preflight(root, host, recipe)
+    config, directory, digest, output_dir = preflight(root, host, recipe, cli_vars, assignments)
     if directory is None:
         info = config.execution_recipe
         code = info['reason_code']
@@ -191,6 +250,8 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
     if session_class is None:
         progress('checking execution runtime')
         session_class, runtime = load_runtime()
+    if config.execution_recipe['metadata']['id'] != 'inventory-system':
+        return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime)
     report = collector['new_report'](host, 'local' if config.hosts[host]['connection'].get('local') else 'ssh')
     report['runtime'] = runtime or {'verification': 'mock'}
     if runtime is None:
@@ -406,7 +467,7 @@ class TargetAction(argparse.Action):
 class RecipeAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         if getattr(namespace, self.dest, None) is not None:
-            parser.error('--recipe may only be specified once')
+            parser.error(f'{option_string} may only be specified once')
         setattr(namespace, self.dest, value)
 
 
@@ -422,6 +483,10 @@ def main(argv=None):
     parser.add_argument('--profile', help='profile for this invocation; does not change the default')
     parser.add_argument('--recipe', metavar='DIRECTORY', action=RecipeAction,
                         help='recipe directory at any argument position; alternative to leading RECIPE; omit recipes/ for checkout recipes')
+    parser.add_argument('--var', dest='assignments', action='append', default=[], metavar='NAME=VALUE',
+                        help='recipe input override; strings are literal, other declared types use JSON; repeat with unique names')
+    parser.add_argument('--vars-file', type=Path, action=RecipeAction, metavar='JSON_FILE',
+                        help='JSON object of recipe input overrides; --var takes precedence')
     parser.add_argument('--timeout', type=positive_timeout, default=30,
                         help='per-hop connection stages and per-command seconds; not a whole-run deadline')
     parser.add_argument('--threads', type=positive_threads, default=default_threads(), metavar='N',
@@ -453,13 +518,15 @@ def main(argv=None):
             progress('resolving environment and targets')
             root = resolve_root(args.root, args.profile)
             hosts = select_hosts(root, args.targets or [], args.all_hosts, args.exclude, excluded)
+            values = json_object(args.vars_file) if args.vars_file else None
             workers = min(args.threads, len(hosts))
             progress(f'selected {len(hosts)} host(s); concurrency {workers}')
         def execute(host, index):
             label = f'[{index}/{len(hosts)}] {json.dumps(host, ensure_ascii=True)}:'
             with reporting(show_progress, label):
                 try:
-                    item, path = run(root, host, args.timeout, recipe=recipe)
+                    inputs = {'cli_vars': values, 'assignments': args.assignments} if values is not None or args.assignments else {}
+                    item, path = run(root, host, args.timeout, recipe=recipe, **inputs)
                 except Exception as exc:
                     progress(f'failed before completion: {type(exc).__name__}')
                     raise
@@ -470,8 +537,11 @@ def main(argv=None):
                 index, host = target
                 try:
                     item, path = execute(host, index)
-                    return dict(host=host, status=item['status'], reason_code=item['reason_code'], result_path=str(path) if path is not None else None,
-                                retention=item.get('retention'), identity_quality=item.get('identity', {}).get('quality'))
+                    summary = dict(host=host, status=item['status'], reason_code=item['reason_code'], result_path=str(path) if path is not None else None,
+                                   retention=item.get('retention'), identity_quality=item.get('identity', {}).get('quality'))
+                    if 'data' in item:
+                        summary['data'] = item['data']
+                    return summary
                 except Exception as exc:
                     return dict(host=host, status='failed', error=type(exc).__name__)
             targets = enumerate(hosts, 1)
@@ -492,6 +562,8 @@ def main(argv=None):
             'status', 'reason_code', 'message', 'detected_kernel', 'supported_platforms')}
         summary.update(recipe_id=report['recipe']['id'], result_path=str(path) if path is not None else None)
         summary.update(retention=report.get('retention'), identity_quality=report.get('identity', {}).get('quality'))
+        if 'data' in report:
+            summary['data'] = report['data']
         if excluded:
             summary['excluded_hosts'] = excluded
         print(json.dumps(summary, indent=2))

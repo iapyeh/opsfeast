@@ -2,9 +2,13 @@
 
 本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。將 clone 後的 repository 路徑交給 agent，請它閱讀 README、AGENTS.md 與本指南。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
 
+## Find skills before selecting tools
+
+Read the [skills/ index](../skills/README.md) first, then the task-relevant skills and references. All bundled OpsFeast and SSHScript skill sources live in the checkout's `skills/`. Keep newly authored Feast-specific operational skills in `<management-root>/skills/`; general personal skills can remain in the user's agent directory. Direct reading is supported without installation. Before creating or integrating a skill, identify task-relevant duplicate names, version/instruction conflicts or loader restrictions, explain any conflict and agree with the user on the source and integration method. Preserve existing files; do not silently install or maintain competing copies. Follow [storage and conflict resolution](agent-guidance.md#skill-storage-and-conflict-resolution).
+
 ## 先了解可以做什麼
 
-目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及只支援 inventory-system 的最小 runner。Inventory supports Linux, FreeBSD and macOS through platform dispatch; Linux/FreeBSD have synthetic coverage and macOS has local read-only validation. Real SSH validation remains pending. 工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/inventory/system/README.md)。
+目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及 recipe 執行工具。Inventory supports Linux, FreeBSD and macOS through platform dispatch; Linux/FreeBSD have synthetic coverage and macOS has local read-only validation. Real SSH validation remains pending. 工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/inventory/system/README.md)。
 
 README 是共同入口；AGENTS.md 是隨 Git 提供的專案工作規則。若 agent 沒有自動載入 AGENTS.md，請直接讀取它。不要將其他電腦的私人 checkout、絕對路徑或環境設定當成本專案的必備環境。
 
@@ -45,9 +49,9 @@ python3 -B -m venv .venv
 
 ## 閱讀 skill，完成本機初始化
 
-Git clone 已包含完整 `.agents/skills/sshscript/` 公開快照，不必為初次使用重新下載。Agent 在使用 SSHScript 前依序閱讀其中的 SKILL.md、Agent Guide 與任務相關 API 章節；主機設定維護另讀 [Ops hosts skill](../skills/opsfeast-hosts/SKILL.md)。
+Git clone 已包含完整 `skills/sshscript/` 公開快照，不必為初次使用重新下載。Agent 在使用 SSHScript 前依序閱讀其中的 SKILL.md、Agent Guide 與任務相關 API 章節；主機設定維護另讀 [Ops hosts skill](../skills/opsfeast-hosts/SKILL.md)。
 
-可直接閱讀 Markdown，不需要 skill loader。若使用者要安裝到某個 agent 的 skill 搜尋位置，依該產品的機制與授權處理；不要假設所有 agent 都自動搜尋 `.agents/skills/`，也不要將「檔案隨附」或「已閱讀」回報成「已安裝／自動載入」。缺少快照或要檢查更新時，依 [下載與更新指南](skill-updates.md) 操作。
+可直接閱讀 Markdown，不需要 skill loader。若使用者要安裝到某個 agent 的 skill 搜尋位置，依該產品的機制與授權處理；不要假設所有 agent 都自動搜尋 `skills/`，也不要將「檔案隨附」或「已閱讀」回報成「已安裝／自動載入」。缺少快照或要檢查更新時，依 [下載與更新指南](skill-updates.md) 操作。
 
 初始化不需要 SSHScript Session 或遠端連線：
 
@@ -64,7 +68,7 @@ For complete tool syntax, defaults, behavior, output and exit codes, see the [CL
 
 When creating or adapting a recipe, follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools). OpsFeast keeps tool choice open and prefers SSHScript for suitable command execution and session orchestration, while respecting user-selected tools and operational constraints. Read the selected tools' relevant documentation; recipes using other tools need their own prerequisite checks and reviewed standalone execution instructions. The current host diagnostics and inventory runner continue to require SSHScript.
 
-To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. Only the dedicated inventory-system runner is currently implemented; custom inventory implementations must follow its descriptor 0.2.0 and shared output contract; other recipe IDs remain unsupported.
+To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. run_recipe.py supports inventory-system descriptor 0.2.0 and [general Python-session recipes](recipe-execution.md) using descriptor 0.3.0/contract 0.1.0. Invocation inputs use --var or a JSON --vars-file. Arbitrary standalone programs and other backend contracts are not automatically supported.
 
 ## Authorized host checks and inventory
 

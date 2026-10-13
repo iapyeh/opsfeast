@@ -4,6 +4,7 @@ from pathlib import Path
 
 from opsfeast import ConfigError, REPOSITORY_RECIPES, plain_values, read_yaml
 from recipe_dispatch import declared_version, validate
+import recipe_contract
 
 
 def recipe_path(value):
@@ -82,6 +83,13 @@ def inspect_one(directory, requested):
             except (ConfigError, OSError, UnicodeError) as exc:
                 report['runner_contract'] = 'invalid-inventory-system'
                 report['errors'].append(str(exc))
+        elif 'runner' in metadata:
+            try:
+                recipe_contract.validate(directory, metadata)
+                report['runner_contract'] = 'valid-python-session'
+            except (ConfigError, OSError, UnicodeError) as exc:
+                report['runner_contract'] = 'invalid-python-session'
+                report['errors'].append(str(exc))
         else:
             report['runner_contract'] = 'unsupported-recipe-id'
     except (ConfigError, OSError, UnicodeError) as exc:
@@ -134,7 +142,7 @@ def format_details(report):
         if recipe['coverage']:
             for key, values in recipe['coverage'].items():
                 lines.append(f"  {key}: {values}")
-        for key in ('dependencies', 'permissions', 'side_effects', 'inputs', 'output', 'verification'):
+        for key in ('runner', 'dependencies', 'permissions', 'side_effects', 'inputs', 'output', 'verification'):
             lines.append(f'  {key}:')
             lines.extend('    ' + line for line in json.dumps(meta.get(key, 'not declared'), indent=2, ensure_ascii=False).splitlines())
         for error in recipe['errors']:

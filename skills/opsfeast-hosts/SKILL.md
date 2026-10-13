@@ -5,6 +5,8 @@ description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform
 
 # OpsFeast 主機設定維護
 
+Start with the [central skill index](../README.md). Keep newly authored Feast-specific skills in the selected management root's `skills/`; check task-relevant source/loaded copies and agree with the user on any naming, version, instruction or loader conflict before the affected action. Follow [storage and conflict resolution](../../docs/agent-guidance.md#skill-storage-and-conflict-resolution).
+
 初次設定環境時先依 [初次使用指南](../../docs/getting-started.md) 檢查 Python、依賴與授權範圍，完成初始化後告知使用者應設定的主機、帳號與 recipes。需要準備或檢查公開 SSHScript skill 時依 [下載與更新指南](../../docs/skill-updates.md)；檢查不自動替換快照或升級套件。本 skill 與連結的 Markdown 可直接閱讀，不要求特定 agent loader。
 
 使用者指南與設定規格位於 [docs/hosts-yaml.md](../../docs/hosts-yaml.md)。開始設定工作時閱讀它；不要自行建立另一套欄位語意。這是 repository 內的 skill，使用時保留 repository 結構。若要獨立安裝，需一併打包指南並調整此連結；目前未提供 skill 安裝工具。

@@ -444,7 +444,7 @@ Agent 可以使用上述工具編寫及檢查設定，但必須說明檢查範�
 
 ## 尚待實作與定案
 
-Host configuration/path rules and inventory-system descriptor/result schema 0.2.0 are implemented, alongside platform initialization and requested account diagnostics. The general recipe contract, arbitrary-recipe runner and other record schemas remain planned. Linux/FreeBSD have synthetic inventory coverage; macOS has local read-only validation. Real SSH and native su/sudo verification remain pending. Future changes must preserve existing configuration semantics or introduce an explicit version/option.
+Host configuration/path rules and inventory-system descriptor/result schema 0.2.0 are implemented, alongside platform initialization and requested account diagnostics. The [Python-session contract](recipe-execution.md) supports other reviewed Python recipe IDs and typed invocation inputs; arbitrary backend execution and other retained record schemas remain planned. Linux/FreeBSD have synthetic inventory coverage; macOS has local read-only validation. Real SSH and native su/sudo verification remain pending. Future changes must preserve existing configuration semantics or introduce an explicit version/option.
 
 ## Diagnostic credential interpretation
 

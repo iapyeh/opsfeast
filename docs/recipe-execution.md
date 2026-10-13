@@ -1,0 +1,101 @@
+# Execute and author Python-session recipes
+
+Use `tools/run_recipe.py` to execute one explicitly selected recipe on explicitly selected hosts. It supports the existing inventory-system descriptor/result 0.2.0 and the Python-session contract 0.1.0 described here. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
+
+Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
+
+## Select a recipe and provide inputs
+
+From the checkout, using the selected interpreter:
+
+```sh
+python -B tools/run_recipe.py check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/run_recipe.py :check/port --host rms3 --profile main --vars-file /path/to/inputs.json
+python -B tools/run_recipe.py company:check/port --group web --var port=443 --threads 2
+python -B tools/run_recipe.py inventory/system --host rms3 --var command_timeout_seconds=10
+```
+
+The second example requires a reviewed compatible recipe already present at the Feast's `recipes/check/port`; the third requires a registered reviewed company source. Source forms, enabled flags and host/group/all/exclude selection are shared with inventory. A recipe need not be listed under the host to be selected explicitly; the first matching host recipe selector supplies overrides. There is no fallback to another source or recipe. The internal `run(root, host, recipe=None)` compatibility API still selects inventory-system only; general recipes require an explicit selector.
+
+`--var NAME=VALUE` may repeat with unique names. Declared string inputs are literal text, including empty text, `true`, leading zeros and additional equals signs. Other types use JSON syntax: `port=8888`, `enabled=false`, `scale=1.5`, `'items=[1,2]'`, `'options={"mode":"basic"}'`. Use shell quoting for spaces, arrays and objects. No shell interpolation is performed by the input parser. Duplicate --var names are errors; supply the final value once.
+
+`--vars-file` accepts one readable UTF-8 JSON file containing an object, for example `{"port":8888}`. Its path is relative to the shell directory, with `~` expansion; it is explicit local input data and need not be inside the Feast. Duplicate object keys, non-finite values, invalid JSON and non-object roots are rejected. CLI assignments override file values regardless of option order. Required/type/range/unknown-key validation follows the [typed input contract](recipe-sources.md#variables-and-implementation-context).
+
+Precedence is recipe defaults → source vars → first matching host recipe vars → vars-file → --var. This is a shallow overlay with an independent deep copy per host. Invalid effective inputs are rejected before that host's Session is created or entrypoint is loaded. Batch hosts remain independent: one host's preflight failure does not cancel others; target-name/configuration selection errors and invalid vars-file syntax fail before any host executes. Disabled hosts/sources return their existing skip states without reading unavailable recipe code or initializing a runtime. Per-invocation overrides do not rewrite hosts.yaml. Parameter values may be sensitive: use a private input file for secrets rather than shell arguments/history; provenance records names only, while recipe-owned output must avoid disclosure.
+
+## Descriptor 0.3.0 and Python-session 0.1.0
+
+A general recipe uses a simple unique ID other than the reserved inventory-system ID, one Python entrypoint, a literal matching VERSION and typed inputs:
+
+```yaml
+descriptor_version: 0.3.0
+id: my-check
+version: 1.0.0
+runner:
+  contract: python-session
+  version: 0.1.0
+  entrypoint: main.py
+inputs:
+  variables:
+    port: {type: integer, required: true, minimum: 1, maximum: 65535}
+output:
+  schema_version: 1.0.0
+```
+
+`output.schema_version` versions the recipe-owned data; the runner validates the common result envelope, not a recipe-specific JSON Schema. `runner` accepts only contract/version/entrypoint; `output` accepts only schema_version. Entrypoints are .py files inside their own recipe directory, without absolute/traversing paths or escaping symlinks. Python helpers must also remain there. The runner statically validates VERSION, the execute signature and input definitions without importing the recipe. It records descriptor, entrypoint and Python bundle hashes; these establish provenance, not publisher trust or immutability during execution. Avoid modifying recipe files during a run.
+
+Optional platforms.planned/implemented/tested lists are declarations for inspection, not dispatch rules. This contract uses one entrypoint and rejects inventory-style implementations. It does not probe host facts or select platform code automatically. Recipe authors check needed platform/dependency capabilities through their reviewed code and return unsupported/failed when unavailable. Use the existing [inventory implementation contract](../recipes/inventory/system/README.md) for system inventory; do not convert its seven-field output to this contract.
+
+Declare dependencies, permissions, side effects, implementation choice, applicability and verification evidence as described in [authoring](recipe-authoring.md). Additional descriptive fields are documentation data, not automatically enforced permission or dependency-installation rules. There is no automatic installer, extension overlay or alternative backend loader.
+
+## Entrypoint and available capabilities
+
+```python
+VERSION = "1.0.0"
+
+def execute(session, *, context, timeout):
+    result = session.exec_command(
+        ["some-reviewed-program", str(context.vars["port"])],
+        check=False, command_timeout=timeout,
+    )
+    if result.exitcode != 0:
+        return {"status": "failed", "reason_code": "command_failed",
+                "message": "The check command failed.", "data": {}}
+    return {"status": "success", "reason_code": "check_complete",
+            "message": "The check completed.", "data": {"output": result.stdout}}
+```
+
+The runner passes the already selected local or SSH Session, `RecipeContext(host_id, vars)` and a positive timeout. It owns connection plans/jumps and strict Session cleanup. The recipe must not close the borrowed Session or reconnect by loading credentials itself. Remote settings retain the existing host-key/authentication semantics. This interface remains SSHScript-based; recipes may invoke reviewed CLIs/SDKs inside their implementation, but there is no independent backend runner.
+
+Only a synchronous execute accepting the Session positional argument and context/timeout keywords is supported; other required arguments are rejected statically. Runtime VERSION and callable presence are checked again after loading. Entrypoint loading is serialized because runpy changes process import state; executions can run concurrently with separate Sessions and contexts. Avoid mutable shared state, process-wide settings and conflicting file writes. Sibling imports are not automatically added to sys.path: keep a small recipe self-contained, or load explicit reviewed helpers relative to `__file__` using standard Python facilities. Review all dependencies and helpers.
+
+The timeout controls connection stages and is supplied as the per-command budget; it is not a whole-recipe deadline. Recipes must apply it to their operations and clean up their own jobs/resources. Arbitrary Python executes in the controller process without isolation, and no forced interruption or process-termination guarantee is provided. Print diagnostics to stderr, keep stdout reserved for runner JSON, and avoid secret-bearing exception/output text. Read the [SSHScript skill](../skills/sshscript/SKILL.md) and task-relevant references before using its APIs.
+
+## Results, failure states and storage
+
+execute returns exactly four fields:
+
+| Field | Contract |
+| --- | --- |
+| status | success, partial, failed, skipped or unsupported |
+| reason_code | Nonempty machine-readable string, defined by the recipe |
+| message | Nonempty human-readable explanation |
+| data | Object of finite plain JSON data with string object keys, defined and tested by the recipe |
+
+A successful diagnostic may observe an unhealthy service. For check/port, a refused connection is a completed check with status success, data.reachable false and reason_code port_refused; read the observation as well as execution status. Timeout/network errors remain failed with reachable null. Each recipe must document how to interpret its outcomes.
+
+The runner adds `run_contract: 0.1.0`, recipe-owned schema_version, host_id, started_at/completed_at UTC timestamps, runtime/evidence_kind, source/version/digest provenance, variable names, hops, host metadata and execution_errors. Result-validation failure produces failed/invalid_result and discards the invalid returned payload. Loading/connection/execute exceptions produce failed/execution_failed with exception type/stage, without custom exception text. Cleanup failure produces failed/cleanup_failed while preserving valid collected data. Recipe-returned partial/skipped/unsupported states remain explicit. Preflight failures do not fabricate a raw report.
+
+Completed attempts are atomically saved at `<management-root>/observations/recipe-run-<UUID>.json`; stdout provides result_path, status/reason/message and data for a single host, or ordered per-host summaries including data for batches. Output/save errors return nonzero. Arbitrary recipe code can still write or print beyond these conventions: this is not an output sandbox.
+
+General results carry `retention: {status: skipped, reason_code: no_retention_adapter}`. They do not run host identity/sudo probes and are not inserted into inventory SQLite/exchange storage; inventory retains its current raw → retained flow. Recipes requiring new retention adapters must define reviewed versioned data contracts before support is added. Use ordinary JSON tools to inspect general raw results; observation_store inventory ingest does not accept them.
+
+Exit 0 requires every attempted host's status to be success (and no inventory retention failure). Partial/failed/skipped/unsupported returns 1; usage errors return 2. No automatic retry or fallback implementation runs after failure.
+
+## Verification and extension
+
+[Public synthetic tests](../tests/test_general_recipes.py) cover CLI/file precedence, input types/bounds/isolation, descriptor/signature/path validation, static inspection, general execution, connection/loading/result/cleanup failure, result storage and inventory coexistence. The bundled [port recipe](../recipes/check/port/README.md) has synthetic probe/command tests; no real SSH, native su/sudo or target TCP probe was performed for this change. A fresh agent should inspect, review and execute through the documented CLI within the user's scope, without inventing a standalone --host interface for main.py.
+
+To add another Python-session recipe, use a new ID, implement this entrypoint/result contract, declare typed inputs and target dependencies, publish synthetic success/failure/boundary tests, and register a reviewed source when external. If this interface cannot express a required backend, platform dispatch or result capability, document the gap and propose an explicitly versioned extension rather than guessing support.
+
+_Last modified: 2026-10-13_

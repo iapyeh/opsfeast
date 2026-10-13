@@ -8,7 +8,7 @@ A **Feast** is your private management instance: configuration, selected recipes
 
 OpsFeast welcomes recipes built with different execution tools. When SSHScript fits the task and the authorized environment, prefer it for command execution and session orchestration. The project also serves as a practical showcase of SSHScript through reusable recipes and verifiable examples. User-selected tools and operational constraints take precedence; see the [tool selection workflow](docs/recipe-authoring.md#choose-execution-tools).
 
-SSHScript is the currently supported execution foundation for the host diagnostics and dedicated inventory runner. Other tools require explicit dependencies and verifiable contracts; the open ecosystem direction does not implement additional runner backends.
+SSHScript is the currently supported execution foundation for the host diagnostics and recipe execution. Other tools require explicit dependencies and verifiable contracts; the open ecosystem direction does not implement additional runner backends.
 
 Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The CLI is `tools/opsfeast.py`; the former `tools/ops.py` entrypoint and `import ops` are removed. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
 
@@ -35,7 +35,7 @@ For a system administrator, the value is continuity: fewer repeated explanations
 - **Make evidence part of the workflow.** Distinguish observations from interpretations, configuration checks from execution, and successful commands from verified outcomes. Missing information stays unknown.
 - **Keep control of your environment.** Real host data and credentials stay in your management environment. Third-party recipes follow a review and authorization workflow before installation; execution has its own scope.
 
-The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS/ESXi implementation selection and a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
+The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS/ESXi implementation selection and a shared recipe execution tool. It also includes skills and guides for authoring, sharing and reviewing recipes. Python-session recipes can also run through `run_recipe.py` with typed invocation inputs; see the [execution contract](docs/recipe-execution.md) and [port check](recipes/check/port/README.md). A third-party installer remains planned; real Linux/SSH inventory validation is pending.
 
 **[Take the first-use walkthrough](docs/first-use.md)** or **[explore the recipe catalog](recipes/README.md)** to get started.
 
@@ -51,11 +51,13 @@ These safeguards combine implemented checks with documented agent procedures. Th
 
 Our goal is for you to describe the desired result in ordinary language while your agent handles skills, configuration and execution details. You still define the systems in scope, provide authentication through an appropriate private channel, and authorize actions that may affect them. The agent should ask only for missing information that matters, explain consequences clearly and reuse context already supplied.
 
-Today, that approach is supported by setup and connection tools, agent guides and the dedicated inventory runner. Arbitrary requests may require a new recipe, compatibility work and validation before use. We are building toward this experience; it is not yet a general system that can safely perform every IT task from a single sentence.
+Today, that approach is supported by setup and connection tools, agent guides and recipe execution through run_recipe.py. Arbitrary requests may require a new recipe, compatibility work and validation before use. We are building toward this experience; it is not yet a general system that can safely perform every IT task from a single sentence.
 
 Read the [vision and design principles](docs/vision.md) for the shared direction followed by project contributors and recipe authors.
 
 ## Getting started with your AI agent
+
+**Start with the [skills/ index](skills/README.md).** All bundled OpsFeast and SSHScript skill sources live there. Ask your agent to read the index and task-relevant skills; files being present does not mean its loader has activated them. New skills specific to your Feast belong in that management directory's `skills/`, so they remain portable when you change agents. If existing agent skills or loading rules conflict, the agent should explain the conflict and agree on a solution with you before changing files or choosing between conflicting instructions. See [storage and integration](docs/agent-guidance.md#skill-storage-and-conflict-resolution).
 
 Start by cloning the repository:
 
@@ -81,7 +83,7 @@ The full SSHScript skill snapshot is included in Git. [Skill download and update
 
 ## For AI agents
 
-Start here when a user asks you to use OpsFeast. Read the linked Markdown directly if your agent does not automatically discover project guidance or skills; no particular agent product or skill loader is required.
+Read the [skill index](skills/README.md) first, select the relevant skills and check task-relevant integration conflicts as described in [agent guidance](docs/agent-guidance.md#skill-storage-and-conflict-resolution). Start here when a user asks you to use OpsFeast. Read the linked Markdown directly if your agent does not automatically discover project guidance or skills; no particular agent product or skill loader is required.
 
 ### Learn Ops and choose the relevant skill
 
@@ -94,9 +96,9 @@ Start here when a user asks you to use OpsFeast. Read the linked Markdown direct
 | Manage profiles, hosts.yaml, platform facts or connection/su/sudo diagnostics | [Ops hosts skill](skills/opsfeast-hosts/SKILL.md), then [host diagnostics](docs/host-diagnostics.md) for tests |
 | Discover, execute, author, share or review recipes | [Ops recipes skill](skills/opsfeast-recipes/SKILL.md), then the [recipe catalog](recipes/README.md) and selected recipe guide |
 | Read, recover, export or combine retained result data | [Result-data skill](skills/opsfeast-result-data/SKILL.md), then [result workflow](docs/result-data.md) |
-| Write or adapt SSHScript commands and sessions | [Included SSHScript skill](.agents/skills/sshscript/SKILL.md), its [Agent Guide](.agents/skills/sshscript/references/agent-guide.md), [version policy](.agents/skills/sshscript/references/versioning.md) and relevant [API guide](.agents/skills/sshscript/references/api-guide.md) sections |
+| Write or adapt SSHScript commands and sessions | [Included SSHScript skill](skills/sshscript/SKILL.md), its [Agent Guide](skills/sshscript/references/agent-guide.md), [version policy](skills/sshscript/references/versioning.md) and relevant [API guide](skills/sshscript/references/api-guide.md) sections |
 
-Ops skills describe the management workflow; the SSHScript skill describes the execution library. The complete public SSHScript snapshot is included at `.agents/skills/sshscript/` and can be read offline. Its [SOURCE.json](.agents/skills/sshscript/SOURCE.json) records provenance, documentation contract and bundle digest. Verify the actual interpreter and SSHScript import/distribution versions against that contract before use. Bundled files do not imply installation or automatic loading by your agent.
+Ops skills describe the management workflow; the SSHScript skill describes the execution library. The complete public SSHScript snapshot is included at `skills/sshscript/` and can be read offline. Its [SOURCE.json](skills/sshscript/SOURCE.json) records provenance, documentation contract and bundle digest. Verify the actual interpreter and SSHScript import/distribution versions against that contract before use. Bundled files do not imply installation or automatic loading by your agent.
 
 ### Obtain and update complete skills
 
@@ -128,6 +130,16 @@ See [host diagnostics](docs/host-diagnostics.md) for `host-init`, `test-host`, i
 
 See the [hosts.yaml user guide](docs/hosts-yaml.md) for the proposed management-directory format, includes, jump hosts, host variables, and recipe selection. AI agents can use the repository skill [opsfeast-hosts](skills/opsfeast-hosts/SKILL.md) to help maintain these settings. On a fresh checkout, use `python tools/opsfeast.py init` to create the `main` profile at `feasts/main/`, and `python tools/opsfeast.py check` to validate it (Python 3.11+ and PyYAML required). Use `python tools/opsfeast.py test-connection <host-id>` to connect and run `hostname` and `date` (SSHScript 4.0.1+ also required). New checkouts use the ignored `.opsfeast.yaml` registry and new instances contain `feast.yaml`. Existing `.my-ops.yaml` registries and `my-ops.yaml` definitions remain supported; existing named profiles are reused by init. Use `init inventory` to create `feasts/inventory`, `attach /existing/directory` to register existing settings, `profiles` to list environments, and `use inventory` to switch the default. Adding profiles preserves an existing default. See the [profile guide](docs/profiles.md). Use `--profile NAME` on either tool for one invocation without changing the default, or pass an explicit directory. Registered relative paths are located from the tool checkout; relative CLI directory paths use the shell directory. Initialization, dumps and configuration checks do not connect. Use `python -B tools/run_recipe.py inventory/system --host <host-id>` to run system inventory directly from this checkout. No copying into the instance is needed after updating this repository. Recipe and targets are required; put the recipe first or use `--recipe DIRECTORY` elsewhere, and select hosts/groups with `--host`/`--group` or every configured host with `--all`. Use `--root` for an explicit management directory. Register external clones in entry hosts.yaml recipe_sources, select profile content with :inventory/system or named content with community:inventory/system, and attach vars to matching recipe selectors. Source/host enabled flags and --all --exclude support temporary selection controls; see [sources and inputs](docs/recipe-sources.md); see [its guide](recipes/inventory/system/README.md) for runtime requirements and validation limits.
 
+## Run a recipe with invocation inputs
+
+Use `run_recipe.py` for inventory and compatible Python-session recipes. Inputs declared in recipe.yaml are supplied with `--var NAME=VALUE` or a JSON `--vars-file`, without editing hosts.yaml. For example, within authorized connection/probe scope:
+
+```sh
+python -B tools/run_recipe.py check/port --host rms3 --root ~/Download/testops --var port=8888
+```
+
+This checks TCP 127.0.0.1:8888 from rms3 itself; read the [recipe's interpretation and prerequisites](recipes/check/port/README.md). General recipes use execute(session, *, context, timeout), save raw JSON and report skipped inventory retention. See [authoring/execution](docs/recipe-execution.md) and the [CLI reference](docs/cli.md#toolsrun_recipepy-inventory-execution). Existing inventory platform dispatch and retention remain supported.
+
 ## Initialize and diagnose a host
 
 After configuring a host and authorizing its tests, use the selected interpreter from this checkout:
@@ -140,20 +152,20 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as root
 python -B tools/run_recipe.py inventory/system --host host-01 host-02 host-03
 ```
 
-Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when the credential precedence rule selects a password (including the account password), and independently tests su to other declared accounts. Direct host-init always refreshes facts. Runner automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. A general recipe runner and extension installer remain planned.
+Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when the credential precedence rule selects a password (including the account password), and independently tests su to other declared accounts. Direct host-init always refreshes facts. For inventory-system, run_recipe.py automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. Python-session recipes use the [general execution contract](docs/recipe-execution.md); extension installation remains planned.
 
 ## Find, create and share recipes
 
 The [recipe catalog](recipes/README.md) lists available content, supported platforms and actual verification evidence. Use `python -B tools/opsfeast.py inspect-recipe` to discover checkout recipes, or `python -B tools/opsfeast.py inspect-recipe inventory/system --platform freebsd --platform openbsd` to view a focused summary of requested platform support and gaps. Default output is concise; add `--details` for full human-readable content or `--json` for the complete descriptor and agent-readable report. Inspection reads files without running recipes or connecting; see the [CLI reference](docs/cli.md#inspect-recipes-and-platform-gaps) for paths, evidence limits and exit codes. The [recipe user guide](docs/recipes.md) provides copyable prompts for asking your AI agent to create a recipe, share one or several recipes through GitHub or ZIP/tar.gz, and review someone else's recipes before installation.
 
-Agents should read the repository [recipes skill](skills/opsfeast-recipes/SKILL.md) and its task-specific guides. [Skill sources and updates](docs/skill-updates.md) explain where to obtain the complete SSHScript knowledge bundle and Ops guidance. Third-party content is checked for integrity, publisher evidence and behavior before a concrete installation plan is authorized; installation does not authorize execution. These are documented agent workflows. A general runner, third-party installer, pack/publish CLI and lockfile are not yet implemented.
+Agents should read the repository [recipes skill](skills/opsfeast-recipes/SKILL.md) and its task-specific guides. [Skill sources and updates](docs/skill-updates.md) explain where to obtain the complete SSHScript knowledge bundle and Ops guidance. Third-party content is checked for integrity, publisher evidence and behavior before a concrete installation plan is authorized; installation does not authorize execution. These are documented agent workflows. A third-party installer, pack/publish CLI and lockfile are not yet implemented. The [Python-session contract](docs/recipe-execution.md) supports other reviewed recipe IDs.
 
 ## Planned workflow
 
 1. Register hosts and define connection settings in the user's own environment.
 2. Collect inventory and state using versioned recipes.
 3. Organize host and service records, retaining the sources and timestamps of observations.
-4. Identify changes and investigate problems using runbooks.
+4. Identify changes and investigate problems using operational skills and their linked procedures.
 5. Perform authorized maintenance and verify its outcome.
 6. Update records while preserving human notes and operational history.
 
@@ -163,7 +175,6 @@ Agents should read the repository [recipes skill](skills/opsfeast-recipes/SKILL.
 | --- | --- |
 | [recipes/](recipes/README.md) | Reusable collection, inspection, maintenance, and repair tools |
 | [schemas/](schemas/README.md) | Contracts for host records, observations, and execution results |
-| [runbooks/](runbooks/README.md) | Procedures for investigation, maintenance, and outcome verification |
 | [templates/](templates/README.md) | Example configuration and management document templates |
 | [skills/](skills/README.md) | Guidance for AI agents using the management framework |
 | [docs/](docs/README.md) | Architecture, getting started, and project decisions |

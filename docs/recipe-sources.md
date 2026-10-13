@@ -2,7 +2,7 @@
 
 OpsFeast resolves recipes from the checkout, the selected profile, or explicitly registered local source directories. Registration, configuration checking, installation/update and execution are separate operations. Registering a clone does not authenticate it, install its dependencies, update Git or authorize its code to execute.
 
-Use the [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) for the runner. It requires one explicit inventory-system recipe and explicit targets; it does not execute a host's whole recipes list or arbitrary recipe IDs. Host lists define configuration selections and per-recipe input overrides. A CLI recipe bypasses unrelated selectors, but uses the first matching selector's vars.
+Use the [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) for the runner. It requires one explicit inventory-system or compatible Python-session recipe and explicit targets; it does not execute a host's whole recipes list or arbitrary incompatible programs. Read [general execution](recipe-execution.md) for descriptor 0.3.0, the execute contract and raw results. Host lists define configuration selections and per-recipe input overrides. A CLI recipe bypasses unrelated selectors, but uses the first matching selector's vars.
 
 ## Register sources at the entrypoint
 
@@ -63,11 +63,11 @@ recipes:
 
 Directory/glob expansion uses the selected source root and the existing wildcard rules. A selector with no matching active recipes is an error. Matches sort by source-relative path. Selecting the same physical directory repeatedly retains its first occurrence, including its vars. Different sources may declare the same recipe ID; duplicate IDs in different directories within one source are errors. There is no implicit preference between sources or search by recipe ID.
 
-Recipe descriptors and selected paths must remain in the chosen source after resolving symlinks. Inventory entrypoints and Python helpers additionally remain inside their individual recipe directory. Include and output paths remain confined to the management root; external source registration does not widen those boundaries. These path checks are not a general execution sandbox: reviewed custom code still executes in the controller process.
+Recipe descriptors and selected paths must remain in the chosen source after resolving symlinks. Supported recipe entrypoints and Python helpers additionally remain inside their individual recipe directory. Include and output paths remain confined to the management root; external source registration does not widen those boundaries. These path checks are not a general execution sandbox: reviewed custom code still executes in the controller process.
 
 ## Variables and implementation context
 
-Variable precedence is recipe input defaults → source vars → matching host recipe vars. Overrides replace whole first-level values; nested mappings are not deep-merged. Each execution gets an independent deep copy, so concurrent hosts cannot share mutations. Host vars, account vars, environment variables and shell interpolation are not automatically involved.
+Variable precedence is recipe input defaults → source vars → matching host recipe vars → invocation --vars-file → invocation --var. CLI overrides do not rewrite configuration. See [CLI input parsing](recipe-execution.md#select-a-recipe-and-provide-inputs) for literal strings, JSON types, duplicates and input-file paths. Overrides replace whole first-level values; nested mappings are not deep-merged. Each execution gets an independent deep copy, so concurrent hosts cannot share mutations. Host vars, account vars, environment variables and shell interpolation are not automatically involved.
 
 A recipe declares accepted variables under inputs.variables in recipe.yaml:
 
@@ -88,7 +88,7 @@ inputs:
 
 Supported types are string, integer, number, boolean, object and array. A definition accepts type (required), required (boolean), default, minimum/maximum for numbers, and exclusive_minimum (boolean). Missing required variables, wrong types, out-of-range values and undeclared supplied keys fail before creating a Session for that host. Null does not satisfy any supported type. Values must be basic finite YAML/JSON-like data, without recursive aliases or dates. Sources containing different recipes must use inputs recognized by each selected recipe; source vars do not guarantee that every recipe understands them.
 
-Inventory implementations with vars must accept a context keyword:
+General Python-session recipes use execute(session, *, context, timeout), with the same isolated context.vars; see [the execution contract](recipe-execution.md). Inventory implementations with vars must accept a context keyword:
 
 ```python
 def collect(session, report, timeout, facts, *, context=None):
@@ -136,4 +136,4 @@ Use check to validate configuration/selection without executing code. To inspect
 
 Synthetic tests cover sources, include restrictions, path/symlink boundaries, scalar/mapping selection, input precedence/types/isolation, disable/exclude behavior and inventory collection through mocked Sessions. Real SSH, native privilege transitions and third-party recipe behavior remain unverified.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

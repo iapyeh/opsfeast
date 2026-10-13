@@ -1,6 +1,6 @@
 # SSHScript skill 下載與更新檢查
 
-Git 隨附 `.agents/skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為 5.0.0。初次使用可離線閱讀，不必重新下載。
+Git 隨附 `skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為 5.0.0。初次使用可離線閱讀，不必重新下載。
 
 公開入口：https://iapyeh.github.io/sshscript/v3a/ai-agents/
 
@@ -39,14 +39,18 @@ python -B tools/skill_bundle.py download /path/to/new-candidate
 
 1. 讀候選的 SKILL.md、Agent Guide、版本政策及相關 API 差異；核對實際使用的 Python、SSHScript import／distribution 版本與 Ops runner 要求。
 2. 明確呈現文件契約或依賴差異。需要改 Ops runner 或升級套件時另外規劃與驗證，不只因 bundle 改變就升級環境。
-3. 在使用者授權套用更新後，備份既有快照，將候選完整 `sshscript/` 目錄替換到 repository 的 `.agents/skills/sshscript/`，包括 SOURCE.json；不要只換 SKILL.md，也不要把新舊版本 references 混在一起。若目的地有本機修改，先保留並處理差異。
+3. 在使用者授權套用更新後，備份既有快照，將候選完整 `sshscript/` 目錄替換到 repository 的 `skills/sshscript/`，包括 SOURCE.json；不要只換 SKILL.md，也不要把新舊版本 references 混在一起。若目的地有本機修改，先保留並處理差異。
 4. 執行 `check_environment.py`、Ops 一般測試、skill 格式驗證與本次操作所需的驗證；回報版本、摘要、實際替換範圍與驗證限制。套用不包含 Git 提交／push；依使用者要求處理。
 
 This tool checks and prepares candidates; the agent applies changes through the authorized procedure above. It has no automatic update command. If the snapshot cannot support the task, report the gap and establish matching documentation within the user's scope rather than guessing APIs.
 
+## Source locations and agent installation copies
+
+All bundled skill sources, including SSHScript, now live in repository `skills/`. See [the complete index](../skills/README.md). Feast-specific user skills belong in the selected management root's `skills/`; generic personal skills can remain in their agent directory. Follow [storage and conflict resolution](agent-guidance.md#skill-storage-and-conflict-resolution) before installation or replacement when source/loaded copies or loader requirements conflict. Agree on the authoritative source and preserve local edits. Agent installation copies need source/version records and an explicit update procedure; this project supplies no automatic synchronization.
+
 ## Ops skills and accompanying guides
 
-Official Ops repository: <https://github.com/iapyeh/opsfeast>. `skills/opsfeast-hosts/`, `skills/opsfeast-recipes/`, docs/ and AGENTS.md are published with Ops, not in the official SSHScript ZIP. Start with the [recipe user guide](recipes.md) or [recipes skill](../skills/opsfeast-recipes/SKILL.md). There is currently no separate Ops skill bundle or download/update CLI.
+Official Ops repository: <https://github.com/iapyeh/opsfeast>. `skills/opsfeast-hosts/`, `skills/opsfeast-recipes/`, `skills/opsfeast-result-data/`, docs/ and AGENTS.md are published with Ops, not in the official SSHScript ZIP. Start with the [recipe user guide](recipes.md) or [recipes skill](../skills/opsfeast-recipes/SKILL.md). There is currently no separate Ops skill bundle or download/update CLI.
 
 Initially acquire a full Ops snapshot at a fixed commit, or a trusted clone. Preserve the relative directory structure and record source URL and actual commit. Skill links depend on accompanying guides; downloading SKILL.md alone is incomplete. Standalone installation into an agent requires the relevant documents, adjusted links, platform-specific handling and user authorization. Direct Markdown reading remains the cross-agent baseline.
 
@@ -62,4 +66,4 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 
 文件不會啟動排程。使用者授權後，由其 agent 平台排程執行相同 `check` 命令，保留 scope、週期、環境與通知約定。預設未變更時保持安靜；有差異、檢查失敗或需使用者決定時通知。定期檢查授權不等於套用、套件升級或遠端執行授權；若另外授權特定更新流程，按其明確範圍執行。
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

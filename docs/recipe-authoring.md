@@ -1,6 +1,6 @@
 # Recipe authoring guide
 
-For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). A general recipe API, complete descriptor schema and authoring CLI do not exist yet. The following requirements and layout recommendations are not an implemented execution protocol.
+For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). The [Python-session execution contract](recipe-execution.md) supports general Python recipes through run_recipe.py; inventory keeps its own contract. The broader layout/documentation recommendations below are separate from the validated execution fields. An authoring CLI and arbitrary backend loader are not implemented.
 
 ## Design for the shared vision
 
@@ -52,7 +52,7 @@ my-recipe/
   tests/
 ```
 
-Include `schemas/`, assets and supporting files when needed. The layout above is a Python example; other tools may use different entrypoints. Follow public SSHScript guidance when using Python with SSHScript or .spy. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract, including its SSHScript Session requirement; other recipe IDs do not have a runner interface. The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
+Include `schemas/`, assets and supporting files when needed. The layout above is a Python example; other tools may use different entrypoints. Follow public SSHScript guidance when using Python with SSHScript or .spy. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract, including its SSHScript Session requirement; other Python recipe IDs use [descriptor 0.3.0 and Python-session 0.1.0](recipe-execution.md). The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
 
 Document at least the following:
 
@@ -77,13 +77,13 @@ Static review is not execution evidence. New code and tests are executable conte
 
 ## Explain how it can be used today
 
-The current runner accepts inventory-system descriptor 0.2.0 implementations sharing its seven-field output contract and SSHScript Session interface. Other recipes may be delivered as standalone programs using SSHScript or other selected tools, but must supply and validate their own concrete CLI/input/result protocol. Execute them according to their reviewed README only within authorization; do not claim `tools/run_recipe.py` supports them or arbitrary backends. Without a working standalone entrypoint, report a draft.
+Use `tools/run_recipe.py` for inventory-system descriptor 0.2.0 or [Python-session descriptor 0.3.0](recipe-execution.md). For the latter, define execute(session, *, context, timeout), typed inputs.variables and the status/reason_code/message/data result. Use --var or --vars-file for invocation inputs; main.py need not define its own host/configuration CLI. Preserve runner-owned connection/cleanup. Other backends or incompatible standalone programs still need reviewed usage instructions and their own verifiable input/result protocol; do not claim automatic adaptation.
 
-Directory selection only establishes configuration selection, not executability. Migrate to a versioned general interface when one is implemented. Report files, public learning sources, environment, verification evidence, compatibility and pending actions. For distribution, follow the [sharing guide](recipe-sharing.md).
+Directory selection only establishes configuration selection, not executability. Adapt compatible Python operations to the implemented versioned execute interface; do not automatically rewrite incompatible standalone programs. Report files, public learning sources, environment, verification evidence, compatibility and pending actions. For distribution, follow the [sharing guide](recipe-sharing.md).
 
 
 ## Declared recipe inputs
 
-For inventory implementations, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Legacy implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
+For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

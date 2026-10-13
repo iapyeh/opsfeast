@@ -6,13 +6,14 @@ This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent 
 
 | Recipe | Purpose | Implemented platform | Execution tools and showcase | Verification evidence | Usage |
 | --- | --- | --- | --- | --- | --- |
-| [inventory-system](inventory/system/README.md) 0.2.2 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS, ESXi | SSHScript ==5.0.0 for local/SSH Session command collection; [implementation choice](inventory/system/README.md#implementation-choice) | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/ESXi/SSH collection unverified | Dedicated runner; see recipe README |
+| [inventory-system](inventory/system/README.md) 0.2.2 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS, ESXi | SSHScript ==5.0.0 for local/SSH Session command collection; [implementation choice](inventory/system/README.md#implementation-choice) | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/ESXi/SSH collection unverified | run_recipe.py; see recipe README |
+| [check-port](check/port/README.md) 0.1.0 | One TCP IP/port check from the selected host | Linux, FreeBSD, macOS with target python3 | SSHScript 5.0.0 borrowed Session/argv/command budget; Python socket probe | Synthetic tests only; real target/SSH unverified | run_recipe.py check/port --host HOST --var port=8888 |
 
-No other recipes are currently supplied, and there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, execution tools, actual showcased capabilities, evidence and usage. Author declarations are not substitutes for actual testing.
+The bundled port check is listed above; there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, execution tools, actual showcased capabilities, evidence and usage. Author declarations are not substitutes for actual testing.
 
 ## Custom and third-party content
 
-Users may create recipes in their own working directories or repositories without forking Ops. Custom recipes within a management directory can be selected through explicit `./recipes/...` paths. However, the current runner supports only the documented inventory-system descriptor/implementation contract; reviewed custom platform implementations can execute within it. A general execution interface and third-party installer are not implemented.
+Users may create recipes in their own working directories or repositories without forking Ops. Custom recipes within a management directory can be selected through explicit `./recipes/...` paths. run_recipe.py supports the inventory-system descriptor/implementation contract and [general Python-session execution](../docs/recipe-execution.md) (descriptor 0.3.0, contract 0.1.0). Reviewed compatible custom recipes use its connection/input/result lifecycle. A third-party installer and arbitrary backend loader are not implemented.
 
 - [Create a custom recipe](../docs/recipe-authoring.md)
 - [Share one or multiple recipes](../docs/recipe-sharing.md)
@@ -27,7 +28,7 @@ Each recipe should document its purpose, supported and tested platforms, selecte
 
 Collection recipes should retain observation sources and timestamps and distinguish success, permission denial, unsupported operations, timeouts and parsing failures.
 
-The first result contract and synthetic example live with inventory-system. The runner supports inventory-system implementations with a shared schema, not arbitrary recipe IDs.
+The first result contract and synthetic example live with inventory-system. Inventory-system retains its shared observation schema; other compatible Python recipes return the versioned general result envelope and recipe-owned data.
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 

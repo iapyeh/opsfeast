@@ -72,7 +72,7 @@ def inspect_bundle(content):
 
 
 def check(content, installed=None):
-    installed = installed or ROOT / '.agents/skills/sshscript'
+    installed = installed or ROOT / 'skills/sshscript'
     source = json.loads((installed / 'SOURCE.json').read_text(encoding='utf-8'))
     files, contract = inspect_bundle(content)
     digest = hashlib.sha256(content).hexdigest()
