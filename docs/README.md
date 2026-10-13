@@ -19,6 +19,7 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 - [Getting started with OpsFeast](getting-started.md): shared human/agent entry point, prerequisites, authorized setup and next steps.
 - [Skill sources and updates](skill-updates.md): public download source, comparison, candidate staging and authorized periodic checks.
 - [Management environments and profiles](profiles.md): named and external directories, registration, default selection and legacy locator compatibility.
+- [Connect your first host](first-host.md): minimal YAML, copyable checks and connection commands, then practical authentication, jump, sudo and su cases.
 - [Host configuration and hosts.yaml](hosts-yaml.md): proposed configuration rules for users and AI agents; includes initialization and configuration checks; a minimal inventory-system runner is documented in the [recipe guide](../recipes/inventory/system/README.md).
 
 ## Initial decisions
@@ -46,4 +47,4 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 Version the generic recipe contract and runner interface, then implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/FreeBSD/SSH and native su/sudo validation and the collect-record-repeat-compare workflow, including preservation of human notes.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

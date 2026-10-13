@@ -63,9 +63,13 @@ Start by cloning the repository:
 git clone https://github.com/iapyeh/opsfeast.git
 ```
 
+Open the cloned `opsfeast` directory as the project/workspace in your AI tool (including tools such as Antigravity). For first use, make the workspace root the clone root. A different workspace is supported only when the agent can access the clone and explicitly uses its path for commands and environment setup.
+
 Open a new conversation with an agent that can read your local files, such as Codex or Hermes, and send this prompt after replacing the path with your clone's absolute directory:
 
 > I am using OpsFeast for the first time. The repository is at `/absolute/path/to/opsfeast`. Read README.md, AGENTS.md and the getting-started guide, explain what the project can do and what environment it needs, and propose an initial setup. Do not install dependencies or initialize anything yet.
+
+For your first host, follow the [first-host guide](docs/first-host.md): minimal settings, validation, connection testing and practical SSH/su/sudo cases before the full reference.
 
 Review the proposal, then authorize setup. The agent should initialize your management directory and tell you where to configure host addresses, login accounts, authentication and recipes.
 
@@ -181,4 +185,4 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 
 [SSHScript](https://github.com/iapyeh/sshscript) remains a separate execution library. OpsFeast builds operational content and a management framework on that foundation. Recipes initially live in this repository so their contracts, documentation, and workflows can evolve together.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

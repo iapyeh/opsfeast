@@ -1,0 +1,31 @@
+# Source this helper in Bash or Zsh: source /path/to/opsfeast/tools/activate.sh
+# It activates the checkout's existing .venv without changing the working directory.
+if [ -n "${BASH_VERSION:-}" ]; then
+    if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+        printf '%s\n' 'Use source tools/activate.sh in Bash or Zsh.' >&2
+        exit 1
+    fi
+    _opsfeast_activate_file=${BASH_SOURCE[0]}
+elif [ -n "${ZSH_VERSION:-}" ]; then
+    case $ZSH_EVAL_CONTEXT in
+        *:file) eval '_opsfeast_activate_file=${(%):-%x}' ;;
+        *) printf '%s\n' 'Use source tools/activate.sh in Bash or Zsh.' >&2; exit 1 ;;
+    esac
+else
+    printf '%s\n' 'This helper supports Bash and Zsh; use the interpreter directly in other shells.' >&2
+    return 1 2>/dev/null || exit 1
+fi
+_opsfeast_activate_root=$(CDPATH= cd -- "$(dirname -- "$_opsfeast_activate_file")/.." && pwd -P)
+if [ -z "$_opsfeast_activate_root" ] || [ ! -f "$_opsfeast_activate_root/.venv/bin/activate" ]; then
+    printf '%s\n' 'No .venv/bin/activate found in this checkout. Reuse your selected interpreter or authorize environment setup first.' >&2
+    unset _opsfeast_activate_file _opsfeast_activate_root
+    return 1
+fi
+. "$_opsfeast_activate_root/.venv/bin/activate"
+_opsfeast_activate_status=$?
+if [ "$_opsfeast_activate_status" -ne 0 ]; then
+    unset _opsfeast_activate_file _opsfeast_activate_root _opsfeast_activate_status
+    return 1
+fi
+export PYTHONDONTWRITEBYTECODE=1
+unset _opsfeast_activate_file _opsfeast_activate_root _opsfeast_activate_status

@@ -13,6 +13,14 @@ Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 Py
 
 Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
 
+## Beginner setup and handoff
+
+Confirm the absolute clone root and agent workspace before setup; recommend opening the clone as the workspace for first use. A newly authorized environment defaults to `<clone>/.venv`, not an unrelated workspace; reuse user-selected environments. Follow [getting started](../../docs/getting-started.md) for setup and optional Bash/Zsh activation. Use the selected interpreter directly with -B for agent commands.
+
+For a first host, read [Connect your first host](../../docs/first-host.md) before the complete reference. Ask only for missing address, login account, authentication method and required jumps. Help prepare one host and tell the user where to fill secrets locally. Preserve unrelated hosts/includes/comments; identify host.example as synthetic. Run configuration check within scope. Start authorized connection testing with test-connection; introduce su/sudo, test-host and inventory only when needed and authorized.
+
+At setup/configuration completion, supply exact copyable terminal commands and agent prompts with the actual quoted checkout path, interpreter, profile and selected host ID. Provide a local check first, then applicable connection/inventory steps with purpose, side effects, success evidence and failure stopping points. If selection is missing, provide the check and ask for the host. Do not claim proposed commands were run or execute beyond existing authorization. The first-host guide contains canonical beginner examples; CLI remains the argument/result reference.
+
 ## Command reference
 
 The current host connection, platform and account diagnostics use SSHScript; they do not offer backend selection. For new recipes or operational workflows, follow the [tool selection workflow](../../docs/recipe-authoring.md#choose-execution-tools): prefer SSHScript when suitable, respecting user-selected tools and environment constraints. Configuration-only maintenance does not require an SSHScript Session or justify adding one for demonstration.
@@ -98,4 +106,4 @@ For su/sudo result interpretation, read [identity evidence](../../docs/host-diag
 
 若使用者也要求執行，先展開確定的 recipe 清單，檢查支援平台、變數、權限與副作用，並確認操作在該次授權範圍內。記錄實際 recipe ID 與版本；觀測與人工資料分開，保留人工筆記。查詢失敗不得寫成零值、空值或成功，也不得把舊觀測改成新時間。
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

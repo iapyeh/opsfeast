@@ -29,13 +29,15 @@ python3 -B tools/check_environment.py --scope init
 
 版本固定為本專案目前驗證的環境；這不是所有傳遞依賴的 lockfile。既有環境使用不同版本時先回報，不自行升級、降級或覆寫共用 venv。使用者只要求初始化時，可以只安裝精簡清單；要準備連線與 runner 時再選完整清單。
 
+Before proposing setup, confirm the absolute OpsFeast checkout path and the AI tool's workspace path. Recommend opening the clone itself as the workspace for first use. If they differ, use the confirmed checkout as the working directory for relative commands; do not create a venv in the workspace merely because it is the current directory. When a new environment is needed, default to `<checkout>/.venv`, unless the user chooses another location. Reuse an existing selected interpreter without recreating or upgrading it.
+
 Agent 應先提出具體方案：選用哪個 Python、是否建立 `.venv/`、安裝哪份依賴、是否需下載 skill、管理目錄位置，以及將執行的本機初始化命令。確認這些操作在使用者授權範圍內後執行；若使用者已明確授權整套初次設定，不重複詢問同一授權。安裝或下載遇到網路／權限問題時回報，不擅自改全域環境或安裝系統套件。
 
 新環境的典型方案（macOS／Linux shell；需要安裝與建立環境授權）：
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+python3 -B -m venv .venv
+.venv/bin/python -B -m pip install -r requirements.txt
 .venv/bin/python -B tools/check_environment.py
 ```
 
@@ -70,6 +72,14 @@ After the user identifies targets and authorizes the relevant diagnostics, use t
 
 For authorized inventory, select inventory/system once for mixed Linux/FreeBSD/macOS hosts. The runner obtains needed platform facts automatically and records which implementation/version was selected. Descriptor and result schema are 0.2.0; migrate old copied descriptors before execution. Custom implementation code requires review and appropriate execution scope. See the [inventory guide](../recipes/inventory/system/README.md).
 
+## First-host assistance and concrete handoff
+
+Route beginners to [Connect your first host](first-host.md) before the complete hosts.yaml reference. Help prepare one host: ask only for missing address, login account, authentication choice and required jumps. Have the user enter secrets locally. Preserve existing configuration and comments; replace/remove synthetic examples only within the authorized setup scope. Start with check, then a separately authorized test-connection; introduce privilege diagnostics and inventory as later choices.
+
+At setup and configuration completion, provide both copyable terminal commands and copyable agent prompts. Substitute the actual quoted checkout path, selected interpreter, profile and chosen host ID; do not leave generic python or HOST placeholders when values are known. If no host is selected, provide the local check and ask for that selection before preparing a connection command. Each step must state its purpose, effects, expected result and where to stop on failure. Distinguish ready commands from executed actions; providing commands does not authorize executing them. Link to the first-host guide and CLI for result details.
+
+For manual Bash/Zsh use with an existing checkout .venv, explain `source tools/activate.sh` from the checkout, or source its quoted absolute path. It sets PYTHONDONTWRITEBYTECODE=1 and activates the environment without changing directories, installing or initializing. Commands still need the correct working directory. Agents should call the selected interpreter directly with -B, rather than depend on shell activation persisting between calls. Other environments/shells can use their interpreter directly; the helper is optional.
+
 ## 告訴使用者下一步
 
 回報實際使用的 Python、環境檢查結果、依賴安裝結果、skill 來源／文件版本與是否只閱讀、管理目錄及 `hosts.yaml` 的實際位置、init/check 的退出結果。
@@ -87,4 +97,4 @@ For authorized inventory, select inventory/system once for mixed Linux/FreeBSD/m
 
 See [host diagnostics](host-diagnostics.md) for platform initialization/cache semantics and explicitly requested su/sudo diagnostics. Initialization/configuration checks alone never authorize connections or privilege tests.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

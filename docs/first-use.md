@@ -15,6 +15,8 @@ git clone https://github.com/iapyeh/opsfeast.git
 cd opsfeast
 ```
 
+Open this cloned directory as your AI tool's project/workspace, then start a fresh conversation. Using the clone as the workspace root is recommended for first use; if they differ, the agent must confirm both paths and run setup in the clone.
+
 Record the directory's absolute path. On macOS/Linux, use `pwd`; in PowerShell, use `Get-Location`. Replace `/absolute/path/to/opsfeast` in the prompts below with that path. On Windows, use the full Windows path.
 
 ## 2. Let your agent learn about the project
@@ -35,7 +37,7 @@ If the agent cannot find the files, confirm that it can access the directory you
 
 If you agree to a separate Python environment inside the project, paste:
 
-> Create an isolated `.venv` in this project, install the full dependencies, read the included skill, and run the default init and check commands. Do not connect to remote hosts or execute recipes. When finished, tell me what to configure next.
+> Create an isolated `.venv` at the confirmed OpsFeast repository root, install the full dependencies, read the included skill, and run the default init and check commands. Do not connect to remote hosts or execute recipes. When finished, tell me what to configure next.
 
 If you already have a Python environment, provide its interpreter path instead. Ask the agent to reuse it and report missing dependencies first. The [getting-started guide](getting-started.md) defines the installation procedure.
 
@@ -60,15 +62,29 @@ opsfeast/
 
 ## 4. Configure your hosts
 
-Open the reported `feasts/main/hosts.yaml`. The initial template includes localhost and a remote example with the synthetic address `host.example`. Replace the example host ID and address, set the login account and authentication method, and configure `via` if a jump host is needed. Recipe lists start empty; add selections as needed.
-
-Your agent can help organize settings, but do not paste passwords or private keys into chat. See the [host configuration guide](hosts-yaml.md) for fields and authentication rules. The default management directory is ignored by Git; keep real settings and observations in your management environment.
+Follow [Connect your first host](first-host.md). It starts with the smallest usable settings and provides exact validation/connection commands, expected results and common failure checks. Ask the agent to help prepare one host using your address, login account and chosen authentication method; enter secrets locally. Preserve existing data and comments. The initial host.example is synthetic, not ready to connect.
 
 After editing, paste:
 
-> Validate the current default management environment's configuration. Do not connect or execute recipes. If validation fails, identify the source file and what needs correction.
+> Validate profile main without connecting or executing recipes. Correct only the intended host settings within my configuration scope. Report the actual source file and result, then provide copyable commands and agent prompts using my checkout path, interpreter, profile and host ID. Explain which next steps connect, test privileges or collect inventory. Do not execute steps beyond my authorization.
 
-This also checks that the agent uses the same interpreter and can run `opsfeast.py check` without a directory argument. Successful configuration validation does not establish connectivity. When ready, specify a host ID for a connection test. For inventory collection, separately specify the recipe and execution scope.
+For a new main profile with a checkout .venv, the first local check is:
+
+```sh
+cd "/absolute/path/to/opsfeast"
+.venv/bin/python -B tools/opsfeast.py check --profile main
+```
+
+Replace the path with your clone. The agent must supply your actual values, rather than leave placeholders in its handoff. After this passes, the first-host guide provides a narrow hostname/date connection test and optional inventory. Its su/sudo cases are separate later choices; test-host may include configured privilege tests.
+
+For manual Bash/Zsh use, you may activate the existing environment:
+
+```sh
+source tools/activate.sh
+python -B tools/opsfeast.py check --profile main
+```
+
+The helper exports PYTHONDONTWRITEBYTECODE=1, locates this checkout's .venv even when sourced from another directory, and leaves your working directory unchanged. Source it rather than run it with bash; see [manual environment use](cli.md#manual-environment-use). Agents should use the selected interpreter directly.
 
 ## Optional: initialize and test a configured host
 
@@ -114,4 +130,4 @@ git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

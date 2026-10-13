@@ -759,7 +759,9 @@ class Validator:
         return self
 
 
-TEMPLATE = '''# Replace the example host ID and hostname before use.
+TEMPLATE = '''# First host: read docs/first-host.md for minimal examples and test commands.
+# host-01 / host.example below is synthetic and NOT ready to connect.
+# Replace the example host ID and hostname before use.
 # Bare recipe names select this checkout; :names select this profile's recipes/.
 # Optional recipe_sources at this entrypoint registers external local roots.
 # recipe_sources:

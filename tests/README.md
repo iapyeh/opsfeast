@@ -14,6 +14,10 @@ python -B -m unittest discover -s tests -p 'test_*.py'
 
 `test_opsfeast.py` checks connection-test credential/key/jump mapping, fixed commands, failure reporting and cleanup with mocked Sessions, per-hop diagnostics, credential omission and frames-only tracebacks, JSON dumps of merged and nested settings, dump error handling, initialization preservation, cross-file references, duplicate definitions, include and jump-host cycles, recipe selection, and path boundaries using temporary directories and synthetic values. The default tests do not contact hosts; real connection tests are invoked separately with `test-connection`.
 
+## First-use onboarding tests
+
+`test_onboarding.py` validates every complete YAML example in the first-host guide without connecting, checks that initialization labels synthetic hosts, and tests the optional activation helper in installed Bash/Zsh shells. Temporary paths include spaces; cases cover another working directory, missing environments, failed activation and rejected direct execution. The activation fixture is synthetic: no dependencies are installed and no existing environment is modified.
+
 ## Rename compatibility tests
 
 `test_rename.py` verifies the new CLI in an isolated checkout, old registry/definition preservation, schema-1 locator upgrades, reuse of registered roots, mixed-generation conflicts, invalid legacy definitions, dangling symlink rejection and explicit filename migration. Fixtures and subprocess checkouts are temporary and synthetic; no real user environment is changed.
@@ -50,4 +54,4 @@ Result summary tests cover detected kernels, reasons and messages for success, p
 
 Identity-output tests cover CLI success explanations without credential disclosure, expected/actual UID evidence on mismatch, incomplete target lookup, same-UID account aliases, separate prerequisite su/final sudo evidence, not-run entry/skipped checks, and failed parent restoration. These use synthetic consoles and do not establish native su/sudo behavior.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

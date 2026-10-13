@@ -30,6 +30,20 @@ Environment checks only report readiness. Tools do not automatically create Pyth
 
 The former tools/ops.py entrypoint is removed; use tools/opsfeast.py. New checkouts use .opsfeast.yaml and feasts/; an existing .my-ops.yaml remains active. Named init reuses registered roots. New feast.yaml definitions use kind: opsfeast; legacy my-ops.yaml definitions use kind: sshscript-ops. Both naming generations together are a conflict. See [rename compatibility and migration](migration.md).
 
+## Manual environment use
+
+From the confirmed OpsFeast clone, an existing checkout .venv can be activated in Bash or Zsh:
+
+```sh
+cd "/absolute/path/to/opsfeast"
+source tools/activate.sh
+python -B tools/opsfeast.py check --profile main
+```
+
+Replace the path/profile with yours. The helper exports PYTHONDONTWRITEBYTECODE=1 after activation, finds .venv relative to its own file and preserves the current directory. It requires the existing .venv/bin/activate; absence returns nonzero without installation or initialization. Direct execution is rejected; source is required to modify your current shell. The export lasts for that shell; standard deactivate restores the Python environment but does not unset this export. It prevents subsequent Python bytecode writes, not every kind of generated file or removal of existing caches.
+
+For other shells or user-selected environments, call the interpreter directly. Agents should use the selected interpreter with -B; activation is optional and need not persist between tool calls. See [getting started](getting-started.md) for authorized creation/reuse and [first-host examples](first-host.md) for next commands.
+
 ## Choose the management environment
 
 For most commands, omit the location to use the selected default profile in the checkout's `.opsfeast.yaml`, or pass `--profile NAME` for one invocation. This does not change the default. An explicit management root and `--profile` cannot be combined for execution/configuration commands. Missing or invalid profiles fail without searching other environments.
@@ -302,4 +316,4 @@ Agents should use --profile or an explicit root for unattended work, explicit pr
 
 Synthetic tests cover configuration, dispatch, cache, account transitions, batch continuation and failure/cleanup handling. macOS local read-only initialization/inventory has been verified. Real Linux/FreeBSD collection, SSH and native su/sudo remain unverified; compatible metadata and synthetic success do not establish those outcomes.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

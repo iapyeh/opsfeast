@@ -2,6 +2,8 @@
 
 這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
 
+New to this configuration? Start with [Connect your first host](first-host.md) for a minimal example and practical cases. This document remains the complete reference.
+
 ## 從管理目錄開始
 
 使用者提供自己的管理根目錄，例如 `/srv/feasts/`，以及要操作的主機 ID 與目標：
@@ -450,4 +452,4 @@ New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md)
 
 Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured password selected by the precedence rule, including account-password fallback. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_
