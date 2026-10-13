@@ -1,6 +1,6 @@
 # Execute and author Python-session recipes
 
-Use `tools/run_recipe.py` to execute one explicitly selected recipe on explicitly selected hosts. It supports the existing inventory-system descriptor/result 0.2.0 and the Python-session contract 0.1.0 described here. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
+Use `tools/run_recipe.py` to execute one explicitly selected recipe on explicitly selected hosts. It supports the existing inventory-system descriptor/result 0.2.0 and the Python-session contract 0.1.0 described here. The shared [recipes list/show/run surface](recipe-experience.md) adds discovery and delegates operation execution to this implementation; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
 
 Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
 
@@ -46,7 +46,7 @@ output:
 
 Optional platforms.planned/implemented/tested lists are declarations for inspection, not dispatch rules. This contract uses one entrypoint and rejects inventory-style implementations. It does not probe host facts or select platform code automatically. Recipe authors check needed platform/dependency capabilities through their reviewed code and return unsupported/failed when unavailable. Use the existing [inventory implementation contract](../recipes/inventory/system/README.md) for system inventory; do not convert its seven-field output to this contract.
 
-Declare dependencies, permissions, side effects, implementation choice, applicability and verification evidence as described in [authoring](recipe-authoring.md). Additional descriptive fields are documentation data, not automatically enforced permission or dependency-installation rules. There is no automatic installer, extension overlay or alternative backend loader.
+Declare dependencies, permissions, side effects, implementation choice, applicability and verification evidence as described in [authoring](recipe-authoring.md). Additional descriptive fields are documentation data, not automatically enforced permission or dependency-installation rules. [Explicit-file pack/unpack](recipe-experience.md#portable-recipe-bundles) prepares verified recipe candidates. There is no automatic installer, extension overlay or alternative operational backend loader.
 
 ## Entrypoint and available capabilities
 

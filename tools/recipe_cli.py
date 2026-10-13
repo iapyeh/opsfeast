@@ -1,0 +1,236 @@
+"""Shared recipe discovery, execution and reusable report/job command surfaces."""
+import argparse
+import json
+import math
+from pathlib import Path
+import sys
+
+from opsfeast import ConfigError, resolve_root, positive_timeout
+from recipe_catalog import catalog, choose, configuration
+from recipe_inputs import json_object, cli_variables, prepare_vars
+from recipe_reports import run_report, results, show_result, show_artifact, page, export_html
+from recipe_packages import pack, unpack
+import recipe_jobs
+
+
+def output(value):
+    print(json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False))
+
+
+def environment(parser, checkout=False):
+    choices = parser.add_mutually_exclusive_group()
+    choices.add_argument('--root', type=Path)
+    choices.add_argument('--profile')
+    if checkout:
+        choices.add_argument('--checkout-only', action='store_true', help='inspect bundled recipes without a Feast')
+
+
+def invocation(parser):
+    from run_recipe import TargetAction, positive_threads
+    parser.add_argument('recipe')
+    parser.add_argument('--host', nargs='+', dest='targets', action=TargetAction)
+    parser.add_argument('--group', nargs='+', dest='targets', action=TargetAction)
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('--exclude', nargs='+')
+    parser.add_argument('--threads', type=positive_threads)
+    parser.add_argument('--timeout', type=positive_timeout, default=30)
+    parser.add_argument('--var', action='append', default=[], dest='assignments')
+    parser.add_argument('--vars-file', type=Path)
+    parser.add_argument('--input', type=Path, action='append', default=[], help='explicit JSON report input; repeatable')
+    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--quiet', action='store_true')
+
+
+def validate_invocation(root, item, inv):
+    expected = {'targets', 'all', 'exclude', 'threads', 'timeout', 'assignments', 'vars_file', 'inputs', 'verbose', 'quiet'}
+    if not isinstance(inv, dict) or set(inv) != expected:
+        raise ConfigError('invocation fields do not match job contract')
+    if any(type(inv[key]) is not bool for key in ('all', 'verbose', 'quiet')):
+        raise ConfigError('invocation flags must be booleans')
+    if type(inv['timeout']) not in (int, float) or not math.isfinite(inv['timeout']) or inv['timeout'] <= 0:
+        raise ConfigError('invocation timeout must be positive and finite')
+    if inv['threads'] is not None and (type(inv['threads']) is not int or inv['threads'] <= 0):
+        raise ConfigError('invocation threads must be a positive integer')
+    if not isinstance(inv['targets'], list) or any(not isinstance(t, (list, tuple)) or len(t) != 2 or t[0] not in ('host', 'group') or not isinstance(t[1], str) or not t[1] for t in inv['targets']):
+        raise ConfigError('invocation targets must be host/group name pairs')
+    if any(not isinstance(inv[key], list) or any(not isinstance(value, str) for value in inv[key]) for key in ('exclude', 'assignments', 'inputs')):
+        raise ConfigError('invocation exclusion/input/assignment values must be string lists')
+    if inv['vars_file'] is not None and not isinstance(inv['vars_file'], str):
+        raise ConfigError('invocation vars_file must be a path string or null')
+    if inv['verbose'] and inv['quiet']:
+        raise ConfigError('--verbose and --quiet cannot be combined')
+    if item['kind'] == 'report':
+        if inv['targets'] or inv['all'] or inv['exclude'] or inv['threads']:
+            raise ConfigError('offline report recipes do not accept host/group/all/exclude/threads')
+        config = configuration(root)
+        info = config.recipe_location(item['reference'], config.root / 'hosts.yaml', cli=True)
+        values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
+        prepare_vars(item['descriptor'], info['vars'], {}, cli_variables(item['descriptor'], values, inv['assignments']))
+    else:
+        if inv['inputs']:
+            raise ConfigError('--input is for offline report recipes only')
+        if not inv['targets'] and not inv['all']:
+            raise ConfigError('operational recipes require --host, --group or --all')
+        if inv['all'] and inv['targets'] or inv['exclude'] and not inv['all']:
+            raise ConfigError('invalid all/target/exclusion combination')
+
+
+def execute(root, spec):
+    item = choose(root, spec['recipe'])
+    if not item['runnable']:
+        raise ConfigError('selected recipe has invalid or unsupported execution contract')
+    inv = spec['invocation']
+    validate_invocation(root, item, inv)
+    if item['kind'] == 'report':
+        values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
+        report, path = run_report(root, item, [Path(p) for p in inv['inputs']], values,
+                                  inv['assignments'], inv['timeout'])
+        output({'status': report['status'], 'reason_code': report['reason_code'], 'message': report['message'],
+                'result_id': path.relative_to(root).as_posix(), 'result_path': str(path),
+                'data': report['data'], 'artifacts': report['artifacts']})
+        return 0 if report['status'] == 'success' else 1
+    if inv['inputs']:
+        raise ConfigError('--input is for offline report recipes only')
+    from run_recipe import main as run
+    argv = [item['reference'], '--root', str(root), '--timeout', str(inv['timeout'])]
+    for kind, name in inv['targets']:
+        argv.extend(['--' + kind, name])
+    if inv['all']: argv.append('--all')
+    if inv['exclude']: argv.extend(['--exclude', *inv['exclude']])
+    if inv['threads']: argv.extend(['--threads', str(inv['threads'])])
+    for assignment in inv['assignments']: argv.extend(['--var', assignment])
+    if inv['vars_file']: argv.extend(['--vars-file', inv['vars_file']])
+    if inv['verbose']: argv.append('--verbose')
+    if inv['quiet']: argv.append('--quiet')
+    return run(argv)
+
+
+def specification(args):
+    return {'recipe': args.recipe, 'invocation': {
+        'targets': args.targets or [], 'all': args.all, 'exclude': args.exclude or [], 'threads': args.threads,
+        'timeout': args.timeout, 'assignments': args.assignments,
+        'vars_file': str(args.vars_file.expanduser().resolve()) if args.vars_file else None,
+        'inputs': [str(path.expanduser().resolve()) for path in args.input],
+        'verbose': args.verbose, 'quiet': args.quiet}}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    commands = parser.add_subparsers(dest='command', required=True)
+    listing = commands.add_parser('list')
+    environment(listing, checkout=True)
+    listing.add_argument('--query')
+    listing.add_argument('--kind', choices=('operation', 'report'))
+    listing.add_argument('--json', action='store_true')
+    listing.add_argument('--html', type=Path, help='save a basic escaped catalog page to a new file')
+    show = commands.add_parser('show')
+    environment(show, checkout=True)
+    show.add_argument('recipe')
+    show.add_argument('--json', action='store_true')
+    run = commands.add_parser('run')
+    environment(run)
+    invocation(run)
+    result = commands.add_parser('results')
+    environment(result)
+    result.add_argument('action', choices=('list', 'show'))
+    result.add_argument('result_id', nargs='?')
+    result.add_argument('--recipe-id')
+    result.add_argument('--host')
+    result.add_argument('--status', choices=('success', 'partial', 'failed', 'skipped', 'unsupported'))
+    result.add_argument('--json', action='store_true')
+    result.add_argument('--html', type=Path)
+    artifact = commands.add_parser('artifact')
+    environment(artifact)
+    artifact.add_argument('result_id')
+    artifact.add_argument('name')
+    packaging = commands.add_parser('pack')
+    environment(packaging, checkout=True)
+    packaging.add_argument('recipe')
+    packaging.add_argument('--file', action='append', required=True)
+    packaging.add_argument('--output', type=Path, required=True)
+    candidate = commands.add_parser('unpack')
+    candidate.add_argument('archive', type=Path)
+    candidate.add_argument('--destination', type=Path, required=True)
+    jobs = commands.add_parser('jobs')
+    jobs_commands = jobs.add_subparsers(dest='action', required=True)
+    saved = jobs_commands.add_parser('save')
+    environment(saved)
+    saved.add_argument('name')
+    invocation(saved)
+    for action in ('list', 'show', 'run'):
+        job = jobs_commands.add_parser(action)
+        environment(job)
+        if action != 'list': job.add_argument('name')
+    args = parser.parse_args(argv)
+    try:
+        if args.command == 'unpack':
+            output(unpack(args.archive, args.destination))
+            return 0
+        root = None if getattr(args, 'checkout_only', False) else resolve_root(args.root, args.profile).resolve(strict=True)
+        if args.command == 'list':
+            data = catalog(root, args.query, args.kind)
+            rows = [[item['reference'], item['version'], item['kind'], item['title'], 'compatible' if item['runnable'] else 'unavailable', '; '.join(item['errors'])] for item in data['recipes']]
+            if args.html:
+                output({'html_path': export_html(args.html, page('OpsFeast recipes', ['Recipe', 'Version', 'Kind', 'Purpose', 'Static status', 'Errors'], rows,
+                                                               'Static inspection only; dependencies and target/data applicability require review.')),
+                        'status': data['status']})
+            elif args.json: output(data)
+            else:
+                for source in data['sources']:
+                    print(f"Source {source['name']}: {source['status']}")
+                for row in rows: print(' | '.join(str(value) for value in row))
+                print('Static compatibility only; inspect inputs/dependencies with recipes show before execution.')
+            return 1 if data['status'] == 'failed' else 0
+        if args.command == 'show':
+            item = choose(root, args.recipe)
+            if args.json: output(item)
+            else:
+                print(f"{item['reference']} — {item['title']} ({item['version']})")
+                print(item['description'])
+                print(f"Kind: {item['kind']}; contract: {item['contract']}; runnable compatibility: {item['runnable']}")
+                print('Inputs: ' + json.dumps(item['inputs'], ensure_ascii=False, indent=2))
+                print('Dependencies: ' + json.dumps(item['dependencies'], ensure_ascii=False, indent=2))
+                print('Verification: ' + json.dumps(item['verification'], ensure_ascii=False, indent=2))
+                if item['errors']: print('Errors: ' + '; '.join(item['errors']))
+                print(item['availability_evidence'])
+            return 0 if item['runnable'] else 1
+        if args.command == 'run':
+            return execute(root, specification(args))
+        if args.command == 'pack':
+            item = choose(root, args.recipe)
+            if not item['runnable']: raise ConfigError('only compatible reviewed recipes can be packed')
+            output(pack(item, args.file, args.output))
+            return 0
+        if args.command == 'results':
+            if args.action == 'show':
+                if not args.result_id: raise ConfigError('results show requires RESULT_ID')
+                data = show_result(root, args.result_id)
+                if args.html:
+                    output({'html_path': export_html(args.html, page('OpsFeast result', ['Field', 'Value'], [[key, json.dumps(value, ensure_ascii=False)] for key,value in data.items()], 'Raw evidence; check status, data, timestamps and quality warnings.'))})
+                else: output(data)
+                return 0
+            if args.result_id: raise ConfigError('results list does not accept RESULT_ID')
+            data = results(root, args.recipe_id, args.host, args.status)
+            rows = [[r['result_id'], r['recipe_id'], r['host_id'], r['status'], r['completed_at'], r['identity_quality'], json.dumps(r['identity_warnings'], ensure_ascii=False)] for r in data['results']]
+            if args.html:
+                output({'html_path': export_html(args.html, page('OpsFeast results', ['Result ID', 'Recipe', 'Host', 'Status', 'Completed', 'Identity quality', 'Identity warnings'], rows,
+                                                               json.dumps(data['errors'], ensure_ascii=False))), 'status': data['status']})
+            elif args.json: output(data)
+            else:
+                for row in rows: print(' | '.join(str(value) for value in row))
+                for error in data['errors']: print('ERROR: ' + error['result_id'] + ' invalid result')
+            return 0 if data['status'] == 'success' else 1
+        if args.command == 'artifact':
+            output(show_artifact(root, args.result_id, args.name))
+            return 0
+        if args.command == 'jobs':
+            if args.action == 'list': output({'jobs': recipe_jobs.listing(root)})
+            elif args.action == 'save': output(recipe_jobs.save(root, args.name, specification(args)))
+            elif args.action == 'show': output(recipe_jobs.load(root, args.name, verify=False))
+            else:
+                document = recipe_jobs.load(root, args.name)
+                return execute(root, {'recipe': document['recipe'], 'invocation': document['invocation']})
+            return 0
+    except (ConfigError, OSError, ValueError, TypeError, KeyError, RuntimeError, ImportError) as exc:
+        print('ERROR: ' + (str(exc) if isinstance(exc, ConfigError) else type(exc).__name__), file=sys.stderr)
+        return 1

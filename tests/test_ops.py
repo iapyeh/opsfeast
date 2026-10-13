@@ -135,7 +135,7 @@ class OpsTests(unittest.TestCase):
                          '{glob: "recipes/**/system"}'):
             with self.subTest(selector=selector):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/inventory/system}}]}}}}')
-                expected = ([ops.REPOSITORY_RECIPES / 'check/port', ops.REPOSITORY_RECIPES / 'inventory/system']
+                expected = ([ops.REPOSITORY_RECIPES / 'check/port', ops.REPOSITORY_RECIPES / 'inventory/system', ops.REPOSITORY_RECIPES / 'report/summary']
                             if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'inventory/system'])
                 self.assertEqual(self.check().selected['web'], expected)
 

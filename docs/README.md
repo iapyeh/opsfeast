@@ -38,6 +38,7 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 ## Recipe ecosystem guides
 
 - [Use, create and share recipes](recipes.md): available content and copyable human prompts.
+- [Recipe catalog, reports and reuse](recipe-experience.md): list/show/run, raw-result queries, offline reports/artifacts, basic HTML, explicit-file bundles and saved jobs.
 - [Parameterized recipe execution](recipe-execution.md): Python-session 0.1.0, descriptor 0.3.0, --var/JSON input files, entrypoints, results and limits.
 - [Recipe authoring](recipe-authoring.md): knowledge sources, deliverable requirements, evidence and current runner limits.
 - [Share and package recipes](recipe-sharing.md): one or many recipes, GitHub and ZIP/tar.gz, allowlists, provenance and signature preparation.

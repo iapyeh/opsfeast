@@ -1061,8 +1061,13 @@ def positive_timeout(value):
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ['recipes']:
+        from recipe_cli import main as recipe_main
+        return recipe_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
+    commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('profiles', help='list all registered profiles')
     inspection = commands.add_parser('inspect-recipe', help='inspect recipe metadata, platform coverage and entrypoints without executing code')
     inspection.add_argument('recipe', nargs='?', help='checkout short path or explicit directory; omitted: discover checkout recipes')

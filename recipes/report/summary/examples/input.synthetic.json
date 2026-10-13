@@ -1,0 +1,18 @@
+{
+  "schema_version": "0.1.0",
+  "recipe": {
+    "id": "check-port",
+    "version": "0.1.0"
+  },
+  "host_id": "synthetic-host",
+  "status": "success",
+  "reason_code": "port_refused",
+  "started_at": "2026-10-13T00:00:00+00:00",
+  "completed_at": "2026-10-13T00:00:01+00:00",
+  "data": {
+    "reachable": false,
+    "state": "refused",
+    "port": 8888
+  },
+  "evidence_kind": "mock"
+}

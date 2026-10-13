@@ -1,6 +1,6 @@
 # Share and package recipes
 
-Share one recipe or several from a repository or archive. Complete the [authoring deliverables](recipe-authoring.md) first. This is a human/agent workflow; Ops does not yet provide pack, publish or signing tools.
+Share one recipe or several from a repository or archive. Complete the [authoring deliverables](recipe-authoring.md) first. This guide includes human/agent review procedures. The [recipes pack/unpack commands](recipe-experience.md#portable-recipe-bundles) implement explicit-file single-recipe bundles and verified candidates; publication, signing, dependency review and installation remain separate workflows.
 
 ## Select content and publication scope
 
@@ -24,6 +24,16 @@ my-recipes/
 A single recipe can use one recipe subdirectory. The root README lists each recipe's purpose, version, entrypoint, compatibility and individual usage. Declare shared files as dependencies so selecting one recipe does not leave required content missing.
 
 A suggested `MANIFEST.json` records bundle version, author, source URL/commit, recipe ids/versions/relative paths, dependencies and SHA-256 for every payload file. Describe the custom format and hash coverage in README. Exclude the manifest from its own digest list; an external archive signature covers the complete package. This is currently for review and manual comparison, not a format automatically understood by Ops. Parse it as data; never execute it.
+
+## Share report recipes across Feasts
+
+OpsFeast's community sharing direction includes report and visualization recipes; see [the shared principles](vision.md#accumulate-reusable-reports-and-keep-visualization-flexible) and [report authoring](recipe-authoring.md#report-recipes-and-reusable-visualization). Apply the same version, provenance, license, dependency and explicit-file selection workflow as for operational recipes.
+
+Include reusable queries, transformations, interpretation rules, templates/assets, renderer requirements, input/output descriptions, documented invocation and synthetic test data. Parameterize source selection and output destinations so another Feast can bind its own compatible data without depending on the author's paths, hosts or agent platform. Explain actual input schema/version support, freshness/identity/partial-result handling and any external-service or model dependency. Preserve attribution for community contributions.
+
+Exclude private source bindings, real operational datasets, credentials and generated reports by default. Sharing a report recipe does not authorize sharing the data it processes, publishing a dashboard or transmitting reports; those are separate explicit selections and scopes. Recipients review the complete candidate, choose local configuration and verify it using synthetic data before authorized operational use. Read [acquisition](recipe-acquisition.md) for the full process.
+
+Git repositories or clean archives can carry these reviewed files today through the manual sharing workflow. Catalog discovery, offline python-report 0.1.0 execution/artifacts, pack/unpack bundles and saved reruns are implemented through [recipes commands](recipe-experience.md). Automatic installation/publication and a live OpsBuffet exchange remain unimplemented. Incompatible standalone scripts keep their reviewed invocation; registration does not adapt them to an implemented contract.
 
 ## ZIP or tar.gz
 
@@ -49,4 +59,4 @@ Recipe READMEs link to the [recipes skill](../skills/opsfeast-recipes/SKILL.md),
 
 Report the actual package inventory, versions, digests, signature status, verification limits and delivery path. Report URLs/commits only after publication has actually occurred. Updates use new versions and describe changes; checking for updates and applying them are separate authorization scopes.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

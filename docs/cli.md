@@ -2,7 +2,7 @@
 
 OpsFeast provides two command-line entrypoints:
 
-- **`tools/opsfeast.py` prepares and diagnoses the host environment.** It inspects recipe metadata and platform coverage, manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
+- **`tools/opsfeast.py` prepares and diagnoses the host environment.** It provides recipes list/show/run, raw results/artifacts, offline reports, bundle candidates and saved jobs; inspects recipe metadata and platform coverage; manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
 - **`tools/run_recipe.py` executes inventory and compatible Python-session recipes.** Inventory automatically selects each host's platform implementation. General recipes use one execute entrypoint. Both accept typed invocation inputs and save versioned raw results; only inventory has structured retention. See [the general contract](recipe-execution.md).
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
@@ -13,7 +13,7 @@ Run examples from the repository checkout. `python` means the interpreter select
 
 | Operation | Controller requirements |
 | --- | --- |
-| Profiles, init, attach, detach, use, check, dump, inspect-recipe | Python 3.11+ and PyYAML; no SSHScript Session |
+| Profiles, init, attach, detach, use, check, dump, inspect-recipe, recipes metadata/results/packages/jobs and offline reports | Python 3.11+ and PyYAML; no SSHScript Session |
 | Standalone test-connection | Python 3.11+, PyYAML and the supported SSHScript command contract (documented minimum 4.0.1) |
 | Host-init, test-host, test-su, test-sudo, test-connection --host-init, run_recipe.py | Python 3.11+, PyYAML and matching SSHScript import/distribution **5.0.0** |
 
@@ -197,6 +197,26 @@ Test-host always tests login/hostname/date. It then reuses or initializes facts,
 If connection establishment fails, remaining tests are skipped. Host-init failure does not prevent account diagnostics. One account-test failure does not stop other independent groups. Test-host uses separate connections for the diagnostic phases/groups; it is not one atomic remote transaction.
 
 Its JSON contains host, overall status, and tests keyed by test-connection, host-init, test-sudo and test-su. Inspect their individual status, skipped reason, initialization cache/probe source and original observation time. Overall partial means some tests were skipped, rather than all capabilities having been verified.
+
+## tools/opsfeast.py recipes: shared recipe interfaces
+
+The [canonical recipe experience reference](recipe-experience.md) defines catalog/report/artifact/bundle/job versions, JSON fields, source/ID selection, validation, storage, dependencies, outputs, errors and verification. All these commands use the selected interpreter and read/write only within the requested scope; static discovery never executes candidates. --root/--profile select a Feast, mutually exclusively. List/show/pack also accept --checkout-only instead. Metadata and offline report use require Python 3.11+ and PyYAML; operation execution retains matching SSHScript 5.0.0.
+
+| Command | Interface and effects |
+| --- | --- |
+| recipes list [--query TEXT] [--kind operation/report] [--json] [--html NEW_FILE] | Combine active bundle/profile/external sources. Show disabled/unavailable sources and static compatibility; HTML writes a new escaped table. |
+| recipes show RECIPE [--json] | Show identity, purpose, typed inputs, dependencies and verification. Exact references take precedence; ambiguous IDs fail. |
+| recipes run RECIPE [operation options] | Operations share run_recipe.py host/group/all/exclude/threads/timeout/--var/--vars-file/progress semantics. |
+| recipes run RECIPE [--input JSON_FILE ...] [--var NAME=VALUE ...] [--vars-file JSON_FILE] [--timeout SECONDS] | Offline python-report recipes receive selected JSON data and isolated parameters, no hosts/Sessions. Save new result/artifact files. |
+| recipes results list [--recipe-id ID] [--host HOST] [--status STATUS] [--json] [--html NEW_FILE] | Read ordered raw-run/report index; retain invalid-file errors and inventory quality/retention metadata. |
+| recipes results show RESULT_ID [--html NEW_FILE] | Return raw JSON or export an escaped field table. RESULT_ID is storage-relative, never an arbitrary path. |
+| recipes artifact RESULT_ID NAME | Verify a declared report artifact's path/size/digest and print its local path; do not launch/publish. |
+| recipes pack RECIPE --file RELATIVE_FILE ... --output NEW_ZIP | Package one recipe from an explicit file allowlist with manifest/digests; exclude private/storage/hidden/link entries. |
+| recipes unpack ZIP --destination NEW_DIRECTORY | Verify exact bundle inventory/digests/bounds and extract a review candidate; no installation, registration or execution. |
+| recipes jobs save NAME RECIPE [run options] | Save private invocation/source bindings and reviewed recipe fingerprint; preserve existing definitions. No execution or schedule creation. |
+| recipes jobs list / show NAME / run NAME | Inspect saved jobs or rerun their existing recipe, rejecting recipe-content drift. |
+
+Successful metadata/package/save operations return 0. Catalog errors, partial raw indexes, invalid inputs/artifacts/jobs/storage and unsuccessful recipe statuses return 1; argparse usage errors return 2. Report generation success does not mean source operations are successful. stdout is text for concise catalog/show/index or JSON for machine output/execution/packages/jobs/artifacts; diagnostics go to stderr. HTML export paths must not exist. Pack/unpack destinations must be new. No scheduler, remote Exchange, automatic installer, notification provider or graphical/MCP application is created by these commands.
 
 ## tools/run_recipe.py: inventory execution
 

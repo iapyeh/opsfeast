@@ -34,7 +34,7 @@ def validate_value(name, spec, value):
         raise ConfigError(f'recipe variable {name}: above maximum')
 
 
-def json_object(path):
+def parse_json_object(content):
     """Read explicit input data without YAML coercions or duplicate-key guessing."""
     def pairs(items):
         result = {}
@@ -44,13 +44,22 @@ def json_object(path):
             result[key] = value
         return result
     try:
-        values = json.loads(path.expanduser().read_text(encoding='utf-8'), object_pairs_hook=pairs)
+        if isinstance(content, bytes):
+            content = content.decode('utf-8')
+        values = json.loads(content, object_pairs_hook=pairs)
         if not isinstance(values, dict):
             raise ValueError('input file must be an object')
         plain_values(values, 'CLI recipe variables')
         return values
     except (OSError, ValueError, UnicodeError, RecursionError, ConfigError):
         raise ConfigError('--vars-file must be a readable JSON object with unique keys and finite plain values') from None
+
+
+def json_object(path):
+    try:
+        return parse_json_object(path.expanduser().read_text(encoding='utf-8'))
+    except (OSError, UnicodeError):
+        raise ConfigError('JSON input file must be readable UTF-8') from None
 
 
 def cli_variables(metadata, values=None, assignments=()):

@@ -10,6 +10,7 @@ from recipe_dispatch import declared_version
 from recipe_inputs import prepare_vars
 
 CONTRACT = 'python-session'
+REPORT_CONTRACT = 'python-report'
 VERSION = '0.1.0'
 STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 
@@ -28,7 +29,7 @@ def validate(directory, metadata):
         if not isinstance(values, list) or any(not isinstance(item, str) or not item for item in values):
             raise ConfigError('recipe platforms must contain lists of nonempty strings')
     runner = mapping(metadata.get('runner'), 'recipe runner', ('contract', 'version', 'entrypoint'))
-    if runner.get('contract') != CONTRACT or runner.get('version') != VERSION:
+    if runner.get('contract') not in (CONTRACT, REPORT_CONTRACT) or runner.get('version') != VERSION:
         raise ConfigError('unsupported recipe runner contract/version')
     output = mapping(metadata.get('output'), 'recipe output', ('schema_version',))
     if not isinstance(output.get('schema_version'), str) or not output['schema_version']:
@@ -46,7 +47,7 @@ def validate(directory, metadata):
     tree = ast.parse(entry.read_text(encoding='utf-8'))
     functions = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == 'execute']
     if len(functions) != 1 or isinstance(functions[0], ast.AsyncFunctionDef):
-        raise ConfigError('recipe must define one synchronous execute(session, *, context, timeout)')
+        raise ConfigError('recipe must define one synchronous execute matching its runner contract')
     args = functions[0].args
     parameters = []
     positional = [*args.posonlyargs, *args.args]
@@ -63,9 +64,13 @@ def validate(directory, metadata):
     if args.kwarg:
         parameters.append(inspect.Parameter(args.kwarg.arg, inspect.Parameter.VAR_KEYWORD))
     try:
-        inspect.Signature(parameters).bind(object(), context=object(), timeout=30)
+        signature = inspect.Signature(parameters)
+        if runner['contract'] == REPORT_CONTRACT:
+            signature.bind(context=object(), timeout=30)
+        else:
+            signature.bind(object(), context=object(), timeout=30)
     except (TypeError, ValueError):
-        raise ConfigError('recipe execute must accept session, context and timeout with no additional required arguments') from None
+        raise ConfigError('recipe execute must accept the runner arguments with no additional required arguments') from None
     for helper in directory.rglob('*.py'):
         if not helper.resolve().is_relative_to(directory.resolve()):
             raise ConfigError('recipe Python helper escapes recipe directory')

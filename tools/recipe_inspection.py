@@ -86,9 +86,9 @@ def inspect_one(directory, requested):
         elif 'runner' in metadata:
             try:
                 recipe_contract.validate(directory, metadata)
-                report['runner_contract'] = 'valid-python-session'
+                report['runner_contract'] = 'valid-' + metadata['runner']['contract']
             except (ConfigError, OSError, UnicodeError) as exc:
-                report['runner_contract'] = 'invalid-python-session'
+                report['runner_contract'] = 'invalid-' + str((metadata.get('runner') or {}).get('contract', 'python-session')) if isinstance(metadata.get('runner'), dict) else 'invalid-python-session'
                 report['errors'].append(str(exc))
         else:
             report['runner_contract'] = 'unsupported-recipe-id'

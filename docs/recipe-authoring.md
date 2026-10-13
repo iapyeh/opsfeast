@@ -69,6 +69,20 @@ Document at least the following:
 
 Currently, `opsfeast.py check` validates configuration, paths and limited descriptor properties, not all these requirements. Identify additional fields as custom documentation data; do not claim a general schema exists.
 
+## Report recipes and reusable visualization
+
+For requests to produce a recurring report or visualization, follow [the accumulation and presentation principles](vision.md#accumulate-reusable-reports-and-keep-visualization-flexible). Let the user's agent select the view that fits the question and available tools. Prefer useful tables or simple charts for default views, with room for user-selected renderers and richer presentations. Preserve repeatable executable work instead of delivering only an image or asking a model to recreate the analysis on every refresh.
+
+Within the user's authoring scope:
+
+1. Inspect the actual [result-data contracts](result-data.md), schema versions and available sources. Establish the question, selected hosts/observations/time range, output format/location and permitted local processing. Use retained/exchange contracts for inventory; [general recipe raw data](recipe-execution.md#results-failure-states-and-storage) has its own recipe-owned schema and no inventory retention adapter. Do not guess a parser for undocumented data.
+2. Save the data-selection query, transformations, interpretation rules, input parameters, templates/assets and required renderer versions with the report recipe. Keep private dataset locations and source bindings in user-selected configuration. Document units, source observation times/freshness, generation time, identity quality, exclusions and partial/unknown states. A generated dashboard should not replace observation evidence.
+3. Provide a concrete reviewed invocation for rerunning the same report from existing data, with synthetic input/output examples and tests for normal, empty, stale, partial and invalid data. Use suitable ordinary tools for repeatable work. Keep outputs separate from source observations and preserve human notes. State when a renderer, model or external service is required and whether generation/sharing sends data elsewhere.
+4. Match the actual execution interface. Offline reports use descriptor 0.3.0, runner python-report 0.1.0 and execute(*, context, timeout), with selected JSON inputs and declared artifacts. Read [the report contract](recipe-experience.md#offline-report-contract). Python-session operations retain explicit hosts and a borrowed Session. Use recipes run for either kind; do not create dummy host connections for reports. Incompatible platform-native dashboards still need reviewed standalone integration instructions.
+5. Package portable code/templates/dependencies and synthetic tests through [report sharing](recipe-sharing.md#share-report-recipes-across-feasts). Recipients supply their own data bindings. Saving a report recipe does not establish a schedule, publish a report or authorize new collection; agreed recurring operation should rerun the reviewed program, with agents used for changes or unhandled exceptions.
+
+The [implemented recipe experience](recipe-experience.md) delivers versioned catalog/report/artifact/bundle/job contracts and linked operational guidance. Future extensions must update those contracts, discovery/execution/storage behavior, skills and reproducible tests together. No arbitrary renderer sandbox, platform-native dashboard integration or measured token savings is claimed.
+
 ## Deliver a reviewable draft first
 
 Use synthetic data for normal, permission-denied, unsupported, timeout, command-failure and parsing-failure cases. Preserve unknown values and actual sources; failure must not become zero or success, and old observations must not appear current. Follow public guidance for finite command budgets and cleanup. Report command completion, remote termination and outcome verification separately.

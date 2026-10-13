@@ -26,6 +26,20 @@ Prefer concise discovery metadata, explicit inputs, stable result contracts and 
 
 For routine recipes, avoid requiring an LLM inside the execution path. If a task actually needs model inference, document that dependency, what data leaves the environment, its cost implications and how its output is verified.
 
+## Accumulate reusable reports and keep visualization flexible
+
+OpsFeast should accumulate the useful work performed by agents and administrators. The first request may require an agent to choose an operation, define a query or transformation, establish interpretation rules and create an appropriate view. Preserve the reviewed solution as executable recipes, explicit configuration, templates and supporting skills. Repeated collection, analysis and report refresh should run those artifacts as ordinary code where feasible, without rebuilding them through model inference. Bring an agent back for new requirements, meaningful changes or exceptions beyond existing rules; known failure handling and routine notifications can also be executable. Scheduling remains a separately authorized mechanism, not a consequence of saving a recipe.
+
+Extend this principle beyond command execution to reports and visualization. OpsFeast's responsibility is to supply documented data with field meanings, units, identities, observation times, provenance, versions and explicit partial/failed/unknown states. The user's agent can choose an appropriate table, chart, dashboard or external presentation tool. Basic bundled visualization should be practical, plain and sufficient to inspect results. Keep extension points open so users and their agents can create richer views without replacing the data or execution contracts, depending on one agent product or requiring a particular dashboard platform.
+
+A **report recipe** is reusable code and definitions that select data, query/transform it, apply documented interpretation and produce a report or visualization. It is a recipe role and a design requirement, not a new implemented descriptor field or command. Preserve the query, parameters, transformations, templates/assets, renderer dependencies, output definitions and verification evidence so later runs can refresh the same report without asking an agent to redesign it. If a platform-created view cannot be rerun without a model or proprietary service, document that dependency and cost instead of claiming model-free reuse. A one-off chart or screenshot alone is not a reusable report recipe.
+
+Provide architecture that can receive user-authored report recipes as first-class contributions: versioned input/data and output/artifact contracts, discoverable metadata, reviewed execution entrypoints, parameterized local source selection, output storage and retrieval, dependency/compatibility declarations and complete packaging. Reports based on retained/local data need a connection-free execution path; refreshing collection is a separate operation and scope. Report results should retain the source observation times and freshness, generation time, query/recipe version and coverage/quality warnings so refresh does not make old or incomplete evidence look current. Link authoring and operational skills to the actual implemented contracts as those capabilities are delivered.
+
+OpsFeast is also a community for exchanging accumulated operational knowledge. Users should be able to share report recipes between Feast instances, alongside operational recipes, with attribution, versions, licenses and verification. Share portable report code, templates and synthetic examples; keep private source bindings, credentials and generated operational reports separate. Recipients bind their own data and output locations, review dependencies and compatibility, and authorize installation/use through the existing sharing workflow. The planned OpsBuffet exchange serves this ecosystem; a live exchange or automated installer is not currently available.
+
+Current support includes inventory retained/exchange data, Python-session operations and [catalog, offline Python-report execution, artifact storage/verification, basic HTML views, explicit-file bundles and saved invocation contracts 0.1.0](recipe-experience.md). The bundled report/summary can be rerun as ordinary code. Advanced dashboards/UI integrations, automatic installation/publication, a live exchange and scheduling remain unimplemented. User-authored reports must implement an actual compatible contract or retain reviewed standalone instructions. These principles guide further development and do not claim arbitrary platform-native dashboard support or measured token savings. See [report authoring](recipe-authoring.md#report-recipes-and-reusable-visualization), [report sharing](recipe-sharing.md#share-report-recipes-across-feasts) and [result-data contracts](result-data.md).
+
 ## Enable agent operations through open data contracts and skills
 
 Design data structures and storage so a user's own AI agent can perform useful operations without waiting for every operation to have a bundled OpsFeast tool. This is a required development principle: supported data must have documented, versioned contracts and discoverable skills that explain how to inspect, process and maintain it with suitable tools in the user's environment.
@@ -83,7 +97,9 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 - Can the administrator request and assess the outcome without learning internal APIs?
 - Can a human or fresh AI agent find the learning path, relevant interfaces and complete skills without prior conversation context?
 - Can the user's agent perform relevant data operations through documented contracts and actionable skills when no bundled tool exists, and are any remaining limitations explicit?
-- Can repeated work reuse a recipe and relevant context without unnecessary model calls?
+- Can repeated operations, analysis and visualization rerun saved recipes, queries, rules and templates without unnecessary model calls? Which reusable artifacts remain after the agent completes the task?
+- Does the data explain its meanings, times, sources and uncertainty so a user's agent can choose its own presentation? Are basic views practical and extension points independent of a particular agent/dashboard product?
+- Can a user-authored report recipe be discovered, parameterized, verified and shared across Feast instances without carrying private data or source bindings? Which required report contracts are implemented and which remain gaps?
 - Can another administrator review, adapt and share it using explicit contracts and dependencies?
 - Does the implementation choice follow the tool selection workflow, and does any SSHScript showcase explain actual capabilities with code and verification evidence?
 - Are targets, privileges, side effects and authorization boundaries clear?
@@ -92,4 +108,4 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-13_

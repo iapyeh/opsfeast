@@ -60,4 +60,8 @@ test_result_data.py verifies non-root probes, explicit sudo capability/override 
 
 HostMetadataTests additionally covers exact user-assigned keys across independent sources, native-identity precedence, duplicate/configuration rejection, Unicode/multiline display metadata, source label preservation, key/identity validation and version-1 database upgrades without changing historical records or source identity.
 
-_Last modified: 2026-10-13_
+## Recipe discovery, reports, artifacts, bundles and jobs
+
+`test_recipe_experience.py` uses synthetic JSON, temporary independent Feasts and mocked host execution. It covers multi-source discovery, static signatures/IDs/conflicts, disabled/missing/escaping sources, filters and plain HTML; offline report execution without SSH, parameter/input/result/artifact validation, unknown/failed data and source times/quality, escaping and output integrity; raw result paths/index errors; explicit-file bundle allowlists/digests/unsafe entries/limits/candidate boundaries and cross-Feast reuse; saved invocation reruns, drift and private binding preservation. No real dataset, host, model, scheduler or Exchange is used. Existing operation suites verify compatibility through the delegated runner.
+
+_Last modified:_Last modified: 2026-10-13_

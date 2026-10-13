@@ -66,6 +66,8 @@ For complete tool syntax, defaults, behavior, output and exit codes, see the [CL
 
 ## Recipe next steps
 
+Use [recipes list/show/run](recipe-experience.md) to explore bundled/Feast/external recipes, run reviewed operations, generate offline reports and reuse saved jobs. Fresh clones can inspect with recipes list --checkout-only. The same catalog JSON supports agent-selected presentation; basic HTML exports and report/summary provide plain default views.
+
 When creating or adapting a recipe, follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools). OpsFeast keeps tool choice open and prefers SSHScript for suitable command execution and session orchestration, while respecting user-selected tools and operational constraints. Read the selected tools' relevant documentation; recipes using other tools need their own prerequisite checks and reviewed standalone execution instructions. The current host diagnostics and inventory runner continue to require SSHScript.
 
 To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. run_recipe.py supports inventory-system descriptor 0.2.0 and [general Python-session recipes](recipe-execution.md) using descriptor 0.3.0/contract 0.1.0. Invocation inputs use --var or a JSON --vars-file. Arbitrary standalone programs and other backend contracts are not automatically supported.

@@ -1,0 +1,15 @@
+descriptor_version: 0.3.0
+id: report-summary
+version: 0.1.0
+title: Plain execution-result report
+description: Render selected raw inventory or general recipe results as an escaped offline HTML table.
+runner: {contract: python-report, version: 0.1.0, entrypoint: main.py}
+inputs:
+  variables:
+    title: {type: string, default: OpsFeast execution results}
+output: {schema_version: 0.1.0}
+dependencies: {controller: [Python 3.11+, PyYAML 6.0.3]}
+permissions: {connections: false, sudo: false}
+side_effects: [Writes declared report artifacts in the new run directory]
+verification: {synthetic: tested, ssh: not-applicable}
+# Last modified: 2026-10-13

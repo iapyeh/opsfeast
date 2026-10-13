@@ -12,7 +12,11 @@ For initialization and account checks, use the [host diagnostic guide](host-diag
 
 Start with the [recipe catalog](../recipes/README.md), then read the selected recipe's README. The catalog distinguishes availability, supported platforms and actual verification evidence.
 
-Bundled recipes include inventory-system and check/port. run_recipe.py also executes reviewed general Python recipes implementing [Python-session 0.1.0](recipe-execution.md), with typed --var/--vars-file inputs. A third-party installer, discovery service, lockfile and automatic signature verification are not implemented. Selecting a directory does not establish contract compatibility, dependencies or execution authorization.
+Bundled recipes include inventory-system and check/port. run_recipe.py also executes reviewed general Python recipes implementing [Python-session 0.1.0](recipe-execution.md), with typed --var/--vars-file inputs. [Unified catalog, offline reports, result views, bundle candidates and saved jobs](recipe-experience.md) are implemented through opsfeast.py recipes. An automatic third-party installer, remote discovery service, lockfile, scheduler and automatic signature verification are not implemented. Selecting a directory does not establish contract compatibility, dependencies or execution authorization.
+
+## Find recipes and saved results
+
+Use `python -B tools/opsfeast.py recipes list --checkout-only` for bundled content or `recipes list --profile main` for all active registered sources. `recipes show RECIPE --profile main` explains inputs, dependencies and verification. Add --json for agents or export a simple static catalog with --html NEW_FILE. Run an operation with recipes run using the same host/input options; run an offline report with --input DATA.json and no hosts. See [the complete experience](recipe-experience.md) for results list/show, artifacts, pack/unpack and reusable jobs.
 
 ## Run a parameterized recipe
 

@@ -164,6 +164,8 @@ def preflight(root, host, recipe=None, cli_vars=None, assignments=()):
         validate(directory, metadata)
     else:
         recipe_contract.validate(directory, metadata)
+        if metadata['runner']['contract'] == recipe_contract.REPORT_CONTRACT:
+            raise ConfigError('offline report recipes use opsfeast.py recipes run without host selectors')
     variables = prepare_vars(metadata, info['vars'], host_vars, cli_variables(metadata, cli_vars, assignments))
     if inventory and variables and any(not supports_context(directory / entry['entrypoint']) for entry in metadata['implementations']):
         raise ConfigError('implementations receiving vars must accept collect(..., context=...)')
