@@ -67,6 +67,10 @@ def validate(directory, metadata):
         raise ConfigError('runner requires inventory-system descriptor 0.2.0 and output schema 0.2.0')
     if not isinstance(metadata.get('version'), str) or not metadata['version']:
         raise ConfigError('recipe version must be a nonempty string')
+    for key, expected in (('retained_contract_version', '0.1.0'), ('exchange_version', '0.1.0'),
+                          ('retention_adapter', 'inventory-system-v1')):
+        if key in metadata['output'] and metadata['output'][key] != expected:
+            raise ConfigError('unsupported inventory retained/exchange contract')
     entries = metadata.get('implementations')
     if not isinstance(entries, list) or not entries:
         raise ConfigError('recipe must declare implementations')

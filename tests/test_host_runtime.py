@@ -523,7 +523,7 @@ class InventoryDispatchTests(unittest.TestCase):
                 self.assertEqual(report['status'],'success')
                 self.assertEqual(report['recipe']['implementation_id'],platform)
                 self.assertEqual(report['recipe']['implementation_version'],'0.1.1')
-                self.assertEqual(report['recipe']['recipe_version'],'0.2.1')
+                self.assertEqual(report['recipe']['recipe_version'],'0.2.2')
                 self.assertEqual(report['schema_version'],'0.2.0')
                 self.assertEqual(json.loads(path.read_text()),report)
 

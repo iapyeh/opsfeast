@@ -452,4 +452,23 @@ New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md)
 
 Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured password selected by the precedence rule, including account-password fallback. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
 
+## Explicit host identity and human-readable metadata
+
+Hosts accept optional identity_key, label and description beside connection. label is a display label, not a unique ID; description is free-form explanatory text. Both accept strings, including empty strings, Unicode and multiline text; null/numeric/container values and NUL are rejected. Their original content is preserved. No caption alias is implemented. Command selectors continue to use the local host ID.
+
+```yaml
+hosts:
+  mail-01:
+    identity_key: example.org:mail:os-install-2026-10
+    label: Corporate mail service
+    description: |
+      Production mail service.
+      Maintained by the operations team.
+    connection:
+      hostname: mail.example.org
+      user: operator
+```
+
+identity_key is an exact, case-sensitive nonempty string without leading/trailing whitespace or control characters. Use a shared organization namespace and OS-installation-specific suffix. Duplicate keys anywhere in the resolved include tree fail before connecting. A and B may use the same key in independent Feasts to assert the same installation. This explicit assignment takes priority over native candidates; it does not verify machine identity. Change it after OS reinstall or target replacement. Labels/descriptions are copied into each raw/retained observation and JSON exchange; differing source labels are preserved rather than overwritten. See [identity precedence and sharing](result-data.md#explicit-identity-and-display-metadata).
+
 _Last modified: 2026-10-13_

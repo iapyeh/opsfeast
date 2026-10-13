@@ -518,7 +518,7 @@ class Validator:
                 raise ConfigError(f'duplicate host {host}: {self.sources[host]} and {path}')
             if isinstance(config, dict) and 'groups' in config:
                 raise ConfigError(f'{path}: {host}: groups has been renamed to group; use group: NAME or group: [NAME, ...]')
-            self.hosts[host] = mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes'))
+            self.hosts[host] = mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes', 'identity_key', 'label', 'description'))
             self.sources[host] = path
         self.active.pop()
         self.loaded.add(path)
@@ -728,7 +728,18 @@ class Validator:
         return {}
 
     def check_connections(self):
+        identity_keys = set()
         for host, config in self.hosts.items():
+            for name in ('label', 'description'):
+                if name in config and (not isinstance(config[name], str) or '\x00' in config[name]):
+                    raise ConfigError(f'host {host}: {name} must be a string')
+            if 'identity_key' in config:
+                key = string(config['identity_key'], f'host {host}: identity_key')
+                if key != key.strip() or any(ord(char) < 32 for char in key):
+                    raise ConfigError(f'host {host}: identity_key must not contain edge whitespace or control characters')
+                if key in identity_keys:
+                    raise ConfigError('duplicate identity_key within the resolved host configuration')
+                identity_keys.add(key)
             where = f'{self.sources[host]}: {host}'
             if type(config.get('enabled', True)) is not bool:
                 raise ConfigError(f'{where}.enabled: expected a boolean')

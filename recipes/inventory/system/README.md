@@ -1,6 +1,6 @@
 # inventory-system
 
-Recipe version 0.2.1 provides Linux, FreeBSD and macOS implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
+Recipe version 0.2.2 provides Linux, FreeBSD, macOS and ESXi implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD/ESXi have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
@@ -26,7 +26,7 @@ The [verification section](#results-and-verification) distinguishes synthetic te
 
 Linux reads `/etc/os-release`, falling back to `/usr/lib/os-release` only when the first file is absent. It never executes file contents, merges files or substitutes kernel version for missing distribution version. Missing, denied, failed, truncated and unparseable values retain their own states. Observations describe the environment visible to the login account, including a container/jail, not necessarily physical hardware.
 
-No su/sudo, installation or target configuration changes are performed. Read access and the listed target commands are required. Controller requirements are Python 3.11+, PyYAML and matching SSHScript import/distribution 5.0.0. The runner preserves configured connections, jump hosts and SSHScript's default host-key trust; it never upgrades packages.
+No su, installation or target configuration changes are performed. Missing identity probes can use the connection account's supplied explicit sudo capability; recipe input identity_sudo false disables it and true enables authorized passwordless sudo. See the [identity workflow](../../../docs/result-data.md#sudo-selection-and-authorization). Read access and the listed target commands are required. Controller requirements are Python 3.11+, PyYAML and matching SSHScript import/distribution 5.0.0. The runner preserves configured connections, jump hosts and SSHScript's default host-key trust; it never upgrades packages.
 
 ## Execute
 
@@ -50,7 +50,7 @@ The CLI uses matching host recipe vars and bypasses unrelated selectors while va
 
 ## Recipe variables
 
-Bundled recipe 0.2.1 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
+Bundled recipe 0.2.2 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
 
 Source/host-disabled skips happen before runtime/connection and have result_path null. They are not fabricated inventory files and return nonzero. Completed results record source provenance and variable names without values. Prior macOS local evidence belongs to recipe 0.2.0; the current input/context changes have synthetic coverage, without new native SSH evidence.
 
@@ -107,4 +107,14 @@ Synthetic tests cover parsers, three platform collectors, specialization/ambigui
 
 SSHScript source: bundled public documentation contract 5.0.0 and SOURCE.json bundle SHA-256 `e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b`; public [API guide](https://iapyeh.github.io/sshscript/v3a/recommended-api/). FreeBSD userland semantics follow the [FreeBSD manual](https://man.freebsd.org/cgi/man.cgi?query=freebsd-version&sektion=1), consulted 2026-10-11. No private SSHScript source was used.
 
-_Last modified: 2026-10-12_
+## Retained data and identity
+
+After raw result saving, the runner automatically extracts operational success/partial observations into the local stage-2 store. It shares only allowlisted data through an explicit stage-3 export. Identity evidence is separate from the seven common observation fields. Hardware serial/UUID does not identify an OS installation; fallback and Linux machine-id limitations remain explicit. See [contracts, identity/sudo rules, recovery and sharing](../../../docs/result-data.md), [CLI interfaces](../../../docs/cli.md#retained-observations-and-exchange), [retained schema](../../../schemas/retained-observation.schema.json), [exchange schema](../../../schemas/observation-exchange.schema.json) and [synthetic exchange](examples/exchange.synthetic.json).
+
+ESXi implementation 0.1.0 uses uname for hostname/kernel/architecture, a constant VMware ESXi system name, and the full vmware -v line for system version. Optional hardware identity comes from esxcli hardware platform get. Standard id support is necessary if root sudo is used. Supported interfaces are documented ESXi shell/ESXCLI interfaces, but no actual ESXi version has been tested. vCenter/vSphere API collection and guest-to-hypervisor topology are not implemented. VMware guests use their OS collector; virtual hardware identifiers must not be equated with the physical host.
+
+Result schema remains 0.2.0 with additive identity evidence 0.1.0 and retention receipt. Recipe/implementation version changes are independent. Existing raw reports may be explicitly backfilled within their originating Feast; no background migration occurs. A stage-2 failure makes runner exit nonzero while preserving collection evidence for replay. Current tests are synthetic; historical macOS collection verification does not verify the new identity/sudo/retention path.
+
+Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
+
+_Last modified: 2026-10-13_

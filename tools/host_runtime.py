@@ -220,7 +220,7 @@ def discover(session, host, timeout):
     if kernel is None:
         report['reason_code'] = 'platform_detection_failed'
         return report
-    report['facts']['os_name'] = {'Linux': 'linux', 'FreeBSD': 'freebsd', 'Darwin': 'macos'}.get(kernel, kernel.lower())
+    report['facts']['os_name'] = {'Linux': 'linux', 'FreeBSD': 'freebsd', 'Darwin': 'macos', 'VMkernel': 'esxi'}.get(kernel, kernel.lower())
     report['fields']['os_name'] = 'success'
     probe('kernel_release', ['uname', '-r'])
     probe('architecture', ['uname', '-m'])
@@ -251,6 +251,8 @@ def discover(session, host, timeout):
         probe('os_version', ['freebsd-version', '-u'])
     elif kernel == 'Darwin':
         probe('os_version', ['sw_vers', '-productVersion'])
+    elif kernel == 'VMkernel':
+        probe('os_version', ['vmware', '-v'])
     report.update(status='success', reason_code='platform_detected')
     return report
 

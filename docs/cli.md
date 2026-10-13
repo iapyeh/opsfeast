@@ -3,7 +3,7 @@
 OpsFeast provides two command-line entrypoints:
 
 - **`tools/opsfeast.py` prepares and diagnoses the host environment.** It inspects recipe metadata and platform coverage, manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
-- **`tools/run_recipe.py` collects system inventory.** Select one recipe for a mixed Linux, FreeBSD and macOS fleet; the runner selects each host's implementation automatically and saves results with version and source evidence.
+- **`tools/run_recipe.py` collects system inventory.** Select one recipe for a mixed Linux, FreeBSD, macOS and ESXi fleet; the runner selects each host's implementation automatically and saves results with version and source evidence.
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
@@ -136,7 +136,7 @@ Dump emits selected values unchanged, including passwords if the selected mappin
 
 ### Host-init: fresh observations and reusable facts
 
-Host-init queries uname for OS/kernel/architecture. Linux distribution information comes from os-release; FreeBSD userland version and macOS product version are separate from kernel release. Missing fields retain their state; sufficient OS evidence can still permit a generic implementation.
+Host-init queries uname for OS/kernel/architecture, maps VMkernel to esxi and records the full vmware -v line for ESXi. Linux distribution information comes from os-release; FreeBSD userland version and macOS product version are separate from kernel release. Missing fields retain their state; sufficient OS evidence can still permit a generic implementation.
 
 ```sh
 python -B tools/opsfeast.py host-init host-01 --profile inventory
@@ -258,7 +258,7 @@ For each host, execution follows:
 2. Connect to the target and required hops; reuse or discover platform facts.
 3. Match declared implementations against available facts. Failed initialization skips collection; no match is unsupported; equally ranked top matches fail as ambiguous.
 4. Load only the selected entrypoint, check its runtime VERSION, collect inventory and validate the seven observation fields/states.
-5. Close the owning Session strictly, preserve errors/partial observations and save a new result.
+5. Close the owning Session strictly, preserve errors/partial observations, atomically save raw JSON and attempt structured retention.
 
 Allowed match fields are os_name, distribution_id, os_version, distribution_version, kernel_release and architecture. All conditions must match. Explicit priority ranks first, then number of conditions. Missing facts do not satisfy conditions. Version bounds compare dotted numeric components; vendor suffixes use exact conditions such as `=14.2-RELEASE`. File/list order does not break ties, and failed selected code does not trigger another implementation.
 
@@ -281,7 +281,7 @@ Each run writes a new file without overwriting previous inventories or updating 
 <management-root>/observations/inventory-system-<uuid>.json
 ```
 
-The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor remains 0.2.0; bundled recipe version is 0.2.1; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, descriptor SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version. Source/host-disabled skips do not load a runtime or write an inventory file; they return result_path: null. Completed reports include source_name/source_root/reference and variable_names, without input values.
+The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor remains 0.2.0; bundled recipe version is 0.2.2; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, descriptor SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version. Source/host-disabled skips do not load a runtime or write an inventory file; they return result_path: null. Completed reports include source_name/source_root/reference and variable_names, without input values.
 
 Seven common observations cover hostname, platform, system name/version, kernel name/release and architecture. Each retains value, state, observed_at, source_ids and error. Missing/failed values remain null with explicit states. A command returning zero does not establish successful parsing or cleanup. Raw inventory command output may appear in private source records.
 
@@ -304,9 +304,9 @@ Su/sudo JSON includes per-step `identity_verification` (expected/actual username
 | Actual diagnostic failure; inventory partial/unsupported/skipped/failed; configuration/save error | 1 |
 | Invalid CLI syntax/options rejected by argparse | 2 |
 
-Profiles/init/attach/detach/use/check print human-readable text. Dump and host diagnostics print JSON. Inventory prints summary JSON and saves full reports. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
+Profiles/init/attach/detach/use/check print human-readable text. Dump and host diagnostics print JSON. Inventory prints summary JSON and saves full reports plus eligible retained observations. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results and retained data. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
 
-Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries without su/sudo. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
+Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries; missing identity probes may use supplied explicit sudo capability or identity_sudo true. It does not su to alternate actors. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
 
 ## Human and agent workflow
 
@@ -315,5 +315,25 @@ Prepare/register an environment, edit hosts.yaml, and run check. For an authoriz
 Agents should use --profile or an explicit root for unattended work, explicit profile names instead of interactive use, and the user's chosen interpreter. Read the [hosts skill](../skills/opsfeast-hosts/SKILL.md) for diagnostics and the [recipes skill](../skills/opsfeast-recipes/SKILL.md) for inventory. Reuse existing authorization and context; ask only for missing information that affects correctness or scope.
 
 Synthetic tests cover configuration, dispatch, cache, account transitions, batch continuation and failure/cleanup handling. macOS local read-only initialization/inventory has been verified. Real Linux/FreeBSD collection, SSH and native su/sudo remain unverified; compatible metadata and synthetic success do not establish those outcomes.
+
+## Retained observations and exchange
+
+All commands require Python 3.11+ and PyYAML; only runner execution additionally requires matching SSHScript 5.0.0. SQLite is included with Python; JSON SQL functions must be available. See the [canonical contract and identity workflow](result-data.md) and [agent skill](../skills/opsfeast-result-data/SKILL.md).
+
+```sh
+python -B tools/observation_store.py ingest FILE [FILE ...] [--root ROOT | --profile NAME]
+python -B tools/observation_store.py export [--root ROOT | --profile NAME] \
+  [--recipe RECIPE_ID] [--host HOST_ID ...] [--since ISO_TIME] [--until ISO_TIME]
+python -B tools/observation_store.py validate EXCHANGE_FILE
+python -B tools/observation_store.py combine EXCHANGE_FILE [EXCHANGE_FILE ...]
+```
+
+Root/profile resolution follows the existing tools. File arguments use shell working-directory paths. Ingest validates selected local raw files before a transactional batch, reports stored/already_stored/skipped, and does not connect. Foreign raw receipts are rejected: exchange retained records instead. Export reads records/observations.sqlite3 and prints JSON exchange 0.1.0; it writes no profile/configuration and sends nothing. Missing databases fail, empty selections succeed. Filters are exact local host IDs, recipe ID inventory-system, and inclusive completion times with explicit timezone. No filters selects all retained records. Output orders by completion time then observation ID. Validate needs no profile and prints valid plus record count. Combine needs no profile, prints a validated union, deduplicates identical observation IDs, and rejects ID/content conflicts. Different observations for one host remain distinct. All four commands return 0 on successful processing, including excluded raw reports and empty exchanges, and 1 for configuration/input/storage errors. Unrecognized arguments return argparse exit 2. Errors go to stderr, without third-party exception text.
+
+The runner automatically performs raw → retained after cleanup, then adds retention and identity_quality to single/batch stdout summaries. Raw schema 0.2.0 receives additive identity 0.1.0 and retention receipt fields. Success/partial operational local/SSH observations are retained; failed/skipped/unsupported/mock results are excluded. Retention failure preserves raw, warns, and makes runner exit 1 even for successful collection; use ingest to retry without remote execution. Retention receipts are persisted in raw but excluded from observation ID hashing. The raw collection status and retention status are separate evidence. Disabled/preflight paths may still have no raw file or retention receipt.
+
+Host identity refers to an OS installation. Linux uses a hashed machine-id candidate with clone/reinstall caveats. FreeBSD/macOS/ESXi lack a verified installation identifier in this implementation and use source UUID plus local host_id fallback, even with valid hardware serials. Fallback emits a warning with remediation and does not establish replacement detection or cross-source equality. Sudo credential selection and identity_sudo controls are documented in the canonical workflow. Unknown cleanup fails collection; no historical keys are automatically reassigned. No receiver database importer, automatic latest-state/conflict resolver, transmission or cleanup tool is implemented.
+
+Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
 _Last modified: 2026-10-13_

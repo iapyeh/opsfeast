@@ -6,7 +6,7 @@ This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent 
 
 | Recipe | Purpose | Implemented platform | Execution tools and showcase | Verification evidence | Usage |
 | --- | --- | --- | --- | --- | --- |
-| [inventory-system](inventory/system/README.md) 0.2.0 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS | SSHScript ==5.0.0 for local/SSH Session command collection; [implementation choice](inventory/system/README.md#implementation-choice) | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/SSH collection unverified | Dedicated runner; see recipe README |
+| [inventory-system](inventory/system/README.md) 0.2.2 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS, ESXi | SSHScript ==5.0.0 for local/SSH Session command collection; [implementation choice](inventory/system/README.md#implementation-choice) | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/ESXi/SSH collection unverified | Dedicated runner; see recipe README |
 
 No other recipes are currently supplied, and there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, execution tools, actual showcased capabilities, evidence and usage. Author declarations are not substitutes for actual testing.
 
@@ -29,4 +29,6 @@ Collection recipes should retain observation sources and timestamps and distingu
 
 The first result contract and synthetic example live with inventory-system. The runner supports inventory-system implementations with a shared schema, not arbitrary recipe IDs.
 
-_Last modified: 2026-10-12_
+Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
+
+_Last modified: 2026-10-13_

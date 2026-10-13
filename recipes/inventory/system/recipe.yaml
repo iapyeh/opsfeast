@@ -1,7 +1,7 @@
 # Inventory descriptor 0.2.0; shared output contract 0.2.0.
 descriptor_version: 0.2.0
 id: inventory-system
-version: 0.2.1
+version: 0.2.2
 status: implemented
 title: System inventory
 description: Collect system identity, operating system version, kernel, and architecture.
@@ -11,10 +11,12 @@ platforms:
   - linux
   - freebsd
   - macos
+  - esxi
   implemented:
   - linux
   - freebsd
   - macos
+  - esxi
   tested:
   - macos
 compatibility:
@@ -27,6 +29,10 @@ dependencies:
   - SSHScript ==5.0.0
   target:
   - uname
+  - id (when identity sudo is used)
+  - ioreg (macOS identity)
+  - kenv (FreeBSD identity)
+  - esxcli and vmware (ESXi)
   - /bin/sh
   - cat (Linux)
   - freebsd-version (FreeBSD)
@@ -34,10 +40,10 @@ dependencies:
   status: defined
 permissions:
   account: login-user
-  elevation: false
+  elevation: optional-root-for-authorized-identity-probes
 side_effects:
   target: read-only-queries
-  controller: Save a new JSON result under the user management directory observations/.
+  controller: Save raw JSON under observations/ and retain operational observations in records/observations.sqlite3.
 inputs:
   required:
   - management-root
@@ -46,6 +52,8 @@ inputs:
   - command-timeout-seconds
   note: 'CLI: RECIPE --host HOST --timeout SECONDS; default 30 seconds per connection stage/command, not whole run.'
   variables:
+    identity_sudo:
+      type: boolean
     command_timeout_seconds:
       type: number
       minimum: 0
@@ -53,6 +61,9 @@ inputs:
 output:
   format: json
   schema_version: 0.2.0
+  retained_contract_version: 0.1.0
+  exchange_version: 0.1.0
+  retention_adapter: inventory-system-v1
   example: examples/result.synthetic.json
   fields:
   - hostname
@@ -116,3 +127,13 @@ implementations:
     synthetic: tested
     ssh: not-tested
     local: 2026-10-11 read-only success
+- id: esxi
+  version: 0.1.0
+  entrypoint: implementations/esxi.py
+  match:
+    os_name: esxi
+  verification:
+    synthetic: tested
+    ssh: not-tested
+    local: not-tested
+# Last modified: 2026-10-13

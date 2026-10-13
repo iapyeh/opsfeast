@@ -97,4 +97,8 @@ For manual Bash/Zsh use with an existing checkout .venv, explain `source tools/a
 
 See [host diagnostics](host-diagnostics.md) for platform initialization/cache semantics and explicitly requested su/sudo diagnostics. Initialization/configuration checks alone never authorize connections or privilege tests.
 
+## Results after execution
+
+Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, retention receipt and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
+
 _Last modified: 2026-10-13_

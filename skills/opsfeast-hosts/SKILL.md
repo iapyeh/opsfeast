@@ -106,4 +106,6 @@ For su/sudo result interpretation, read [identity evidence](../../docs/host-diag
 
 若使用者也要求執行，先展開確定的 recipe 清單，檢查支援平台、變數、權限與副作用，並確認操作在該次授權範圍內。記錄實際 recipe ID 與版本；觀測與人工資料分開，保留人工筆記。查詢失敗不得寫成零值、空值或成功，也不得把舊觀測改成新時間。
 
+Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
+
 _Last modified: 2026-10-13_

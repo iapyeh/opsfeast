@@ -11,12 +11,15 @@ from pathlib import Path
 import runpy
 import sys
 import threading
+import tempfile
 import time
 from uuid import uuid4
 
 from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint
 from recipe_dispatch import validate, select, bundle_digest, validate_observations
 from recipe_inputs import RecipeContext, prepare_vars, supports_context
+from host_identity import probe_identity, WARNING as IDENTITY_WARNING
+from observation_store import retain
 
 from opsfeast import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root, group_names
 
@@ -100,6 +103,21 @@ def load_runtime():
         raise ConfigError('runner requires matching SSHScript import/distribution 5.0.0; no automatic upgrade')
     return sshscript.Session, {'python': sys.version.split()[0], 'interpreter': sys.executable,
                                'sshscript_import': sshscript.__version__, 'sshscript_distribution': installed}
+
+
+def save_report(path, report):
+    """Readers see complete JSON; a failed replacement preserves the old report."""
+    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix='.inventory-')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            json.dump(report, stream, ensure_ascii=False, indent=2, allow_nan=False)
+            stream.write('\n')
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def preflight(root, host, recipe=None):
@@ -195,6 +213,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
     report['recipe']['resolved_path'] = str(directory)
     report['recipe']['selection_source'] = 'cli' if recipe is not None else 'hosts'
     report['hops'] = []
+    report['host_metadata'] = {name: config.hosts[host][name] for name in ('label', 'description') if name in config.hosts[host]}
     local = None
     stage = 'connection_settings'
     dispatch_status = None
@@ -264,6 +283,17 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
                 options = {'context': context} if supports_context(entry) else {}
                 selected['collect'](session, report, timeout, facts['facts'], **options)
                 stage = 'result_validation'
+                validate_observations(report)
+                stage = 'host_identity'
+                progress('collecting host identity evidence')
+                report['identity'] = probe_identity(session, config, host, facts['facts'],
+                    context.vars.get('command_timeout_seconds', timeout),
+                    allow_sudo=context.vars.get('identity_sudo'))
+                if report['identity']['sudo'].get('cleanup_verified') is False:
+                    report['execution_errors'].append({'stage': 'identity_cleanup', 'type': 'IdentityRestorationError'})
+                if report['identity']['quality'] == 'fallback':
+                    progress_line(f'WARNING: {json.dumps(host)}: {IDENTITY_WARNING}')
+                stage = 'result_validation'
                 progress('validating inventory result')
                 validate_observations(report)
         if dispatch_status:
@@ -299,9 +329,22 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None):
     progress('saving result')
     output_dir.mkdir(exist_ok=True)
     path = output_dir / f'inventory-system-{uuid4()}.json'
-    with path.open('x', encoding='utf-8') as stream:
-        json.dump(report, stream, ensure_ascii=False, indent=2, allow_nan=False)
-        stream.write('\n')
+    save_report(path, report)
+    progress('retaining structured observations')
+    try:
+        report['retention'] = retain(config.root, report)
+    except Exception as exc:
+        # Raw evidence is already durable; reprocess it with observation_store ingest.
+        report['retention'] = {'status': 'failed', 'error_type': type(exc).__name__,
+                               'reason_code': 'retention_failed'}
+        progress_line(f'WARNING: {json.dumps(host)}: structured retention failed ({type(exc).__name__}); retry observation_store.py ingest using result_path.')
+    # Save the receipt too; extraction excludes it from observation identity.
+    try:
+        save_report(path, report)
+    except OSError as exc:
+        report['retention'] = {'status': 'failed', 'reason_code': 'receipt_save_failed',
+                               'error_type': type(exc).__name__}
+        progress_line(f'WARNING: {json.dumps(host)}: receipt saving failed; raw result remains at result_path. Retry local ingest; duplicate observations will not be added.')
     return report, path
 
 
@@ -427,7 +470,8 @@ def main(argv=None):
                 index, host = target
                 try:
                     item, path = execute(host, index)
-                    return dict(host=host, status=item['status'], reason_code=item['reason_code'], result_path=str(path) if path is not None else None)
+                    return dict(host=host, status=item['status'], reason_code=item['reason_code'], result_path=str(path) if path is not None else None,
+                                retention=item.get('retention'), identity_quality=item.get('identity', {}).get('quality'))
                 except Exception as exc:
                     return dict(host=host, status='failed', error=type(exc).__name__)
             targets = enumerate(hosts, 1)
@@ -442,15 +486,16 @@ def main(argv=None):
             if excluded:
                 summary['excluded_hosts'] = excluded
             print(json.dumps(summary, indent=2))
-            return 0 if all(r['status'] == 'success' for r in reports) else 1
+            return 0 if all(r['status'] == 'success' and (r.get('retention') or {}).get('status') != 'failed' for r in reports) else 1
         report, path = execute(hosts[0], 1)
         summary = {key: report[key] for key in (
             'status', 'reason_code', 'message', 'detected_kernel', 'supported_platforms')}
         summary.update(recipe_id=report['recipe']['id'], result_path=str(path) if path is not None else None)
+        summary.update(retention=report.get('retention'), identity_quality=report.get('identity', {}).get('quality'))
         if excluded:
             summary['excluded_hosts'] = excluded
         print(json.dumps(summary, indent=2))
-        return 0 if report['status'] == 'success' else 1
+        return 0 if report['status'] == 'success' and (report.get('retention') or {}).get('status') != 'failed' else 1
     except (ConfigError, OSError, ImportError) as exc:
         # Do not print third-party exception text or potentially sensitive config values.
         if excluded:

@@ -25,7 +25,7 @@ For a system administrator, the value is continuity: fewer repeated explanations
 ## What makes it useful
 
 - **Bring order to your hosts.** Keep connection settings, jump hosts, accounts and recipe selections in your own management environment. Use named profiles to work with different groups of systems.
-- **Run one inventory across different systems.** Select inventory/system for a mixed Linux, FreeBSD and macOS fleet; the runner discovers needed platform facts, chooses each implementation and saves a common result with versions and digests.
+- **Run one inventory across different systems.** Select inventory/system for a mixed Linux, FreeBSD, macOS and ESXi fleet; the runner discovers needed platform facts, chooses each implementation and saves a common result with versions and digests.
 - **Check configured access before collection.** Use test-host for login/platform/account diagnostics, or test-su/test-sudo for explicit account tests, including independent su targets and repeated chains. Reports retain skipped and failed states.
 - **Build recipes for your needs.** Give your agent a task and use the authoring guides to develop a recipe with documented inputs, outputs, permissions and verification evidence.
 - **Describe the goal; let your agent handle the details.** The design aims to let administrators explain what they need and set operational boundaries while their agent learns the relevant skills, prepares the recipe and explains the result. You should not need to learn SSHScript APIs to request a workflow.
@@ -35,7 +35,7 @@ For a system administrator, the value is continuity: fewer repeated explanations
 - **Make evidence part of the workflow.** Distinguish observations from interpretations, configuration checks from execution, and successful commands from verified outcomes. Missing information stays unknown.
 - **Keep control of your environment.** Real host data and credentials stay in your management environment. Third-party recipes follow a review and authorization workflow before installation; execution has its own scope.
 
-The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS implementation selection and a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
+The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS/ESXi implementation selection and a dedicated runner. It also includes skills and guides for authoring, sharing and reviewing recipes. A general recipe runner and third-party installer are still planned; real Linux/SSH inventory validation is pending.
 
 **[Take the first-use walkthrough](docs/first-use.md)** or **[explore the recipe catalog](recipes/README.md)** to get started.
 
@@ -93,6 +93,7 @@ Start here when a user asks you to use OpsFeast. Read the linked Markdown direct
 | --- | --- |
 | Manage profiles, hosts.yaml, platform facts or connection/su/sudo diagnostics | [Ops hosts skill](skills/opsfeast-hosts/SKILL.md), then [host diagnostics](docs/host-diagnostics.md) for tests |
 | Discover, execute, author, share or review recipes | [Ops recipes skill](skills/opsfeast-recipes/SKILL.md), then the [recipe catalog](recipes/README.md) and selected recipe guide |
+| Read, recover, export or combine retained result data | [Result-data skill](skills/opsfeast-result-data/SKILL.md), then [result workflow](docs/result-data.md) |
 | Write or adapt SSHScript commands and sessions | [Included SSHScript skill](.agents/skills/sshscript/SKILL.md), its [Agent Guide](.agents/skills/sshscript/references/agent-guide.md), [version policy](.agents/skills/sshscript/references/versioning.md) and relevant [API guide](.agents/skills/sshscript/references/api-guide.md) sections |
 
 Ops skills describe the management workflow; the SSHScript skill describes the execution library. The complete public SSHScript snapshot is included at `.agents/skills/sshscript/` and can be read offline. Its [SOURCE.json](.agents/skills/sshscript/SOURCE.json) records provenance, documentation contract and bundle digest. Verify the actual interpreter and SSHScript import/distribution versions against that contract before use. Bundled files do not imply installation or automatic loading by your agent.
@@ -119,7 +120,7 @@ Reading these materials does not authorize installation, connections, privilege 
 
 ## Status
 
-This repository is an initial project scaffold. It provides a Python utility for management-directory initialization, configuration inspection and validation, and explicit host connection tests. It also provides inventory-system collectors for Linux, FreeBSD and macOS, automatic host initialization and account diagnostics. Linux/FreeBSD have synthetic coverage; macOS has local read-only validation. Real SSH and native su/sudo validation remain pending.
+This repository is an initial project scaffold. It provides a Python utility for management-directory initialization, configuration inspection and validation, and explicit host connection tests. It also provides inventory-system collectors for Linux, FreeBSD, macOS and ESXi, automatic host initialization and account diagnostics. Linux/FreeBSD/ESXi have synthetic coverage; macOS has local read-only validation. Real SSH and native su/sudo validation remain pending.
 
 See [host diagnostics](docs/host-diagnostics.md) for `host-init`, `test-host`, independent/chained `test-su` and multi-account `test-sudo`. Setup alone does not authorize these connection or privilege tests.
 
@@ -184,5 +185,11 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 ## Relationship to SSHScript
 
 [SSHScript](https://github.com/iapyeh/sshscript) remains a separate execution library. OpsFeast builds operational content and a management framework on that foundation. Recipes initially live in this repository so their contracts, documentation, and workflows can evolve together.
+
+## Retained observations and sharing
+
+Inventory execution automatically saves operational success/partial observations in each Feast records/observations.sqlite3 after saving raw JSON. Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes may use supplied explicit sudo capability; set recipe input identity_sudo false to disable, or true for authorized passwordless sudo. Old raw files are not automatically backfilled.
+
+Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
 _Last modified: 2026-10-13_

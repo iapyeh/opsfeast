@@ -74,4 +74,14 @@ git remote -v
 
 Review scripts, bookmarks, installed agent skills and local project settings that refer to the old repository or skill paths. Do not modify the bundled .agents/skills/sshscript/ knowledge snapshot as part of the OpsFeast rename. Local checkout paths can stay unchanged; moving a checkout requires separately updating those local integrations.
 
-_Last modified: 2026-10-12_
+## Inventory result pipeline 0.2.2
+
+Updating to inventory-system recipe 0.2.2 adds ESXi dispatch, read-only identity probes and automatic stage-2 retention. Raw schema/descriptor remain 0.2.0; identity and retained/exchange contracts are 0.1.0. Existing management directories receive records/observations.sqlite3 only when eligible data is first retained. Existing raw reports are not scanned automatically; backfill selected originating-source files with observation_store.py ingest. Preserve raw evidence and human records.
+
+Explicit sudo credentials for the connection account can enable failed identity probes; a login password alone does not. Set recipe variable identity_sudo false to disable, or true for authorized passwordless sudo. Existing collection-only authorizations must be reviewed before enabling privilege changes. Root probes are fixed and read-only. No target identifier file is created. See [identity scope and limitations](result-data.md#sudo-selection-and-authorization).
+
+Single/batch runner summaries now include retention and identity_quality; a retention failure returns 1 even if collection status is success. Raw files include a receipt. Consumers must check collection and retention independently. Copies of the retained database preserve source UUID and must not seed independent installations. Structured JSON export/combine, not raw re-ingestion or database file merging, is the sharing path.
+
+Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
+
+_Last modified: 2026-10-13_

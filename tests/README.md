@@ -54,4 +54,10 @@ Result summary tests cover detected kernels, reasons and messages for success, p
 
 Identity-output tests cover CLI success explanations without credential disclosure, expected/actual UID evidence on mismatch, incomplete target lookup, same-UID account aliases, separate prerequisite su/final sudo evidence, not-run entry/skipped checks, and failed parent restoration. These use synthetic consoles and do not establish native su/sudo behavior.
 
+## Retained observations, identity and exchange
+
+test_result_data.py verifies non-root probes, explicit sudo capability/override policy, root entry/restoration and secret-safe failures, Linux machine-id hashing, FreeBSD/macOS/ESXi device evidence, fallback warnings, automatic runner retention, stage-2 recovery, raw/receipt replay, partial/excluded states, source isolation, no historical reassignment, concurrent insertion, database/schema/path safeguards, SQL inventory view, filtered UTC export, strict exchange validation, two-source combination and content conflicts. All targets, credentials and command outputs are synthetic. No real SSH, sudo, ESXi or serial-number collection occurs. Contracts and example exchanges receive structural/semantic checks; the full suite remains the delivery check.
+
+HostMetadataTests additionally covers exact user-assigned keys across independent sources, native-identity precedence, duplicate/configuration rejection, Unicode/multiline display metadata, source label preservation, key/identity validation and version-1 database upgrades without changing historical records or source identity.
+
 _Last modified: 2026-10-13_

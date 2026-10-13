@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast observation exchange 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "exchange_version",
+    "kind",
+    "exported_at",
+    "records"
+  ],
+  "properties": {
+    "exchange_version": {
+      "const": "0.1.0"
+    },
+    "kind": {
+      "const": "opsfeast-observations"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "retained-observation.schema.json"
+      }
+    }
+  },
+  "$comment": "Duplicate IDs and semantic record invariants are additionally checked by observation_store.py validate. Last modified: 2026-10-13"
+}

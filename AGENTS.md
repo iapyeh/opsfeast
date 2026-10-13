@@ -88,4 +88,8 @@ Do not commit while any applicable documentation, skill or test work remains unf
 
 Preserve unrelated files, stage an explicit allowlist and inspect the staged diff before commits. Commit, push, merge and release only within the user's authorized scope; a task-specific grant does not authorize unrelated work or publication.
 
-_Last modified: 2026-10-12_
+## Retained result data
+
+For raw recovery, retained observation interpretation, export, validation or combination, read the [result-data skill](skills/opsfeast-result-data/SKILL.md), [workflow/contracts](docs/result-data.md) and [CLI reference](docs/cli.md#retained-observations-and-exchange). Runner automatically attempts raw → retained for operational inventory reports; always report retention separately from collection. Supplied explicit sudo credentials can enable missing read-only identity probes, with identity_sudo overrides; preserve the user's actual privilege scope. Identity quality and fallback warnings are mandatory interpretation context. Sharing exports data but never authorizes transmission. Receiver analysis storage remains user-selected.
+
+_Last modified: 2026-10-13_

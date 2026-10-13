@@ -1,0 +1,62 @@
+{
+  "exchange_version": "0.1.0",
+  "kind": "opsfeast-observations",
+  "exported_at": "2026-10-13T00:00:00.000000+00:00",
+  "records": [
+    {
+      "contract_version": "0.1.0",
+      "observation_id": "00000000-0000-0000-0000-000000000001:bd1636e90fe360fe5b1cc1fd5e3870f1945a873c6e6dc04511bd3bea82c805e0",
+      "source_id": "00000000-0000-0000-0000-000000000001",
+      "host_id": "example-host-01",
+      "host_key": "fallback:00000000-0000-0000-0000-000000000001:59a73c5b324500c9d0d24bf699bc7e4167ffcc5f866c43e65cebde36c9574f30",
+      "identity_method": "source-host-id",
+      "identity_quality": "fallback",
+      "identity_evidence": [],
+      "identity_warning": "Source-scoped fallback cannot establish cross-installation identity or replacement.",
+      "recipe_id": "inventory-system",
+      "recipe_version": "0.2.0",
+      "raw_schema_version": "0.2.0",
+      "started_at": "2026-10-10T01:00:00.000000+00:00",
+      "observed_at": "2026-10-10T01:00:02.000000+00:00",
+      "evidence_kind": "ssh",
+      "status": "partial",
+      "observations": {
+        "hostname": {
+          "value": "example-node",
+          "status": "success",
+          "observed_at": "2026-10-10T01:00:01.000000+00:00"
+        },
+        "platform": {
+          "value": "linux",
+          "status": "success",
+          "observed_at": "2026-10-10T01:00:01.000000+00:00"
+        },
+        "system_name": {
+          "value": "Example Linux",
+          "status": "success",
+          "observed_at": "2026-10-10T01:00:02.000000+00:00"
+        },
+        "system_version": {
+          "value": null,
+          "status": "unavailable",
+          "observed_at": "2026-10-10T01:00:02.000000+00:00"
+        },
+        "kernel_name": {
+          "value": "Linux",
+          "status": "success",
+          "observed_at": "2026-10-10T01:00:01.000000+00:00"
+        },
+        "kernel_release": {
+          "value": "6.0.0-example",
+          "status": "success",
+          "observed_at": "2026-10-10T01:00:01.000000+00:00"
+        },
+        "architecture": {
+          "value": "x86_64",
+          "status": "success",
+          "observed_at": "2026-10-10T01:00:01.000000+00:00"
+        }
+      }
+    }
+  ]
+}
