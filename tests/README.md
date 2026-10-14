@@ -16,7 +16,7 @@ python -B -m unittest discover -s tests -p 'test_*.py'
 
 ## First-use onboarding tests
 
-`test_onboarding.py` validates every complete YAML example in the first-host guide without connecting, checks that initialization labels synthetic hosts, and tests the optional activation helper in installed Bash/Zsh shells. Temporary paths include spaces; cases cover another working directory, missing environments, failed activation and rejected direct execution. The activation fixture is synthetic: no dependencies are installed and no existing environment is modified.
+`test_onboarding.py` validates every complete YAML example in the first-host guide without connecting, checks that initialization labels synthetic hosts, and tests the optional activation helper in installed Bash/Zsh shells. Temporary paths include spaces; cases cover another working directory, missing environments, failed activation and rejected direct execution with a quoted source command. Interactive-shell cases cover noisy directory-change hooks, shell function overrides and an inherited Bash marker in Zsh; missing-environment diagnostics show the expected path. The activation fixture is synthetic: no dependencies are installed and no existing environment is modified.
 
 ## Rename compatibility tests
 

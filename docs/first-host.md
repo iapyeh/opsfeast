@@ -44,6 +44,8 @@ cd "/absolute/path/to/opsfeast"
 
 Exit zero means configuration validation passed; it does not prove the host is reachable or credentials work. Errors identify the source/field to correct.
 
+You can also use the interactive Home. With Textual installed in the selected checkout environment, a Bash/Zsh terminal can run `source tools/activate.sh`, then `python -B tools/opsfeast.py` from the checkout. Use `source`, not `sh tools/activate.sh`; other environments can call their selected Python directly. If Textual is missing, request an installation plan using `requirements-tui.txt`. In Home, choose **Hosts**, highlight **server-01**, press Enter and select **test-connection**. Opening Home is local browsing; selecting that action connects to the host and required jumps. See [the terminal guide](terminal-ui.md) for prerequisites and result interpretation. The agent should supply the actual checkout/interpreter/profile/host rather than leave these example values in your handoff.
+
 When ready to connect to server-01, run:
 
 ```sh
@@ -198,4 +200,4 @@ Agent prompt:
 
 Documentation examples are synthetic. Configuration validation and automated mock tests do not prove native SSH, su or sudo behavior on your host.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

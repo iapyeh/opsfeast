@@ -58,12 +58,13 @@ python3 -B tools/check_environment.py --scope init
 
 工具輸出 interpreter、Python、套件 import／distribution 版本、模組位置與 skill 文件契約。ready 表示符合本專案列出的依賴及文件條件，不代表已驗證 SSH、su、sudo 或 recipe 採集。缺少或版本不符時回傳 1；只回報缺口，不自動安裝。
 
-目前提供兩份依賴清單：
+Dependency lists for the selected setup scope:
 
 | 清單 | 用途 |
 | --- | --- |
 | `requirements-init.txt` | PyYAML 6.0.3，供 init/check/dump 及一般測試使用 |
 | `requirements.txt` | 上述依賴加 SSHScript 5.0.0，供完整 Ops 工具使用 |
+| `requirements-tui.txt` | Optional Textual 8.2.8 for the interactive Home/recipes interface; install alongside the chosen base requirements only within the approved plan |
 
 版本固定為本專案目前驗證的環境；這不是所有傳遞依賴的 lockfile。既有環境使用不同版本時先回報，不自行升級、降級或覆寫共用 venv。使用者只要求初始化時，可以只安裝精簡清單；要準備連線與 runner 時再選完整清單。
 
@@ -120,7 +121,11 @@ Route beginners to [Connect your first host](first-host.md) before the complete 
 
 At setup and configuration completion, provide both copyable terminal commands and copyable agent prompts. Substitute the actual quoted checkout path, selected interpreter, profile and chosen host ID; do not leave generic python or HOST placeholders when values are known. If no host is selected, provide the local check and ask for that selection before preparing a connection command. Each step must state its purpose, effects, expected result and where to stop on failure. Distinguish ready commands from executed actions; providing commands does not authorize executing them. Link to the first-host guide and CLI for result details.
 
-For manual Bash/Zsh use with an existing checkout .venv, explain `source tools/activate.sh` from the checkout, or source its quoted absolute path. It sets PYTHONDONTWRITEBYTECODE=1 and activates the environment without changing directories, installing or initializing. Commands still need the correct working directory. Agents should call the selected interpreter directly with -B, rather than depend on shell activation persisting between calls. Other environments/shells can use their interpreter directly; the helper is optional.
+At every successful setup/configuration handoff, explicitly mention both the CLI and the interactive Textual Home. Check Textual availability in the actual selected interpreter before describing the TUI as ready; `check_environment.py` readiness does not check this optional dependency. If unavailable, explain `requirements-tui.txt` and offer installation within an approved plan rather than silently installing or claiming readiness. A TUI-oriented setup plan can include it alongside the base requirements when the user agrees.
+
+For a checkout `.venv` and Bash/Zsh terminal, provide the actual checkout `cd` command, `source tools/activate.sh`, and `python -B tools/opsfeast.py` as the TUI entrypoint. The helper must be sourced in the user's current shell: `sh tools/activate.sh` cannot activate its parent shell. If the environment is elsewhere, supply its actual interpreter/activation command instead of assuming checkout .venv exists. Include a direct selected-interpreter command as an alternative that requires no activation. Starting Home browses local configuration/results; it does not test hosts or run recipes automatically. For a configured host, offer Hosts → select host → Enter → test-connection as the UI counterpart of the scoped CLI command. Explain that choosing the action connects to that host; opening Home alone does not. Link [the terminal interface guide](terminal-ui.md).
+
+For manual Bash/Zsh use with an existing checkout .venv, explain `source tools/activate.sh` from the checkout, or source its quoted absolute path. It sets PYTHONDONTWRITEBYTECODE=1 and activates the environment without changing directories, installing or initializing. Commands still need the correct working directory. Agents should call the selected interpreter directly with -B, rather than depend on shell activation persisting between calls. Other environments/shells can use their interpreter directly; the helper is optional. Directory changes used to locate its file discard stdout from interactive shell hooks; aliases/functions do not override its path calculation. A missing-environment error includes the expected activation path: compare that exact checkout path before proposing any environment creation, and never silently activate a different workspace environment.
 
 ## 告訴使用者下一步
 

@@ -85,7 +85,7 @@ After cloning and reading the project guidance, expect a setup proposal identify
 
 For your first host, follow the [first-host guide](docs/first-host.md): minimal settings, validation, connection testing and practical SSH/su/sudo cases before the full reference.
 
-After authorized setup, the agent should tell you where to configure host addresses, login accounts, authentication and recipes.
+After authorized setup, the agent should tell you where to configure host addresses, login accounts, authentication and recipes, and offer both CLI and Textual Home next steps. For a checkout .venv in Bash/Zsh, it should provide `source tools/activate.sh` and `python -B tools/opsfeast.py` with the actual checkout path. Textual readiness must be checked separately; if missing, the agent can propose installing `requirements-tui.txt`. See [the interface handoff](docs/first-use.md#use-the-cli-or-try-the-interactive-home).
 
 **[First-use walkthrough](docs/first-use.md)** explains the single-prompt setup handoff, optional explicit instructions and skill update checks, expected results, and an optional isolated trial. The [getting-started guide](docs/getting-started.md) contains the detailed setup procedure for agents. The same Markdown workflow applies across agents; automatic skill discovery is optional.
 

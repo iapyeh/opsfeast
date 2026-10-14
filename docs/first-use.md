@@ -67,6 +67,21 @@ opsfeast/
 
 `.venv/` exists only if you chose to create a new environment. `feasts/` and `recipes/` are siblings. `.opsfeast.yaml` records profiles and the default environment, allowing later commands to omit the directory argument. The agent should report the actual interpreter, package and documentation versions, initialization/check results, and the full path to `hosts.yaml`.
 
+### Use the CLI or try the interactive Home
+
+The agent should finish setup by offering both interfaces with your actual checkout/interpreter paths. For Bash/Zsh with a checkout `.venv`, run these in the checkout's terminal:
+
+```sh
+source tools/activate.sh
+python -B tools/opsfeast.py
+```
+
+The second command opens the Textual Home, with Profiles, Recipes, Hosts, Help and Actions. Textual is optional and not part of `requirements.txt`; the agent must check its availability in the selected environment. If it is missing, ask for an installation proposal using `requirements-tui.txt` before launching. Do not infer TUI readiness from the ordinary environment check. The [terminal interface guide](terminal-ui.md) covers prerequisites and navigation.
+
+Use `source`, not `sh tools/activate.sh`; activation affects the shell where it is sourced. The helper preserves your current directory, so the agent should provide the actual checkout `cd` command when needed. Other environments can run their selected Python directly with `-B`; no shell activation is required. If activation reports a missing file, inspect the **Expected activation file** path before creating or replacing any environment.
+
+After configuring a host, you can use the CLI examples below or open **Hosts**, select that host and press Enter → **test-connection**. Opening Home does not connect; selecting test-connection performs the explicit host/jump checks. CLI output and TUI results follow the same result semantics and authorization scope.
+
 ## 4. Configure your hosts
 
 Follow [Connect your first host](first-host.md). It starts with the smallest usable settings and provides exact validation/connection commands, expected results and common failure checks. Ask the agent to help prepare one host using your address, login account and chosen authentication method; enter secrets locally. Preserve existing data and comments. The initial host.example is synthetic, not ready to connect.
