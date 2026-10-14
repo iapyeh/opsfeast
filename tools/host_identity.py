@@ -10,8 +10,8 @@ from host_runtime import identity, privilege_password
 
 VERSION = '0.1.0'
 WARNING = ('Using a source-scoped host_id fallback: cross-installation identity and host '
-           'replacement cannot be established. Inspect identity.evidence; enable identity_sudo '
-           'only for authorized read-only probes if permissions are the cause. Hardware serial '
+           'replacement cannot be established. Inspect identity.evidence and access.mode; review account '
+           'sudo settings if permissions are the cause. Hardware serial '
            'alone cannot distinguish OS reinstallations. Keep targets separate until identity '
            'is confirmed; no automatic historical reassignment is performed.')
 

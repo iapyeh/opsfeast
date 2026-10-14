@@ -166,6 +166,10 @@ class InventoryTests(unittest.TestCase):
 
 class RunnerTests(unittest.TestCase):
     def setUp(self):
+        from access_check import VERSION
+        checker = patch('access_check.check_many', side_effect=lambda root, hosts, *args: {'contract_version': VERSION, 'status': 'success', 'hosts': [{'host': h, 'status': 'success', 'connected': True} for h in hosts]})
+        checker.start()
+        self.addCleanup(checker.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
@@ -394,7 +398,7 @@ class RunnerTests(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()) as output:
                 code = runner.main(['--host', 'example', '--root', str(self.root), '--recipe', './recipes/inventory/system'])
         self.assertEqual(code, 0)
-        run.assert_called_once_with(self.root, 'example', 30, recipe='./recipes/inventory/system')
+        run.assert_called_once_with(self.root, 'example', 30, recipe='./recipes/inventory/system', force=False, access_checked=True, access_result={'host': 'example', 'status': 'success', 'connected': True})
         self.assertEqual(json.loads(output.getvalue())['result_path'], str(path))
 
     def test_runner_progress_explains_stages_without_raw_output(self):
@@ -435,7 +439,7 @@ class RunnerTests(unittest.TestCase):
             with patch.object(runner, 'run', return_value=(completed_report(), self.root / 'result.json')) as run, \
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(runner.main(['--host', 'example', '--recipe', 'inventory/system']), 0)
-            run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='inventory/system')
+            run.assert_called_once_with(self.root.resolve(), 'example', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'example', 'status': 'success', 'connected': True})
             (checkout / '.my-ops.yaml').write_text('schema_version: 1\nroot: missing\n')
             with patch.object(runner, 'run') as run, contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(runner.main(['inventory/system', '--host', 'example']), 1)

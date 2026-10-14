@@ -1,6 +1,6 @@
 # inventory-system
 
-Recipe version 0.2.2 provides Linux, FreeBSD, macOS and ESXi implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD/ESXi have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
+Recipe version 0.3.0 provides Linux, FreeBSD, macOS and ESXi implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD/ESXi have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
@@ -26,7 +26,7 @@ The [verification section](#results-and-verification) distinguishes synthetic te
 
 Linux reads `/etc/os-release`, falling back to `/usr/lib/os-release` only when the first file is absent. It never executes file contents, merges files or substitutes kernel version for missing distribution version. Missing, denied, failed, truncated and unparseable values retain their own states. Observations describe the environment visible to the login account, including a container/jail, not necessarily physical hardware.
 
-No su, installation or target configuration changes are performed. Missing identity probes can use the connection account's supplied explicit sudo capability; recipe input identity_sudo false disables it and true enables authorized passwordless sudo. See the [identity workflow](../../../docs/result-data.md#sudo-selection-and-authorization). Read access and the listed target commands are required. Controller requirements are Python 3.11+, PyYAML and matching SSHScript import/distribution 5.0.0. The runner preserves configured connections, jump hosts and SSHScript's default host-key trust; it never upgrades packages.
+No su, installation or target configuration changes are performed. Version 0.3.0 tests login/root access before collection and prefers verified root by default. Disable sudo with account sudo: "false". Read the [canonical access policy, credential-presence rules, dryrun/force, field catalog and CSV guide](../../../docs/inventory-access.md) before execution. This includes real connections and sudo attempts. Controller requirements remain Python 3.11+, PyYAML and matching SSHScript import/distribution 5.0.0; SSH trust and jump settings are preserved.
 
 ## Execute
 
@@ -50,7 +50,7 @@ The CLI uses matching host recipe vars and bypasses unrelated selectors while va
 
 ## Recipe variables
 
-Bundled recipe 0.2.2 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
+Bundled recipe 0.3.0 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
 
 Source/host-disabled skips happen before runtime/connection and have result_path null. They are not fabricated inventory files and return nonzero. Completed results record source provenance and variable names without values. Prior macOS local evidence belongs to recipe 0.2.0; the current input/context changes have synthetic coverage, without new native SSH evidence.
 
@@ -87,13 +87,16 @@ Each implementation is a recipe-relative `.py` file declaring one literal `VERSI
 
 ```python
 def collect(session, report, timeout, facts, *, context=None):
-    # Populate the seven observations, sources and execution_errors.
+    # Populate compatibility observations, sources and execution_errors.
+    # The runner supplies the verified collection actor.
     ...
 ```
 
-All implementations share the inventory input/output contract. `main.py` contains existing report/parser helpers and legacy Linux collection; it is not the runner-selected entrypoint. The new `implementations/*.py` files provide separate platform entrypoints. The runner validates manifest paths/version literals before connecting, loads only the selected entrypoint, checks its runtime version, and validates observation shape and states. It does not execute unselected implementation modules.
+All implementations share the inventory input/output contract. Bundles declaring output.inventory_contract_version 0.1.0 must include details.py with collect/validate and the fixed six-section contract; the runner uses that reviewed helper under the same actor. New optional details use a separate shared budget and never turn unsupported optional fields into core failures. `main.py` contains existing report/parser helpers and legacy Linux collection; it is not the runner-selected entrypoint. The new `implementations/*.py` files provide separate platform entrypoints. The runner validates manifest paths/version literals before connecting, loads only the selected entrypoint, checks its runtime version, and validates observation shape and states. It does not execute unselected implementation modules.
 
-Custom inventory bundles are now executable through this contract; they no longer need identical bytes to the built-in bundle. Review the complete code/dependencies before authorizing execution. Manifest checks are not an execution sandbox, authenticity verification or permission grant. General recipe execution, extension-overlay installation, packaging and third-party installation remain unimplemented. Independent platform files reduce shared-code conflicts; contributors may still need to reconcile recipe.yaml/schema changes when updating Git.
+Custom inventory bundles are now executable through this contract; they no longer need identical bytes to the built-in bundle. Review the complete code/dependencies before authorizing execution. Manifest checks are not an execution sandbox, authenticity verification or permission grant. General recipe execution and explicit-file packaging are implemented through their own contracts; extension-overlay installation and automatic third-party installation remain unimplemented. Independent platform files reduce shared-code conflicts; contributors may still need to reconcile recipe.yaml/schema changes when updating Git.
+
+For complete synthetic extension examples, read [partitioned raw result](examples/result.partitioned.synthetic.json) and [partitioned exchange](examples/exchange.partitioned.synthetic.json). The original fixtures remain legacy compatibility examples.
 
 ## Results and verification
 
@@ -117,4 +120,4 @@ Result schema remains 0.2.0 with additive identity evidence 0.1.0 and retention 
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

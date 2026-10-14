@@ -73,6 +73,14 @@ def validate(directory, metadata):
                           ('retention_adapter', 'inventory-system-v1')):
         if key in metadata['output'] and metadata['output'][key] != expected:
             raise ConfigError('unsupported inventory retained/exchange contract')
+    if 'inventory_contract_version' in metadata['output']:
+        helper = directory / 'details.py'
+        if metadata['output']['inventory_contract_version'] != '0.1.0' or not helper.resolve().is_relative_to(directory.resolve()) or not helper.is_file() or declared_version(helper) != '0.1.0':
+            raise ConfigError('inventory-values 0.1.0 requires a matching recipe-local details.py')
+        tree = ast.parse(helper.read_text(encoding='utf-8'))
+        functions = {node.name for node in tree.body if isinstance(node, ast.FunctionDef)}
+        if not {'collect', 'validate'}.issubset(functions):
+            raise ConfigError('inventory values helper requires collect and validate functions')
     entries = metadata.get('implementations')
     if not isinstance(entries, list) or not entries:
         raise ConfigError('recipe must declare implementations')
@@ -137,6 +145,11 @@ def validate_observations(report):
     """Enforce the seven-field interface without adding a JSON Schema dependency."""
     fields = {'hostname', 'platform', 'system_name', 'system_version', 'kernel_name', 'kernel_release', 'architecture'}
     statuses = {'success', 'unavailable', 'unsupported', 'permission_denied', 'timeout', 'command_failed', 'parsing_failed', 'not_attempted'}
+    if 'inventory' in report:
+        from inventory_values import validate_inventory
+        if report.get('inventory_contract_version') != '0.1.0':
+            raise ConfigError('unsupported inventory values version')
+        validate_inventory(report['inventory'])
     observations = report.get('observations')
     if not isinstance(observations, dict) or set(observations) != fields:
         raise ConfigError('implementation returned invalid inventory fields')

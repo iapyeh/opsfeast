@@ -55,6 +55,8 @@ Today, that approach is supported by setup and connection tools, agent guides an
 
 Read the [vision and design principles](docs/vision.md) for the shared direction followed by project contributors and recipe authors.
 
+Inventory now has a batch access gate, `check-access`, `--dryrun` and explicit `--force` fallback. Sudo is attempted by default unless account `sudo: "false"` disables it. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
+
 ## Getting started with your AI agent
 
 Use an **AI coding tool** that can read your local project files and run commands, such as Codex, Antigravity or Claude Code. This guide uses **project/workspace** for the directory opened in that tool; the exact UI labels vary. An ordinary chat without local file access is not enough for these steps. No particular agent product or skill loader is required.
@@ -184,7 +186,7 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as root
 python -B tools/run_recipe.py inventory/system --host host-01 host-02 host-03
 ```
 
-Test-host checks login, reuses or initializes platform facts, tests the login account's sudo only when the credential precedence rule selects a password (including the account password), and independently tests su to other declared accounts. Direct host-init always refreshes facts. For inventory-system, run_recipe.py automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. Python-session recipes use the [general execution contract](docs/recipe-execution.md); extension installation remains planned.
+Test-host checks login, reuses or initializes platform facts, tests the login account's enabled sudo with the selected password or passwordless policy, and independently tests su to other declared accounts. Direct host-init always refreshes facts. For inventory-system, run_recipe.py automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/inventory/system/README.md) before executing custom code. Python-session recipes use the [general execution contract](docs/recipe-execution.md); extension installation remains planned.
 
 ## Find, create and share recipes
 
@@ -231,7 +233,7 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 
 ## Retained observations and sharing
 
-Inventory execution automatically saves operational success/partial observations in each Feast records/observations.sqlite3 after saving raw JSON. Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes may use supplied explicit sudo capability; set recipe input identity_sudo false to disable, or true for authorized passwordless sudo. Old raw files are not automatically backfilled.
+Inventory execution automatically saves operational success/partial observations in each Feast records/observations.sqlite3 after saving raw JSON. Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes use the verified whole-collection actor; account sudo: "false" disables elevation. Legacy identity_sudo is compatibility-only. Old raw files are not automatically backfilled.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 

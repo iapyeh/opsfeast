@@ -89,6 +89,7 @@ class TransportTests(unittest.TestCase):
             (root / 'hosts.yaml').write_text('hosts:\n  one:\n    connection: {local: true}\n  two:\n    connection: {local: true}\n')
             with patch.dict(os.environ, {'OPSFEAST_TUI_EVENTS': '1'}), \
                     patch.object(run_recipe, 'run', return_value=(report, root / 'result.json')), \
+                    patch('access_check.check_many', return_value={'status': 'success', 'hosts': []}), \
                     contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 status = run_recipe.main(['inventory/system', '--all', '--root', str(root), '--threads', '2', '--verbose'])
         self.assertEqual(status, 1)

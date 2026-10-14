@@ -22,6 +22,10 @@ from types import SimpleNamespace
 
 class RecipeSourcesTests(unittest.TestCase):
     def setUp(self):
+        from access_check import VERSION
+        checker = patch('access_check.check_many', side_effect=lambda root, hosts, *args: {'contract_version': VERSION, 'status': 'success', 'hosts': [{'host': h, 'status': 'success', 'connected': True} for h in hosts]})
+        checker.start()
+        self.addCleanup(checker.stop)
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.base = Path(temp.name).resolve()
@@ -46,6 +50,10 @@ class RecipeSourcesTests(unittest.TestCase):
     def session(self):
         session = Mock()
         def output(argv, **kwargs):
+            if argv == ['id', '-un']:
+                return SimpleNamespace(stdout='root\n', stderr='', exitcode=0)
+            if argv == ['id', '-u']:
+                return SimpleNamespace(stdout='0\n', stderr='', exitcode=0)
             text = ({'-s': 'Linux', '-n': 'synthetic-node', '-r': '6.1', '-m': 'x86_64'}[argv[1]]
                     if argv[0] == 'uname' else 'ID=example\nNAME="Example Linux"\nVERSION_ID=1.2')
             return SimpleNamespace(stdout=text + '\n', stderr='', exitcode=0)

@@ -4,6 +4,10 @@ This directory will contain public, reproducible verification for recipes, data 
 
 Verification should cover result parsing, failure status, supported platforms, and repeated updates that preserve human notes. Tests and fixtures must use synthetic data rather than private host details or credentials.
 
+## Inventory access and partitioned data
+
+`test_inventory_access.py` covers canonical sudo-password presence/null/empty/control values, strict quoted sudo disabling, root/passwordless/default modes, whole-batch rejection, dryrun/check-access without collection or writes, force skip/fallback without alternate-password retries, collection-time rejection, unknown restoration/cleanup, platform parser units and empty/zero/missing values, output/time budgets, retention/exchange and CSV formula escaping. Sessions and credentials are synthetic; no native SSH/sudo or real-host extended inventory is exercised. Existing routing tests explicitly mock the new access boundary; retained integration uses a synthetic UID or explicit ordinary-account policy. Optional fields do not change the seven-field completion rules.
+
 ## Configuration utility tests
 
 With Python 3.11+ and PyYAML installed, run:
@@ -50,7 +54,7 @@ Management-directory discovery tests cover default and custom initialization, sh
 
 Result summary tests cover detected kernels, reasons and messages for success, partial, unsupported and failed runs, cleanup-error precedence, and equality between CLI summaries and saved reports. CLI short paths select checkout recipes and bare `recipes/` prefixes are rejected before connecting with a correction hint; explicit `./` paths retain management-root semantics.
 
-`test_host_runtime.py` covers platform facts, cache refresh/invalidation, target changes, su/sudo identities, independent/repeated chains, credential precedence and account-password fallback, host credential scope, empty/null/invalid credentials, no retry after rejected overrides, missing credentials, test-host aggregation, safe diagnostic flags/tracebacks, three-platform runner dispatch, implementation versions and batch continuation. All account/SSH tests are synthetic; no real privileged accounts are tested.
+`test_host_runtime.py` covers platform facts, cache refresh/invalidation, target changes, su/sudo identities, independent/repeated chains, credential precedence and account-password fallback, host credential scope, empty/null/invalid credentials, no retry after rejected overrides, missing credentials, test-host aggregation and enabled passwordless policy, safe diagnostic flags/tracebacks, three-platform runner dispatch, implementation versions and batch continuation. All account/SSH tests are synthetic; no real privileged accounts are tested.
 
 Identity-output tests cover CLI success explanations without credential disclosure, expected/actual UID evidence on mismatch, incomplete target lookup, same-UID account aliases, separate prerequisite su/final sudo evidence, not-run entry/skipped checks, and failed parent restoration. These use synthetic consoles and do not establish native su/sudo behavior.
 
@@ -99,5 +103,7 @@ Recipe-browser tests also cover Bundle/profile display labels, empty profile sup
 Recipe-browser time tests cover OS local timezone conversion, second precision, date rollover, non-hour offsets, daylight-saving differences, and missing/invalid/unzoned values. Synthetic timezone-switching checks require POSIX `tzset`; stored JSON retains its original timestamp.
 
 Focus regression checks ensure a delayed recipe tab-activation callback preserves a user's sidebar or content focus. Packaging boundary tests also reject missing descriptors and malformed YAML with configuration errors before creating an archive.
+
+Inventory 0.3.0 delivery verification (2026-10-14): 415 tests passed on Python 3.11.15/3.13.13/3.14.4, including Textual headless tests. The older interpreter runs reused pure-Python dependencies and do not establish native SSHScript dependency readiness; operational dependency checks and credential-free Session smoke ran on 3.14 only. See [the verification limits](../docs/inventory-access.md#verification-and-migration).
 
 _Last modified: 2026-10-14_

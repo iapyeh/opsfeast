@@ -8,4 +8,6 @@ Observations, unknown values, and AI interpretations should remain distinguishab
 
 See the [result-data workflow](../docs/result-data.md) for stage separation, SQLite storage, extraction, identity, replay, export and combination. JSON Schemas describe structure; the tool also checks semantic identity relations, ordering/state constraints and duplicate/conflicting IDs. A schema is not publisher authentication. Receiver analysis storage remains user-selected.
 
-_Last modified: 2026-10-13_
+[Inventory-values 0.1.0](inventory-values.schema.json) defines nullable system/hardware/storage/network/software/services sections. Raw and retained schemas accept this optional extension with inventory_contract_version; retained records also require collection_scope. Older records remain valid, while strict consumers must update before accepting extended records. See [access, data semantics, CSV and migration](../docs/inventory-access.md). CSV is an inspection format with empty missing cells, not the JSON exchange contract.
+
+_Last modified: 2026-10-14_

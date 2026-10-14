@@ -343,6 +343,16 @@ def verify_target_identity(session, timeout, target, record):
 def privilege_password(config, host, user, mode, connection_user):
     """Select one credential before entry; never retry lower-priority sources."""
     account = config.hosts[host].get('users', {}).get(user, {})
+    if mode == 'sudo':
+        from access_check import sudo_settings
+        # Host credentials remain exclusive to the real connection account.
+        if user != connection_user:
+            from types import SimpleNamespace
+            scoped = SimpleNamespace(hosts={host: dict(config.hosts[host], vars={})})
+        else:
+            scoped = config
+        enabled, password, source = sudo_settings(scoped, host, user)
+        return (password, source) if enabled else (None, 'sudo_disabled')
     sources = [(account.get('vars', {}).get(mode, {}), f'users.<account>.vars.{mode}.password')]
     if user == connection_user:
         sources.append((config.hosts[host].get('vars', {}).get(mode, {}), f'vars.{mode}.password'))
@@ -429,6 +439,9 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                                     password, password_source = privilege_password(config, host, target, 'sudo', login['username'])
                                     step.update(from_user=target, to_user=run_as, password_source=password_source,
                                                 password_supplied=password is not None)
+                                    if password_source == 'sudo_disabled':
+                                        step['reason_code'] = 'sudo_disabled'
+                                        continue
                                     if password_required and password is None:
                                         step['reason_code'] = 'missing_sudo_password'
                                         continue
@@ -493,7 +506,7 @@ def test_host(config, host, timeout=30, session_class=None):
             report['tests'][name] = {'status': 'skipped', 'reason_code': 'connection_failed'}
         return report
     report['tests']['host-init'] = initialize_host(config, host, timeout, cls)
-    report['tests']['test-sudo'] = privilege_test(config, host, 'sudo', timeout=timeout, session_class=cls, password_required=True)
+    report['tests']['test-sudo'] = privilege_test(config, host, 'sudo', timeout=timeout, session_class=cls)
     users = list(config.hosts[host].get('users', {}))
     login = report['tests']['test-sudo'].get('connection_user')
     targets = [u for u in users if u != login]

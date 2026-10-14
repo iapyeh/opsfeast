@@ -1,0 +1,184 @@
+{
+  "schema_version": "0.2.0",
+  "recipe": {
+    "id": "inventory-system",
+    "version": "0.3.0",
+    "recipe_version": "0.3.0",
+    "implementation_id": "linux",
+    "implementation_version": "0.1.1"
+  },
+  "host_id": "example-host-01",
+  "evidence_kind": "local",
+  "started_at": "2026-10-10T09:00:00+08:00",
+  "finished_at": "2026-10-10T09:00:02+08:00",
+  "status": "partial",
+  "observations": {
+    "hostname": {
+      "value": "example-node",
+      "status": "success",
+      "observed_at": "2026-10-10T09:00:01+08:00",
+      "source_ids": [
+        "identity"
+      ],
+      "error": null
+    },
+    "platform": {
+      "value": "linux",
+      "status": "success",
+      "observed_at": "2026-10-10T09:00:01+08:00",
+      "source_ids": [
+        "identity"
+      ],
+      "error": null
+    },
+    "system_name": {
+      "value": "Example Linux",
+      "status": "success",
+      "observed_at": "2026-10-10T09:00:02+08:00",
+      "source_ids": [
+        "product"
+      ],
+      "error": null
+    },
+    "system_version": {
+      "value": null,
+      "status": "unavailable",
+      "observed_at": "2026-10-10T09:00:02+08:00",
+      "source_ids": [
+        "product"
+      ],
+      "error": {
+        "code": "version_not_reported"
+      }
+    },
+    "kernel_name": {
+      "value": "Linux",
+      "status": "success",
+      "observed_at": "2026-10-10T09:00:01+08:00",
+      "source_ids": [
+        "identity"
+      ],
+      "error": null
+    },
+    "kernel_release": {
+      "value": "6.0.0-example",
+      "status": "success",
+      "observed_at": "2026-10-10T09:00:01+08:00",
+      "source_ids": [
+        "identity"
+      ],
+      "error": null
+    },
+    "architecture": {
+      "value": "x86_64",
+      "status": "success",
+      "observed_at": "2026-10-10T09:00:01+08:00",
+      "source_ids": [
+        "identity"
+      ],
+      "error": null
+    }
+  },
+  "sources": [
+    {
+      "id": "identity",
+      "kind": "synthetic",
+      "observed_at": "2026-10-10T09:00:01+08:00",
+      "payload": {
+        "hostname": "example-node",
+        "kernel_name": "Linux",
+        "kernel_release": "6.0.0-example",
+        "architecture": "x86_64"
+      }
+    },
+    {
+      "id": "product",
+      "kind": "synthetic",
+      "observed_at": "2026-10-10T09:00:02+08:00",
+      "payload": {
+        "system_name": "Example Linux",
+        "system_version": null
+      }
+    }
+  ],
+  "execution_errors": [],
+  "reason_code": "inventory_incomplete",
+  "message": "inventory-system is incomplete. 6/7 inventory fields collected successfully. Missing fields: system_version (unavailable).",
+  "detected_kernel": "Linux",
+  "supported_platforms": [
+    "linux"
+  ],
+  "inventory_contract_version": "0.1.0",
+  "inventory": {
+    "system": {
+      "hostname": "example-node",
+      "platform": "linux",
+      "system_name": "Example Linux",
+      "system_version": null,
+      "kernel_name": "Linux",
+      "kernel_release": "6.0.0-example",
+      "architecture": "x86_64",
+      "uptime_seconds": null,
+      "timezone": null,
+      "virtualization": null
+    },
+    "hardware": {
+      "cpu_model": "Synthetic CPU",
+      "logical_cpus": 4,
+      "memory_total_bytes": 8589934592,
+      "vendor": null,
+      "model": null,
+      "serial": null,
+      "uuid": null
+    },
+    "storage": {
+      "filesystems": null,
+      "block_devices": null
+    },
+    "network": {
+      "interfaces": [
+        {
+          "name": "example0",
+          "address": "192.0.2.10",
+          "prefix_length": 24,
+          "mtu": 1500
+        }
+      ],
+      "routes": null,
+      "dns_servers": null,
+      "listening_endpoints": null
+    },
+    "software": {
+      "packages": null
+    },
+    "services": {
+      "services": []
+    }
+  },
+  "access": {
+    "mode": "user",
+    "connection_identity": {
+      "username": "operator",
+      "effective_uid": 1001
+    },
+    "actual_identity": {
+      "username": "operator",
+      "effective_uid": 1001
+    },
+    "sudo": {
+      "status": "disabled"
+    },
+    "restoration_verified": true
+  },
+  "collection_process": {
+    "contract_version": "0.1.0",
+    "scope": "environment-visible-to-effective-account",
+    "probes": [
+      {
+        "section": "hardware",
+        "field": "serial",
+        "status": "unavailable"
+      }
+    ]
+  }
+}

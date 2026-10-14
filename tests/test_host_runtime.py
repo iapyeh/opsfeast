@@ -113,7 +113,7 @@ class HostTests(unittest.TestCase):
         with patch.object(hr, 'initialize_host', return_value=failed), patch.object(hr, 'privilege_test', return_value={'status':'skipped', 'connection_user':'login'}) as privilege:
             report = hr.test_host(self.config, 'h', session_class=cls)
         self.assertEqual(report['status'], 'failed')
-        self.assertTrue(privilege.call_args_list[0].kwargs['password_required'])
+        self.assertFalse(privilege.call_args_list[0].kwargs.get('password_required', False))
 
 
 class FakeConsole:
@@ -379,7 +379,7 @@ class PrivilegeTests(HostTests):
                     ({'password': 'account-secret', 'vars': {mode: {'password': ''}}}, {}, '',
                      f'users.<account>.vars.{mode}.password'),
                     ({'password': 'account-secret', 'vars': {mode: {'password': None}}}, {},
-                     'account-secret', 'users.<account>.password'),
+                     '' if mode == 'sudo' else 'account-secret', f'users.<account>.vars.sudo.password' if mode == 'sudo' else 'users.<account>.password'),
                     ({}, {}, None, 'none'),
                 )
                 for account, variables, expected, source in cases:
@@ -434,13 +434,13 @@ class PrivilegeTests(HostTests):
         self.assertEqual(report['status'], 'failed')
         self.assertEqual([e[3]['password'] for e in self.events if e[0] == 'sudo'], ['override-secret'])
 
-    def test_test_host_skips_sudo_when_all_password_sources_missing(self):
+    def test_test_host_attempts_passwordless_sudo_when_passwords_missing(self):
         self.write({'local': True}, {'login': {}, 'user2': {'password': 'two-secret'}})
         with patch.object(hr, 'initialize_host', return_value={'status': 'success'}):
             report = hr.test_host(self.config, 'h', session_class=self.factory)
-        self.assertEqual(report['status'], 'partial')
-        self.assertEqual(report['tests']['test-sudo']['status'], 'skipped')
-        self.assertFalse(any(e[0] == 'sudo' for e in self.events))
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['tests']['test-sudo']['status'], 'success')
+        self.assertTrue(any(e[0] == 'sudo' for e in self.events))
 
     def test_group_cleanup_failure_is_failed_and_other_groups_continue(self):
         count = 0
@@ -512,6 +512,11 @@ class DispatchTests(unittest.TestCase):
 
 
 class InventoryDispatchTests(unittest.TestCase):
+    def setUp(self):
+        checker = patch('access_check.check_many', return_value={'status': 'success', 'hosts': []})
+        checker.start()
+        self.addCleanup(checker.stop)
+
     def test_platform_collectors_and_result_versions(self):
         for kernel, platform, values in [
             ('FreeBSD','freebsd',[result('node'),result('FreeBSD'),result('14.1'),result('amd64'),result('14.2-RELEASE')]),
@@ -524,7 +529,7 @@ class InventoryDispatchTests(unittest.TestCase):
                 self.assertEqual(report['status'],'success')
                 self.assertEqual(report['recipe']['implementation_id'],platform)
                 self.assertEqual(report['recipe']['implementation_version'],'0.1.1')
-                self.assertEqual(report['recipe']['recipe_version'],'0.2.2')
+                self.assertEqual(report['recipe']['recipe_version'],'0.3.0')
                 self.assertEqual(report['schema_version'],'0.2.0')
                 self.assertEqual(json.loads(path.read_text()),report)
 

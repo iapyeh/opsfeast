@@ -7,6 +7,14 @@ OpsFeast provides two command-line entrypoints:
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
+## Inventory access, dryrun and CSV
+
+`opsfeast.py check-access (--host HOST... / --group GROUP... | --all) [--exclude HOST...] [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N]` validates selected login/root access without platform discovery or collection. Default threads is 1. Choose explicit hosts/groups or all; exclude requires all. Unknown targets/configurations fail before connections. Disabled/excluded targets are not contacted. JSON stdout preserves per-host failure and cleanup states; exit 0 requires every selected test to pass.
+
+`run_recipe.py inventory/system ... --dryrun` and `opsfeast.py recipes run inventory/system ... --dryrun` reuse the same tests after static recipe/input validation. `--force` instead permits connection skips and verified ordinary-account fallback after sudo failure. Dryrun/force are mutually exclusive and inventory-only. Default inventory tests the entire selected batch before starting collection. Force fallback/skip returns nonzero; optional missing detail fields alone do not. Saved jobs do not store either flag. See [the canonical guide](inventory-access.md) for account settings, timing/race/cleanup limits, six result sections, limits and migration.
+
+`observation_store.py export ... --format csv` uses the same selection filters as JSON export. It prints long-form CSV with missing values as empty cells and spreadsheet formula escaping. JSON remains the validated exchange format; CSV cannot be re-ingested as an exchange. No transmission occurs.
+
 ## Conventions and prerequisites
 
 Run examples from the repository checkout. `python` means the interpreter selected for your environment; `-B` avoids writing Python bytecode. Replace synthetic host IDs, account names and `/srv/feasts/main` with your settings. Host/configuration commands read `hosts.yaml` from the chosen management environment; a host ID is a configuration key, not necessarily its hostname.
@@ -162,7 +170,7 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as service-user 
 
 USER is the account **executing sudo**. TARGET is the identity sudo should enter. Other actors first require verified su entry from the connection account. Results identify whether failure happened at su entry/identity or sudo entry/identity. Independent actors use fresh connections.
 
-Sudo selects the first non-null password in this order: `users.<actor>.vars.sudo.password`, host `vars.sudo.password` (only for the actual connection identity), then `users.<actor>.password`. Explicit overrides take precedence; a failed authentication never triggers retries with lower-priority sources. `--run-as` selects the diagnostic target; `vars.sudo.user` is not used. Standalone test-sudo can attempt passwordless sudo when no sudo password is set. These tests establish authenticated shell/identity access, not permissions for every command. Success does not prove password consumption: policy or authentication cache can avoid a prompt.
+Sudo uses [the account presence/control-string policy](inventory-access.md#configure-the-actual-connection-account): canonical sudo-password selects by presence, null/empty select empty passwords, exact "false" selects account password, and account sudo: "false" disables sudo. Legacy vars credentials apply only when the canonical field is absent. No lower-priority retry occurs. --run-as selects the diagnostic target, default root; inventory always requests root.
 
 To investigate a failed test, add `--debug --traceback`. JSON steps include `password_source` and `password_supplied` when su/sudo credentials are selected; no password value is emitted. A PermissionError during authenticated entry is categorized as `authentication_rejected_or_password_required`: the public SSHScript contract includes explicit rejection, a second password request, or a password request when none was supplied. This category does not identify the exact host-policy cause or prove an incorrect password. Review the failed stage and selected credential source first. Tracebacks contain frames only; exception messages and raw privileged output remain omitted. Progress/debug/traceback output goes to stderr; stdout remains JSON.
 
@@ -192,7 +200,7 @@ Privilege-test JSON includes host, test, status, connection_user when identified
 python -B tools/opsfeast.py test-host host-01 --profile inventory
 ```
 
-Test-host always tests login/hostname/date. It then reuses or initializes facts, tests sudo **only for the connection identity and only with a password selected by the precedence rule (including the account password)**, and independently tests su to other accounts declared in users. It does not enumerate accounts, test chains, attempt passwordless sudo or execute recipes.
+Test-host always tests login/hostname/date. It then reuses or initializes facts, tests enabled sudo only for the connection identity, using the selected password or passwordless policy, and independently tests su to other accounts declared in users. It does not enumerate accounts, test chains or execute recipes.
 
 If connection establishment fails, remaining tests are skipped. Host-init failure does not prevent account diagnostics. One account-test failure does not stop other independent groups. Test-host uses separate connections for the diagnostic phases/groups; it is not one atomic remote transaction.
 
@@ -234,12 +242,12 @@ This section covers shared selection/execution options for inventory and general
 python -B tools/run_recipe.py RECIPE
     (--host HOST ... | --group GROUP ... | --all [--exclude HOST ...])
     [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N] [--verbose | --quiet]
-    [--vars-file JSON_FILE] [--var NAME=VALUE ...]
+    [--vars-file JSON_FILE] [--var NAME=VALUE ...] [--dryrun | --force]
 
 python -B tools/run_recipe.py --recipe DIRECTORY
     (--host HOST ... | --group GROUP ... | --all [--exclude HOST ...])
     [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N] [--verbose | --quiet]
-    [--vars-file JSON_FILE] [--var NAME=VALUE ...]
+    [--vars-file JSON_FILE] [--var NAME=VALUE ...] [--dryrun | --force]
 ```
 
 `--host` and `--group` may be combined and repeated. `--all` cannot be combined with either.
@@ -315,7 +323,7 @@ Each inventory-system run writes a new file without overwriting previous invento
 <management-root>/observations/inventory-system-<uuid>.json
 ```
 
-The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor remains 0.2.0; bundled recipe version is 0.2.2; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, descriptor SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version. Source/host-disabled skips do not load a runtime or write an inventory file; they return result_path: null. Completed reports include source_name/source_root/reference and variable_names, without input values.
+The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor remains 0.2.0; bundled recipe version is 0.3.0; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, descriptor SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version. Source/host-disabled skips do not load a runtime or write an inventory file; they return result_path: null. Completed reports include source_name/source_root/reference and variable_names, without input values.
 
 Seven common observations cover hostname, platform, system name/version, kernel name/release and architecture. Each retains value, state, observed_at, source_ids and error. Missing/failed values remain null with explicit states. A command returning zero does not establish successful parsing or cleanup. Raw inventory command output may appear in private source records.
 
@@ -341,7 +349,7 @@ Su/sudo JSON includes per-step `identity_verification` (expected/actual username
 
 Profiles/init/attach/detach/use/check print human-readable text. Dump and host diagnostics print JSON. Recipe execution prints summary JSON and saves full reports; inventory additionally saves eligible retained observations. Python-session results include data and explicit skipped no_retention_adapter. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results and retained data. Standalone test-connection/su/sudo do not automatically save their reports. Redirect stdout if you need to retain a diagnostic report.
 
-Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries; missing identity probes may use supplied explicit sudo capability or identity_sudo true. It does not su to alternate actors. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
+Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries; inventory 0.3.0 performs default sudo access tests unless account sudo: "false" disables them, then collects under the verified actor. It does not su to alternate actors. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
 
 ## Human and agent workflow
 
@@ -367,7 +375,7 @@ Root/profile resolution follows the existing tools. File arguments use shell wor
 
 The runner automatically performs raw → retained after cleanup, then adds retention and identity_quality to single/batch stdout summaries. Raw schema 0.2.0 receives additive identity 0.1.0 and retention receipt fields. Success/partial operational local/SSH observations are retained; failed/skipped/unsupported/mock results are excluded. Retention failure preserves raw, warns, and makes runner exit 1 even for successful collection; use ingest to retry without remote execution. Retention receipts are persisted in raw but excluded from observation ID hashing. The raw collection status and retention status are separate evidence. Disabled/preflight paths may still have no raw file or retention receipt.
 
-Host identity refers to an OS installation. Linux uses a hashed machine-id candidate with clone/reinstall caveats. FreeBSD/macOS/ESXi lack a verified installation identifier in this implementation and use source UUID plus local host_id fallback, even with valid hardware serials. Fallback emits a warning with remediation and does not establish replacement detection or cross-source equality. Sudo credential selection and identity_sudo controls are documented in the canonical workflow. Unknown cleanup fails collection; no historical keys are automatically reassigned. No receiver database importer, automatic latest-state/conflict resolver, transmission or cleanup tool is implemented.
+Host identity refers to an OS installation. Linux uses a hashed machine-id candidate with clone/reinstall caveats. FreeBSD/macOS/ESXi lack a verified installation identifier in this implementation and use source UUID plus local host_id fallback, even with valid hardware serials. Fallback emits a warning with remediation and does not establish replacement detection or cross-source equality. Sudo credential selection and whole-inventory access controls are documented in [inventory access](inventory-access.md); legacy identity_sudo no longer selects collection privilege. Unknown cleanup fails collection; no historical keys are automatically reassigned. No receiver database importer, automatic latest-state/conflict resolver, transmission or cleanup tool is implemented.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 

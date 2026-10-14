@@ -60,18 +60,9 @@ Every fallback emits a runner warning, raw identity warnings and retained `ident
 
 ### Sudo selection and authorization
 
-All fixed probes first run under the connection account. If probes fail and an explicit sudo password is configured in the actual account's `vars.sudo.password` or host `vars.sudo.password`, that supplied capability enables one root sudo context. A login password alone does not opt in. Existing credential precedence applies: account sudo password → connection-account host sudo password → account password. Credentials and third-party error text are never retained in identity reports.
+Inventory 0.3.0 uses the access gate and root/user actor for the whole collection, including identity. Read [inventory access and credential rules](inventory-access.md). Sudo is attempted by default unless users.<account>.sudo is the exact string "false"; root UID 0 needs no sudo. Canonical sudo-password selects by presence (null/empty become empty passwords), with the string "false" selecting account password. There is no alternate-credential retry. identity_sudo remains accepted for compatibility but no longer selects collection privilege. Unknown restoration/cleanup fails execution and prevents retention. No su to other accounts is attempted by inventory.
 
-Recipe input `identity_sudo: false` explicitly disables elevation; `identity_sudo: true` enables the existing login-account sudo/passwordless policy. It authorizes only the documented read-only identity probes and requires the user's actual execution scope. Example host recipe configuration:
-
-```yaml
-recipes:
-  - recipe: inventory/system
-    vars:
-      identity_sudo: true
-```
-
-The runner does not enumerate other sudo actors or su to another configured account. It verifies root identity and return to the original account. Missing capability, rejected entry or failed probes can degrade to fallback after verified restoration; unknown or failed cleanup is execution failure. These console/root identity checks require standard `id` support; failure remains explicit. Sudo is not attempted merely because a document suggests it.
+The additive inventory-values 0.1.0 extension retains the six-section inventory and collection_scope, while collection_process/access diagnostics stay raw-only. Old seven-field records remain valid; strict consumers must update for the new optional fields. See the [field catalog, CSV and migration rules](inventory-access.md#inventory-values-010-field-catalog).
 
 ## Stage 2 → 3: selection, validation and combination
 
@@ -112,4 +103,4 @@ The draft retained/exchange 0.1.0 contract now permits these optional fields and
 
 MAC addresses may be useful network-interface evidence but are not automatically used as fallback keys. They identify an interface, can remain unchanged across OS reinstall, and may be cloned, changed or randomized. Multiple interfaces also require an explicit selection rule. MAC collection is not implemented by this change. A manually assigned MAC-based identity_key remains a user assertion and needs an installation-specific component/rotation policy. Reference: [Apple private Wi-Fi addresses](https://support.apple.com/en-ie/102509), [NetworkManager address configuration](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/settings-802-11-wireless.html).
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import html
 import json
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 
 def execute(*, context, timeout):
@@ -20,6 +20,8 @@ def execute(*, context, timeout):
                      'observed_from': document.get('started_at'), 'observed_to': document.get('finished_at', document.get('completed_at')),
                      'identity_quality': identity.get('quality') if isinstance(identity, dict) else None,
                      'identity_warnings': identity.get('warnings', [identity['warning']] if identity.get('warning') else []) if isinstance(identity, dict) else [],
+                     'inventory': document.get('inventory'),
+                     'collection_scope': {key: (document.get('access') or {}).get(key) for key in ('mode', 'actual_identity')},
                      'data': document.get('data'), 'observations': document.get('observations')})
     generated = datetime.now(timezone.utc).isoformat()
     title = context.vars['title']
@@ -27,7 +29,7 @@ def execute(*, context, timeout):
     esc = lambda value: html.escape(str(value), quote=True)
     table = '<table><thead><tr>' + ''.join('<th>'+esc(key)+'</th>' for key in keys) + '<th>Details</th></tr></thead><tbody>'
     for row in rows:
-        details = {key:row[key] for key in ('recipe_version', 'source_schema_version', 'source_evidence_kind', 'data', 'observations')}
+        details = {key:row[key] for key in ('recipe_version', 'source_schema_version', 'source_evidence_kind', 'data', 'observations', 'inventory', 'collection_scope')}
         table += ('<tr>' + ''.join('<td>'+esc(json.dumps(row[key], ensure_ascii=False))+'</td>' for key in keys) +
                   '<td><details><summary>Data and provenance</summary><pre>'+esc(json.dumps(details, ensure_ascii=False, indent=2))+'</pre></details></td></tr>')
     content = ('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">'

@@ -314,7 +314,7 @@ hosts:
     recipes: []
 ```
 
-每個帳號只接受可選的 `password` 與 `vars`。`password` 必須是字串，數字或布林形狀的密碼應加引號；空字串與未提供密碼是不同資料，工具保留此差異。使用金鑰或不需要保存密碼時省略 `password`，不自行推定驗證方式。`vars` 必須是 mapping，保留各值的型別，與 host 層的 `vars` 分開保存，不自動繼承或合併。
+Accounts accept optional password, vars, sudo and sudo-password. Read the [inventory access policy](inventory-access.md#configure-the-actual-connection-account) for the exact control-string and field-presence rules. `password` 必須是字串，數字或布林形狀的密碼應加引號；空字串與未提供密碼是不同資料，工具保留此差異。使用金鑰或不需要保存密碼時省略 `password`，不自行推定驗證方式。`vars` 必須是 mapping，保留各值的型別，與 host 層的 `vars` 分開保存，不自動繼承或合併。
 
 `users` 可省略或為 `{}`；`connection.user` 不必有對應的 users 項目，維持既有金鑰及 SSH config 設定可用。有項目時，可用帳號名稱取得登入密碼或明確指定的 su 帳號密碼和變數；su 的目標帳號必須由使用者或 recipe 指定，不從 users 順序推定，也不把列出帳號當成切換授權。
 
@@ -326,7 +326,7 @@ python tools/opsfeast.py dump hosts.host-01.users.appuser /srv/feasts/main
 python tools/opsfeast.py dump hosts.host-01.users.appuser.vars /srv/feasts/main
 ```
 
-`check` 驗證 users 的欄位、帳號名稱、密碼與變數型別，不驗證帳號存在或密碼正確。`dump` 可取得原樣設定；通用 recipe 執行器尚未實作；inventory-system 的最小 runner 只使用登入帳號。`init`、`check`、`dump` 不會登入；`test-connection` 僅使用登入帳號，不執行 su。既有 `vars.sudo` 仍可使用，保持原有 recipe 輸入語意；Host diagnostics select su/sudo credentials using the precedence rules in [host diagnostics](host-diagnostics.md#credential-precedence), including account-password fallback.
+`check` 驗證 users 的欄位、帳號名稱、密碼與變數型別，不驗證帳號存在或密碼正確。`dump` 可取得原樣設定；General Python-session execution is implemented; inventory uses the connection account and verified root when its sudo policy is enabled. `init`、`check`、`dump` 不會登入；`test-connection` 僅使用登入帳號，不執行 su。Legacy vars.sudo credentials remain supported subject to the documented presence/null migration; Host diagnostics select su/sudo credentials using the precedence rules in [host diagnostics](host-diagnostics.md#credential-precedence), including account-password fallback.
 
 ## 每台主機的變數
 
@@ -352,7 +352,7 @@ hosts:
 
 `connection.user` 是 SSH 登入帳號；`vars.sudo.user` 是 sudo 切換到的目標帳號；`vars.sudo.password` 是 sudo 驗證所需的密碼，通常屬於登入帳號，而不是目標帳號。
 
-初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；查詢 hostname 不需要 sudo，就不應讀取 sudo 變數。
+初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；Inventory now explicitly tests enabled sudo and uses verified root for the complete collection; set account sudo: "false" for intentional ordinary-account collection.
 
 目標主機與跳板各自使用自己的變數，不自動繼承。也不自動把變數轉成環境變數或插入 shell 命令。Recipe 讀取變數的程式介面尚未定案。
 
@@ -448,9 +448,9 @@ Host configuration/path rules and inventory-system descriptor/result schema 0.2.
 
 ## Diagnostic credential interpretation
 
-New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su and sudo use the [credential precedence rules](host-diagnostics.md#credential-precedence): account-specific operation override, host operation override only for the actual connection account, then that account's password. Su selects the target account; sudo selects the actor. Su overrides use vars.su.password, while sudo overrides use vars.sudo.password; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
+New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su retains the diagnostic precedence; sudo follows [account field-presence rules](inventory-access.md#configure-the-actual-connection-account), with canonical sudo-password first and exact "false" controls. Su selects the target account; sudo selects the actor. Su overrides use vars.su.password, while sudo overrides use vars.sudo.password; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
 
-Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests connection-account sudo only with a configured password selected by the precedence rule, including account-password fallback. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
+Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests enabled connection-account sudo, including passwordless policy when no password is selected. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
 
 ## Explicit host identity and human-readable metadata
 
@@ -471,4 +471,4 @@ hosts:
 
 identity_key is an exact, case-sensitive nonempty string without leading/trailing whitespace or control characters. Use a shared organization namespace and OS-installation-specific suffix. Duplicate keys anywhere in the resolved include tree fail before connecting. A and B may use the same key in independent Feasts to assert the same installation. This explicit assignment takes priority over native candidates; it does not verify machine identity. Change it after OS reinstall or target replacement. Labels/descriptions are copied into each raw/retained observation and JSON exchange; differing source labels are preserved rather than overwritten. See [identity precedence and sharing](result-data.md#explicit-identity-and-display-metadata).
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

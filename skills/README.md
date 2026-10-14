@@ -20,6 +20,8 @@ User-created skills specific to a Feast belong in `<management-root>/skills/<ski
 
 Before creating or integrating a skill, check known task-relevant source and loaded copies for duplicate names, incompatible contracts, contradictory instructions or loader restrictions. Explain an actual conflict and agree with the user on the authoritative source and integration method before the affected action. Do not silently overwrite, duplicate, rename or select a competing skill. Follow [skill storage and conflict resolution](../docs/agent-guidance.md#skill-storage-and-conflict-resolution); direct reading needs no installation when it works and no conflict exists.
 
+Inventory authoring/access/data tasks also require [the access and partitioned-result guide](../docs/inventory-access.md), linked from the three OpsFeast skills.
+
 ## Available repository skills
 
 - [opsfeast-hosts](opsfeast-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).

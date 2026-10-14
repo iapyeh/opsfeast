@@ -16,6 +16,10 @@ import run_recipe as runner
 
 class HostSelectionTests(unittest.TestCase):
     def setUp(self):
+        from access_check import VERSION
+        checker = patch('access_check.check_many', side_effect=lambda root, hosts, *args: {'contract_version': VERSION, 'status': 'success', 'hosts': [{'host': h, 'status': 'success', 'connected': True} for h in hosts]})
+        checker.start()
+        self.addCleanup(checker.stop)
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
@@ -115,7 +119,7 @@ hosts:
         status, out, _, execute = self.cli(['inventory/system', '--host', 'web-01', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual(json.loads(out)['status'], 'success')
-        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='inventory/system')
+        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'web-01', 'status': 'success', 'connected': True})
 
     def test_cli_multiple_groups_and_hosts_preserve_option_order(self):
         status, out, _, execute = self.cli(
@@ -132,14 +136,14 @@ hosts:
                 status, out, _, execute = self.cli(['inventory/system', '--root', str(self.root), *targets])
                 self.assertEqual(status, 0)
                 self.assertEqual(json.loads(out)['status'], 'success')
-                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='inventory/system')
+                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'web-02', 'status': 'success', 'connected': True})
 
     def test_all_one_host_still_uses_batch_summary(self):
         (self.root / 'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
         status, out, _, execute = self.cli(['inventory/system', '--all', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual([r['host'] for r in json.loads(out)['hosts']], ['h'])
-        execute.assert_called_once_with(self.root, 'h', 30, recipe='inventory/system')
+        execute.assert_called_once_with(self.root, 'h', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'h', 'status': 'success', 'connected': True})
 
     def test_cli_explicit_recipe_at_different_positions(self):
         for args in (['--recipe', 'inventory/system', '--group', 'web'],
@@ -267,7 +271,7 @@ hosts:
         lock = threading.Lock()
         active = maximum = 0
         completed, labels = [], {}
-        def collect(root, host, timeout, recipe):
+        def collect(root, host, timeout, recipe, **options):
             nonlocal active, maximum
             with lock:
                 active += 1

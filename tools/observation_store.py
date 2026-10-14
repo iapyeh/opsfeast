@@ -170,6 +170,14 @@ def extract(raw, source):
               'recipe_id': 'inventory-system', 'recipe_version': nonempty(raw['recipe'].get('recipe_version', raw['recipe'].get('version')), 'recipe_version'),
               'raw_schema_version': '0.2.0', 'started_at': started, 'observed_at': finished,
               'evidence_kind': raw['evidence_kind'], 'status': raw['status'], 'observations': observations}
+    if 'inventory' in raw:
+        from inventory_values import validate_inventory
+        if raw.get('inventory_contract_version') != '0.1.0':
+            raise ConfigError('unsupported inventory values contract')
+        record.update(inventory_contract_version='0.1.0', inventory=validate_inventory(raw['inventory']))
+        access = raw.get('access', {})
+        record['collection_scope'] = {'mode': access.get('mode', 'unverified'),
+                                      'effective_uid': access.get('actual_identity', {}).get('effective_uid')}
     if user_assigned:
         record['identity_key'] = assigned
     metadata = raw.get('host_metadata', {})
@@ -182,8 +190,17 @@ def extract(raw, source):
 
 def validate_record(record):
     required = {'contract_version', 'observation_id', 'source_id', 'host_id', 'host_key', 'identity_method', 'identity_quality', 'identity_evidence', 'identity_warning', 'recipe_id', 'recipe_version', 'raw_schema_version', 'started_at', 'observed_at', 'evidence_kind', 'status', 'observations'}
-    if not isinstance(record, dict) or not required.issubset(record) or set(record) - required - {'identity_key', 'label', 'description'}:
+    if not isinstance(record, dict) or not required.issubset(record) or set(record) - required - {'identity_key', 'label', 'description', 'inventory_contract_version', 'inventory', 'collection_scope'}:
         raise ConfigError('invalid retained record fields')
+    extension = {'inventory_contract_version', 'inventory', 'collection_scope'}
+    if extension & set(record):
+        from inventory_values import validate_inventory
+        if not extension.issubset(record) or record['inventory_contract_version'] != '0.1.0':
+            raise ConfigError('invalid inventory extension')
+        validate_inventory(record['inventory'])
+        scope = record['collection_scope']
+        if not isinstance(scope, dict) or set(scope) != {'mode', 'effective_uid'} or scope['mode'] not in ('root', 'user', 'fallback_user', 'unverified') or scope['effective_uid'] is not None and (type(scope['effective_uid']) is not int or scope['effective_uid'] < 0):
+            raise ConfigError('invalid collection scope')
     for name in ('label', 'description'):
         if name in record and (not isinstance(record[name], str) or '\x00' in record[name]):
             raise ConfigError('invalid host display metadata')
@@ -322,6 +339,7 @@ def main(argv=None):
     ingest = sub.add_parser('ingest', help='reprocess explicitly selected local raw results')
     ingest.add_argument('files', nargs='+')
     outgoing = sub.add_parser('export', help='print portable JSON; no transmission')
+    outgoing.add_argument('--format', choices=('json', 'csv'), default='json', help='CSV missing values are empty cells; JSON remains the exchange format')
     outgoing.add_argument('--recipe')
     outgoing.add_argument('--host', nargs='+')
     outgoing.add_argument('--since')
@@ -370,7 +388,28 @@ def main(argv=None):
             fallback_count = sum(record.get('identity_quality') == 'fallback' for record in records)
             if fallback_count:
                 print(f'WARNING: {fallback_count} fallback observations: source-scoped host IDs do not prove cross-source identity or host replacement. Supply authorized sudo only if permissions caused missing identity; unsupported installation identity still requires fallback. Read identity_warning and docs/result-data.md.', file=sys.stderr)
-        print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
+        if args.command == 'export' and args.format == 'csv':
+            import csv
+            import io
+            from inventory_values import csv_text, empty
+            writer = csv.writer(sys.stdout)
+            writer.writerow(('observation_id', 'host_id', 'observed_at', 'identity_quality', 'collection_mode', 'effective_uid', 'section', 'field', 'item', 'attribute', 'value'))
+            for record in result['records']:
+                data = record.get('inventory')
+                if data is None:
+                    data = empty()
+                    for field, item in record['observations'].items():
+                        data['system'][field] = item['value']
+                rows = csv.reader(io.StringIO(csv_text(data)))
+                next(rows)
+                scope = record.get('collection_scope', {})
+                def safe(value):
+                    return "'" + value if isinstance(value, str) and value.startswith(('=', '+', '-', '@', '\t', '\r', '\n')) else value
+                prefix = [safe(record[key]) for key in ('observation_id', 'host_id', 'observed_at', 'identity_quality')] + [scope.get('mode', 'unverified'), scope.get('effective_uid')]
+                for row in rows:
+                    writer.writerow(prefix + row)
+        else:
+            print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
         return 0
     except (ConfigError, OSError, ValueError, TypeError, AttributeError, sqlite3.Error) as exc:
         print('ERROR: ' + (str(exc) if isinstance(exc, ConfigError) else type(exc).__name__), file=sys.stderr)

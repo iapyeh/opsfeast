@@ -233,11 +233,11 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_report_runtime_failure_does_not_expose_exception_text(self):
         directory=self.copy_report()
-        (directory/'main.py').write_text("VERSION='0.1.0'\ndef execute(*,context,timeout): raise RuntimeError('private-value')")
+        (directory/'main.py').write_text("VERSION='0.1.1'\ndef execute(*,context,timeout): raise RuntimeError('private-value')")
         report,path=reports.run_report(self.root,catalog.choose(self.root,':report/summary'),[])
         self.assertEqual(report['status'],'failed')
         self.assertNotIn('private-value',path.read_text())
-        (directory/'main.py').write_text("VERSION='0.1.0'\ndef execute(*,context,timeout): return {'status':'success'}")
+        (directory/'main.py').write_text("VERSION='0.1.1'\ndef execute(*,context,timeout): return {'status':'success'}")
         report,_=reports.run_report(self.root,catalog.choose(self.root,':report/summary'),[])
         self.assertEqual(report['reason_code'],'invalid_result')
 

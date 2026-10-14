@@ -92,4 +92,10 @@ Single/batch runner summaries now include retention and identity_quality; a rete
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-13_
+## Inventory 0.3.0 access and result extension
+
+Inventory now tests selected login/root access before the whole batch, attempts sudo by default and collects under the verified root actor. For intentional ordinary-account use, set users.<account>.sudo to the exact quoted string "false". Canonical sudo-password selects by presence; null/empty are empty passwords and "false" selects account password. Legacy explicit sudo vars follow the same presence migration; no alternate-credential retry. Test-host now permits enabled passwordless sudo when no password is selected; check-access/--dryrun are narrower readiness tests without su/platform collection. Review existing authorization before executing the changed defaults.
+
+Six-section inventory-values 0.1.0 is an additive raw/retained/exchange extension; old seven-field results remain readable and unchanged. Update strict validators before reading new extension fields. New report-summary 0.1.1 displays values/scope. Recipe changes invalidate pinned jobs; review and save new definitions without automatic scheduling. No private settings, historical records or environments are rewritten. See [the complete access, CSV and migration guide](inventory-access.md).
+
+_Last modified: 2026-10-14_

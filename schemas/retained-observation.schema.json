@@ -654,7 +654,402 @@
     },
     "description": {
       "type": "string"
+    },
+    "inventory_contract_version": {
+      "const": "0.1.0"
+    },
+    "inventory": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Inventory values 0.1.0",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "system",
+        "hardware",
+        "storage",
+        "network",
+        "software",
+        "services"
+      ],
+      "properties": {
+        "system": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hostname",
+            "platform",
+            "system_name",
+            "system_version",
+            "kernel_name",
+            "kernel_release",
+            "architecture",
+            "uptime_seconds",
+            "timezone",
+            "virtualization"
+          ],
+          "properties": {
+            "hostname": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "platform": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "system_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "system_version": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "kernel_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "kernel_release": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "architecture": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "uptime_seconds": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "virtualization": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            }
+          }
+        },
+        "hardware": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cpu_model",
+            "logical_cpus",
+            "memory_total_bytes",
+            "vendor",
+            "model",
+            "serial",
+            "uuid"
+          ],
+          "properties": {
+            "cpu_model": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "logical_cpus": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "memory_total_bytes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "vendor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "model": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "serial": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            },
+            "uuid": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filesystems",
+            "block_devices"
+          ],
+          "properties": {
+            "filesystems": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "block_devices": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "interfaces",
+            "routes",
+            "dns_servers",
+            "listening_endpoints"
+          ],
+          "properties": {
+            "interfaces": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "routes": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "dns_servers": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "listening_endpoints": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "software": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "packages"
+          ],
+          "properties": {
+            "packages": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "services": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "services"
+          ],
+          "properties": {
+            "services": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "$comment": "Missing values are null; CSV uses empty cells. Last modified: 2026-10-14"
+    },
+    "collection_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "effective_uid"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "root",
+            "user",
+            "fallback_user",
+            "unverified"
+          ]
+        },
+        "effective_uid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
     }
   },
-  "$comment": "Semantic ID relationships, timestamp ordering and overall state consistency are additionally enforced by observation_store.py. Last modified: 2026-10-13"
+  "$comment": "Additive inventory-values 0.1.0 extension; legacy records remain valid. Last modified: 2026-10-14",
+  "dependentRequired": {
+    "inventory_contract_version": [
+      "inventory",
+      "collection_scope"
+    ],
+    "inventory": [
+      "inventory_contract_version",
+      "collection_scope"
+    ],
+    "collection_scope": [
+      "inventory_contract_version",
+      "inventory"
+    ]
+  }
 }

@@ -75,13 +75,15 @@ def validate_invocation(root, item, inv):
             raise ConfigError('invalid all/target/exclusion combination')
 
 
-def execute(root, spec):
+def execute(root, spec, *, dryrun=False, force=False):
     item = choose(root, spec['recipe'])
     if not item['runnable']:
         raise ConfigError('selected recipe has invalid or unsupported execution contract')
     inv = spec['invocation']
     validate_invocation(root, item, inv)
     if item['kind'] == 'report':
+        if dryrun or force:
+            raise ConfigError('--dryrun/--force are inventory-only')
         values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
         report, path = run_report(root, item, [Path(p) for p in inv['inputs']], values,
                                   inv['assignments'], inv['timeout'])
@@ -102,6 +104,8 @@ def execute(root, spec):
     if inv['vars_file']: argv.extend(['--vars-file', inv['vars_file']])
     if inv['verbose']: argv.append('--verbose')
     if inv['quiet']: argv.append('--quiet')
+    if dryrun: argv.append('--dryrun')
+    if force: argv.append('--force')
     return run(argv)
 
 
@@ -130,6 +134,9 @@ def main(argv=None):
     run = commands.add_parser('run')
     environment(run)
     invocation(run)
+    mode = run.add_mutually_exclusive_group()
+    mode.add_argument('--dryrun', action='store_true')
+    mode.add_argument('--force', action='store_true')
     result = commands.add_parser('results')
     environment(result)
     result.add_argument('action', choices=('list', 'show'))
@@ -195,7 +202,7 @@ def main(argv=None):
                 print(item['availability_evidence'])
             return 0 if item['runnable'] else 1
         if args.command == 'run':
-            return execute(root, specification(args))
+            return execute(root, specification(args), dryrun=args.dryrun, force=args.force)
         if args.command == 'pack':
             item = choose(root, args.recipe)
             if not item['runnable']: raise ConfigError('only compatible reviewed recipes can be packed')

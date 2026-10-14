@@ -3,10 +3,10 @@ descriptor_version: 0.2.0
 author: {name: Bundle, contacts: [Bundle]}
 license: MIT
 id: inventory-system
-version: 0.2.2
+version: 0.3.0
 status: implemented
 title: System inventory
-description: Collect system identity, operating system version, kernel, and architecture.
+description: Collect bounded system, hardware, storage, network, software and services metadata.
 kind: collection
 platforms:
   planned:
@@ -42,7 +42,7 @@ dependencies:
   status: defined
 permissions:
   account: login-user
-  elevation: optional-root-for-authorized-identity-probes
+  elevation: verified-root-by-default-unless-account-sudo-disabled
 side_effects:
   target: read-only-queries
   controller: Save raw JSON under observations/ and retain operational observations in records/observations.sqlite3.
@@ -56,6 +56,10 @@ inputs:
   variables:
     identity_sudo:
       type: boolean
+    collection_budget_seconds:
+      type: number
+      minimum: 0
+      exclusive_minimum: true
     command_timeout_seconds:
       type: number
       minimum: 0
@@ -67,6 +71,7 @@ output:
   exchange_version: 0.1.0
   retention_adapter: inventory-system-v1
   example: examples/result.synthetic.json
+  inventory_contract_version: 0.1.0
   fields:
   - hostname
   - platform

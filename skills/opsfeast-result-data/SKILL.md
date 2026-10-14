@@ -11,6 +11,17 @@ Read the repository AGENTS.md, [CLI reference](../../docs/cli.md#retained-observ
 
 General Python-session recipe results are raw JSON with explicit no_retention_adapter; this skill's inventory recovery/exchange contracts do not ingest them. See [general results](../../docs/recipe-execution.md#results-failure-states-and-storage).
 
+## Inventory access and result capability 0.1.0
+
+Read [the complete inventory access/results guide](../../docs/inventory-access.md) before selecting accounts, testing access, running inventory, authoring collectors or interpreting/exporting new values. It documents exact interfaces, settings, source selection, dependencies, authorization, failure/skip/fallback states, units, scope and verification limits.
+
+- Use check-access for selected hosts.yaml login/root validation; inventory --dryrun adds static recipe/input checks. Both make real connections and sudo attempts, but create no inventory or host-init data and never su to other users. Test-host is a broader diagnostic.
+- Inventory 0.3.0 defaults to verified root/sudo; account sudo: "false" deliberately selects ordinary-account collection. Canonical sudo-password selects by presence: null/empty mean empty password; exact "false" means account-password fallback. Other disabling representations are invalid; no retry with another credential. Prefer these canonical fields; preserve legacy vars credentials and do not rewrite private configuration.
+- The default batch gate rejects collection after any required access failure. Force allows connection skips and verified user fallback; uncertain identity/restoration/cleanup still stops that host. Dryrun/force are mutually exclusive and inventory-only, not saved-job flags. Check access.mode, batch counts and exit code separately from collected values.
+- Pure results are inventory.system/hardware/storage/network/software/services with fixed nullable typed fields. Raw collection_process/observations/sources preserve execution evidence. Retention/exchange preserve inventory and minimal collection_scope, omit diagnostics, and keep original times/identity quality. Old records remain valid; update strict consumers before accepting new extension fields.
+- For CSV use observation_store.py export --format csv with explicit filters; null becomes an empty cell, zero stays zero, empty lists remain []. JSON is the exchange contract. For SQL query the retained payload with json_extract; for reports reuse the updated offline report/summary or reviewed user recipes. A later run with another account is separate history, not automatic field merging.
+- Extra queries have byte/item/command/shared time bounds and platform gaps. Root does not guarantee complete visibility. No new native SSH/sudo or all-platform collection evidence follows from synthetic tests. Do not install missing tools, probe arbitrary files or transmit exports without scope.
+
 ## Available capability catalog
 
 | Capability | Interface/version | Availability and limits |
@@ -37,7 +48,7 @@ Check the selected interpreter, available tool files and chosen profile/root fir
 
 Host means OS installation: reinstalling/changing the OS is a different host, even on the same equipment. Rotate user-assigned identity_key after reinstall/replacement; inability to detect a preserved native identifier or fallback continuity is a limitation, not an exception to this definition. IP/hostname are mutable; hardware serial/UUID links equipment and cannot detect reinstall. Linux uses an application-specific machine-id HMAC digest as a candidate, with clone/reinstall caveats. FreeBSD/macOS/ESXi currently use fallback installation identity even if hardware probes succeed. Inspect raw identity.evidence only when investigating a concrete identity problem, and keep raw execution details local.
 
-Fallback keys namespace local host_id by source Feast UUID. They permit local history but cannot prove continuity after target replacement or cross-source equality. Read/relay identity_warning and give a concrete remedy according to probe state. Supplied explicit sudo credentials enable missing fixed probes; identity_sudo false disables, true also supports authorized passwordless sudo. A login password alone does not opt in. Do not promise elevation resolves missing OS-identity contracts. No target installation marker is written.
+Fallback keys namespace local host_id by source Feast UUID. They permit local history but cannot prove continuity after target replacement or cross-source equality. Read/relay identity_warning and give a concrete remedy according to probe state. Inventory identity probes use the same verified actor as collection. Account sudo is attempted by default unless exactly "false"; legacy identity_sudo no longer selects collection privilege. Do not promise elevation resolves missing OS-identity contracts. No target installation marker is written.
 
 Matching machine-derived keys are evidence, not uniqueness proof. Compare device evidence for contradictions and preserve unresolved conflicts. Do not auto-merge fallback identities, rename keys, assign all old observations to newly discovered identities, or equate lack of a new record with a host disappearing. Reviewed historical aliases and organization-wide asset mapping are not implemented.
 
@@ -47,4 +58,4 @@ Contract versions and database physical version are distinct. Never mutate schem
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

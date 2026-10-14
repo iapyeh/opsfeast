@@ -2,6 +2,8 @@
 
 Create a simple offline HTML table and JSON dataset from explicitly selected raw inventory/general execution results. This is a reusable python-report recipe: no LLM, SSHScript Session, SSH, sudo, network access or external renderer is needed. It does not refresh source observations or prove that services are healthy.
 
+Version 0.1.1 includes inventory-values 0.1.0 sections and the actual collection mode/UID in report details. Missing values, source times and identity warnings remain visible; raw process logs and credentials are not copied into these new fields. Read [inventory data semantics](../../../docs/inventory-access.md#separate-results-and-execution-evidence).
+
 ## Use
 
 From the checkout with the selected Python interpreter and an existing Feast:
@@ -32,15 +34,15 @@ Package the portable recipe with an explicit allowlist:
 
 ```sh
 python -B tools/opsfeast.py recipes pack report/summary --checkout-only \
-  --file recipe.yaml --file main.py --file README.md --file examples/input.synthetic.json \
+  --file recipe.yaml --file main.py --file README.md --file LICENSE --file examples/input.synthetic.json \
   --output /path/to/new-report.zip
 python -B tools/opsfeast.py recipes unpack /path/to/new-report.zip --destination /path/to/new-candidate
 ```
 
-Unpack verifies content and creates a review candidate, without installation/registration/execution. Recipients review the candidate, choose their own data bindings and authorize use. No real data, generated report or job binding is included by this allowlist. Publisher authentication and distribution licensing must be established independently; the repository currently declares no distribution license.
+Unpack verifies content and creates a review candidate, without installation/registration/execution. Recipients review the candidate, choose their own data bindings and authorize use. No real data, generated report or job binding is included by this allowlist. Publisher authentication and distribution licensing must be established independently; this bundled recipe declares MIT and includes LICENSE.
 
 ## Implementation and verification
 
 Python standard-library JSON and HTML escaping render a plain table without script dependencies; source text and titles are escaped. User-created report recipes can use other renderers and declared output types, with their own dependencies and verification. See [implementation](main.py), [common report contract](../../../docs/recipe-experience.md) and [public synthetic tests](../../../tests/test_recipe_experience.py). Tests cover empty/unsupported/failed/unknown data, identity warnings, source-time preservation, injection escaping, repeat runs and cross-Feast bundle reuse. No real host data, SSH or service probes were used.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

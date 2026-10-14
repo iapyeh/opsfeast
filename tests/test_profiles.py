@@ -247,9 +247,10 @@ class ProfileTests(unittest.TestCase):
                   'message': 'Synthetic successful run.', 'detected_kernel': 'Linux',
                   'supported_platforms': ['linux'], 'recipe': {'id': 'inventory-system'}}
         with patch.object(run_recipe, 'run', return_value=(report, path)) as run, \
+                patch('access_check.check_many', return_value={'status': 'success', 'hosts': []}), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(run_recipe.main(['inventory/system', '--host', 'localhost', '--profile', 'inventory']), 0)
-        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='inventory/system')
+        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='inventory/system', force=False, access_checked=True, access_result=None)
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_profile_boundaries_and_result_directories(self):
