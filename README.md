@@ -103,6 +103,28 @@ Run `python -B tools/opsfeast.py` without arguments for a version/download Home,
 
 Configure public author name, contacts and intended recipe license in the local `.opsfeast-author.yaml`; Home displays them. New recipe authoring uses these defaults, with Unknown until configured. Built-ins are Bundle/MIT, and external imports cannot claim Bundle. See [attribution and defaults](docs/recipe-attribution.md).
 
+## Update OpsFeast and refresh your agent's skills
+
+Paste this prompt into your AI agent's existing OpsFeast project. It authorizes this update run, including a fast-forward pull and refresh of existing official skill copies; no second approval is needed for those steps. It does not create a recurring schedule. The agent reports what it learned in your reply language.
+
+```text
+Check this project's existing OpsFeast checkout for updates and apply them for me. I authorize fetching from the official https://github.com/iapyeh/opsfeast.git repository, running git pull --ff-only from this checkout's configured upstream, and refreshing your knowledge and existing unmodified agent-installed copies of this checkout's official skills, including their required references and source records. Complete this authorized workflow without asking again for routine approval.
+
+First read the current AGENTS.md, AGENTS.local.md if present, README.md, skills/README.md, docs/skill-updates.md and docs/agent-guidance.md. Verify the actual checkout, official remote, branch and upstream; record its VERSION and commit. Preserve local files, Feast settings, credentials, user-created skills and operational records. If tracked/staged changes, colliding untracked files, a detached HEAD, branch divergence or checkout restrictions prevent a safe fast-forward, report the specific blocker. Do not stash, reset, clean, switch branches, merge local work or overwrite files automatically.
+
+Check the official GitHub Releases for a newer published stable release and review its notes, target commit and compatibility. Compare the configured upstream's fetched commits and relevant code, dependency, guidance and skill changes before applying. If there are no published releases, use new upstream commits as the update signal, comparing VERSION too, and explicitly call this a branch update rather than a formal release. A failed network/release check is not evidence that no update exists. Git pull follows the configured branch; report if it would include commits beyond the release, or if that branch cannot deliver the release. Do not silently change the update channel. If the checkout already contains the release and has no newer applicable upstream commits, skip the pull.
+
+After an applicable fast-forward pull, record the new VERSION and commit, then explicitly reread the updated guidance, every bundled SKILL.md, and the changed task-relevant linked guides/references. Compare the old and new material; learn the actual interfaces, settings, failure states, authorization boundaries and verification limits. Use the included version-matched SSHScript snapshot; do not independently replace it with another downloaded bundle.
+
+Inspect known official skill copies or bindings used by your agent. Where the existing integration is supported, unmodified and traceable to this checkout, refresh complete copies/references and source/version records, preserving valid links, then use the platform's supported reload mechanism and verify the active source. For local edits, duplicate/conflicting sources or a required new integration method, preserve the files and ask only for that unresolved choice. If reload is unavailable, read the updated Markdown directly for this conversation and report that limitation; do not claim installed skills or future conversations were refreshed merely because you read files.
+
+Use the existing selected Python environment to run the documented read-only environment checks and any locally applicable update validation. Do not install/upgrade packages, recreate environments, migrate private data, connect to hosts, test sudo, execute operational recipes, commit/push or create schedules under this update authorization. Report any concrete dependency or compatibility work still needed.
+
+Finish with a concise report to me: update/no-update/blocked status; release versus branch evidence; old/new VERSION and commits; important new features and behavior/migration changes; newly learned or changed skills with practical examples of what you can now help me do; skill sources actually read and copies reloaded versus still pending; validation results, limitations and any action I need to take. Distinguish planned features, implemented interfaces and verified behavior. Do not expose secrets.
+```
+
+Skill refresh is an agent procedure using the existing integration or direct Markdown reading; OpsFeast has no universal skill installer/reloader. See [complete skill updates](docs/skill-updates.md) and [source/conflict handling](docs/agent-guidance.md#skill-storage-and-conflict-resolution). For repeated checks, separately choose and authorize a schedule on your agent platform.
+
 ## For AI agents
 
 Read the [skill index](skills/README.md) first, select the relevant skills and check task-relevant integration conflicts as described in [agent guidance](docs/agent-guidance.md#skill-storage-and-conflict-resolution). Start here when a user asks you to use OpsFeast. Read the linked Markdown directly if your agent does not automatically discover project guidance or skills; no particular agent product or skill loader is required.
