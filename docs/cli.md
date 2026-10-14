@@ -1,5 +1,7 @@
 # Ops command-line reference
 
+For task-to-tool discovery and Python composition, consult [the existing capability map](agent-capabilities.md). Prefer suitable implemented interfaces before writing replacement configuration, execution, storage or export code.
+
 OpsFeast provides two command-line entrypoints:
 
 - **`tools/opsfeast.py` prepares and diagnoses the host environment.** It provides recipes list/show/run, raw results/artifacts, offline reports, bundle candidates and saved jobs; inspects recipe metadata and platform coverage; manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.

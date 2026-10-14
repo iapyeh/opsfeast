@@ -129,6 +129,8 @@ Skill refresh is an agent procedure using the existing integration or direct Mar
 
 Read the [skill index](skills/README.md) first, select the relevant skills and check task-relevant integration conflicts as described in [agent guidance](docs/agent-guidance.md#skill-storage-and-conflict-resolution). Start here when a user asks you to use OpsFeast. Read the linked Markdown directly if your agent does not automatically discover project guidance or skills; no particular agent product or skill loader is required.
 
+For DevOps users and their agents, before writing operational programs, consult the [existing tool and Python module capability map](docs/agent-capabilities.md). OpsFeast already handles configuration, discovery, execution, inputs, results, reports, exchange, bundles and saved reruns; reuse suitable interfaces and develop only the missing task logic. OpsFeast product developers have the complementary mission to reduce that need by providing broad, complete and stable tools/modules. Both roles use reviewed code for routine repetition and reserve AI for new needs, judgment, changes and exceptions; see [the role-specific principles](docs/vision.md#distinguish-product-developers-from-devops-users).
+
 ### Learn Ops and choose the relevant skill
 
 1. Read [AGENTS.md](AGENTS.md) for project instructions, then any user-maintained `AGENTS.local.md` in this checkout. Local guidance is optional, private and not supplied by a clone; see [public and local guidance](docs/agent-guidance.md).

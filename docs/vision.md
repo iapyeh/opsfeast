@@ -18,11 +18,31 @@ An administrator should be able to explain the result they need without learning
 
 Humans still decide goals, target systems, acceptable side effects and authorization. Ask concise questions when missing context changes correctness or risk. Reuse requirements and authorization already supplied within their scope. Feature and recipe design should make these decisions clear without forcing people to become framework experts.
 
+## Distinguish product developers from DevOps users
+
+OpsFeast has two development roles with different responsibilities. **Product developers** build and maintain OpsFeast itself: its tools, modules, contracts, bundled capabilities and agent guidance. **DevOps users** operate their own infrastructure with OpsFeast and may develop recipes for their particular environments. A user's AI agent normally assists the second role; an agent contributing to OpsFeast itself acts in the first role. Read the following principles according to the work being performed.
+
+### Product developers: reduce the user's need to develop
+
+Our mission as OpsFeast developers is to provide tools and modules that are as complete, broad and stable as practical, so DevOps users can accomplish more through configuration and existing capabilities and need to write less code. When users need specialized recipes, give them usable, well-documented building blocks for configuration, execution, data, validation and reporting so they can focus on their own operational logic. Broad coverage and stable interfaces are development goals; do not imply that today's checkout already has a complete stable SDK.
+
+Treat repeated user-side workarounds and missing common operations as evidence of product gaps. Assess whether an authorized change should provide a shared command, module, recipe or extension point instead of leaving every user and agent to build the same machinery. Prefer reusable product support over instructions that merely transfer implementation responsibility to users. Existing capability discovery informs product design; it must not constrain product developers to implementing only a user's immediate missing fragment or become a reason to avoid completing the product.
+
+Usable interfaces and knowledge transfer belong to the same delivery. Maintain [the agent capability map](agent-capabilities.md), relevant skills and canonical CLI/import examples with tools/modules/contracts. Record dependencies, compatibility/versioning, inputs/outputs, effects, failure/skipped states, extension points and reproducible verification. Review the fresh-user learning path, remove obsolete claims and explain interface changes. Distinguish stable data contracts, checkout-level Python interfaces and internal helpers; availability documentation does not imply automatic installation or loading.
+
+## Make existing capabilities the first choice for agents
+
+This principle applies to **DevOps users and their agents** operating OpsFeast or authoring their own specialized recipes. First inspect the capability map and relevant skills, then prefer suitable existing recipes, tools and modules over recreating configuration parsing, connection/session handling, discovery, storage, export, validation or rerun machinery. When existing functionality does not fit, identify the concrete gap, respect user-selected tools and implement the task-specific logic using provided building blocks where possible. Keep configuration and private bindings at runtime rather than freezing an agent's current observations into source.
+
+This user-side reuse workflow complements the product developer's responsibility to broaden and stabilize the available building blocks. A documented custom-script workaround can help an authorized user now; it does not discharge the product developer's responsibility to assess recurring needs for reusable product support.
+
 ## Use AI where it adds value; reuse code for routine work
 
-Spend model effort on understanding new requests, creating and reviewing recipes, adapting to change and investigating exceptions. Once operations are defined, let executable recipes carry out their repeatable steps without requiring an LLM to regenerate commands on each run.
+This principle applies to **both roles**. Reduce repeated work delegated to AI and increase the use of reviewed programs to improve consistency, reproducibility and result stability. Preserve reusable operations, queries, transformations, interpretation rules, tests and reports as code, recipes or explicit configuration. Routine reruns should execute those artifacts without asking an LLM to generate the same solution again.
 
-Prefer concise discovery metadata, explicit inputs, stable result contracts and relevant documentation over repeatedly loading the entire knowledge base. Reuse already-read, applicable skill material and retained configuration. Token savings must not remove necessary verification, hide failures or bypass authorization. Agent coordination and result interpretation may still use tokens; no minimum-cost benchmark has been established.
+For product developers, automate repeatable development, validation and delivery work where appropriate and build those reusable capabilities into OpsFeast. For DevOps users, rerun reviewed recipes and tools against current configuration and inputs. Spend AI effort on understanding new needs, design and judgment, new or changed logic, code review and exceptions that existing programs cannot handle. AI should assist where reasoning adds value, while programs carry defined repetition.
+
+Prefer concise discovery metadata, explicit inputs, stable result contracts and relevant documentation over repeatedly loading the entire knowledge base. Reuse already-read, applicable skill material and retained configuration. Token savings must not remove necessary verification, hide failures or bypass authorization. Agent coordination and result interpretation may still use tokens; no minimum-cost or stability benchmark has been established.
 
 For routine recipes, avoid requiring an LLM inside the execution path. If a task actually needs model inference, document that dependency, what data leaves the environment, its cost implications and how its output is verified.
 
@@ -95,6 +115,9 @@ Preserve human notes and existing configuration. Retain the recipe versions, inp
 For a feature, recipe or documentation change, assess the relevant questions before delivery:
 
 - Can the administrator request and assess the outcome without learning internal APIs?
+- For product development, does the change reduce user-side implementation work and improve the completeness, breadth and stability of reusable tools/modules? Have recurring user workarounds been assessed as product gaps?
+- For user recipe development, have suitable existing capabilities been discovered and reused, with concrete gaps explained? Can a fresh agent find the final interfaces through the capability map and skills?
+- For both roles, can reviewed programs perform routine repetition with consistent, verifiable results while AI focuses on new needs, judgment, changes and exceptions?
 - Can a human or fresh AI agent find the learning path, relevant interfaces and complete skills without prior conversation context?
 - Can the user's agent perform relevant data operations through documented contracts and actionable skills when no bundled tool exists, and are any remaining limitations explicit?
 - Can repeated operations, analysis and visualization rerun saved recipes, queries, rules and templates without unnecessary model calls? Which reusable artifacts remain after the agent completes the task?
@@ -108,4 +131,4 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

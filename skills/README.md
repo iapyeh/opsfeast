@@ -12,6 +12,14 @@ For complete tool syntax, defaults, behavior, output and exit codes, see the [CL
 
 For first use, the [single-prompt walkthrough](../docs/first-use.md) lets an agent clone or reuse OpsFeast in the active workspace, explicitly read the acquired guidance, and propose setup. Follow [checkout bootstrap](../docs/getting-started.md#agent-led-checkout-bootstrap) for empty/nonempty directories, repository verification and failure handling. Clone-only authorization stops before software installation and initialization; the agent offers to execute the concrete local plan after the user agrees.
 
+## Discover and reuse existing capabilities first
+
+These operational skills guide **DevOps users and their agents**, including authors of specialized user recipes. Product developers instead own the complementary mission to provide complete, broad and stable tools/modules that reduce user-side development; see [the two roles](../docs/vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed programs for repeatable work and focus AI effort on new needs, judgment, changes and exceptions.
+
+Before generating operational code, read the [tool and Python module capability map](../docs/agent-capabilities.md) and the task-specific skill. Prefer an existing compatible recipe or complete CLI workflow; for in-process Python composition, reuse the documented modules after checking their current signatures/contracts and dependencies. Implement only a concrete missing capability, and explain why existing functionality is unsuitable. Do not regenerate configuration parsers, connection lifecycles, result storage/export, artifact checks or rerun machinery that OpsFeast already provides.
+
+Operating OpsFeast and developing with its modules are continuing skill-update priorities. Every usable capability change must update the map, relevant skill and canonical CLI/import examples in the same delivery; see [the development principle](../docs/vision.md#make-existing-capabilities-the-first-choice-for-agents). The bundled SSHScript skill owns execution-library APIs and provenance, while the three OpsFeast skills below own product workflows and module routing. Do not edit the upstream snapshot to document local OpsFeast features.
+
 ## Skill source locations and learning order
 
 All bundled skill sources are in this repository's `skills/`, including the complete SSHScript snapshot. Start with this index, select the task below, and read that SKILL.md and its task-relevant references before using the interfaces. Reuse already-read applicable material; do not load every skill or the entire API guide for a small task.
@@ -21,6 +29,8 @@ User-created skills specific to a Feast belong in `<management-root>/skills/<ski
 Before creating or integrating a skill, check known task-relevant source and loaded copies for duplicate names, incompatible contracts, contradictory instructions or loader restrictions. Explain an actual conflict and agree with the user on the authoritative source and integration method before the affected action. Do not silently overwrite, duplicate, rename or select a competing skill. Follow [skill storage and conflict resolution](../docs/agent-guidance.md#skill-storage-and-conflict-resolution); direct reading needs no installation when it works and no conflict exists.
 
 Inventory authoring/access/data tasks also require [the access and partitioned-result guide](../docs/inventory-access.md), linked from the three OpsFeast skills.
+
+When writing Python that consumes host settings, start with [runtime configuration loading](../docs/hosts-yaml.md#read-host-configuration-from-python), linked from both hosts and recipes skills. Standalone tools reuse the checkout loader; runner-managed recipes use their supplied Session and context. Do not freeze the agent's current view of hosts.yaml into generated connection parameters.
 
 ## Available repository skills
 

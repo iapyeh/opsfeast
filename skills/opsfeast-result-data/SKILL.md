@@ -1,6 +1,6 @@
 ---
 name: opsfeast-result-data
-description: Interpret and recover OpsFeast retained observations, prepare selected JSON exchanges, validate or combine shared data, and guide recipient-selected analysis without exposing raw execution details.
+description: Interpret and recover OpsFeast retained observations, prepare selected JSON exchanges, validate or combine shared data, reuse existing data/result tools and Python modules, and guide recipient-selected analysis without exposing raw execution details.
 ---
 
 # OpsFeast result data
@@ -10,6 +10,14 @@ Start with the [central skill index](../README.md). Keep newly authored Feast-sp
 Read the repository AGENTS.md, [CLI reference](../../docs/cli.md#retained-observations-and-exchange) and [canonical workflow and capability contract](../../docs/result-data.md). Use the [recipe skill](../opsfeast-recipes/SKILL.md) for authorized execution. This skill and its linked guides/schemas must be distributed together; automatic skill loading is not required.
 
 General Python-session recipe results are raw JSON with explicit no_retention_adapter; this skill's inventory recovery/exchange contracts do not ingest them. See [general results](../../docs/recipe-execution.md#results-failure-states-and-storage).
+
+## Prefer existing OpsFeast capabilities
+
+This workflow serves DevOps users and their agents, including specialized recipe authors. OpsFeast product developers must provide broad, complete and stable building blocks to reduce user-side development; see [the distinct roles and shared principle](../../docs/vision.md#distinguish-product-developers-from-devops-users). For both roles, use reviewed programs for routine repetition and reserve AI for new needs, judgment, changes and exceptions.
+
+Before writing operational code, consult the [tool and Python module capability map](../../docs/agent-capabilities.md). Discover a suitable existing recipe/CLI workflow first; reuse documented modules for appropriate Python composition after checking current signatures and prerequisites. Implement only missing task logic and explain a concrete gap when an existing capability cannot fit. Preserve workflow validation, enabled controls, authorization and failure evidence; do not infer execution permission from availability.
+
+Use the existing retention adapter, export/validate/combine interfaces and JSON/CSV surfaces before creating storage or exchange code. For in-process analysis reuse `observation_store.export`, `validate_exchange` and `combine`; for saved raw results/artifacts reuse `recipe_reports` lookups. Author only recipient-specific queries/transforms/rendering not covered by existing contracts; do not read host credentials for offline data processing.
 
 ## Inventory access and result capability 0.1.0
 
@@ -28,10 +36,11 @@ Read [the complete inventory access/results guide](../../docs/inventory-access.m
 | --- | --- | --- |
 | Automatic retained inventory | run_recipe.py → inventory-system-v1, retained 0.1.0 | Raw result 0.2.0, operational local/SSH success/partial; SQLite via Python standard library |
 | Recovery | observation_store.py ingest FILE... | Explicit local raw files in their originating Feast; no host connection |
-| Shareable export | observation_store.py export | JSON exchange 0.1.0, recipe/host/time selection; no transmission |
+| Shareable export | observation_store.py export; --format csv for presentation | JSON exchange 0.1.0 or fixed CSV columns, recipe/host/time selection; JSON is the exchange contract, no transmission |
 | Static exchange validation | observation_store.py validate FILE | Strict record/envelope checking; no database/profile required |
 | Exchange combination | observation_store.py combine FILE... | Validated union and ID deduplication; conflicts fail; no host reconciliation |
-| Recipient analysis | User-provided tool/script | Published schema; no bundled stage-4 database importer or charts |
+| Saved-result lookup and artifact verification | opsfeast.py recipes results list/show; recipes artifact; recipe_reports module | Read saved raw/report evidence and verified paths; no new collection or transmission |
+| Offline analysis/reporting | report/summary or reviewed python-report recipe | Reuse local report/artifact contracts and basic views; richer renderers and recipient stores are user-selected, no bundled stage-4 database importer |
 
 Check the selected interpreter, available tool files and chosen profile/root first. Setup does not authorize collection or sudo. Reading/exporting existing data does not authorize sending it to others. Do not read hosts.yaml credentials merely to process retained results. A missing retained database is not a successful empty inventory; propose ingestion of specifically identified local results or authorized collection as appropriate.
 

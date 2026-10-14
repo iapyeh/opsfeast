@@ -40,6 +40,10 @@ Before creating, installing, updating or using a potentially conflicting skill:
 
 The agent and user choose their integration plan together when a conflict arises. These are documented procedures, not a machine-enforced conflict detector, installer or synchronizer. See [complete skill updates](skill-updates.md) for candidate review and [acquisition review](recipe-acquisition.md) for third-party content.
 
+## Capability discovery and Python development
+
+Distinguish [product developers from DevOps users](vision.md#distinguish-product-developers-from-devops-users): product contributors supply broad, complete and stable tools/modules to reduce user-side development; DevOps users and their agents prioritize existing capabilities when authoring specialized recipes. Both use programs for repeatable work and reserve AI for new needs, judgment, changes and exceptions. Read [the tool and Python module capability map](agent-capabilities.md) before generating user-side operational programs. Select the applicable OpsFeast skill, then prefer a suitable existing recipe/CLI workflow or module instead of recreating product mechanisms. Operating OpsFeast and developing with its modules are continuing knowledge-maintenance priorities: every usable capability change must update task routing, canonical usage examples and availability/failure interpretation before delivery. See [the reuse principle](vision.md#make-existing-capabilities-the-first-choice-for-agents) and [contributor gate](../AGENTS.md#before-every-commit).
+
 ## Shared tool reference
 
 The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/opsfeast.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.

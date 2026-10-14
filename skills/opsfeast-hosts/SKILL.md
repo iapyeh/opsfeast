@@ -1,6 +1,6 @@
 ---
 name: opsfeast-hosts
-description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform facts, and diagnose connections or configured su/sudo access when requested. Use for host configuration and diagnostics; recipe authoring belongs to opsfeast-recipes.
+description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform facts, and diagnose connections or configured su/sudo access when requested. Use for host configuration, Python configuration loading and diagnostics; recipe authoring belongs to opsfeast-recipes.
 ---
 
 # OpsFeast 主機設定維護
@@ -11,9 +11,23 @@ Start with the [central skill index](../README.md). Keep newly authored Feast-sp
 
 使用者指南與設定規格位於 [docs/hosts-yaml.md](../../docs/hosts-yaml.md)。開始設定工作時閱讀它；不要自行建立另一套欄位語意。這是 repository 內的 skill，使用時保留 repository 結構。若要獨立安裝，需一併打包指南並調整此連結；目前未提供 skill 安裝工具。
 
-Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍；完整 recipe 執行器尚未實作。先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
+Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍。For the implemented inventory/Python-session runner, see the [execution contract](../../docs/recipe-execution.md). 先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
 
 Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
+
+## Load configuration when writing Python tools
+
+Before generating code that consumes `hosts.yaml`, read [the Python configuration interface and standalone example](../../docs/hosts-yaml.md#read-host-configuration-from-python). Reuse `opsfeast.Validator` and `resolve_root` from the trusted checkout's `tools/` at runtime, with the selected Feast root/profile and host ID as invocation inputs. Do not replace the operational loader with a separate YAML parser or copy current host addresses, users, jumps or credentials into generated source. This preserves include/path/duplicate checks and lets later settings changes take effect without regenerating code. Loading and static validation do not connect or authorize execution; preserve enabled controls and avoid outputting secret-bearing settings.
+
+For runner-managed recipes, use the supplied Session and `context.host_id`/`context.vars`; the runner already loads configuration and handles connections. Do not reconnect by parsing credentials, and do not assume `context.host`, `context.config` or `context.root` exists. Declare task-specific inputs through the [Python-session contract](../../docs/recipe-execution.md). The standalone import interface requires Python/PyYAML and an explicit tools import path; it is a checkout-level interface, not an installed stable SDK. Follow the linked guide for errors, data fields and synthetic verification.
+
+## Prefer existing OpsFeast capabilities
+
+This workflow serves DevOps users and their agents, including specialized recipe authors. OpsFeast product developers must provide broad, complete and stable building blocks to reduce user-side development; see [the distinct roles and shared principle](../../docs/vision.md#distinguish-product-developers-from-devops-users). For both roles, use reviewed programs for routine repetition and reserve AI for new needs, judgment, changes and exceptions.
+
+Before writing operational code, consult the [tool and Python module capability map](../../docs/agent-capabilities.md). Discover a suitable existing recipe/CLI workflow first; reuse documented modules for appropriate Python composition after checking current signatures and prerequisites. Implement only missing task logic and explain a concrete gap when an existing capability cannot fit. Preserve workflow validation, enabled controls, authorization and failure evidence; do not infer execution permission from availability.
+
+Use existing profile/configuration tools and `Validator` instead of another YAML parser or embedded host settings. Reuse host-init cache and diagnostic/access workflows for authorized probes rather than guessing platform facts or building a second credential/privilege/session lifecycle. See [diagnostics](../../docs/host-diagnostics.md) and [inventory access](../../docs/inventory-access.md); static configuration reads remain connection-free.
 
 ## Inventory access and result capability 0.1.0
 

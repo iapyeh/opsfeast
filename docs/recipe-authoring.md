@@ -1,12 +1,20 @@
 # Recipe authoring guide
 
-For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). The [Python-session execution contract](recipe-execution.md) supports general Python recipes through run_recipe.py; inventory keeps its own contract. The broader layout/documentation recommendations below are separate from the validated execution fields. An authoring CLI and arbitrary backend loader are not implemented.
+For DevOps users and their AI agents creating specialized recipes for their own operations. OpsFeast product developers have the complementary responsibility to provide complete, broad and stable tools/modules that reduce this user-side development burden; see [the two roles](vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed code for repeatable work and reserve AI for new needs, judgment, changes and exceptions. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). The [Python-session execution contract](recipe-execution.md) supports general Python recipes through run_recipe.py; inventory keeps its own contract. The broader layout/documentation recommendations below are separate from the validated execution fields. An authoring CLI and arbitrary backend loader are not implemented.
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
 
+## Reuse product capabilities before authoring new machinery
+
+Start with the [agent capability map](agent-capabilities.md), catalog/list/show and static inspection before writing new code. Prefer a compatible reviewed recipe or CLI workflow for the complete task, and applicable modules for in-process composition. Reuse configuration loading, typed inputs, session/cleanup/result handling, report/artifact contracts, retained export/validation, attribution defaults, packaging and saved reruns. Record the concrete gap when existing functionality is unsuitable, then implement only that missing logic. User-selected tools and operational boundaries still apply; capability discovery does not authorize execution.
+
+## Bind configuration at runtime
+
+For standalone operational Python tools, use the [existing configuration loader](hosts-yaml.md#read-host-configuration-from-python), supplying a Feast root/profile and host ID at invocation time. Reuse its include and validation behavior; do not independently parse hosts.yaml or freeze private connection values into generated code. For runner-managed recipes, consume the borrowed Session and `context.host_id`/`context.vars` from the [execution contract](recipe-execution.md#entrypoint-and-available-capabilities); declare task inputs rather than reconnecting or assuming the context carries complete host settings. Keep portable recipe code separate from private bindings and credentials.
+
 ## Design for the shared vision
 
-Read the [vision and design principles](vision.md) before creating or changing a recipe. Recipe authors contribute to the same ecosystem as framework developers: administrators express intent, agents handle implementation details, and reusable code carries out defined operations under human authorization.
+Read the [vision and design principles](vision.md) before creating or changing a recipe. Recipe authors and product developers contribute to the same ecosystem with distinct responsibilities: DevOps users express operational intent and author specialized recipes using existing capabilities, while product developers broaden and stabilize reusable product support to reduce that authoring burden. Both preserve reviewed logic as code for repeatable execution under human authorization.
 
 - Create a focused recipe with explicit inputs and documented results that another administrator can review and adapt.
 - Keep routine execution independent of an LLM where possible. If model inference is necessary, explain the dependency, data disclosure, cost implications and output verification.

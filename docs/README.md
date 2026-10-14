@@ -1,5 +1,7 @@
 # Documentation
 
+For agents operating OpsFeast or developing Python integrations, start with [the existing tool/module capability map](agent-capabilities.md) and [skill index](../skills/README.md). Reuse suitable capabilities before creating new implementations.
+
 This directory contains architecture, getting-started instructions, diagnostic procedures and project decisions.
 
 Start with the shared [vision and design principles](vision.md): human intent, lower learning burden, token efficiency through reusable recipes, community collaboration, explicit authorization and verifiable outcomes. Project contributors and recipe authors follow the same direction.
@@ -49,4 +51,4 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 Extend the implemented Python-session contract only with versioned, tested capabilities. Implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/FreeBSD/SSH and native su/sudo validation and the collect-record-repeat-compare workflow, including preservation of human notes.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

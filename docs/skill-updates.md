@@ -44,6 +44,12 @@ python -B tools/skill_bundle.py download /path/to/new-candidate
 
 This tool checks and prepares candidates; the agent applies changes through the authorized procedure above. It has no automatic update command. If the snapshot cannot support the task, report the gap and establish matching documentation within the user's scope rather than guessing APIs.
 
+## Keep OpsFeast operating and module knowledge current
+
+OpsFeast skills must evolve with usable product capabilities. During development, review [the capability map](agent-capabilities.md), task routing and canonical CLI/import examples together with implementation changes; remove obsolete capability claims and document current interfaces, dependencies, availability, result/failure interpretation and verification. Follow [the reuse principle](vision.md#make-existing-capabilities-the-first-choice-for-agents): a fresh user's agent should find and prioritize existing tools/modules before recreating them.
+
+For an agent using an older installation copy, compare the current trusted OpsFeast checkout's skills, capability map, accompanying guides and required tool changes before authorized replacement. Preserve a complete learning path rather than copying only SKILL.md. Updating repository sources does not refresh an agent's already-loaded instructions or installation copies automatically. The bundled SSHScript snapshot retains its separate provenance/version and update process.
+
 ## Source locations and agent installation copies
 
 All bundled skill sources, including SSHScript, now live in repository `skills/`. See [the complete index](../skills/README.md). Feast-specific user skills belong in the selected management root's `skills/`; generic personal skills can remain in their agent directory. Follow [storage and conflict resolution](agent-guidance.md#skill-storage-and-conflict-resolution) before installation or replacement when source/loaded copies or loader requirements conflict. Agree on the authoritative source and preserve local edits. Agent installation copies need source/version records and an explicit update procedure; this project supplies no automatic synchronization.
@@ -66,4 +72,4 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 
 文件不會啟動排程。使用者授權後，由其 agent 平台排程執行相同 `check` 命令，保留 scope、週期、環境與通知約定。預設未變更時保持安靜；有差異、檢查失敗或需使用者決定時通知。定期檢查授權不等於套用、套件升級或遠端執行授權；若另外授權特定更新流程，按其明確範圍執行。
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_
