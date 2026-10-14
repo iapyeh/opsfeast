@@ -8,6 +8,8 @@ Git 隨附 `skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄�
 
 網址可能提供新版，`/v3a/` 不是套件版號。下載資料須核對其版本；檔案或示範不增加安裝、連線或遠端操作授權。
 
+For an existing user who wants the agent to check releases, apply an applicable fast-forward update and learn/report the new skills, use the complete [update prompt](../README.md#update-opsfeast-and-refresh-your-agents-skills). That human prompt explicitly authorizes its stated application scope; a check-only request still does not authorize replacement. For a colleague's transferred instance, start with [handover orientation](../README.md#take-over-an-existing-opsfeast-instance) instead; it performs no update or init.
+
 ## 檢查更新
 
 使用者明確要求檢查，或已授權定期檢查時，執行：
@@ -72,4 +74,4 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 
 文件不會啟動排程。使用者授權後，由其 agent 平台排程執行相同 `check` 命令，保留 scope、週期、環境與通知約定。預設未變更時保持安靜；有差異、檢查失敗或需使用者決定時通知。定期檢查授權不等於套用、套件升級或遠端執行授權；若另外授權特定更新流程，按其明確範圍執行。
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

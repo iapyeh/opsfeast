@@ -6,6 +6,29 @@ The goal is to create a management environment and understand where to configure
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
+
+## Choose the right starting prompt
+
+| Your situation | Prompt and scope |
+| --- | --- |
+| New installation, with no existing Feast to inherit | [First-use clone/setup prompt](../README.md#2-paste-the-single-first-use-prompt); propose setup before authorized creation |
+| Existing instance received from a colleague, opened as a new coding-tool project | [Existing-instance handover prompt](../README.md#take-over-an-existing-opsfeast-instance); read-only orientation, no init |
+| Existing installation used for some time; check a release and update skills | [Update and skill-refresh prompt](../README.md#update-opsfeast-and-refresh-your-agents-skills); explicitly authorized applicable fast-forward and supported existing skill refresh |
+
+The prompts are maintained in README so humans can copy one complete instruction without combining earlier conversations. All reports use the user's reply language. These are agent workflows, not new commands or an automatic installer/scheduler.
+
+## Take over a colleague's existing Feast
+
+Open the unpacked directory in the AI coding tool and use the handover prompt, even if this is your first conversation with the agent. A new conversation or project does not make an existing instance a new installation. Do not run init to explain, register or repair inherited data.
+
+The agent first distinguishes a full tool checkout with private profile data from a management-only archive. Existing registries can point to several Feasts or contain paths from the sender's computer. Missing tools, unresolved includes/recipe sources, an unusable copied environment or unavailable external paths are handover gaps; preserve them and present a concrete repair plan. Do not guess a replacement root, install software or copy credentials into generated code.
+
+With an existing usable checkout/environment, read-only profiles and configuration checks can identify what is ready. Use the resolved existing Feast through explicit --root for supported commands instead of changing the registry/default just to orient the agent. If the user later wants a profile registration or the default-profile TUI, attach the existing directory and select it only within that later authorization; attach preserves instance files and is different from init. Follow [profiles](profiles.md), [environment reuse](getting-started.md#dependency-evidence-and-python-reuse) and [host configuration](hosts-yaml.md).
+
+Retained history belongs to the same inherited Feast: preserve the source UUID and do not reset the database. A copied database is not a new independent Feast identity. A handover needs a consistent SQLite backup/complete transfer coordinated with writers, as described in [result storage](result-data.md#contracts-and-storage). Taking over an archive does not grant the previous owner's host-operation permissions or prove credentials/connectivity on this computer.
+
+The orientation report should identify the tool version/commit, existing management roots and hosts.yaml, profiles, interpreter/check results, relevant recipes/skills/history and unresolved gaps without exposing secrets. Provide actual CLI and optional TUI next steps while distinguishing configuration readiness from untested host access. Reading a skill is not proof that the agent's loader installed or activated it.
+
 ## 1. Create a project/workspace
 
 Choose a local directory, open it as a project/workspace in an AI coding tool with local file/command and GitHub network access, and start a fresh conversation. You do not need to run Git commands or replace a path in the prompt. An empty directory is convenient; existing workspace files are preserved.
@@ -152,4 +175,4 @@ git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_
