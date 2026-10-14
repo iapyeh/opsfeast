@@ -57,29 +57,56 @@ Read the [vision and design principles](docs/vision.md) for the shared direction
 
 ## Getting started with your AI agent
 
-**Start with the [skills/ index](skills/README.md).** All bundled OpsFeast and SSHScript skill sources live there. Ask your agent to read the index and task-relevant skills; files being present does not mean its loader has activated them. New skills specific to your Feast belong in that management directory's `skills/`, so they remain portable when you change agents. If existing agent skills or loading rules conflict, the agent should explain the conflict and agree on a solution with you before changing files or choosing between conflicting instructions. See [storage and integration](docs/agent-guidance.md#skill-storage-and-conflict-resolution).
+Use an **AI coding tool** that can read your local project files and run commands, such as Codex, Antigravity or Claude Code. This guide uses **project/workspace** for the directory opened in that tool; the exact UI labels vary. An ordinary chat without local file access is not enough for these steps. No particular agent product or skill loader is required.
 
-Start by cloning the repository:
+### 1. Clone OpsFeast to a local directory
+
+In a terminal, go to the parent directory where you want to keep OpsFeast, then run:
 
 ```sh
 git clone https://github.com/iapyeh/opsfeast.git
+cd opsfeast
 ```
 
-Open the cloned `opsfeast` directory as the project/workspace in your AI tool (including tools such as Antigravity). For first use, make the workspace root the clone root. A different workspace is supported only when the agent can access the clone and explicitly uses its path for commands and environment setup.
+This creates the `opsfeast/` checkout. Cloning downloads the project; Python dependencies and a management profile are prepared later.
 
-Open a new conversation with an agent that can read your local files, such as Codex or Hermes, and send this prompt after replacing the path with your clone's absolute directory:
+### 2. Open the clone in your AI coding tool
 
-> I am using OpsFeast for the first time. The repository is at `/absolute/path/to/opsfeast`. Read README.md, AGENTS.md and the getting-started guide, explain what the project can do and what environment it needs, and propose an initial setup. Do not install dependencies or initialize anything yet.
+Create or open a project/workspace and select the **cloned `opsfeast/` directory itself** as its root. This is the directory containing `README.md`, `AGENTS.md`, `tools/` and `skills/`, not its parent or a new empty project folder. Start a new agent conversation in that project and ensure the agent can access its files and run local commands. If the agent runs on another machine, it needs the checkout on that machine.
+
+A different workspace is supported when the agent can access the clone and explicitly uses its confirmed path for commands and environment setup. Using the clone as the root is the clearest first-use workflow.
+
+### 3. Paste the first-use prompt
+
+After opening the clone as your project in step 2, paste this prompt as-is into its agent conversation. No path replacement is needed: “this project's directory” refers to the active project/workspace root. The agent verifies that it contains OpsFeast before preparing setup.
+
+```text
+I am using OpsFeast for the first time in this project's directory. Read README.md, AGENTS.md and docs/getting-started.md, and follow their first-use guidance. Explain what OpsFeast can do, check prerequisites without making changes, and propose a local setup that you can carry out for me. Ask for my approval before starting setup.
+```
+
+The cloned `AGENTS.md` and getting-started guide provide the reply-language rules and setup approval handoff, so they do not need to be repeated in the prompt. To explicitly request Traditional Chinese, append `Reply to me in Traditional Chinese (Taiwan).` Automatic language detection depends on what your agent can access; an explicit language request takes priority.
+
+Expect a setup proposal identifying the checkout, interpreter, dependencies and management directory, rather than an already completed installation. If the agent cannot read the project, correct the project path/access before continuing. The agent should explicitly offer to perform the proposed local setup and ask whether to proceed. Reply `I agree` (or the equivalent in your language) to approve that concrete plan; the agent then carries it out and reports results. Host connections and recipe execution require their own scope. Follow the [first-use walkthrough](docs/first-use.md#3-review-the-plan-and-authorize-local-initialization) for the next prompt.
+
+**Start with the [skills/ index](skills/README.md).** All bundled OpsFeast and SSHScript skill sources live there. Ask your agent to read the index and task-relevant skills; files being present does not mean its loader has activated them. New skills specific to your Feast belong in that management directory's `skills/`, so they remain portable when you change agents. If existing agent skills or loading rules conflict, the agent should explain the conflict and agree on a solution with you before changing files or choosing between conflicting instructions. See [storage and integration](docs/agent-guidance.md#skill-storage-and-conflict-resolution).
 
 For your first host, follow the [first-host guide](docs/first-host.md): minimal settings, validation, connection testing and practical SSH/su/sudo cases before the full reference.
 
-Review the proposal, then authorize setup. The agent should initialize your management directory and tell you where to configure host addresses, login accounts, authentication and recipes.
+After authorized setup, the agent should tell you where to configure host addresses, login accounts, authentication and recipes.
 
 **[First-use walkthrough](docs/first-use.md)** provides copyable prompts for setup and skill update checks, expected results, and an optional isolated trial. The [getting-started guide](docs/getting-started.md) contains the detailed setup procedure for agents. The same Markdown workflow applies across agents; automatic skill discovery is optional.
 
 The agent can inspect prerequisites with `python3 -B tools/check_environment.py`, explain the supported tools and propose a concrete setup. After authorization, it can install the dependencies in `requirements.txt` (or `requirements-init.txt` for initialization only), read the included skills, and run `tools/opsfeast.py init` and `check`. It then reports where to configure your hosts, accounts, authentication and recipe selection. Remote connection tests and collection require their own authorized scope.
 
 The full SSHScript skill snapshot is included in Git. [Skill download and update instructions](docs/skill-updates.md) explain how to check the public bundle, stage a complete candidate and review compatibility. A user-authorized schedule may check for changes; checks never automatically replace skills or upgrade packages.
+
+## Optional terminal display
+
+Run `python -B tools/opsfeast.py` without arguments for a version/download Home, masked Hosts, persistent profile switching and bundled Help. Hosts follows the default profile; explicit recipe environments are preserved. Explicit commands remain CLI. Bare `python -B tools/opsfeast.py recipes` opens the recipes workbench; explicit subcommands stay CLI. The workbench starts with checkout-only discovery and provides action forms for catalog, run, results/artifacts, jobs and bundles. Writes/execution require an in-app argument review; opening alone performs no operation. Add `--tui` to supported commands for a Textual table of progress and results, with row details and original output. Install the optional `requirements-tui.txt` in your selected environment. Read the [terminal display guide](docs/terminal-ui.md) for supported commands, setup, exit codes and limits. Ordinary CLI/JSON use remains available without Textual.
+
+## Recipe author defaults
+
+Configure public author name, contacts and intended recipe license in the local `.opsfeast-author.yaml`; Home displays them. New recipe authoring uses these defaults, with Unknown until configured. Built-ins are Bundle/MIT, and external imports cannot claim Bundle. See [attribution and defaults](docs/recipe-attribution.md).
 
 ## For AI agents
 
@@ -215,4 +242,4 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

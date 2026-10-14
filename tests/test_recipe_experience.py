@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import shutil
+from attribution_fixture import copy_recipe
 import stat
 import sys
 import tempfile
@@ -50,9 +51,14 @@ class RecipeExperienceTests(unittest.TestCase):
     def selected(self):
         return catalog.choose(self.root,'report/summary')
 
+    def shareable(self):
+        directory=self.root/'recipes/report/shareable'
+        if not directory.exists(): self.copy_report('report/shareable')
+        return catalog.choose(self.root,':report/shareable')
+
     def copy_report(self,relative='report/summary'):
         dest=self.root/'recipes'/relative
-        shutil.copytree(self.source,dest)
+        copy_recipe(self.source,dest)
         return dest
 
     def run_report(self):
@@ -62,7 +68,7 @@ class RecipeExperienceTests(unittest.TestCase):
     def test_catalog_three_sources_and_disabled_missing(self):
         self.copy_report()
         external=self.base/'community'
-        shutil.copytree(self.source,external/'shared-report')
+        copy_recipe(self.source,external/'shared-report')
         self.settings['recipe_sources']={'community':{'path':str(external)},'disabled':{'path':str(self.base/'missing'),'enabled':False}}
         self.write_config()
         data=catalog.catalog(self.root)
@@ -119,7 +125,7 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_catalog_html_escapes_metadata_and_never_overwrites(self):
         directory=self.copy_report()
-        metadata=json.loads(json.dumps(self.selected()['descriptor']))
+        metadata=json.loads(json.dumps(catalog.choose(self.root,':report/summary')['descriptor']))
         metadata['title']='<script>alert(1)</script>'
         (directory/'recipe.yaml').write_text(json.dumps(metadata))
         target=self.base/'catalog.html'
@@ -307,9 +313,9 @@ class RecipeExperienceTests(unittest.TestCase):
         with self.assertRaises(ops.ConfigError): jobs.load(self.root,'linked')
 
     def test_pack_unpack_report_into_another_instance_no_private_bindings(self):
-        item=self.selected()
+        item=self.shareable()
         archive=self.base/'report.zip'
-        packaged=packages.pack(item,['recipe.yaml','main.py','README.md','examples/input.synthetic.json'],archive)
+        packaged=packages.pack(item,['recipe.yaml','main.py','README.md','LICENSE','examples/input.synthetic.json'],archive)
         self.assertEqual(packaged['publisher_authentication'],'not-established')
         candidate=packages.unpack(archive,self.base/'candidate')
         self.assertIn('not-installed',candidate['activation'])
@@ -327,14 +333,18 @@ class RecipeExperienceTests(unittest.TestCase):
     def test_pack_required_allowlist_private_files_and_symlink(self):
         directory=self.copy_report()
         item=catalog.choose(self.root,':report/summary')
-        for files in ([],['recipe.yaml'],['recipe.yaml','main.py','README.md','hosts.yaml'],['../input.json']):
+        for files in ([],['recipe.yaml'],['main.py','README.md','LICENSE'],['recipe.yaml','main.py','README.md','hosts.yaml'],['../input.json']):
             with self.subTest(files=files),self.assertRaises(ops.ConfigError): packages.pack(item,files,self.base/'bad.zip')
         (directory/'link.txt').symlink_to(self.input)
         with self.assertRaises(ops.ConfigError): packages.pack(item,['recipe.yaml','main.py','README.md','link.txt'],self.base/'bad.zip')
+        (directory/'recipe.yaml').write_text('invalid: [')
+        with self.assertRaisesRegex(ops.ConfigError, 'invalid bundle descriptor'):
+            packages.pack(item,['recipe.yaml','main.py','README.md','LICENSE'],self.base/'bad.zip')
+        self.assertFalse((self.base/'bad.zip').exists())
 
     def test_bundle_digest_mismatch_and_extra_file_refused(self):
         source=self.base/'source.zip'
-        packages.pack(self.selected(),['recipe.yaml','main.py','README.md'],source)
+        packages.pack(self.shareable(),['recipe.yaml','main.py','README.md','LICENSE'],source)
         for change in ('digest','extra'):
             archive=self.base/(change+'.zip')
             with zipfile.ZipFile(source) as src,zipfile.ZipFile(archive,'w') as dest:
@@ -360,7 +370,7 @@ class RecipeExperienceTests(unittest.TestCase):
             dest.writestr(entry,'outside')
         with self.assertRaises(ops.ConfigError): packages.unpack(archive,self.base/'link-candidate')
         source=self.base/'bounded.zip'
-        packages.pack(self.selected(),['recipe.yaml','main.py','README.md'],source)
+        packages.pack(self.shareable(),['recipe.yaml','main.py','README.md','LICENSE'],source)
         with patch.object(packages,'MAX_BYTES',1),self.assertRaises(ops.ConfigError): packages.unpack(source,self.base/'bounded-candidate')
 
     def test_shared_input_parser_rejects_duplicate_keys_and_nonfinite(self):
@@ -388,7 +398,7 @@ class RecipeExperienceTests(unittest.TestCase):
                 destination.write_bytes(b'another writer')
             return real_open(path,*args,**kwargs)
         with patch.object(Path,'open',opened),self.assertRaises(FileExistsError):
-            packages.pack(self.selected(),['recipe.yaml','main.py','README.md'],destination)
+            packages.pack(self.shareable(),['recipe.yaml','main.py','README.md','LICENSE'],destination)
         self.assertEqual(destination.read_bytes(),b'another writer')
 
     def test_duplicate_archive_and_manifest_identity_refused(self):
@@ -401,7 +411,7 @@ class RecipeExperienceTests(unittest.TestCase):
                 dest.writestr('MANIFEST.json','{}')
         with self.assertRaises(ops.ConfigError): packages.unpack(archive,self.base/'candidate-duplicate')
         source=self.base/'original.zip'
-        packages.pack(self.selected(),['recipe.yaml','main.py','README.md'],source)
+        packages.pack(self.shareable(),['recipe.yaml','main.py','README.md','LICENSE'],source)
         tampered=self.base/'identity.zip'
         with zipfile.ZipFile(source) as src,zipfile.ZipFile(tampered,'w') as dest:
             for name in src.namelist():
@@ -416,7 +426,8 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_cli_package_commands_roundtrip_candidate_only(self):
         archive=self.base/'cli.zip'
-        code,out,error=self.invoke('pack','report/summary','--file','recipe.yaml','--file','main.py','--file','README.md','--output',str(archive))
+        self.copy_report('report/shareable')
+        code,out,error=self.invoke('pack',':report/shareable','--file','recipe.yaml','--file','main.py','--file','README.md','--file','LICENSE','--output',str(archive))
         self.assertEqual(code,0,error)
         self.assertEqual(json.loads(out)['bundle_version'],'0.1.0')
         output=io.StringIO()

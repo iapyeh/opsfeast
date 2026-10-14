@@ -1,5 +1,7 @@
 # Inventory descriptor 0.2.0; shared output contract 0.2.0.
 descriptor_version: 0.2.0
+author: {name: Bundle, contacts: [Bundle]}
+license: MIT
 id: inventory-system
 version: 0.2.2
 status: implemented
@@ -136,4 +138,4 @@ implementations:
     synthetic: tested
     ssh: not-tested
     local: not-tested
-# Last modified: 2026-10-13
+# Last modified: 2026-10-14

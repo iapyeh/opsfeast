@@ -218,6 +218,14 @@ The [canonical recipe experience reference](recipe-experience.md) defines catalo
 
 Successful metadata/package/save operations return 0. Catalog errors, partial raw indexes, invalid inputs/artifacts/jobs/storage and unsuccessful recipe statuses return 1; argparse usage errors return 2. Report generation success does not mean source operations are successful. stdout is text for concise catalog/show/index or JSON for machine output/execution/packages/jobs/artifacts; diagnostics go to stderr. HTML export paths must not exist. Pack/unpack destinations must be new. No scheduler, remote Exchange, automatic installer, notification provider or graphical/MCP application is created by these commands.
 
+## Recipe attribution defaults and reserved identity
+
+`python -B tools/recipe_identity.py defaults` prints author/license defaults as JSON (0 on success, 1 with safe error type on invalid local settings; usage 2). `.opsfeast-author.yaml` is per installation and ignored by Git. Descriptor/catalog/Info metadata includes author name/contacts and license. External `recipes unpack` rejects reserved Bundle authors/contacts before extraction; MIT pack requires explicit LICENSE. See [attribution contract](recipe-attribution.md).
+
+## Optional Textual display
+
+Run `python -B tools/opsfeast.py` without arguments for a version/download Home, masked Hosts, persistent profile switching and bundled Help. Hosts follows the default profile; explicit recipe environments are preserved. Explicit commands remain CLI. Bare `python -B tools/opsfeast.py recipes` opens the recipes workbench; explicit subcommands stay CLI. The workbench starts with checkout-only discovery and provides action forms for catalog, run, results/artifacts, jobs and bundles. Writes/execution require an in-app argument review; opening alone performs no operation. Add `--tui` to supported inspection/configuration/diagnostic/recipe commands or `run_recipe.py` for an interactive terminal display. The UI consumes stdout, preserves final result states/storage and returns the existing command exit code after closing. It requires terminal stdin/stdout and optional Textual 8.2.8 (`requirements-tui.txt`); prerequisite failures occur before execution. Use ordinary CLI output for automation. See [terminal display](terminal-ui.md) for the exact supported commands, examples, live-stage behavior, shortcuts, failures and verification limits.
+
 ## tools/run_recipe.py: inventory execution
 
 This section covers shared selection/execution options for inventory and general Python-session recipes. Use [the general execution/authoring contract](recipe-execution.md) for descriptor 0.3.0, execute, raw results and limits. Inventory-specific platform/retention behavior below applies only to inventory-system.
@@ -363,4 +371,4 @@ Host identity refers to an OS installation. Linux uses a hashed machine-id candi
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

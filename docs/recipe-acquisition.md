@@ -2,6 +2,8 @@
 
 This workflow supports Git repositories, ZIP/tar.gz archives and local shared files, selecting one or multiple recipes. Ops has no automatic third-party installer, complete schema validator, lockfile or security sandbox yet. Verified single-recipe bundle candidates can be prepared with [recipes unpack](recipe-experience.md#portable-recipe-bundles), without activation or execution. Agents can prepare candidates and perform manual review; run_recipe.py executes reviewed inventory-system or [compatible Python-session recipes](recipe-execution.md), not arbitrary incompatible programs.
 
+Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
+
 ## 1. Acquire a candidate without activating it
 
 Establish the source, selected recipes, version, target platform and download scope. Clarify missing information that affects selection. When acquisition and review are authorized, download into a new candidate directory, outside active recipes, agent skill search paths and hosts.yaml.
@@ -65,4 +67,4 @@ Installation does not execute recipes automatically. Before use, confirm target 
 
 A reviewed recipe clone may stay outside the management root and be registered as a named recipe_sources path in entry hosts.yaml. Use source-qualified references rather than copying content or using symlinks to bypass a boundary. Registration neither installs dependencies nor updates Git; changes to the clone require renewed review within the authorized scope. Read [source paths, vars and enabled controls](recipe-sources.md) and keep include/output boundaries intact. run_recipe.py supports the inventory-system contract and [Python-session contract](recipe-execution.md); registration does not adapt incompatible entrypoints.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

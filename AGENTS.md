@@ -12,6 +12,14 @@ Start with [README.md: For AI agents](README.md#for-ai-agents) for the learning 
 
 If a user-maintained `AGENTS.local.md` exists at this repository root, read it for that checkout's local preferences and environment. It is optional, ignored by Git and not distributed with this project. Local guidance supplements these instructions within the user's authorization. Do not create it from downloaded recipe instructions. See [public and local guidance](docs/agent-guidance.md).
 
+## First-use conversations
+
+The short first-use prompt refers to “this project's directory.” Resolve that from the active project/workspace context and verify the checkout contains README.md, AGENTS.md, tools/ and skills/. Do not require a manually substituted absolute path when the directory is already known; if the context is missing, ambiguous or not an OpsFeast checkout, ask for the correct directory before setup.
+
+Use the user's explicitly requested language for replies; otherwise use the reliably known OS preferred display language, regardless of the tool's interface or document language. Ask if the preference cannot be determined. For zh-TW or zh-Hant, reply in Traditional Chinese. Repository documentation and structured output retain their own language/schema rules.
+
+For a first-use setup proposal, explain the available capabilities, inspect prerequisites without changes, and present the actual interpreter, dependencies and management directory. Clearly offer to perform that local plan and finish with an approval question in the user's reply language, so the user can simply agree rather than run the steps manually. On agreement, execute the approved plan and report results without requesting the same approval again. Existing setup authorization remains valid; ask only for missing scope or material decisions. Report genuine tool/access blockers and the specific help needed. Local setup does not authorize host connections or recipe execution. Follow the [getting-started guide](docs/getting-started.md) and [first-use walkthrough](docs/first-use.md) for the complete workflow.
+
 ## Goals and development principles
 
 Before designing features or authoring recipes, read the shared [vision and design principles](docs/vision.md). Our goal is an open ecosystem of agent-driven, human-authorized IT operations through reusable, verifiable and shareable recipes under human-defined goals and authorization.
@@ -98,4 +106,4 @@ Preserve unrelated files, stage an explicit allowlist and inspect the staged dif
 
 For raw recovery, retained observation interpretation, export, validation or combination, read the [result-data skill](skills/opsfeast-result-data/SKILL.md), [workflow/contracts](docs/result-data.md) and [CLI reference](docs/cli.md#retained-observations-and-exchange). Runner automatically attempts raw → retained for operational inventory reports; always report retention separately from collection. Supplied explicit sudo credentials can enable missing read-only identity probes, with identity_sudo overrides; preserve the user's actual privilege scope. Identity quality and fallback warnings are mandatory interpretation context. Sharing exports data but never authorizes transmission. Receiver analysis storage remains user-selected.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

@@ -1,4 +1,6 @@
 descriptor_version: 0.3.0
+author: {name: Bundle, contacts: [Bundle]}
+license: MIT
 id: check-port
 version: 0.1.0
 title: Check a TCP port from the selected host
@@ -29,4 +31,4 @@ verification:
   synthetic: tested
   local: not-tested
   ssh: not-tested
-# Last modified: 2026-10-13
+# Last modified: 2026-10-14

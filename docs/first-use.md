@@ -1,6 +1,6 @@
 # Your first experience with OpsFeast
 
-Clone OpsFeast, give its directory to your AI agent, and ask it to explain the requirements and propose a setup. After you authorize the plan, the agent can initialize your environment. You do not need to learn every Python tool's arguments first. This walkthrough assumes an agent such as Codex or Hermes that can read local files and run commands. If the agent runs on another machine, the repository must be accessible there.
+Clone OpsFeast, give its directory to your AI agent, and ask it to explain the requirements and propose a setup. After you authorize the plan, the agent can initialize your environment. You do not need to learn every Python tool's arguments first. This walkthrough uses an AI coding tool, such as Codex, Antigravity or Claude Code, whose agent can read local files and run commands. Project/workspace means the directory opened in that tool; UI labels vary. If the agent runs on another machine, the repository must be accessible there.
 
 The goal is to create a management environment and understand where to configure hosts. After initialization, choose the hosts to test and the collection tasks to run.
 
@@ -17,13 +17,17 @@ cd opsfeast
 
 Open this cloned directory as your AI tool's project/workspace, then start a fresh conversation. Using the clone as the workspace root is recommended for first use; if they differ, the agent must confirm both paths and run setup in the clone.
 
-Record the directory's absolute path. On macOS/Linux, use `pwd`; in PowerShell, use `Get-Location`. Replace `/absolute/path/to/opsfeast` in the prompts below with that path. On Windows, use the full Windows path.
+The first-use prompt uses the active project directory, so you can paste it without editing a path. The agent verifies that this is the OpsFeast checkout. If you intentionally use another workspace, provide the checkout location when it cannot be determined from the available project context.
 
 ## 2. Let your agent learn about the project
 
-Start a new conversation and paste:
+Start a new conversation in the opened project and paste this unchanged:
 
-> I am using OpsFeast for the first time. The repository is at `/absolute/path/to/opsfeast`. Read README.md, AGENTS.md and docs/getting-started.md. Explain what the project can do, what environment it needs, and propose an initial setup. Do not install dependencies or initialize anything yet.
+```text
+I am using OpsFeast for the first time in this project's directory. Read README.md, AGENTS.md and docs/getting-started.md, and follow their first-use guidance. Explain what OpsFeast can do, check prerequisites without making changes, and propose a local setup that you can carry out for me. Ask for my approval before starting setup.
+```
+
+The cloned AGENTS.md and getting-started guide define reply language and the approval handoff. An English app interface does not determine the language of the agent's replies. You can append `Reply to me in Traditional Chinese (Taiwan).` to make that preference explicit. When the system display language is unavailable or ambiguous, the agent should ask rather than assume English.
 
 The agent should find the project guidance, explain the Python 3.11+ requirement and the dependencies for initialization or the full toolset, and report:
 
@@ -35,7 +39,13 @@ If the agent cannot find the files, confirm that it can access the directory you
 
 ## 3. Review the plan and authorize local initialization
 
-If you agree to a separate Python environment inside the project, paste:
+The agent should finish its proposal by offering to perform the work and asking whether to proceed, in your preferred language. For example:
+
+> I can carry out this local setup for you. Shall I proceed with the plan above? You can simply reply “I agree”.
+
+If the concrete plan is suitable, replying `I agree` (or its equivalent in your language) is enough to authorize that local setup. The agent should execute the approved plan and report the results; the listed steps are not a requirement for you to run commands yourself. Existing authorization should not be requested again. If a tool/access limitation requires your help, the agent should identify that specific step.
+
+If you prefer to give an explicit setup instruction and agree to a separate Python environment inside the project, paste:
 
 > Create an isolated `.venv` at the confirmed OpsFeast repository root, install the full dependencies, read the included skill, and run the default init and check commands. Do not connect to remote hosts or execute recipes. When finished, tell me what to configure next.
 
@@ -130,4 +140,4 @@ git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

@@ -64,4 +64,40 @@ HostMetadataTests additionally covers exact user-assigned keys across independen
 
 `test_recipe_experience.py` uses synthetic JSON, temporary independent Feasts and mocked host execution. It covers multi-source discovery, static signatures/IDs/conflicts, disabled/missing/escaping sources, filters and plain HTML; offline report execution without SSH, parameter/input/result/artifact validation, unknown/failed data and source times/quality, escaping and output integrity; raw result paths/index errors; explicit-file bundle allowlists/digests/unsafe entries/limits/candidate boundaries and cross-Feast reuse; saved invocation reruns, drift and private binding preservation. No real dataset, host, model, scheduler or Exchange is used. Existing operation suites verify compatibility through the delegated runner.
 
-_Last modified:_Last modified: 2026-10-13_
+## OpsFeast home
+
+`test_landing_ui.py` verifies empty-argument routing, TTY/dependency checks, version/download receipts with timezone and overwrite/symlink rejection, recursive credential masking without original-data mutation, include/source loading and safe malformed-YAML errors, and shared profile validation. Headless tests cover first-visit keyboard navigation across the six sections, mouse selection, grouped docked Tree sidebar layout, scalar/multiple/duplicate/ungrouped memberships, identical masked settings across duplicate host leaves, first-entry/return Up/Down host selection and detail updates at two terminal sizes without mouse/Tab focus, Enter-triggered profile switching/host refresh and preservation of explicit recipe environment fields. Data and profile writes are temporary or mocked; no real connections/credentials are used. Existing profile tests verify atomic write-failure preservation.
+
+## Host action dialogs
+
+`test_host_actions.py` validates literal argv construction with exact host/root binding, no implicit all-host execution, structured progress/stderr and nonzero subprocess exit codes. Headless tests exercise Enter on a host, the three SelectionList actions, cancel/empty-input preservation, recipe Input submission, active-run ProgressBar/close protection, final partial/retention failure evidence and subsequent connection-test selection. User-action cases additionally verify child creation, login/non-login menu filtering, exact su target/sudo actor/root argv and cancellation without privilege execution. Account-list tests cover explicit login, direct fallback, local identity and unknown SSH aliases. All execution is synthetic or mocked; no real SSH/recipe/su/sudo runs occur.
+
+## Escape focus navigation
+
+`test_focus_navigation.py` checks right-content → sidebar → main-tabs focus, preserved recipe/host selection, Left from Recipes to Profiles, unchanged form text, local Select-dropdown cancellation and modal Escape behavior. All catalog/management data is synthetic and no operations are executed.
+
+## Attribution and reserved Bundle identity
+
+`test_recipe_identity.py` verifies Unknown/custom installation defaults without rewriting files, fresh copies, reserved case/whitespace author/contact values, built-in Bundle/MIT descriptors and license texts, MIT packaging allowlists, external Bundle rejection before candidate creation and manifest spoofing. `attribution_fixture.py` creates explicitly synthetic user recipes for source/sharing tests. Tests that simulate a product checkout retain product attribution deliberately. All data is synthetic; no publication or private identity migration occurs.
+
+## Recipe browser and execution history
+
+`test_recipe_browser.py` verifies two source roots with directory hierarchy, docked layout and source/reference-specific selection, Info/Executions tab switching, literal descriptions and metadata/verification fields, synchronized selection without forced tab changes, stale-data clearing, timestamp/status/host columns, shared-ID separation and legacy records without provenance. `browser_fixture.py` supplies synthetic browser data to all UI suites so they do not scan private Feast catalogs or records. The unified result index adds source/reference fields without changing raw files.
+
+## Recipes workbench
+
+`test_recipe_workbench.py` verifies exact bare-entry routing, nonterminal/missing-dependency failures, every form against the shared CLI grammar, explicit selectors/typed variables, multi-host exclusions, required-field checks and confirmation rules. Headless tests check checkout-only startup, initial/returned table focus, actual Up/Down selection and detail updates at two terminal sizes, input focus preservation, dynamic fields and cancel/confirm behavior with mocked execution. No real host or private Feast is used.
+
+## Optional terminal display
+
+`test_terminal_ui.py` covers synthetic event transport, argument forwarding, TTY/dependency failures before execution, literal text and reported states. With `requirements-tui.txt` installed it also runs headless Textual child-stream/exit-code, active-run close, Unicode, row detail and small-screen checks. Without Textual those UI tests explicitly skip; use the optional environment for full feature validation. No real hosts or privileges are used.
+
+`test_author_editor.py` covers local atomic author-default persistence, reserved/invalid values, file/symlink preservation, write failure cleanup, and synthetic Home Tab/Enter/mouse/save/cancel flows. No personal installation defaults are changed.
+
+Recipe-browser tests also cover Bundle/profile display labels, empty profile suppression, guarded saved output reads and provenance checks, execution-row selection, and clearing output across recipes. Actions output remains separate from recipe history.
+
+Recipe-browser time tests cover OS local timezone conversion, second precision, date rollover, non-hour offsets, daylight-saving differences, and missing/invalid/unzoned values. Synthetic timezone-switching checks require POSIX `tzset`; stored JSON retains its original timestamp.
+
+Focus regression checks ensure a delayed recipe tab-activation callback preserves a user's sidebar or content focus. Packaging boundary tests also reject missing descriptors and malformed YAML with configuration errors before creating an archive.
+
+_Last modified: 2026-10-14_

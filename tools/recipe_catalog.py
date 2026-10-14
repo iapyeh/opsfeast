@@ -61,6 +61,11 @@ def catalog(root=None, query=None, kind=None):
                     'inputs': meta.get('inputs', {}), 'dependencies': meta.get('dependencies', {}),
                     'verification': meta.get('verification', {}), 'descriptor': meta,
                     'availability_evidence': 'static-only; dependencies, data and host applicability are not verified'}
+            from recipe_identity import normalized
+            try:
+                item.update(normalized(meta))
+            except ConfigError:
+                item.update(author={'name':'Unknown','contacts':['Unknown']}, license='Unknown')
             result['recipes'].append(item)
             if isinstance(item['id'], str):
                 ids.setdefault(item['id'], []).append(item)

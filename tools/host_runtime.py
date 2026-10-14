@@ -29,6 +29,8 @@ def diagnostic_options(verbose=False, debug=False, show_traceback=False):
 def progress(stage, **details):
     verbose, debug, _ = _diagnostics.get()
     if verbose:
+        from terminal_events import emit
+        emit('stage', stage=stage)
         print(stage, file=sys.stderr)
     if debug and details:
         print('DEBUG ' + json.dumps(details, ensure_ascii=False), file=sys.stderr)

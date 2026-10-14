@@ -1,0 +1,2 @@
+# Optional terminal presentation; install alongside requirements.txt.
+textual==8.2.8

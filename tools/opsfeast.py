@@ -256,6 +256,14 @@ def detach_profile(name):
     return 0
 
 
+def set_default_profile(name):
+    data = load_profiles()
+    registered_root(data, name)
+    data['default_profile'] = name
+    save_profiles(data)
+    return name
+
+
 def use_profile(name=None):
     data = load_profiles()
     if not data['profiles']:
@@ -283,9 +291,7 @@ def use_profile(name=None):
                 name = names[int(selection) - 1]
                 break
             print('Invalid selection; choose a listed number or profile name.')
-    resolve_root(profile=name)
-    data['default_profile'] = name
-    save_profiles(data)
+    set_default_profile(name)
     print(f'Default profile: {name}')
     return 0
 
@@ -971,6 +977,8 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
     current_hop = None
     stage = 'connection settings'
     def progress(message):
+        from terminal_events import emit
+        emit('stage', host=host, stage=message)
         if verbose or debug:
             print(message, file=sys.stderr)
 
@@ -1062,10 +1070,20 @@ def positive_timeout(value):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv:
+        from landing_ui import launch as launch_home
+        return launch_home()
+    if argv == ['recipes']:
+        from recipe_workbench import launch as launch_workbench
+        return launch_workbench()
+    if '--tui' in argv:
+        from terminal_ui import launch
+        return launch(Path(__file__), argv)
     if argv[:1] == ['recipes']:
         from recipe_cli import main as recipe_main
         return recipe_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.epilog = 'Add --tui to supported inspection, check, diagnostic or recipes commands for an optional Textual display.'
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('profiles', help='list all registered profiles')

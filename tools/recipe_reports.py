@@ -158,6 +158,7 @@ def results(root, recipe=None, host=None, status=None):
                 if not isinstance(meta, dict) or raw.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
                     raise ConfigError('unrecognized result envelope')
                 row = {'result_id': identifier, 'recipe_id': meta.get('id'), 'recipe_version': meta.get('version'),
+                       'recipe_reference': meta.get('reference'), 'recipe_source': meta.get('source_name'),
                        'host_id': raw.get('host_id'), 'status': raw['status'], 'reason_code': raw.get('reason_code'),
                        'started_at': raw.get('started_at'), 'completed_at': raw.get('completed_at', raw.get('finished_at')),
                        'identity_quality': raw.get('identity', {}).get('quality') if isinstance(raw.get('identity'), dict) else None,

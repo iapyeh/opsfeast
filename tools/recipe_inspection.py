@@ -33,6 +33,8 @@ def inspect_one(directory, requested):
         if not isinstance(metadata, dict):
             raise ConfigError('recipe descriptor must be a mapping')
         plain_values(metadata, 'recipe descriptor')
+        from recipe_identity import validate as validate_identity
+        validate_identity(metadata, directory)
         report['descriptor'] = metadata
         platforms = metadata.get('platforms', {})
         if not isinstance(platforms, dict):

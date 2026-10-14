@@ -14,6 +14,7 @@ import threading
 import tempfile
 import time
 from uuid import uuid4
+from terminal_events import emit
 
 from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint, connected, now
 from recipe_dispatch import validate, select, bundle_digest, validate_observations
@@ -58,8 +59,9 @@ def progress(message):
 
 class RunProgress:
     """Stage messages and a waiting heartbeat without probing the target."""
-    def __init__(self, label, interval=5):
+    def __init__(self, label, interval=5, host=None):
         self.label, self.interval = label, interval
+        self.host = host
         self.stage = 'starting'
         self.changed = time.monotonic()
         self.stop = threading.Event()
@@ -68,6 +70,7 @@ class RunProgress:
     def update(self, message):
         with self.lock:
             self.stage, self.changed = message, time.monotonic()
+            emit('stage', host=self.host, stage=message)
             progress_line(f'{self.label} {message}')
 
     def heartbeat(self):
@@ -79,8 +82,8 @@ class RunProgress:
 
 
 @contextmanager
-def reporting(enabled, label):
-    reporter = RunProgress(label) if enabled else None
+def reporting(enabled, label, host=None):
+    reporter = RunProgress(label, host=host) if enabled else None
     token = _progress.set(reporter)
     worker = None
     try:
@@ -475,6 +478,9 @@ class RecipeAction(argparse.Action):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if '--tui' in argv:
+        from terminal_ui import launch
+        return launch(Path(__file__), argv)
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('recipe_positional', nargs='?', metavar='RECIPE', help='recipe directory; must be the first argument')
     parser.add_argument('--root', type=Path, help='management directory (default: selected profile)')
@@ -498,6 +504,7 @@ def main(argv=None):
                                 help='show progress on stderr even when stdout is redirected')
     output_options.add_argument('-q', '--quiet', dest='verbose', action='store_false',
                                 help='suppress progress; errors and final JSON remain visible')
+    parser.add_argument('--tui', action='store_true', help='optional interactive Textual display (requires a terminal)')
     parser.set_defaults(verbose=None)
     args = parser.parse_args(argv)
     if args.recipe_positional is not None and (not argv or argv[0] != args.recipe_positional):
@@ -523,16 +530,20 @@ def main(argv=None):
             values = json_object(args.vars_file) if args.vars_file else None
             workers = min(args.threads, len(hosts))
             progress(f'selected {len(hosts)} host(s); concurrency {workers}')
+            emit('selected', hosts=hosts)
         def execute(host, index):
             label = f'[{index}/{len(hosts)}] {json.dumps(host, ensure_ascii=True)}:'
-            with reporting(show_progress, label):
+            with reporting(show_progress, label, host=host):
                 try:
                     inputs = {'cli_vars': values, 'assignments': args.assignments} if values is not None or args.assignments else {}
                     item, path = run(root, host, args.timeout, recipe=recipe, **inputs)
                 except Exception as exc:
                     progress(f'failed before completion: {type(exc).__name__}')
+                    emit('result', host=host, status='failed', reason_code=type(exc).__name__)
                     raise
                 progress(f"completed: {item['status']} ({item['reason_code']})")
+                emit('result', host=host, status=item['status'], reason_code=item['reason_code'],
+                     result_path=str(path) if path is not None else None, retention=item.get('retention'))
                 return item, path
         if args.all_hosts or len(hosts) > 1:
             def execute_summary(target):

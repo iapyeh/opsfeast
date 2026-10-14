@@ -2,6 +2,8 @@
 
 Share one recipe or several from a repository or archive. Complete the [authoring deliverables](recipe-authoring.md) first. This guide includes human/agent review procedures. The [recipes pack/unpack commands](recipe-experience.md#portable-recipe-bundles) implement explicit-file single-recipe bundles and verified candidates; publication, signing, dependency review and installation remain separate workflows.
 
+Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
+
 ## Select content and publication scope
 
 Confirm authorship, license, provenance and exact recipe versions. For multiple recipes, list each id, version, directory, dependencies and required shared files. A request to share one recipe does not include other private recipes.
@@ -59,4 +61,4 @@ Recipe READMEs link to the [recipes skill](../skills/opsfeast-recipes/SKILL.md),
 
 Report the actual package inventory, versions, digests, signature status, verification limits and delivery path. Report URLs/commits only after publication has actually occurred. Updates use new versions and describe changes; checking for updates and applying them are separate authorization scopes.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

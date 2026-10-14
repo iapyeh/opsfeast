@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+from attribution_fixture import copy_recipe
 import sys
 import tempfile
 import unittest
@@ -27,8 +28,8 @@ class RecipeSourcesTests(unittest.TestCase):
         self.root = self.base / 'profile'
         self.root.mkdir()
         self.external = self.base / 'community'
-        shutil.copytree(runner.BUNDLE, self.external / 'inventory/system')
-        shutil.copytree(runner.BUNDLE, self.root / 'recipes/inventory/system')
+        copy_recipe(runner.BUNDLE, self.external / 'inventory/system')
+        copy_recipe(runner.BUNDLE, self.root / 'recipes/inventory/system')
         self.data = {
             'recipe_sources': {'community': {'path': str(self.external)}},
             'hosts': {'h': {'connection': {'local': True}, 'group': 'g',

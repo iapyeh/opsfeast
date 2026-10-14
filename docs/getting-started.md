@@ -2,6 +2,10 @@
 
 本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。將 clone 後的 repository 路徑交給 agent，請它閱讀 README、AGENTS.md 與本指南。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
 
+## Conversation language
+
+Use the user's explicitly requested language for user-facing replies. Otherwise, use the operating system's preferred display language when it can be determined reliably; the AI coding tool's interface language and this repository's document language do not establish the user's preference. Ask when the preference is unknown or ambiguous. For `zh-TW` or `zh-Hant`, use Traditional Chinese. Keep repository documentation and structured output consistent with their own language/schema rules. See the [first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project), which includes this instruction and an explicit Traditional Chinese override.
+
 ## Find skills before selecting tools
 
 Read the [skills/ index](../skills/README.md) first, then the task-relevant skills and references. All bundled OpsFeast and SSHScript skill sources live in the checkout's `skills/`. Keep newly authored Feast-specific operational skills in `<management-root>/skills/`; general personal skills can remain in the user's agent directory. Direct reading is supported without installation. Before creating or integrating a skill, identify task-relevant duplicate names, version/instruction conflicts or loader restrictions, explain any conflict and agree with the user on the source and integration method. Preserve existing files; do not silently install or maintain competing copies. Follow [storage and conflict resolution](agent-guidance.md#skill-storage-and-conflict-resolution).
@@ -33,7 +37,9 @@ python3 -B tools/check_environment.py --scope init
 
 版本固定為本專案目前驗證的環境；這不是所有傳遞依賴的 lockfile。既有環境使用不同版本時先回報，不自行升級、降級或覆寫共用 venv。使用者只要求初始化時，可以只安裝精簡清單；要準備連線與 runner 時再選完整清單。
 
-Before proposing setup, confirm the absolute OpsFeast checkout path and the AI tool's workspace path. Recommend opening the clone itself as the workspace for first use. If they differ, use the confirmed checkout as the working directory for relative commands; do not create a venv in the workspace merely because it is the current directory. When a new environment is needed, default to `<checkout>/.venv`, unless the user chooses another location. Reuse an existing selected interpreter without recreating or upgrading it.
+The short first-use prompt refers to the active project directory; it requires no path substitution. Resolve the checkout from that context and verify README.md, AGENTS.md, tools/ and skills/ before proposing setup. Ask for a path only when the context is missing, ambiguous or points elsewhere. Before proposing setup, confirm the absolute OpsFeast checkout path and the AI tool's workspace path from the available context. Recommend opening the clone itself as the workspace for first use. If they differ, use the confirmed checkout as the working directory for relative commands; do not create a venv in the workspace merely because it is the current directory. When a new environment is needed, default to `<checkout>/.venv`, unless the user chooses another location. Reuse an existing selected interpreter without recreating or upgrading it.
+
+After presenting a concrete local setup plan, offer to perform it and ask a direct approval question in the user's reply language. Make clear that the user can simply agree to that plan; do not present the command list as unexplained homework. On approval, execute the approved local steps and report results without asking for the same approval again. Setup approval does not include host connections or recipe execution. Explain actual tool/access blockers before claiming that a step can be performed, and request only the specific user input or manual action needed for that blocker. The [first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project) includes this handoff.
 
 Agent 應先提出具體方案：選用哪個 Python、是否建立 `.venv/`、安裝哪份依賴、是否需下載 skill、管理目錄位置，以及將執行的本機初始化命令。確認這些操作在使用者授權範圍內後執行；若使用者已明確授權整套初次設定，不重複詢問同一授權。安裝或下載遇到網路／權限問題時回報，不擅自改全域環境或安裝系統套件。
 
@@ -107,4 +113,4 @@ See [host diagnostics](host-diagnostics.md) for platform initialization/cache se
 
 Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, retention receipt and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

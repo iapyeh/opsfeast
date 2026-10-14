@@ -6,6 +6,7 @@ import io
 from pathlib import Path
 import runpy
 import shutil
+from attribution_fixture import copy_recipe
 import sys
 import tempfile
 import threading
@@ -169,7 +170,7 @@ class RunnerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.directory = self.root / 'recipes/inventory/system'
-        shutil.copytree(runner.BUNDLE, self.directory)
+        copy_recipe(runner.BUNDLE, self.directory)
         (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {local: true}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session = Mock()
         self.session.exec_command.side_effect = runner_outputs()
@@ -254,7 +255,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_short_path_has_no_instance_fallback_and_cannot_escape(self):
         # Even a matching instance copy must not be used for a missing checkout path.
-        shutil.copytree(runner.BUNDLE, self.root / 'inventory/system')
+        copy_recipe(runner.BUNDLE, self.root / 'inventory/system')
         empty_recipes = self.root / 'checkout/recipes'
         empty_recipes.mkdir(parents=True)
         with patch.object(ops, 'REPOSITORY_RECIPES', empty_recipes):
@@ -311,7 +312,7 @@ class RunnerTests(unittest.TestCase):
         checkout = self.root / 'checkout'
         recipes = checkout / 'recipes'
         bundle = recipes / 'inventory/system'
-        shutil.copytree(runner.BUNDLE, bundle)
+        copy_recipe(runner.BUNDLE, bundle)
         with tempfile.TemporaryDirectory() as external:
             external = Path(external)
             with patch.object(ops, 'REPOSITORY_RECIPES', recipes):

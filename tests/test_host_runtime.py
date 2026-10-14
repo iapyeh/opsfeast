@@ -7,6 +7,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+from attribution_fixture import copy_recipe
 from unittest.mock import Mock, patch
 import yaml
 
@@ -500,7 +501,7 @@ class DispatchTests(unittest.TestCase):
     def test_manifest_version_symlink_and_unselected_code(self):
         import shutil
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp); bundle=root/'recipe'; shutil.copytree(runner.BUNDLE,bundle)
+            root=Path(tmp); bundle=root/'recipe'; copy_recipe(runner.BUNDLE,bundle)
             metadata=ops.read_yaml(bundle/'recipe.yaml')
             dispatch.validate(bundle,metadata)
             entry=bundle/'implementations/linux.py'
@@ -545,7 +546,7 @@ class InventoryDispatchTests(unittest.TestCase):
     def test_no_fallback_after_selected_implementation_fails(self):
         import shutil
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp); bundle=root/'recipes/system'; shutil.copytree(runner.BUNDLE,bundle)
+            root=Path(tmp); bundle=root/'recipes/system'; copy_recipe(runner.BUNDLE,bundle)
             (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
             metadata=ops.read_yaml(bundle/'recipe.yaml')
             metadata['implementations'].append({'id':'special','version':'1','entrypoint':'special.py','priority':1,'match':{'os_name':'linux'}})

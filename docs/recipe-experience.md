@@ -1,6 +1,12 @@
 # Find, run and reuse recipes and reports
 
-`tools/opsfeast.py recipes` is a common command surface for humans, agents and future interfaces. It provides catalog 0.1.0, parameterized operation/report execution, raw-result lookup, simple HTML exports, artifact verification, explicit-file bundles and saved invocations. These functions run as ordinary Python code without model inference. Use [the recipe skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md) and [shared principles](vision.md#accumulate-reusable-reports-and-keep-visualization-flexible).
+`tools/opsfeast.py recipes` is a common command surface for humans, agents and the Textual workbench. It provides catalog 0.1.0, parameterized operation/report execution, raw-result lookup, simple HTML exports, artifact verification, explicit-file bundles and saved invocations. These functions run as ordinary Python code without model inference. Use [the recipe skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md) and [shared principles](vision.md#accumulate-reusable-reports-and-keep-visualization-flexible).
+
+Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
+
+## Interactive recipes workbench
+
+Run `python -B tools/opsfeast.py recipes` without a subcommand to open the Textual workbench. Explicit subcommands remain CLI. The workbench offers the shared catalog, execution, results/artifacts, saved jobs and bundle operations, starts with read-only checkout discovery, and reviews execution/write arguments before confirmation. Read [terminal display](terminal-ui.md#recipes-workbench-entrypoint) for optional dependencies, form formats, environment selection, exit codes and limits.
 
 ## Discovery and selection
 
@@ -70,15 +76,17 @@ python -B tools/opsfeast.py recipes results list --profile main --html /path/to/
 python -B tools/opsfeast.py recipes artifact reports/RUN_ID/result.json summary.html --profile main
 ```
 
-Use returned result_id values, not literal placeholders. Results 0.1.0 is a read-only index built from current observations/*.json and reports/*/result.json, without duplicating datasets into a new database. It contains result_id, recipe ID/version, host ID, kind, status/reason, start/completion times, inventory identity quality/warnings and retention receipt. Entries sort newest first by start time, then result ID; --recipe-id/--host/--status filter records. Malformed files are preserved and listed in errors, with partial overall status and exit 1. No results is success with an empty list. This is an execution index; use [retained inventory tools](result-data.md) for identity-aware observation analysis and exchange.
+Use returned result_id values, not literal placeholders. Results 0.1.0 is a read-only index built from current observations/*.json and reports/*/result.json, without duplicating datasets into a new database. It contains result_id, recipe ID/version, host ID, kind, status/reason, start/completion times, inventory identity quality/warnings and retention receipt. Entries sort newest first by start time, then result ID; --recipe-id/--host/--status filter records. Malformed files are preserved and listed in errors, with partial overall status and exit 1. No results is success with an empty list. The index also includes recipe_reference and recipe_source from raw recipe metadata (null when absent). The Recipes TUI matches both fields for source-separated history; it does not guess attribution from a shared ID. This is an execution index; use [retained inventory tools](result-data.md) for identity-aware observation analysis and exchange.
 
 results show returns the selected raw JSON; --html presents its fields as escaped text, retaining error/data/time/quality information. A result ID is a storage-relative path, with no absolute paths, traversal or symlink parents. artifact verifies a declared output's path, size and digest before returning its actual local path/title/media type; modified/missing/unlisted artifacts fail. Neither command launches a viewer or publishes/transmits data. Generated HTML from third-party recipes may contain active content: review the renderer before execution/viewing. This framework does not claim all user-provided artifacts are escaped; the bundled basic views and summary are escaped.
 
 ## Portable recipe bundles
 
+The example assumes a reviewed user-authored report/summary in that Feast, with non-Bundle attribution and a LICENSE file. Built-in Bundle archives are not accepted by external unpack.
+
 ```sh
-python -B tools/opsfeast.py recipes pack report/summary --checkout-only \
-  --file recipe.yaml --file main.py --file README.md --file examples/input.synthetic.json \
+python -B tools/opsfeast.py recipes pack :report/summary --root /path/to/feast \
+  --file recipe.yaml --file main.py --file README.md --file LICENSE --file examples/input.synthetic.json \
   --output /path/to/new-report.zip
 python -B tools/opsfeast.py recipes unpack /path/to/new-report.zip --destination /path/to/new-candidate
 ```
@@ -109,4 +117,4 @@ Saving a job grants no future execution permission and establishes no scheduler.
 
 [Public synthetic tests](../tests/test_recipe_experience.py) cover source/ID selection, static discovery, HTML escaping, offline execution/inputs/status/quality/artifacts, paths, raw-result queries, bundle integrity/boundaries, independent Feast reuse and saved reruns/content drift. Existing operation tests remain applicable through the shared execution implementation. No real host or external scheduler was used. The [summary recipe](../recipes/report/summary/README.md) is an initial plain view; users' agents can author richer versioned report recipes with reviewed renderers and complete synthetic examples/tests. Keep new data/artifact/backends discoverable through canonical contracts and the recipe skill. UI/MCP/web integrations can consume these functions and JSON contracts but are not implemented by this CLI.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

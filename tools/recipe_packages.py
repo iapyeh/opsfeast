@@ -7,7 +7,7 @@ import stat
 import zipfile
 import yaml
 
-from opsfeast import ConfigError, plain_values
+from opsfeast import ConfigError, plain_values, UniqueLoader
 from recipe_inputs import parse_json_object
 
 VERSION = '0.1.0'
@@ -31,7 +31,7 @@ def descriptor_consistency(payloads, identifier, version):
     if not {'recipe.yaml', 'README.md'}.issubset(payloads):
         raise ConfigError('bundle must include descriptor and README')
     try:
-        metadata = yaml.safe_load(payloads['recipe.yaml'])
+        metadata = yaml.load(payloads['recipe.yaml'], Loader=UniqueLoader)
         plain_values(metadata, 'bundle descriptor')
         if not isinstance(metadata, dict) or metadata.get('id') != identifier or metadata.get('version') != version:
             raise ConfigError('bundle identity/version differs from descriptor')
@@ -66,11 +66,17 @@ def pack(item, files, destination):
     if not required.issubset(payloads):
         raise ConfigError('allowlist must include descriptor, README and declared entrypoints')
     descriptor_consistency(payloads, item['id'], item['version'])
+    from recipe_identity import validate as validate_identity
+    identity = validate_identity(yaml.load(payloads['recipe.yaml'], Loader=UniqueLoader), directory)
+    if identity != validate_identity(item['descriptor'], directory):
+        raise ConfigError('recipe attribution changed since catalog inspection')
+    if identity['license'] == 'MIT' and 'LICENSE' not in payloads:
+        raise ConfigError('MIT bundles must include LICENSE in their explicit allowlist')
     if len(payloads) > MAX_FILES or sum(map(len, payloads.values())) > MAX_BYTES:
         raise ConfigError('recipe bundle exceeds size/file limits')
     manifest = {'format': 'opsfeast-recipe-bundle', 'version': VERSION,
                 'recipe_id': item['id'], 'recipe_version': item['version'],
-                'source_reference': item['reference'], 'license': item['descriptor'].get('license', 'not-declared'),
+                'source_reference': item['reference'], 'license': identity['license'], 'author': identity['author'],
                 'files': {name: {'sha256': hashlib.sha256(content).hexdigest(), 'size_bytes': len(content)} for name, content in payloads.items()}}
     destination = destination.expanduser()
     if destination.exists() or destination.is_symlink():
@@ -126,6 +132,14 @@ def unpack(archive_path, destination):
                     raise ConfigError('bundle payload digest/size mismatch')
                 payloads[name] = content
             descriptor_consistency(payloads, manifest.get('recipe_id'), manifest.get('recipe_version'))
+            from recipe_identity import validate as validate_identity
+            from opsfeast import UniqueLoader
+            descriptor = yaml.load(payloads['recipe.yaml'], Loader=UniqueLoader)
+            identity = validate_identity(descriptor, external=True)
+            if 'author' in manifest and manifest['author'] != identity['author']:
+                raise ConfigError('bundle author differs from descriptor')
+            if manifest.get('license', 'Unknown') not in (identity['license'], 'not-declared'):
+                raise ConfigError('bundle license differs from descriptor')
     except (zipfile.BadZipFile, ValueError, KeyError, TypeError, AttributeError) as exc:
         raise ConfigError('invalid recipe bundle') from None
     destination.mkdir(parents=True)

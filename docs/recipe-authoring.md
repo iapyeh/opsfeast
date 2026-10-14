@@ -2,6 +2,8 @@
 
 For humans and AI agents creating custom recipes. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). The [Python-session execution contract](recipe-execution.md) supports general Python recipes through run_recipe.py; inventory keeps its own contract. The broader layout/documentation recommendations below are separate from the validated execution fields. An authoring CLI and arbitrary backend loader are not implemented.
 
+Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
+
 ## Design for the shared vision
 
 Read the [vision and design principles](vision.md) before creating or changing a recipe. Recipe authors contribute to the same ecosystem as framework developers: administrators express intent, agents handle implementation details, and reusable code carries out defined operations under human authorization.
@@ -100,4 +102,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

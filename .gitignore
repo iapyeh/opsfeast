@@ -10,3 +10,9 @@
 # User-specific agent guidance; never distribute private checkout settings.
 /AGENTS.local.md
 /AGENTS.override.md
+
+# Local acquisition evidence; not distributed with the checkout.
+/.opsfeast-download.json
+
+# Private installation recipe-author defaults.
+/.opsfeast-author.yaml

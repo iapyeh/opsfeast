@@ -53,6 +53,10 @@ python -B tools/opsfeast.py dump hosts.localhost --profile inventory
 
 profiles is read-only and shows available/missing/invalid/unavailable based on directory, definition and entry-file checks. This basic status does not validate YAML content, recipes, connectivity or privileges. Missing entries remain registered; nothing is automatically removed. use changes the default; without a name it offers selection only in an interactive terminal, and noninteractive use requires an explicit name. Cancellation preserves the registry. --profile selects a Feast for one invocation on either CLI without changing the default. Explicit roots and --profile cannot be combined for execution/configuration commands. Diagnostics and recipe execution require their own authorization.
 
+## TUI profile selection
+
+Bare `python -B tools/opsfeast.py` includes a Profiles table with the same availability checks. Enter or Switch selected profile updates the persisted default and refreshes Hosts; cursor movement is read-only. Invalid/unavailable rows and failed writes preserve the default. Explicit recipe root/profile form values remain unchanged. See [terminal UI](terminal-ui.md#profiles) for navigation, execution boundaries and limits.
+
 ## Registry and boundaries
 
 New checkouts use .opsfeast.yaml:
@@ -75,4 +79,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-10-12_
+_Last modified: 2026-10-14_

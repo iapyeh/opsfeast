@@ -16,6 +16,8 @@ STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 
 
 def validate(directory, metadata):
+    from recipe_identity import validate as validate_identity
+    validate_identity(metadata, directory)
     plain_values(metadata, 'recipe descriptor')
     if metadata.get('descriptor_version') != '0.3.0':
         raise ConfigError('Python-session recipes require descriptor_version 0.3.0')
