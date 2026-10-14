@@ -10,6 +10,8 @@ SSHScript execution semantics belong to the SSHScript project. Guidance here sho
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
+For first use, the [single-prompt walkthrough](../docs/first-use.md) lets an agent clone or reuse OpsFeast in the active workspace, explicitly read the acquired guidance, and propose setup. Follow [checkout bootstrap](../docs/getting-started.md#agent-led-checkout-bootstrap) for empty/nonempty directories, repository verification and failure handling. Clone-only authorization stops before software installation and initialization; the agent offers to execute the concrete local plan after the user agrees.
+
 ## Skill source locations and learning order
 
 All bundled skill sources are in this repository's `skills/`, including the complete SSHScript snapshot. Start with this index, select the task below, and read that SKILL.md and its task-relevant references before using the interfaces. Reuse already-read applicable material; do not load every skill or the entire API guide for a small task.
@@ -29,4 +31,4 @@ These skills rely on the repository layout and can be read directly by any agent
 
 Start with the [getting-started guide](../docs/getting-started.md). The `tools/opsfeast.py` utility initializes and validates management configuration. [Skill download and update checks](../docs/skill-updates.md) use `tools/skill_bundle.py` to compare or stage complete public SSHScript bundles; they do not activate skills or install them into agent-specific locations. The Ops hosts skill above is updated with this repository. Read [recipe experience](../docs/recipe-experience.md) for shared catalog, offline reports/artifacts, basic views, bundles and saved reruns. Read [general execution](../docs/recipe-execution.md) for Python-session capabilities and --var/--vars-file; the inventory-specific flow is described in the [recipe guide](../recipes/inventory/system/README.md).
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

@@ -59,34 +59,27 @@ Read the [vision and design principles](docs/vision.md) for the shared direction
 
 Use an **AI coding tool** that can read your local project files and run commands, such as Codex, Antigravity or Claude Code. This guide uses **project/workspace** for the directory opened in that tool; the exact UI labels vary. An ordinary chat without local file access is not enough for these steps. No particular agent product or skill loader is required.
 
-### 1. Clone OpsFeast to a local directory
+### 1. Create a project/workspace
 
-In a terminal, go to the parent directory where you want to keep OpsFeast, then run:
+Choose the local directory where you want OpsFeast to live, then create or open a project/workspace pointing to that directory in your AI coding tool. It can be empty; you do not need to clone OpsFeast yourself. Start a new agent conversation in that project with local file/command access and network access to GitHub. If the agent runs on another machine, choose the directory on that machine.
 
-```sh
-git clone https://github.com/iapyeh/opsfeast.git
-cd opsfeast
-```
+### 2. Paste the single first-use prompt
 
-This creates the `opsfeast/` checkout. Cloning downloads the project; Python dependencies and a management profile are prepared later.
-
-### 2. Open the clone in your AI coding tool
-
-Create or open a project/workspace and select the **cloned `opsfeast/` directory itself** as its root. This is the directory containing `README.md`, `AGENTS.md`, `tools/` and `skills/`, not its parent or a new empty project folder. Start a new agent conversation in that project and ensure the agent can access its files and run local commands. If the agent runs on another machine, it needs the checkout on that machine.
-
-A different workspace is supported when the agent can access the clone and explicitly uses its confirmed path for commands and environment setup. Using the clone as the root is the clearest first-use workflow.
-
-### 3. Paste the first-use prompt
-
-After opening the clone as your project in step 2, paste this prompt as-is into its agent conversation. No path replacement is needed: “this project's directory” refers to the active project/workspace root. The agent verifies that it contains OpsFeast before preparing setup.
+Paste this unchanged. “This project's directory” means the active workspace; no path replacement or separate clone/setup prompt is needed.
 
 ```text
-I am using OpsFeast for the first time in this project's directory. Read README.md, AGENTS.md and docs/getting-started.md, and follow their first-use guidance. Explain what OpsFeast can do, check prerequisites without making changes, and propose a local setup that you can carry out for me. Ask for my approval before starting setup.
+Help me get started with OpsFeast in this project's directory. I authorize cloning https://github.com/iapyeh/opsfeast.git here; use an opsfeast subdirectory if the current directory is not empty, and preserve existing files. Reuse an existing OpsFeast checkout if present.
+
+Read the checkout's README.md, AGENTS.md and docs/getting-started.md, then follow their first-use guidance. Check prerequisites without making changes, propose a local setup you can perform for me, and ask for my approval. Do not install software, create environments or initialize profiles until I agree.
 ```
+
+The agent clones into an empty workspace, or into a new `opsfeast/` subdirectory when the workspace already contains files. It verifies and reuses an existing OpsFeast checkout rather than cloning again, preserving its changes and configuration. It uses the actual checkout as its working directory; you do not need to reopen the project just because the checkout is a subdirectory. A conflicting destination, missing Git, denied access or failed download is reported with the specific help needed; the agent does not overwrite files or install software to resolve those blockers without approval.
 
 The cloned `AGENTS.md` and getting-started guide provide the reply-language rules and setup approval handoff, so they do not need to be repeated in the prompt. To explicitly request Traditional Chinese, append `Reply to me in Traditional Chinese (Taiwan).` Automatic language detection depends on what your agent can access; an explicit language request takes priority.
 
-Expect a setup proposal identifying the checkout, interpreter, dependencies and management directory, rather than an already completed installation. If the agent cannot read the project, correct the project path/access before continuing. The agent should explicitly offer to perform the proposed local setup and ask whether to proceed. Reply `I agree` (or the equivalent in your language) to approve that concrete plan; the agent then carries it out and reports results. Host connections and recipe execution require their own scope. Follow the [first-use walkthrough](docs/first-use.md#3-review-the-plan-and-authorize-local-initialization) for the next prompt.
+The setup proposal should reuse a compatible, working Python when available and install project packages from the relevant requirements files. Extra system packages need actual failure evidence or the chosen Python distribution's official dependency metadata, with their purpose explained; they are not presumed OpsFeast requirements. See [dependency evidence and Python reuse](docs/getting-started.md#dependency-evidence-and-python-reuse).
+
+After cloning and reading the project guidance, expect a setup proposal identifying the checkout, interpreter (or missing Python), dependencies and management directory, rather than an already completed installation. If the agent cannot read the project, correct the project path/access before continuing. The agent should explicitly offer to perform the proposed local setup and ask whether to proceed. Reply `I agree` (or the equivalent in your language) to approve that concrete plan; the agent then carries it out and reports results. Host connections and recipe execution require their own scope. Continue in the same conversation with your agreement; there is no second required prompt. See the [first-use handoff](docs/first-use.md#3-review-the-plan-and-authorize-local-initialization) for details.
 
 **Start with the [skills/ index](skills/README.md).** All bundled OpsFeast and SSHScript skill sources live there. Ask your agent to read the index and task-relevant skills; files being present does not mean its loader has activated them. New skills specific to your Feast belong in that management directory's `skills/`, so they remain portable when you change agents. If existing agent skills or loading rules conflict, the agent should explain the conflict and agree on a solution with you before changing files or choosing between conflicting instructions. See [storage and integration](docs/agent-guidance.md#skill-storage-and-conflict-resolution).
 
@@ -94,7 +87,7 @@ For your first host, follow the [first-host guide](docs/first-host.md): minimal 
 
 After authorized setup, the agent should tell you where to configure host addresses, login accounts, authentication and recipes.
 
-**[First-use walkthrough](docs/first-use.md)** provides copyable prompts for setup and skill update checks, expected results, and an optional isolated trial. The [getting-started guide](docs/getting-started.md) contains the detailed setup procedure for agents. The same Markdown workflow applies across agents; automatic skill discovery is optional.
+**[First-use walkthrough](docs/first-use.md)** explains the single-prompt setup handoff, optional explicit instructions and skill update checks, expected results, and an optional isolated trial. The [getting-started guide](docs/getting-started.md) contains the detailed setup procedure for agents. The same Markdown workflow applies across agents; automatic skill discovery is optional.
 
 The agent can inspect prerequisites with `python3 -B tools/check_environment.py`, explain the supported tools and propose a concrete setup. After authorization, it can install the dependencies in `requirements.txt` (or `requirements-init.txt` for initialization only), read the included skills, and run `tools/opsfeast.py init` and `check`. It then reports where to configure your hosts, accounts, authentication and recipe selection. Remote connection tests and collection require their own authorized scope.
 

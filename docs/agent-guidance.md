@@ -2,6 +2,8 @@
 
 OpsFeast separates shared project instructions from each user's private environment and maintenance preferences.
 
+For first use, the [single-prompt walkthrough](first-use.md) lets an agent clone or reuse OpsFeast in the active workspace, explicitly read the acquired guidance, and propose setup. Follow [checkout bootstrap](getting-started.md#agent-led-checkout-bootstrap) for empty/nonempty directories, repository verification and failure handling. Clone-only authorization stops before software installation and initialization; the agent offers to execute the concrete local plan after the user agrees.
+
 ## Public guidance
 
 The repository root `AGENTS.md` is tracked in Git and distributed when users clone the project. It contains shared entrypoints, environment checks, knowledge sources, authorization boundaries, recipe status and contribution conventions. It must remain portable: use repository-relative paths and avoid personal accounts, absolute checkout paths, private infrastructure and task-specific permission grants.
@@ -70,4 +72,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-14_

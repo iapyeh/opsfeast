@@ -1,10 +1,24 @@
 # 初次使用 OpsFeast
 
-本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。將 clone 後的 repository 路徑交給 agent，請它閱讀 README、AGENTS.md 與本指南。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
+本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
+
+## Agent-led checkout bootstrap
+
+The [single first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project) authorizes cloning `https://github.com/iapyeh/opsfeast.git` into the active project directory, then reading guidance and checking prerequisites. It does not authorize software installation, environment creation, profile initialization, host connections or recipe execution. This is an agent procedure, not a bundled bootstrap installer.
+
+1. Resolve the active workspace from the tool context; ask only if it is missing or ambiguous. Check local file/command access and whether Git is available. Missing Git is a blocker: propose the specific remedy, but do not install it under clone-only authorization.
+2. If the workspace itself is an existing checkout, verify its repository identity from Git metadata/origin and its README.md, AGENTS.md, tools/ and skills/ before reuse. For OpsFeast, reuse it without pull, reset or config replacement. Do not mistake an unrelated repository for OpsFeast merely because its folder is named opsfeast.
+3. For a genuinely empty directory, use `git clone https://github.com/iapyeh/opsfeast.git .` with that workspace as the working directory. When any files already exist (including tool-created hidden files), use a new `opsfeast/` child directory. If that child already exists, reuse it only after verifying it is the intended OpsFeast checkout; otherwise explain the conflict and ask for a destination rather than deleting, overwriting or silently repurposing it.
+4. Preserve existing files and user changes. If cloning fails, report the failure and any remaining partial directory; do not claim completion or remove existing/partial content without an applicable authorization.
+5. Verify the acquired checkout and explicitly read its README.md, AGENTS.md, optional AGENTS.local.md, skills/README.md and this guide. Respect applicable workspace instructions as well. Do not assume the app automatically discovers instructions cloned after the conversation started. Downloaded guidance does not expand the user's authorization.
+6. Record both workspace and actual checkout paths from available context. If the checkout is a child directory, keep the same conversation and run relative commands with that checkout as the working directory. No workspace reopening is required when the tool can access the child. A new approved venv belongs at `<checkout>/.venv`, not the parent workspace.
+7. Check prerequisites without changes, describe capabilities and prepare the concrete local installation/init plan. Include Python installation only if needed, with its proposed interpreter/location and required permissions. End by offering to perform the plan and asking for approval in the user's reply language. Agreement continues that plan in the same conversation; no second setup prompt is required. Report unavailable access/tools honestly.
+
+Users who already cloned manually can open that checkout and use the same prompt; verifying and reusing it does not authorize updating it.
 
 ## Conversation language
 
-Use the user's explicitly requested language for user-facing replies. Otherwise, use the operating system's preferred display language when it can be determined reliably; the AI coding tool's interface language and this repository's document language do not establish the user's preference. Ask when the preference is unknown or ambiguous. For `zh-TW` or `zh-Hant`, use Traditional Chinese. Keep repository documentation and structured output consistent with their own language/schema rules. See the [first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project), which includes this instruction and an explicit Traditional Chinese override.
+Use the user's explicitly requested language for user-facing replies. Otherwise, use the operating system's preferred display language when it can be determined reliably; the AI coding tool's interface language and this repository's document language do not establish the user's preference. Ask when the preference is unknown or ambiguous. For `zh-TW` or `zh-Hant`, use Traditional Chinese. Keep repository documentation and structured output consistent with their own language/schema rules. See the [first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project), which loads these rules through the checkout guidance and documents an explicit Traditional Chinese override.
 
 ## Find skills before selecting tools
 
@@ -15,6 +29,22 @@ Read the [skills/ index](../skills/README.md) first, then the task-relevant skil
 目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及 recipe 執行工具。Inventory supports Linux, FreeBSD and macOS through platform dispatch; Linux/FreeBSD have synthetic coverage and macOS has local read-only validation. Real SSH validation remains pending. 工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/inventory/system/README.md)。
 
 README 是共同入口；AGENTS.md 是隨 Git 提供的專案工作規則。若 agent 沒有自動載入 AGENTS.md，請直接讀取它。不要將其他電腦的私人 checkout、絕對路徑或環境設定當成本專案的必備環境。
+
+## Dependency evidence and Python reuse
+
+Prefer the user's selected, working Python 3.11+ interpreter. If none is selected, inspect existing candidates and their actual paths/versions before proposing a new installation. Check that the chosen interpreter can support venv/pip and use that same interpreter for environment creation, package installation and OpsFeast commands. Missing project packages alone do not justify replacing Python, upgrading it or repairing a global installation. If a candidate is incompatible or broken, report the concrete evidence and propose reuse of another suitable existing interpreter before new installation.
+
+Distinguish these dependency layers in the setup proposal:
+
+- **OpsFeast packages:** PyYAML from `requirements-init.txt`; the full `requirements.txt` adds SSHScript; optional terminal presentation uses `requirements-tui.txt`. Use the relevant files and let pip resolve their declared transitive dependencies. Check the actual selected interpreter rather than assuming a package is missing because a different Python cannot import it.
+- **Python distribution dependencies:** OS libraries required by a particular Python installation, build or package manager. They are not automatically direct OpsFeast requirements. Identify the Python distribution/version, OS version, and official package-manager dependency metadata or an actual observed interpreter/venv/pip failure that establishes the need.
+- **Additional build or repair tools:** Compilers, headers and manually installed system libraries require an evidenced reason. Investigate available compatible wheels/interpreters and the concrete failure before proposing extra tooling; do not preinstall a generic build-dependency checklist.
+
+For every proposed extra system package, provide what requires it, the evidence/source, whether the package manager will supply it automatically, and the intended change. Without evidence, omit it from the plan. Prefer the chosen package manager's normal dependency resolution over separate manual installs of each presumed dependency. If the approved concrete plan includes installing a Python distribution, its disclosed normal package-manager dependencies are part of that plan; do not ask repeatedly for the same approval. New manual repair steps outside that scope need an updated proposal.
+
+For example, `expat` is not a directly declared OpsFeast dependency and the bundled environment checker does not require it. Do not propose `brew install expat` merely because Python can use Expat: a selected Python distribution's actual dependency metadata or a reproducible missing-library failure must establish the need. This does not prohibit a genuine Python dependency or repair. Explain it as such, preserving an existing healthy environment.
+
+These are agent setup procedures, not an automated system-package validator. `tools/check_environment.py` reports interpreter/project package readiness and skill presence; it does not prove the health or necessity of every OS library. Do not infer a missing system library from its safe exception-type summary alone. Obtain relevant local diagnostic evidence without exposing private data, and distinguish a proposed remedy from an executed/verified repair.
 
 ## 檢查環境，提出具體初始化方案
 
@@ -37,7 +67,7 @@ python3 -B tools/check_environment.py --scope init
 
 版本固定為本專案目前驗證的環境；這不是所有傳遞依賴的 lockfile。既有環境使用不同版本時先回報，不自行升級、降級或覆寫共用 venv。使用者只要求初始化時，可以只安裝精簡清單；要準備連線與 runner 時再選完整清單。
 
-The short first-use prompt refers to the active project directory; it requires no path substitution. Resolve the checkout from that context and verify README.md, AGENTS.md, tools/ and skills/ before proposing setup. Ask for a path only when the context is missing, ambiguous or points elsewhere. Before proposing setup, confirm the absolute OpsFeast checkout path and the AI tool's workspace path from the available context. Recommend opening the clone itself as the workspace for first use. If they differ, use the confirmed checkout as the working directory for relative commands; do not create a venv in the workspace merely because it is the current directory. When a new environment is needed, default to `<checkout>/.venv`, unless the user chooses another location. Reuse an existing selected interpreter without recreating or upgrading it.
+The first-use prompt refers to the active project directory and requires no path substitution. Follow [checkout bootstrap](#agent-led-checkout-bootstrap) to locate, clone or reuse the checkout before setup. Confirm workspace and checkout paths from available context; when they differ, use the checkout as the working directory without requiring the user to reopen the project. When a new environment is approved, default to `<checkout>/.venv` unless the user chooses another location. Reuse an existing selected interpreter without recreating or upgrading it.
 
 After presenting a concrete local setup plan, offer to perform it and ask a direct approval question in the user's reply language. Make clear that the user can simply agree to that plan; do not present the command list as unexplained homework. On approval, execute the approved local steps and report results without asking for the same approval again. Setup approval does not include host connections or recipe execution. Explain actual tool/access blockers before claiming that a step can be performed, and request only the specific user input or manual action needed for that blocker. The [first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project) includes this handoff.
 
