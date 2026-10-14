@@ -3,6 +3,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
+from datetime import datetime, timezone
 import hashlib
 from importlib.metadata import version
 import json
@@ -107,6 +108,15 @@ def load_runtime():
         raise ConfigError('runner requires matching SSHScript import/distribution 5.0.0; no automatic upgrade')
     return sshscript.Session, {'python': sys.version.split()[0], 'interpreter': sys.executable,
                                'sshscript_import': sshscript.__version__, 'sshscript_distribution': installed}
+
+
+def _inventory_result_filename(started_at):
+    """Internal storage name: UTC start second plus an independent run UUID."""
+    started = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+    if started.tzinfo is None:
+        raise ValueError('inventory start time requires a timezone')
+    prefix = started.astimezone(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    return f'{prefix}-inventory-system-{uuid4()}.json'
 
 
 def save_report(path, report):
@@ -427,7 +437,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
         report.update(status=dispatch_status[0], reason_code=dispatch_status[1], message=dispatch_status[2])
     progress('saving result')
     output_dir.mkdir(exist_ok=True)
-    path = output_dir / f'inventory-system-{uuid4()}.json'
+    path = output_dir / _inventory_result_filename(report['started_at'])
     save_report(path, report)
     progress('retaining structured observations')
     try:

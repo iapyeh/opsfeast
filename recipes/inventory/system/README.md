@@ -100,7 +100,9 @@ For complete synthetic extension examples, read [partitioned raw result](example
 
 ## Results and verification
 
-Every run saves a new `observations/inventory-system-<uuid>.json`; prior results and human records are preserved. Reports include recipe version, implementation ID/version/path, selected-file SHA-256, complete Python-bundle SHA-256, runtime versions, host-init facts/provenance, observations, command sources and execution/cleanup errors. The bundle digest covers all `.py` files in sorted relative-path order, including shared helpers. It is provenance, not publisher authentication.
+Every run saves a new `observations/<YYYYMMDDTHHMMSSZ>-inventory-system-<uuid>.json`; prior results and human records are preserved. Reports include recipe version, implementation ID/version/path, selected-file SHA-256, complete Python-bundle SHA-256, runtime versions, host-init facts/provenance, observations, command sources and execution/cleanup errors. The bundle digest covers all `.py` files in sorted relative-path order, including shared helpers. It is provenance, not publisher authentication.
+
+Filename prefixes use started_at in UTC at whole-second precision; JSON times keep their original precision. Existing unprefixed files remain readable. See [raw filenames and result lookup](../../../docs/cli.md#saved-results-and-stdout) for sorting, same-second ties and old/new compatibility.
 
 Schema version and recipe/implementation versions are independent. Result schema 0.2.0 adds host-init provenance, implementation versions and skipped runs; migrate old copied descriptors to 0.2.0 before using this runner. A pre-dispatch skip has no selected implementation version. Source/schema versions and missing/error states are preserved; raw collector output may be present in inventory sources and must remain in the private management environment. The runner enforces observation shape without requiring a JSON Schema library; the JSON Schema is available to downstream consumers.
 

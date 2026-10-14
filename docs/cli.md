@@ -322,8 +322,10 @@ Progress is enabled automatically when `sys.stdout.isatty()` is true. It shows t
 Each inventory-system run writes a new file without overwriting previous inventories or updating human records:
 
 ```text
-<management-root>/observations/inventory-system-<uuid>.json
+<management-root>/observations/<YYYYMMDDTHHMMSSZ>-inventory-system-<uuid>.json
 ```
+
+New inventory filenames prefix the run started_at normalized to UTC at whole-second precision, for example `20261014T083012Z-inventory-system-fbd357d1-1443-4372-9e57-b7fe57f11b47.json`. Name sorting orders new files by start second, not completion time; UUIDs keep same-second runs distinct but do not order them within that second. JSON timestamps retain their original precision. Existing `inventory-system-<uuid>.json` files are preserved and remain readable: result discovery scans `observations/*.json` and uses stored timestamps, so mixed old/new names do not imply chronological filename order. Use the returned result_path/result_id rather than constructing a filename.
 
 The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. Recipe descriptor remains 0.2.0; bundled recipe version is 0.3.0; implementations carry independent versions. Results contain host_id, timestamps, runtime/evidence kind, status/reason/message, observations, command sources, host-init provenance, hop states and execution/cleanup errors. Recipe metadata records recipe_version, implementation_id/version/path when selected, selected-file SHA-256, descriptor SHA-256, Python-bundle SHA-256, resolved location and CLI/hosts selection source. A pre-dispatch skip has no selected implementation version. Source/host-disabled skips do not load a runtime or write an inventory file; they return result_path: null. Completed reports include source_name/source_root/reference and variable_names, without input values.
 

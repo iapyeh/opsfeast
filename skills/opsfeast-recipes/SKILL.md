@@ -25,6 +25,8 @@ Before writing operational code, consult the [tool and Python module capability 
 
 Before authoring, use catalog/list/show and static inspection to find a compatible recipe. Reuse typed inputs, runner Sessions/results, report contexts/artifact checks, attribution defaults, pack/unpack and saved jobs rather than constructing parallel implementations. For retained data/JSON/CSV use the result-data skill. Reuse suitable implemented components when adding a new recipe; logging/notifications, additional backends, automatic installation and scheduling remain planned.
 
+Inventory raw result filenames use the UTC started_at second plus UUID (`YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`). Preserve older unprefixed files; reuse recipes results list/show or recipe_reports results/show_result rather than assuming one filename prefix. Name order is start-second order only; same-second UUID ordering is arbitrary. Use stored full-precision times for interpretation and retention/exchange, and the returned result_path/result_id for lookup. See [the result reference](../../docs/cli.md#saved-results-and-stdout).
+
 ## Inventory access and result capability 0.1.0
 
 Read [the complete inventory access/results guide](../../docs/inventory-access.md) before selecting accounts, testing access, running inventory, authoring collectors or interpreting/exporting new values. It documents exact interfaces, settings, source selection, dependencies, authorization, failure/skip/fallback states, units, scope and verification limits.

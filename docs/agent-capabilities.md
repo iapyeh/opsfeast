@@ -4,6 +4,8 @@ This guide is for **DevOps users and their agents** operating OpsFeast or author
 
 OpsFeast accumulates reusable operational knowledge and executable capabilities. Before writing a parser, connection wrapper, discovery scanner, result store, exporter or recurring script, look for an existing tool, recipe or module here. Start with the [skill index](../skills/README.md), select the relevant skill, then use the [CLI reference](cli.md) and the task's canonical guide. This reference describes the current checkout; it does not make every internal Python function a stable public SDK.
 
+Inventory raw files now use UTC start-second prefixes with UUIDs; old files remain valid. Reuse recipes results list/show or recipe_reports results/show_result, which read both naming formats and sort by stored timestamps, instead of writing a filename-specific scanner. See [raw result names](cli.md#saved-results-and-stdout).
+
 ## Decide what to reuse
 
 1. Identify the requested outcome, selected Feast/targets/data and existing authorization. Discover relevant capabilities without running operations: recipe catalog/inspection, published contracts and implementation sources are the starting points.

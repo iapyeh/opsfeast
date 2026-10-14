@@ -183,6 +183,46 @@ class RunnerTests(unittest.TestCase):
     def run_recipe(self):
         return runner.run(self.root, 'example', session_class=self.session_class)
 
+    def test_result_filename_uses_start_second_and_preserves_precise_metadata(self):
+        original = runner.collector['new_report']
+        started = '2026-10-14T00:00:00.987654+08:00'
+        def new_report(host, evidence):
+            return dict(original(host, evidence), started_at=started)
+        with patch.dict(runner.collector, {'new_report': new_report}):
+            report, path = self.run_recipe()
+        self.assertEqual(report['status'], 'success')
+        self.assertRegex(path.name, r'^20261013T160000Z-inventory-system-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.json$')
+        self.assertEqual(json.loads(path.read_text())['started_at'], started)
+        self.assertNotEqual(report['finished_at'], started)
+
+    def test_result_filename_same_second_unique_and_seconds_sort(self):
+        first = runner._inventory_result_filename('2026-10-14T00:00:00.100000+00:00')
+        same = runner._inventory_result_filename('2026-10-14T00:00:00.900000Z')
+        later = runner._inventory_result_filename('2026-10-14T00:00:01+00:00')
+        self.assertNotEqual(first, same)
+        self.assertEqual(first[:16], same[:16])
+        self.assertLess(first, later)
+        self.assertLess(same, later)
+
+    def test_result_filename_requires_an_aware_start_time(self):
+        with self.assertRaises(ValueError):
+            runner._inventory_result_filename('2026-10-14T00:00:00')
+
+    def test_result_index_and_lookup_accept_legacy_and_timestamp_names(self):
+        from recipe_reports import results, show_result
+        report, new_path = self.run_recipe()
+        legacy = new_path.parent / 'inventory-system-00000000-0000-4000-8000-000000000001.json'
+        old_report = dict(report, started_at='2020-01-01T00:00:00+00:00')
+        legacy.write_text(json.dumps(old_report))
+        root = self.root.resolve()
+        index = results(root, recipe='inventory-system')
+        self.assertEqual(index['status'], 'success')
+        self.assertEqual([row['result_id'] for row in index['results']],
+                         [new_path.relative_to(root).as_posix(), legacy.relative_to(root).as_posix()])
+        for path, expected in ((legacy, old_report), (new_path, report)):
+            self.assertEqual(show_result(root, path.relative_to(root).as_posix()), expected)
+        self.assertEqual(json.loads(legacy.read_text()), old_report)
+
     def test_parallel_runner_owns_separate_sessions_facts_and_results(self):
         (self.root / 'hosts.yaml').write_text('''hosts:
   example:

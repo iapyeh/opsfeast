@@ -8,10 +8,12 @@ The inventory runner now performs stage 1 → 2 after every completed report. Hu
 
 | Stage | Implemented contract | Storage |
 | --- | --- | --- |
-| Raw report | inventory-system result 0.2.0, with optional identity evidence 0.1.0 and retention receipt | `observations/inventory-system-<uuid>.json` |
+| Raw report | inventory-system result 0.2.0, with optional identity evidence 0.1.0 and retention receipt | `observations/<YYYYMMDDTHHMMSSZ>-inventory-system-<uuid>.json` |
 | Retained observation | [0.1.0 schema](../schemas/retained-observation.schema.json) | `records/observations.sqlite3` within each Feast |
 | Exchange | [0.1.0 schema](../schemas/observation-exchange.schema.json) | Explicit JSON stdout/file selected by the user |
 | Analysis | Recipient-selected | DuckDB, SQLite or another consumer; no bundled importer |
+
+The new raw filename uses the UTC started_at second plus UUID. Existing unprefixed files remain readable and are not renamed. See [raw filenames and timestamp ordering](cli.md#saved-results-and-stdout) for precision, same-second ties, mixed history and lookup rules.
 
 SQLite is the first local stage-2 implementation, using Python's standard library. It is not an exchange-format requirement. Database `user_version=2` identifies this physical layout; contract versions identify data independently. Python 3.11+, PyYAML and SQLite JSON functions are required. Existing environment checks remain applicable; the tests exercise JSON SQL views with the chosen interpreter.
 

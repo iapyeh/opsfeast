@@ -98,4 +98,8 @@ Inventory now tests selected login/root access before the whole batch, attempts 
 
 Six-section inventory-values 0.1.0 is an additive raw/retained/exchange extension; old seven-field results remain readable and unchanged. Update strict validators before reading new extension fields. New report-summary 0.1.1 displays values/scope. Recipe changes invalidate pinned jobs; review and save new definitions without automatic scheduling. No private settings, historical records or environments are rewritten. See [the complete access, CSV and migration guide](inventory-access.md).
 
+## Inventory raw filenames with UTC start seconds
+
+New inventory results use `YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`, derived from started_at in UTC with seconds only. Prior unprefixed names remain untouched and readable. External consumers that glob only inventory-system-*.json must accept the new prefix or use the built-in result query interfaces; JSON contracts and timestamp precision are unchanged. Filename sorting groups new runs by start second; UUID ties and mixed historical names are not strict chronological ordering.
+
 _Last modified: 2026-10-14_

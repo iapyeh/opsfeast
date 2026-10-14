@@ -19,6 +19,8 @@ Before writing operational code, consult the [tool and Python module capability 
 
 Use the existing retention adapter, export/validate/combine interfaces and JSON/CSV surfaces before creating storage or exchange code. For in-process analysis reuse `observation_store.export`, `validate_exchange` and `combine`; for saved raw results/artifacts reuse `recipe_reports` lookups. Author only recipient-specific queries/transforms/rendering not covered by existing contracts; do not read host credentials for offline data processing.
 
+Inventory raw result filenames use the UTC started_at second plus UUID (`YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`). Preserve older unprefixed files; reuse recipes results list/show or recipe_reports results/show_result rather than assuming one filename prefix. Name order is start-second order only; same-second UUID ordering is arbitrary. Use stored full-precision times for interpretation and retention/exchange, and the returned result_path/result_id for lookup. See [the result reference](../../docs/cli.md#saved-results-and-stdout).
+
 ## Inventory access and result capability 0.1.0
 
 Read [the complete inventory access/results guide](../../docs/inventory-access.md) before selecting accounts, testing access, running inventory, authoring collectors or interpreting/exporting new values. It documents exact interfaces, settings, source selection, dependencies, authorization, failure/skip/fallback states, units, scope and verification limits.
