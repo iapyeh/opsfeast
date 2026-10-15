@@ -10,6 +10,21 @@ Git 隨附 `skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄�
 
 For an existing user who wants the agent to check releases, apply an applicable fast-forward update and learn/report the new skills, use the complete [update prompt](../README.md#update-opsfeast-and-refresh-your-agents-skills). That human prompt explicitly authorizes its stated application scope; a check-only request still does not authorize replacement. For a colleague's transferred instance, start with [handover orientation](../README.md#take-over-an-existing-opsfeast-instance) instead; it performs no update or init.
 
+## Required schema reread after a release update
+
+After updating an installation to a different OpsFeast release, the user's agent **must reread the installed release's current object-schema and data-contract documentation before resuming OpsFeast work**. This requirement applies on every release update, even when those documents have no diff, the agent read an earlier version, or installed skills were refreshed. A newer release being announced or discovered does not by itself authorize installing it.
+
+Read the actual updated checkout or its complete installed documentation, not remembered definitions or documentation for another release. The required reading covers:
+
+- [Host configuration](hosts-yaml.md): host fields, connection variants, accounts, credentials, includes and selectors. This guide is authoritative even though no standalone host JSON Schema is currently provided.
+- [Core API](core-api.md) and [profiles](profiles.md): installation identity/metadata, profile selection, host snapshots, Recipe/session objects, ownership and inspection results.
+- [Recipe execution](recipe-execution.md) and [recipe experience contracts](recipe-experience.md): descriptors, inputs/contexts, execution results, reports/artifacts, bundles and saved jobs.
+- [Schema index](../schemas/README.md) and its implemented schemas, [result-data contracts](result-data.md) and [inventory access/data semantics](inventory-access.md): inventory values, raw/retained/exchange structures, identity and failure/partial/unknown interpretation.
+
+Learn the current field types, required/default/optional values, versions, relationships, constraints and migration implications. Documented planned objects are not implemented schemas. Apply the same reread when a branch update changes these contracts; the every-release rule does not depend on detecting such changes. Missing/inaccessible release documents must be reported rather than replaced with guessed fields. Reading does not authorize migration, private configuration changes, host connections or execution.
+
+This is an instruction to the user's agent. OpsFeast does not verify reading completion and requires no reading receipt, attestation, tracking or enforcement mechanism.
+
 ## 檢查更新
 
 使用者明確要求檢查，或已授權定期檢查時，執行：

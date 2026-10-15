@@ -5,6 +5,8 @@ description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform
 
 # OpsFeast 主機設定維護
 
+After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
+
 For the public Python package, installation identity, profile/hosts snapshots, scoped sessions and Recipe su/sudo, read [opsfeast-core](../opsfeast-core/SKILL.md) and its [API guide](../../docs/core-api.md). New python-recipe 0.1.0 entrypoints receive execute(recipe); legacy python-session Session/context interfaces remain unchanged.
 
 Start with the [central skill index](../README.md). Keep newly authored Feast-specific skills in the selected management root's `skills/`; check task-relevant source/loaded copies and agree with the user on any naming, version, instruction or loader conflict before the affected action. Follow [storage and conflict resolution](../../docs/agent-guidance.md#skill-storage-and-conflict-resolution).
@@ -16,6 +18,8 @@ Start with the [central skill index](../README.md). Keep newly authored Feast-sp
 Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍。For the implemented inventory/Python-session runner, see the [execution contract](../../docs/recipe-execution.md). 先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
 
 Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
+
+Host icon is optional display metadata: the common loader supplies 🍎 when omitted. Explicit values must be exactly one Unicode Symbol code point; null, empty, letters/digits/whitespace and multi-code-point emoji fail loading. Do not rewrite YAML to materialize the default or use icon as identity. See [canonical icon rules](../../docs/hosts-yaml.md#host-icon).
 
 ## Load configuration when writing Python tools
 

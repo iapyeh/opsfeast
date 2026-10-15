@@ -22,6 +22,8 @@ Use the user's explicitly requested language for replies; otherwise use the reli
 
 For a first-use setup proposal, explain the available capabilities, inspect prerequisites without changes, and present the actual interpreter, dependencies and management directory. Clearly offer to perform that local plan and finish with an approval question in the user's reply language, so the user can simply agree rather than run the steps manually. On agreement, execute the approved plan and report results without requesting the same approval again. Existing setup authorization remains valid; ask only for missing scope or material decisions. Report genuine tool/access blockers and the specific help needed. Local setup does not authorize host connections or recipe execution. Follow the [getting-started guide](docs/getting-started.md) and [first-use walkthrough](docs/first-use.md) for the complete workflow.
 
+After every OpsFeast release update, user agents must reread the installed release's current object schemas and data contracts before resuming work, even if unchanged or previously read. Follow the [mandatory schema reading rule](docs/skill-updates.md#required-schema-reread-after-a-release-update), including the hosts.yaml guide. No reading-completion verification, receipt or enforcement mechanism is required.
+
 ## Goals and development principles
 
 Before designing features or authoring recipes, read the shared [vision and design principles](docs/vision.md). Our goal is an open ecosystem of agent-driven, human-authorized IT operations through reusable, verifiable and shareable recipes under human-defined goals and authorization.
@@ -110,4 +112,4 @@ Preserve unrelated files, stage an explicit allowlist and inspect the staged dif
 
 For raw recovery, retained observation interpretation, export, validation or combination, read the [result-data skill](skills/opsfeast-result-data/SKILL.md), [workflow/contracts](docs/result-data.md) and [CLI reference](docs/cli.md#retained-observations-and-exchange). Runner automatically attempts raw → retained for operational inventory reports; always report retention separately from collection. Inventory 0.3.0 uses the whole-collection verified actor for identity probes; account sudo policy controls privilege, and legacy identity_sudo no longer bypasses that policy. Read [inventory access, partitioned results and CSV](docs/inventory-access.md); preserve the user's actual scope. Identity quality and fallback warnings are mandatory interpretation context. Sharing exports data but never authorizes transmission. Receiver analysis storage remains user-selected.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

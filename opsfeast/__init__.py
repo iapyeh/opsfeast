@@ -14,6 +14,7 @@ import re
 import sys
 import tempfile
 import traceback
+import unicodedata
 
 try:
     import yaml
@@ -36,6 +37,7 @@ if Path(_tools).is_dir() and _tools not in sys.path:
 REPOSITORY_RECIPES = REPOSITORY_ROOT / 'recipes'
 INSTANCE_DEFINITION = 'feast.yaml'
 INSTANCE_SCHEMA = {'schema_version': 1, 'kind': 'opsfeast'}
+DEFAULT_HOST_ICON = '🍎'
 LEGACY_INSTANCE_DEFINITION = 'my-ops.yaml'
 LEGACY_INSTANCE_SCHEMA = {'schema_version': 1, 'kind': 'sshscript-ops'}
 
@@ -531,7 +533,12 @@ class Validator:
                 raise ConfigError(f'duplicate host {host}: {self.sources[host]} and {path}')
             if isinstance(config, dict) and 'groups' in config:
                 raise ConfigError(f'{path}: {host}: groups has been renamed to group; use group: NAME or group: [NAME, ...]')
-            self.hosts[host] = mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes', 'identity_key', 'label', 'description'))
+            host_config = dict(mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes', 'identity_key', 'label', 'description', 'icon')))
+            icon = host_config.get('icon', DEFAULT_HOST_ICON)
+            if not isinstance(icon, str) or len(icon) != 1 or not unicodedata.category(icon).startswith('S'):
+                raise ConfigError(f'{path}: {host}.icon: expected exactly one Unicode Symbol code point')
+            host_config['icon'] = icon
+            self.hosts[host] = host_config
             self.sources[host] = path
         self.active.pop()
         self.loaded.add(path)
@@ -800,7 +807,8 @@ TEMPLATE = '''# First host: read docs/first-host.md for minimal examples and tes
 #     enabled: true
 #     vars: {command_timeout_seconds: 15}
 hosts:
-  # Each host ID maps to connection (required), enabled, group, users, vars and recipes (optional).
+  # Each host ID requires connection; icon defaults to 🍎 (one Unicode Symbol code point).
+  # enabled, group, users, vars, recipes, identity_key, label and description are optional.
   # Available fields, for example:
   # host-01:
   #   connection:

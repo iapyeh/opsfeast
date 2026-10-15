@@ -5,6 +5,8 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 # OpsFeast recipes
 
+After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
+
 For the public Python package, installation identity, profile/hosts snapshots, scoped sessions and Recipe su/sudo, read [opsfeast-core](../opsfeast-core/SKILL.md) and its [API guide](../../docs/core-api.md). New python-recipe 0.1.0 entrypoints receive execute(recipe); legacy python-session Session/context interfaces remain unchanged.
 
 Start with the [central skill index](../README.md). Keep newly authored Feast-specific skills in the selected management root's `skills/`; check task-relevant source/loaded copies and agree with the user on any naming, version, instruction or loader conflict before the affected action. Follow [storage and conflict resolution](../../docs/agent-guidance.md#skill-storage-and-conflict-resolution).
@@ -18,6 +20,8 @@ Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain 
 Before generating code that consumes `hosts.yaml`, read [the Python configuration interface and standalone example](../../docs/hosts-yaml.md#read-host-configuration-from-python). Reuse `opsfeast.Validator` and `resolve_root` from the trusted checkout's `tools/` at runtime, with the selected Feast root/profile and host ID as invocation inputs. Do not replace the operational loader with a separate YAML parser or copy current host addresses, users, jumps or credentials into generated source. This preserves include/path/duplicate checks and lets later settings changes take effect without regenerating code. Loading and static validation do not connect or authorize execution; preserve enabled controls and avoid outputting secret-bearing settings.
 
 For runner-managed recipes, use the supplied Session and `context.host_id`/`context.vars`; the runner already loads configuration and handles connections. Do not reconnect by parsing credentials, and do not assume `context.host`, `context.config` or `context.root` exists. Declare task-specific inputs through the [Python-session contract](../../docs/recipe-execution.md). The standalone import interface requires Python/PyYAML and an explicit tools import path; it is a checkout-level interface, not an installed stable SDK. Follow the linked guide for errors, data fields and synthetic verification.
+
+Host configuration includes optional display icon with effective default 🍎; reuse the loader rather than implementing defaults/validation inside recipes. It requires one Unicode Symbol code point and is not an identity or target selector; see [icon rules](../../docs/hosts-yaml.md#host-icon). In python-recipe code, read the effective value with recipe.profile.hosts.get(recipe.host_id)["icon"]. Existing result/retained schemas do not acquire icon automatically.
 
 ## Prefer existing OpsFeast capabilities
 

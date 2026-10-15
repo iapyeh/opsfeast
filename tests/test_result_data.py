@@ -353,7 +353,7 @@ class HostMetadataTests(unittest.TestCase):
         from opsfeast import Validator
         host = {'connection': {'local': True}, 'identity_key': 'example.org:mail:os-1', 'label': '郵件服務', 'description': 'First line\nSecond line'}
         config = Validator(self.root({'node': host})).check()
-        self.assertEqual(config.hosts['node'], host)
+        self.assertEqual(config.hosts['node'], dict(host, icon='🍎'))
         for name, value in [('identity_key', ''), ('identity_key', ' trailing '), ('identity_key', 'line\nbreak'), ('identity_key', 123), ('label', None), ('label', 4), ('description', ['bad'])]:
             candidate = copy.deepcopy(host)
             candidate[name] = value

@@ -5,6 +5,8 @@ description: Use the bundled OpsFeast Python API for installation identity, prof
 
 # Operate and compose OpsFeast Core
 
+After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
+
 Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 5.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
 
 ## Identify the instance and scope
@@ -14,6 +16,8 @@ An instance is an installation/checkout, not feasts/ or an individual management
 A new clone or copy into another directory must receive a new UUID. Use explicit initialization on that copy, never relocate its identity. Copy detection uses the recorded resolved path; same-path copies on another machine require explicit renewal. Only an actual move of the original installation uses relocate_identity to preserve UUID. The UUID ending in 000000000001 is reserved for the original development installation; it must not propagate to copies. Missing UUID uses the standard all-zero placeholder, with inspection exposing placeholder/reason; the user accepts duplicate-identity risk. Name is required/default UUID and description optional; names are not unique or authentication evidence. Assigned identity persists through normal init/profile changes. Do not rewrite identity during a read-only handover.
 
 ## Reuse configuration and sessions
+
+Effective hosts always include icon (default 🍎); explicit values must be one Unicode Symbol code point, not a multi-code-point glyph. This is display-only and does not rewrite YAML; see [icon rules](../../docs/hosts-yaml.md#host-icon).
 
 Use profile.hosts.list/get and explicit reload rather than another YAML parser or frozen addresses/credentials. Reads are masked copies; reveal_secrets=True is explicit and must never enter logs/shared examples. Masking is key-based and cannot sanitize arbitrary strings. A profile/connection uses a validated snapshot; fresh inspection does not replace that execution snapshot.
 

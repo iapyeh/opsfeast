@@ -2,6 +2,10 @@
 
 The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local checkout does not need to move. Private management directories, profile names, targets, credentials, human notes, observations and execution history retain their existing locations and contents.
 
+## Host icon default (2026-10-15)
+
+Effective loaded hosts now always include icon, default 🍎; source YAML/comments remain unchanged. Explicit icons must be exactly one Unicode Symbol code point. Consumers that assume an exact set of host dictionary keys must accept this optional configuration field/default. Persisted inventory/retained/exchange schemas and identities are unchanged. See [host icon rules](hosts-yaml.md#host-icon).
+
 ## Core package and installation identity (2026-10-15)
 
 Instance now precisely means the entire installation/checkout; management roots are profile environments. Existing profile registry and feast.yaml schemas/data remain valid. Read-only use of an older installation exposes a nil UUID placeholder; the next authorized init creates identity. Copies receive a new UUID; actual moves explicitly relocate identity. See [Core API](core-api.md).

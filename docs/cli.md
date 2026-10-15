@@ -9,6 +9,8 @@ OpsFeast provides two command-line entrypoints:
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
+Host configuration loading (including check/dump) validates icon as exactly one Unicode Symbol code point. Effective host dumps include default 🍎 when absent in YAML; other selected values remain unmasked, including credentials. See [host icons](hosts-yaml.md#host-icon).
+
 ## Installation identity and read-only inspection
 
 `python -B tools/opsfeast.py instance ACTION [--installation DIRECTORY] [--name NAME] [--description TEXT]` emits JSON. ACTION is inspect (read-only instance/configuration/dependency snapshot), init (create/preserve identity and optionally set name/description), set (update existing metadata), renew (new UUID for this copy), or relocate (preserve identity after moving the original). Name/description apply only to init/set. Default installation is this checkout; it is not a management root. Exit 0 is success, 1 is partial inspection/configuration/filesystem failure; syntax errors use 2. The command does not connect or execute recipes. See [identity/copy semantics and API](core-api.md).

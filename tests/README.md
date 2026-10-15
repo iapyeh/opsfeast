@@ -113,6 +113,10 @@ Inventory 0.3.0 delivery verification (2026-10-14): 415 tests passed on Python 3
 
 `test_core_api.py` and `test_core_delivery.py` cover installation identity/nil/reserved/copy/move behavior, metadata and profile isolation, runtime YAML snapshots, read-only inspection, session ownership/lifetimes, credential precedence, nested su/sudo identity/restoration, poisoned scopes, python-recipe static discovery/execution/results and explicit wheel/sdist boundaries. Temporary installations and synthetic accounts/transports protect private bindings. Native SSH/PAM/sudo policy remains separate evidence.
 
-Delivery verification (2026-10-15): 450 tests passed on each of Python 3.11.15, 3.13.13 and 3.14.4, including headless Textual checks. Older interpreters reused the selected environment's pure-Python dependencies; these runs do not establish native SSHScript dependency readiness. Matching SSHScript 5.0.0 and credential-free local Core/identity execution were verified on 3.14. Wheel build, pip installation into a temporary target, import/session use outside the checkout, public resource inspection, skill validation and changed-document checks passed. Native SSH/su/sudo remain unverified. An existing TUI regression test now waits for deferred refresh completion instead of fixed short sleeps.
+Delivery verification (2026-10-15): 456 tests passed on each of Python 3.11.15, 3.13.13 and 3.14.4, including headless Textual checks. Older interpreters reused the selected environment's pure-Python dependencies; these runs do not establish native SSHScript dependency readiness. Matching SSHScript 5.0.0 and credential-free local Core/identity execution were verified on 3.14. Wheel build, pip installation into a temporary target, import/session use outside the checkout, public resource inspection, skill validation and changed-document checks passed. Native SSH/su/sudo remain unverified. An existing TUI regression test now waits for deferred refresh completion instead of fixed short sleeps.
+
+
+
+`test_host_icon.py` covers the in-memory default without YAML/raw-document mutation, explicit Symbol categories, invalid types/code points/compound emoji, includes, Core reload/inspection, CLI dumps and UI read models. All fixtures are synthetic; no host operations occur.
 
 _Last modified: 2026-10-15_

@@ -1,5 +1,7 @@
 # 管理 hosts.yaml 與主機設定
 
+User agents must reread this guide after every OpsFeast release update, even if unchanged or previously read, to learn the installed release's current host schema and semantics before resuming work. See the [mandatory release schema reading rule](skill-updates.md#required-schema-reread-after-a-release-update). Reading completion is not verified.
+
 這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
 
 New to this configuration? Start with [Connect your first host](first-host.md) for a minimal example and practical cases. This document remains the complete reference.
@@ -469,6 +471,26 @@ Host configuration/path rules and inventory-system descriptor/result schema 0.2.
 New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su retains the diagnostic precedence; sudo follows [account field-presence rules](inventory-access.md#configure-the-actual-connection-account), with canonical sudo-password first and exact "false" controls. Su selects the target account; sudo selects the actor. Su overrides use vars.su.password, while sudo overrides use vars.sudo.password; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
 
 Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests enabled connection-account sudo, including passwordless policy when no password is selected. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
+
+## Host icon
+
+Each host accepts optional `icon` beside connection/label/description:
+
+```yaml
+hosts:
+  mac-01:
+    icon: 🍎
+    connection: {hostname: mac-01.example.org}
+  linux-01:
+    icon: 🐧
+    connection: {hostname: linux-01.example.org}
+  other-01:
+    connection: {hostname: other-01.example.org}  # Effective icon defaults to 🍎.
+```
+
+The loader requires a string containing **exactly one Unicode code point** (`len(icon) == 1`) whose Unicode General Category is Symbol (`Sm`, `Sc`, `Sk` or `So`). It uses the selected Python runtime's Unicode database. Examples accepted across supported runtimes include 🍎, 🐧, ★, ☀, $, + and ©. Letters, digits, whitespace, controls, empty strings, null and non-string values are invalid. Multi-code-point presentations are invalid even when displayed as one glyph: ☀️ (variation selector), 👍🏽 (skin tone), 🇹🇼 (flag) and 👩‍💻 (ZWJ sequence). No trimming, normalization or grapheme-cluster interpretation is performed; write the intended symbol directly in UTF-8 YAML.
+
+When icon is omitted, every loaded effective host gets 🍎, including hosts from include files. The default is added in memory, without rewriting hosts.yaml, comments or the loader's raw source documents. Invalid explicit icons fail during configuration loading, including for disabled hosts; they do not silently fall back to 🍎. CLI dump of hosts, Core host list/get and inspection, UI read models and runner configuration receive the same effective value through the common loader. Icon is display metadata only and does not affect host/instance identity, target selection or connection settings. This configuration field does not extend retained/exchange observation schemas.
 
 ## Explicit host identity and human-readable metadata
 

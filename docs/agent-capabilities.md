@@ -36,6 +36,8 @@ Commands below are command families, not permission grants or complete copyable 
 | Save/rerun reviewed work | `opsfeast.py recipes jobs save/list/show/run` | Private bindings and content verification; run executes again. No bundled scheduler. [Jobs](recipe-experience.md#saved-jobs-and-recurring-work) |
 | Check/stage public SSHScript skill updates | `tools/skill_bundle.py check/download` | Authorized network download/check only; no activation or package upgrade. [Skill updates](skill-updates.md) |
 
+The shared host loader validates optional icon as one Unicode Symbol code point and supplies 🍎 when absent; all effective hosts from Core/CLI/runner use that default without rewriting YAML. See [host icon contract](hosts-yaml.md#host-icon); it is display metadata, not host identity.
+
 ## Public Core Python API
 
 Prefer [Core API 0.1.0](core-api.md) and the [Core skill](../skills/opsfeast-core/SKILL.md) for installation identity/profiles, hosts snapshots, standalone sessions and scoped Recipe su/sudo, and read-only inspection. From the checkout root or an authorized installed package use `from opsfeast import Instance`; select `Instance.open(installation=...).profile(...)`. Core replaces the need for caller-managed tools import paths for these capabilities. Existing python-session recipes remain compatible; python-recipe entrypoints receive execute(recipe). Logging/notifications remain deferred. See canonical examples, dependencies, error/lifecycle rules and copy/UUID policy in that guide.
