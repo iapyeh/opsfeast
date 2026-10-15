@@ -24,7 +24,9 @@ def inspect_package(name, expected=None, distribution=None):
 
 def inspect_environment(scope='full'):
     python_ok = sys.version_info >= (3, 11)
-    packages = {'PyYAML': inspect_package('yaml', '6.0.3', 'PyYAML')}
+    packages = {'PyYAML': inspect_package('yaml', '6.0.3', 'PyYAML'),
+                'tabulate': inspect_package('tabulate', '0.10.0'),
+                'wcwidth': inspect_package('wcwidth')}
     if scope == 'full':
         packages['sshscript'] = inspect_package('sshscript', '5.0.0')
     try:

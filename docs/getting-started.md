@@ -38,7 +38,7 @@ Prefer the user's selected, working Python 3.11+ interpreter. If none is selecte
 
 Distinguish these dependency layers in the setup proposal:
 
-- **OpsFeast packages:** PyYAML from `requirements-init.txt`; the full `requirements.txt` adds SSHScript; optional terminal presentation uses `requirements-tui.txt`. Use the relevant files and let pip resolve their declared transitive dependencies. Check the actual selected interpreter rather than assuming a package is missing because a different Python cannot import it.
+- **OpsFeast packages:** PyYAML and tabulate[widechars] from `requirements-init.txt`; the full `requirements.txt` adds SSHScript; optional terminal presentation uses `requirements-tui.txt`. Use the relevant files and let pip resolve their declared transitive dependencies. Check the actual selected interpreter rather than assuming a package is missing because a different Python cannot import it.
 - **Python distribution dependencies:** OS libraries required by a particular Python installation, build or package manager. They are not automatically direct OpsFeast requirements. Identify the Python distribution/version, OS version, and official package-manager dependency metadata or an actual observed interpreter/venv/pip failure that establishes the need.
 - **Additional build or repair tools:** Compilers, headers and manually installed system libraries require an evidenced reason. Investigate available compatible wheels/interpreters and the concrete failure before proposing extra tooling; do not preinstall a generic build-dependency checklist.
 
@@ -64,7 +64,7 @@ Dependency lists for the selected setup scope:
 
 | 清單 | 用途 |
 | --- | --- |
-| `requirements-init.txt` | PyYAML 6.0.3，供 init/check/dump 及一般測試使用 |
+| `requirements-init.txt` | PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth), for base commands, access tables and tests |
 | `requirements.txt` | 上述依賴加 SSHScript 5.0.0，供完整 Ops 工具使用 |
 | `requirements-tui.txt` | Optional Textual 8.2.8 for the interactive Home/recipes interface; install alongside the chosen base requirements only within the approved plan |
 

@@ -149,16 +149,115 @@ def host_summary(report):
     return ('❌ ' if status == 'FAIL' else '') + f"{status}  {label}" + (f"  ({display_value(reason)})" if status != 'PASS' else '')
 
 
+def table_formatter():
+    """Check display dependencies before the CLI makes any connection."""
+    try:
+        import tabulate
+        if not tabulate.WIDE_CHARS_MODE:
+            raise ImportError('wide character support unavailable')
+    except ImportError:
+        raise ConfigError('check-access table output requires tabulate[widechars]==0.10.0; '
+                          'install requirements-init.txt with the selected interpreter') from None
+    return tabulate.tabulate
+
+
+def summary_tests(report):
+    """Project existing evidence into test rows without issuing any probes."""
+    rows = []
+
+    def add(test, user, status, reason=''):
+        rows.append({'test': test, 'user': user, 'status': status,
+                     'reason_code': '' if status == 'success' else reason})
+
+    access = report.get('access', {})
+    login = account_label(report)
+    # Incomplete/legacy display inputs cannot establish individual test outcomes.
+    if 'connected' not in report:
+        add('access', login, report['status'], report.get('reason_code', 'unknown'))
+        return rows
+    if report['status'] == 'skipped' and not report.get('connected'):
+        add('connection', login, 'skipped', report.get('reason_code', 'not_run'))
+    else:
+        verified = report.get('connected') and bool(access.get('connection_identity'))
+        add('connection', login, 'success' if verified else 'failed',
+            'identity_failed' if report.get('connected') else 'connection_failed')
+    sudo = access.get('sudo', {})
+    state = sudo.get('status')
+    add('sudo', login, 'success' if state == 'success' else 'failed' if state == 'failed' else 'skipped',
+        {'failed': 'sudo_failed', 'disabled': 'sudo_disabled', 'not_needed': 'already_root'}.get(
+            state, 'not_attempted' if access.get('connection_identity') else 'connection_unverified'))
+    if access.get('restoration_verified') is False:
+        add('restoration', login, 'failed', 'restoration_failed')
+    if report.get('cleanup_error'):
+        add('cleanup', login, 'failed', 'cleanup_failed')
+
+    for account in report.get('accounts', []):
+        if account['role'] == 'login':
+            continue
+        user = account_label(account)
+        detail = account.get('checks')
+        if detail is None:
+            add('su', user, 'skipped', account['reason_code'])
+            add('sudo', user, 'skipped', account['reason_code'])
+            continue
+        groups = detail.get('groups', [])
+        if not groups:
+            reason = ('cleanup_failed' if detail.get('cleanup_error') else
+                      'identity_failed' if detail.get('connected') else 'connection_failed')
+            if reason != 'cleanup_failed':
+                add('connection', login, 'failed', reason)
+            add('su', user, 'skipped', reason)
+            add('sudo', user, 'skipped', 'su_failed')
+        for group in groups:
+            steps = group.get('steps', [])
+            if not steps:
+                reason = 'identity_failed' if group.get('connected') else 'connection_failed'
+                add('connection', login, 'failed', reason)
+                add('su', user, 'skipped', reason)
+                add('sudo', user, 'skipped', 'su_failed')
+            for step in steps:
+                sudo_enabled = account.get('sudo') == 'enabled'
+                su_check = step.get('su_identity_verification' if sudo_enabled else 'identity_verification', {})
+                stage = step.get('stage', '')
+                su_status = ('success' if su_check.get('status') == 'success' else
+                             'failed' if stage.startswith('su_') or su_check.get('status') == 'failed' else 'skipped')
+                su_reason = stage + '_failed' if su_status == 'failed' and stage.startswith('su_') else step.get('reason_code', 'su_unverified')
+                add('su', user, su_status, su_reason)
+                if not sudo_enabled:
+                    add('sudo', user, 'skipped', 'sudo_disabled')
+                elif su_status != 'success':
+                    add('sudo', user, 'skipped', 'su_failed')
+                else:
+                    sudo_check = step.get('identity_verification', {})
+                    sudo_status = ('success' if sudo_check.get('status') == 'success' else
+                                   'failed' if stage.startswith('sudo_') or sudo_check.get('status') == 'failed' else 'skipped')
+                    add('sudo', user, sudo_status, stage + '_failed' if sudo_status == 'failed' else
+                        step.get('reason_code', 'sudo_unverified'))
+            parent = group.get('parent_identity_verification', {})
+            if parent.get('status') == 'failed' or steps and parent.get('status') != 'success':
+                add('restoration', user, 'failed', 'restoration_failed' if parent.get('status') == 'failed' else 'restoration_unverified')
+            if group.get('cleanup_error'):
+                add('cleanup', user, 'failed', 'cleanup_failed')
+        if detail.get('cleanup_error'):
+            add('cleanup', user, 'failed', 'cleanup_failed')
+    return rows
+
+
 def format_summary(report):
-    rows = [host_summary(dict(account, host=host['host']))
-            for host in report['hosts'] for account in host.get('accounts', [host])]
-    rows.extend(f"EXCLUDED  {display_value(item['host'])}  ({display_value(item['reason_code'])})"
+    rows = []
+    for host in report['hosts']:
+        for test in summary_tests(host):
+            status = {'success': 'PASS', 'failed': '❌ FAIL', 'skipped': 'SKIP'}.get(test['status'], 'UNKNOWN')
+            rows.append([status, display_value(host['host']), test['test'], display_value(account_label(test)),
+                         display_value(test['reason_code'])])
+    rows.extend(['EXCLUDED', display_value(item['host']), '-', '-', display_value(item['reason_code'])]
                 for item in report.get('excluded_hosts', []))
     counts = {state: sum(host['status'] == state for host in report['hosts'])
               for state in ('success', 'failed', 'skipped')}
-    rows.append(f"Total: {counts['success']} passed, {counts['failed']} failed, "
-                f"{counts['skipped']} skipped, {len(report.get('excluded_hosts', []))} excluded")
-    return '\n'.join(rows)
+    total = (f"Hosts: {counts['success']} passed, {counts['failed']} failed, "
+             f"{counts['skipped']} skipped, {len(report.get('excluded_hosts', []))} excluded")
+    return table_formatter()(rows, headers=['status', 'host', 'test', 'user', 'reason'], tablefmt='rounded_outline',
+                             disable_numparse=True, preserve_whitespace=True) + '\n' + total
 
 
 def progress_printer(total):

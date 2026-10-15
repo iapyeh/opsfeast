@@ -129,6 +129,9 @@ def execute(recipe):
         self.assertEqual(hashlib.sha256(wheel.read_bytes()).hexdigest(), first)
         with zipfile.ZipFile(wheel) as archive:
             names = archive.namelist()
+            metadata = archive.read(next(name for name in names if name.endswith('.dist-info/METADATA'))).decode()
+            self.assertIn('Requires-Dist: tabulate[widechars]==0.10.0\n', metadata)
+            self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tests/test_core_delivery.py', names)
             self.assertIn('_opsfeast_data/recipes/check/port/LICENSE', names)

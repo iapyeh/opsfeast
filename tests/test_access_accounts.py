@@ -58,8 +58,8 @@ class AccountAccessTests(unittest.TestCase):
         accounts = report['hosts'][0]['accounts']
         self.assertEqual([a['status'] for a in accounts], ['success', 'failed', 'success'])
         self.assertEqual(report['status'], 'failed')
-        self.assertIn('❌ FAIL  h / user2  (su_entry_failed)', access.format_summary(report))
-        self.assertIn('PASS  h / login', access.format_summary(report))
+        self.assertRegex(access.format_summary(report), r'❌ FAIL\s+│ h\s+│ su\s+│ user2\s+│ su_entry_failed')
+        self.assertRegex(access.format_summary(report), r'PASS\s+│ h\s+│ connection\s+│ login\s+│')
         self.assertFalse(any(e[0] == 'sudo' for e in self.events))
 
     def test_sudo_failure_is_distinct_and_preserves_su_evidence(self):
@@ -78,7 +78,7 @@ class AccountAccessTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()) as err:
             code = ops.main(['check-access', '--all', '--root', str(self.root)])
         self.assertEqual(code, 1)
-        self.assertIn('SKIP  h / user2  (missing_su_password)', out.getvalue())
+        self.assertRegex(out.getvalue(), r'SKIP\s+│ h\s+│ su\s+│ user2\s+│ missing_su_password')
         self.assertIn('CHECK  h / user2', err.getvalue())
         self.assertFalse(any(e[0] in ('su', 'sudo') for e in self.events))
 
@@ -113,6 +113,10 @@ class AccountAccessTests(unittest.TestCase):
         self.assertEqual(report['status'], 'failed')
         self.assertEqual(report['hosts'][0]['accounts'][0]['status'], 'success')
         self.assertEqual(report['hosts'][0]['accounts'][1]['reason_code'], 'cleanup_failed')
+        rows = access.summary_tests(report['hosts'][0])
+        self.assertEqual([(r['test'], r['status']) for r in rows if r['user'] == 'user2'],
+                         [('su', 'skipped'), ('sudo', 'skipped'), ('cleanup', 'failed')])
+        self.assertFalse(any(r['test'] == 'connection' and r['status'] == 'failed' for r in rows))
 
     def test_inventory_preflight_remains_login_only(self):
         report = access.check_many(self.root, ['h'], session_class=self.factory)
@@ -136,6 +140,52 @@ class AccountAccessTests(unittest.TestCase):
         self.assertIn('expected a boolean', err.getvalue())
         self.assertEqual(out.getvalue(), '')
         self.assertEqual(self.events, [])
+
+    def test_each_test_gets_its_own_row_without_duplicate_connections(self):
+        report = self.run_checks()
+        rows = access.summary_tests(report['hosts'][0])
+        self.assertEqual([(r['test'], r['user'], r['status'], r['reason_code']) for r in rows], [
+            ('connection', 'login', 'success', ''), ('sudo', 'login', 'skipped', 'sudo_disabled'),
+            ('su', 'user2', 'success', ''), ('sudo', 'user2', 'success', ''),
+            ('su', 'user3', 'success', ''), ('sudo', 'user3', 'skipped', 'sudo_disabled')])
+        before = list(self.events)
+        access.format_summary(report)
+        self.assertEqual(self.events, before)
+
+    def test_failed_su_skips_sudo_but_failed_sudo_preserves_su_pass(self):
+        for failure, expected in [
+                ('user2', [('su', 'failed', 'su_entry_failed'), ('sudo', 'skipped', 'su_failed')]),
+                ('root', [('su', 'success', ''), ('sudo', 'failed', 'sudo_entry_failed')])]:
+            with self.subTest(failure=failure):
+                self.factory = lambda: FakeConsole('login', self.events, {failure})
+                rows = access.summary_tests(self.run_checks()['hosts'][0])
+                self.assertEqual([(r['test'], r['status'], r['reason_code']) for r in rows if r['user'] == 'user2'], expected)
+
+    def test_login_sudo_failure_does_not_relabel_connection(self):
+        self.write({'login': {'password': 'login-secret'}})
+        self.factory = lambda: FakeConsole('login', self.events, {'root'})
+        rows = access.summary_tests(self.run_checks()['hosts'][0])
+        self.assertEqual([(r['test'], r['status']) for r in rows], [('connection', 'success'), ('sudo', 'failed')])
+
+    def test_restoration_and_cleanup_failures_have_separate_rows(self):
+        report = self.run_checks()['hosts'][0]
+        group = report['accounts'][1]['checks']['groups'][0]
+        group['parent_identity_verification']['status'] = 'failed'
+        group['cleanup_error'] = 'RuntimeError'
+        rows = [r for r in access.summary_tests(report) if r['user'] == 'user2']
+        self.assertEqual([(r['test'], r['status']) for r in rows],
+                         [('su', 'success'), ('sudo', 'success'), ('restoration', 'failed'), ('cleanup', 'failed')])
+        report['access']['restoration_verified'] = False
+        report['cleanup_error'] = 'RuntimeError'
+        rows = [r for r in access.summary_tests(report) if r['user'] == 'login']
+        self.assertEqual([(r['test'], r['status']) for r in rows],
+                         [('connection', 'success'), ('sudo', 'skipped'), ('restoration', 'failed'), ('cleanup', 'failed')])
+
+    def test_missing_su_credentials_never_become_pass(self):
+        self.write({'login': {'sudo': False}, 'user2': {}})
+        rows = [r for r in access.summary_tests(self.run_checks()['hosts'][0]) if r['user'] == 'user2']
+        self.assertEqual([(r['test'], r['status'], r['reason_code']) for r in rows],
+                         [('su', 'skipped', 'missing_su_password'), ('sudo', 'skipped', 'su_failed')])
 
 
 if __name__ == '__main__':

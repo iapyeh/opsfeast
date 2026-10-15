@@ -1,6 +1,6 @@
 # Core Python API 0.1.0
 
-OpsFeast bundles a public Python package for user agents, standalone programs and recipes. Python 3.11+ and PyYAML 6.0.3 are required; connection and privilege operations additionally require matching SSHScript import/distribution 5.0.0. Configuration and inspection do not import SSHScript or contact hosts. Logging and notifications are deferred and have no callable Core service yet.
+OpsFeast bundles a public Python package for user agents, standalone programs and recipes. Python 3.11+, PyYAML 6.0.3 and tabulate[widechars] 0.10.0 are package dependencies; connection and privilege operations additionally require matching SSHScript import/distribution 5.0.0. Configuration and inspection do not import SSHScript or contact hosts. Logging and notifications are deferred and have no callable Core service yet.
 
 ## Installation, instance and profile
 
@@ -30,7 +30,7 @@ From the checkout root, `from opsfeast import Instance` works without adding too
 python -B -m pip install --no-build-isolation /absolute/trusted/opsfeast-checkout
 ```
 
-The dependency-free PEP 517 backend builds a wheel/sdist using an explicit public-directory/extension allowlist; it excludes registries, Feast data, private guidance and caches. Core requires PyYAML; use the `execution` extra for SSHScript or `tui` for Textual when authorized. No separate PyPI publication is provided. This is a regular install, not editable mode: reinstall after updating source. Do not install or upgrade an existing environment merely to inspect it.
+The dependency-free PEP 517 backend builds a wheel/sdist using an explicit public-directory/extension allowlist; it excludes registries, Feast data, private guidance and caches. The package requires PyYAML and tabulate[widechars] (wcwidth supplies Unicode table alignment); use the `execution` extra for SSHScript or `tui` for Textual when authorized. No separate PyPI publication is provided. This is a regular install, not editable mode: reinstall after updating source. Do not install or upgrade an existing environment merely to inspect it.
 
 The wheel includes public recipes, schemas, documentation, skills and referenced public test sources. Run the complete regression suite from the source checkout/sdist. Installed library callers should explicitly supply the installation checkout and management selection. Default resource lookup in an installed wheel points to bundled product resources, not a discovered user's checkout. Continue using the chosen checkout's CLI for profile operations. Existing tools imports remain compatibility surfaces; the package internally bridges trusted bundled tool modules. This is not a plugin loader or a promise that every legacy helper is a stable API.
 

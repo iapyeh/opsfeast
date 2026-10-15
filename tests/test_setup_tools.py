@@ -173,7 +173,8 @@ class EnvironmentTests(unittest.TestCase):
     def test_init_scope_does_not_import_sshscript(self):
         with patch.object(environment, 'inspect_package', return_value={'ready': True}) as inspect:
             report = environment.inspect_environment('init')
-        inspect.assert_called_once_with('yaml', '6.0.3', 'PyYAML')
+        self.assertEqual(inspect.call_args_list, [unittest.mock.call('yaml', '6.0.3', 'PyYAML'),
+                                               unittest.mock.call('tabulate', '0.10.0'), unittest.mock.call('wcwidth')])
         self.assertTrue(report['ready'])
 
     def test_missing_skill_not_ready(self):

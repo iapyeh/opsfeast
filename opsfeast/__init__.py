@@ -1187,7 +1187,7 @@ def main(argv=None):
             return 1 if result.get('status') == 'partial' else 0
         if args.command == 'check-access':
             from run_recipe import select_hosts
-            from access_check import check_many, format_summary, progress_printer
+            from access_check import check_many, format_summary, progress_printer, table_formatter
             root = resolve_root(args.root, args.profile)
             targets = [('host', h) for h in args.host] + [('group', g) for g in args.group]
             if args.threads <= 0:
@@ -1196,6 +1196,8 @@ def main(argv=None):
                 raise ConfigError('choose --host/--group or --all; --exclude requires --all')
             excluded = []
             hosts = select_hosts(root, targets, args.all_hosts, args.exclude, excluded)
+            if not args.json:
+                table_formatter()
             report = check_many(root, hosts, args.timeout, args.threads,
                                 progress=None if args.quiet else progress_printer(len(hosts)), include_users=True)
             report['excluded_hosts'] = excluded
