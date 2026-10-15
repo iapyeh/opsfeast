@@ -92,10 +92,16 @@ def save_field(field, value, root=ROOT):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command',choices=['defaults'])
-    parser.parse_args(argv)
+    parser.add_argument('--json', action='store_true')
+    args=parser.parse_args(argv)
     try:
-        print(json.dumps(defaults(),indent=2,ensure_ascii=False))
+        from console_output import prepare, print_report
+        prepare(args.json)
+        print_report(defaults(),json_output=args.json)
     except Exception as exc:
+        from console_output import ConsoleDependencyError
+        if isinstance(exc, ConsoleDependencyError):
+            parser.exit(1, f'ERROR: {exc}\n')
         parser.exit(1,f'ERROR: author defaults unavailable ({type(exc).__name__})\n')
     return 0
 

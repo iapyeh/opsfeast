@@ -207,9 +207,9 @@ hosts:
         self.assertIn('either a management directory or --profile', err)
         execute.assert_not_called()
 
-    def test_progress_auto_tty_and_manual_overrides_preserve_json(self):
+    def test_progress_auto_tty_and_manual_overrides_with_json_output_override(self):
         for tty, flags, expected in ((True, [], True), (False, [], False),
-                                      (False, ['--verbose'], True), (True, ['--quiet'], False)):
+                                      (False, ['--verbose'], True), (True, ['--quiet'], False), (True, ['--json'], True)):
             with self.subTest(tty=tty, flags=flags):
                 out, err = io.StringIO(), io.StringIO()
                 with patch.object(out, 'isatty', return_value=tty), \
@@ -217,7 +217,11 @@ hosts:
                         patch.object(runner, 'run', return_value=(self.report, self.root / 'result.json')):
                     code = runner.main(['inventory/system', '--all', '--root', str(self.root), *flags])
                 self.assertEqual(code, 0)
-                self.assertEqual(len(json.loads(out.getvalue())['hosts']), 5)
+                if tty and '--json' not in flags:
+                    self.assertIn('│ status', out.getvalue())
+                    self.assertIn('result_path', out.getvalue())
+                else:
+                    self.assertEqual(len(json.loads(out.getvalue())['hosts']), 5)
                 if expected:
                     self.assertIn('[1/5]', err.getvalue())
                     self.assertIn('[5/5]', err.getvalue())

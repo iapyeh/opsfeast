@@ -11,6 +11,7 @@ from recipe_inputs import json_object, cli_variables, prepare_vars
 from recipe_reports import run_report, results, show_result, show_artifact, page, export_html
 from recipe_packages import pack, unpack
 import recipe_jobs
+from console_output import human_output, table, prepare as prepare_console, print_report, host_label, display_icons, ConsoleDependencyError
 
 
 def output(value):
@@ -39,6 +40,7 @@ def invocation(parser):
     parser.add_argument('--input', type=Path, action='append', default=[], help='explicit JSON report input; repeatable')
     parser.add_argument('--verbose', action='store_true')
     parser.add_argument('--quiet', action='store_true')
+    parser.add_argument('--json', action='store_true')
 
 
 def validate_invocation(root, item, inv):
@@ -75,7 +77,8 @@ def validate_invocation(root, item, inv):
             raise ConfigError('invalid all/target/exclusion combination')
 
 
-def execute(root, spec, *, dryrun=False, force=False):
+def execute(root, spec, *, dryrun=False, force=False, json_output=False):
+    prepare_console(json_output)
     item = choose(root, spec['recipe'])
     if not item['runnable']:
         raise ConfigError('selected recipe has invalid or unsupported execution contract')
@@ -87,9 +90,9 @@ def execute(root, spec, *, dryrun=False, force=False):
         values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
         report, path = run_report(root, item, [Path(p) for p in inv['inputs']], values,
                                   inv['assignments'], inv['timeout'])
-        output({'status': report['status'], 'reason_code': report['reason_code'], 'message': report['message'],
+        print_report({'status': report['status'], 'reason_code': report['reason_code'], 'message': report['message'],
                 'result_id': path.relative_to(root).as_posix(), 'result_path': str(path),
-                'data': report['data'], 'artifacts': report['artifacts']})
+                'data': report['data'], 'artifacts': report['artifacts']}, json_output=json_output, kind='execution', recipe=item['reference'], allow_nan=False)
         return 0 if report['status'] == 'success' else 1
     if inv['inputs']:
         raise ConfigError('--input is for offline report recipes only')
@@ -104,6 +107,7 @@ def execute(root, spec, *, dryrun=False, force=False):
     if inv['vars_file']: argv.extend(['--vars-file', inv['vars_file']])
     if inv['verbose']: argv.append('--verbose')
     if inv['quiet']: argv.append('--quiet')
+    if json_output: argv.append('--json')
     if dryrun: argv.append('--dryrun')
     if force: argv.append('--force')
     return run(argv)
@@ -168,8 +172,12 @@ def main(argv=None):
         job = jobs_commands.add_parser(action)
         environment(job)
         if action != 'list': job.add_argument('name')
+        job.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
     try:
+        raw = args.command in ('artifact', 'pack', 'unpack') or args.command == 'results' and args.action == 'show' or bool(getattr(args, 'html', None))
+        if not raw:
+            prepare_console(getattr(args, 'json', False))
         if args.command == 'unpack':
             output(unpack(args.archive, args.destination))
             return 0
@@ -183,14 +191,21 @@ def main(argv=None):
                         'status': data['status']})
             elif args.json: output(data)
             else:
-                for source in data['sources']:
-                    print(f"Source {source['name']}: {source['status']}")
-                for row in rows: print(' | '.join(str(value) for value in row))
+                if human_output():
+                    print(table(['source', 'status'], [[source['name'], source['status']] for source in data['sources']]))
+                    print(table(['recipe', 'version', 'kind', 'purpose', 'static status', 'errors'], rows))
+                else:
+                    for source in data['sources']:
+                        print(f"Source {source['name']}: {source['status']}")
+                    for row in rows: print(' | '.join(str(value) for value in row))
                 print('Static compatibility only; inspect inputs/dependencies with recipes show before execution.')
             return 1 if data['status'] == 'failed' else 0
         if args.command == 'show':
             item = choose(root, args.recipe)
             if args.json: output(item)
+            elif human_output():
+                print_report({key: item[key] for key in ('reference', 'title', 'version', 'description', 'kind',
+                              'contract', 'runnable', 'inputs', 'dependencies', 'verification', 'errors', 'availability_evidence')})
             else:
                 print(f"{item['reference']} — {item['title']} ({item['version']})")
                 print(item['description'])
@@ -202,7 +217,7 @@ def main(argv=None):
                 print(item['availability_evidence'])
             return 0 if item['runnable'] else 1
         if args.command == 'run':
-            return execute(root, specification(args), dryrun=args.dryrun, force=args.force)
+            return execute(root, specification(args), dryrun=args.dryrun, force=args.force, json_output=args.json)
         if args.command == 'pack':
             item = choose(root, args.recipe)
             if not item['runnable']: raise ConfigError('only compatible reviewed recipes can be packed')
@@ -224,20 +239,29 @@ def main(argv=None):
                                                                json.dumps(data['errors'], ensure_ascii=False))), 'status': data['status']})
             elif args.json: output(data)
             else:
-                for row in rows: print(' | '.join(str(value) for value in row))
+                if human_output():
+                    icons = display_icons(root)
+                    for row in rows:
+                        row[2] = host_label(row[2], icons) if row[2] else '-'
+                    print(table(['result ID', 'recipe', 'host', 'status', 'completed', 'identity quality', 'warnings'], rows))
+                else:
+                    for row in rows: print(' | '.join(str(value) for value in row))
                 for error in data['errors']: print('ERROR: ' + error['result_id'] + ' invalid result')
             return 0 if data['status'] == 'success' else 1
         if args.command == 'artifact':
             output(show_artifact(root, args.result_id, args.name))
             return 0
         if args.command == 'jobs':
-            if args.action == 'list': output({'jobs': recipe_jobs.listing(root)})
-            elif args.action == 'save': output(recipe_jobs.save(root, args.name, specification(args)))
-            elif args.action == 'show': output(recipe_jobs.load(root, args.name, verify=False))
+            if args.action == 'list':
+                names = recipe_jobs.listing(root)
+                if human_output(args.json): print(table(['job'], [[name] for name in names]))
+                else: output({'jobs': names})
+            elif args.action == 'save': print_report(recipe_jobs.save(root, args.name, specification(args)), json_output=args.json, allow_nan=False)
+            elif args.action == 'show': print_report(recipe_jobs.load(root, args.name, verify=False), json_output=args.json, allow_nan=False)
             else:
                 document = recipe_jobs.load(root, args.name)
-                return execute(root, {'recipe': document['recipe'], 'invocation': document['invocation']})
+                return execute(root, {'recipe': document['recipe'], 'invocation': document['invocation']}, json_output=args.json)
             return 0
     except (ConfigError, OSError, ValueError, TypeError, KeyError, RuntimeError, ImportError) as exc:
-        print('ERROR: ' + (str(exc) if isinstance(exc, ConfigError) else type(exc).__name__), file=sys.stderr)
+        print('ERROR: ' + (str(exc) if isinstance(exc, (ConfigError, ConsoleDependencyError)) else type(exc).__name__), file=sys.stderr)
         return 1

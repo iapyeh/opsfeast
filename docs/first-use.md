@@ -1,5 +1,7 @@
 # Your first experience with OpsFeast
 
+Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
+
 Open a project directory in your AI coding tool and give its agent the single prompt below to clone OpsFeast, read its guidance and propose a setup. After you authorize the plan, the agent can initialize your environment. You do not need to learn every Python tool's arguments first. This walkthrough uses an AI coding tool, such as Codex, Antigravity or Claude Code, whose agent can read local files and run commands. Project/workspace means the directory opened in that tool; UI labels vary. If the agent runs on another machine, choose the project directory on that machine and ensure it can access GitHub.
 
 The goal is to create a management environment and understand where to configure hosts. After initialization, choose the hosts to test and the collection tasks to run.

@@ -5,6 +5,8 @@ description: Use the bundled OpsFeast Python API for installation identity, prof
 
 # Operate and compose OpsFeast Core
 
+Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
+
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
 
 Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 5.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
@@ -17,7 +19,7 @@ A new clone or copy into another directory must receive a new UUID. Use explicit
 
 ## Reuse configuration and sessions
 
-Effective hosts always include icon (default 🍎); explicit values must be one Unicode Symbol code point, not a multi-code-point glyph. This is display-only and does not rewrite YAML; see [icon rules](../../docs/hosts-yaml.md#host-icon).
+Effective hosts and declared users include resolved icon fields (built-ins 🍎/👤). Entry hosts.yaml supports default.icon.host/user and per-group default.groups.<name>.icon.host/user. Explicit host/account icons override defaults; default.users.<account>.icon then precedes group user defaults. Each remaining field independently takes the first defined value in host group order, then the global default. Include files inherit defaults; explicit values must be one Unicode Symbol code point, not a multi-code-point glyph. Optional default.users.<account>.email stays in source metadata and is not merged into host-account snapshots. This is display-only and does not rewrite YAML; see [icon rules](../../docs/hosts-yaml.md#host-icon).
 
 Use profile.hosts.list/get and explicit reload rather than another YAML parser or frozen addresses/credentials. Reads are masked copies; reveal_secrets=True is explicit and must never enter logs/shared examples. Masking is key-based and cannot sanitize arbitrary strings. A profile/connection uses a validated snapshot; fresh inspection does not replace that execution snapshot.
 

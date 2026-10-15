@@ -175,7 +175,7 @@ hosts:
 
 `web-01` 是穩定的主機 ID，不是 DNS 位址，也不必等於主機實際設定的 hostname。IP 或連線方式改變時，維持相同 ID 可延續紀錄。
 
-此初版格式的根層欄位為 `include` 與 `hosts`，主機欄位為 `connection`、`users`、`vars` 與 `recipes`。`connection` 必須存在；不需要帳號資料、變數或 recipe 選取時可以省略其餘欄位。跳板主機不必列出 recipes。
+Root fields include `include`, `hosts`, `recipe_sources` and the icon defaults described below. 主機欄位為 `connection`、`users`、`vars` 與 `recipes`。`connection` 必須存在；不需要帳號資料、變數或 recipe 選取時可以省略其餘欄位。跳板主機不必列出 recipes。
 
 ## ProxyCommand 連線
 
@@ -490,7 +490,62 @@ hosts:
 
 The loader requires a string containing **exactly one Unicode code point** (`len(icon) == 1`) whose Unicode General Category is Symbol (`Sm`, `Sc`, `Sk` or `So`). It uses the selected Python runtime's Unicode database. Examples accepted across supported runtimes include 🍎, 🐧, ★, ☀, $, + and ©. Letters, digits, whitespace, controls, empty strings, null and non-string values are invalid. Multi-code-point presentations are invalid even when displayed as one glyph: ☀️ (variation selector), 👍🏽 (skin tone), 🇹🇼 (flag) and 👩‍💻 (ZWJ sequence). No trimming, normalization or grapheme-cluster interpretation is performed; write the intended symbol directly in UTF-8 YAML.
 
-When icon is omitted, every loaded effective host gets 🍎, including hosts from include files. The default is added in memory, without rewriting hosts.yaml, comments or the loader's raw source documents. Invalid explicit icons fail during configuration loading, including for disabled hosts; they do not silently fall back to 🍎. CLI dump of hosts, Core host list/get and inspection, UI read models and runner configuration receive the same effective value through the common loader. Icon is display metadata only and does not affect host/instance identity, target selection or connection settings. This configuration field does not extend retained/exchange observation schemas.
+When icon is omitted, the loader applies the global precedence below, including hosts from include files. The default is added in memory, without rewriting hosts.yaml, comments or the loader's raw source documents. Invalid explicit icons fail during configuration loading, including for disabled hosts; they do not silently fall back to 🍎. CLI dump of hosts, Core host list/get and inspection, UI read models and runner configuration receive the same effective value through the common loader. Icon is display metadata only and does not affect host/instance identity, target selection or connection settings. This configuration field does not extend retained/exchange observation schemas.
+
+### Global and account icons
+
+Configure defaults in the entry `<management-root>/hosts.yaml` only. They apply to the entire resolved include tree in that Feast/profile; included files cannot redefine them. They are not installation-wide settings shared by different profiles.
+
+```yaml
+default:
+  icon:
+    user: 👤
+    host: 🍎
+  groups:
+    web-server:
+      icon:
+        user: 👨
+        host: 🖥
+    backup-server:
+      icon:
+        host: 🗂
+  users:
+    operator:
+      icon: 👩
+      email: operator@example.org
+    maintainer:
+      icon: 👨
+include: [hosts/extra.yaml]
+hosts:
+  web:
+    group: web-server
+    connection: {hostname: web.example.org, user: operator}
+    users:
+      operator: {}             # Uses 👩 from default.users.operator.icon.
+      maintainer: {icon: ★}    # Overrides named-account and group defaults.
+  backup:
+    group: backup-server
+    connection: {hostname: backup.example.org}  # Host 🗂; unnamed accounts use 👤.
+  mixed:
+    group: [backup-server, web-server]  # Host 🗂; unnamed accounts use 👨.
+    connection: {hostname: mixed.example.org}
+  explicit:
+    icon: 🐧
+    group: web-server
+    connection: {hostname: explicit.example.org}  # Host override wins.
+```
+
+Host precedence: explicit host `icon` → first matching `default.groups.<name>.icon.host` in the host's `group` order → `default.icon.host` → built-in 🍎.
+
+Account precedence: `users.<account>.icon` → `default.users.<account>.icon` → first matching `default.groups.<name>.icon.user` in the host's `group` order → `default.icon.user` → built-in 👤. Undeclared login/resolved accounts use the same named-user/group/global user defaults for presentation, without creating a `users` entry.
+
+Resolve host and user separately: skip groups that do not define the relevant field, including unknown groups. Multiple memberships have deterministic order; they do not require both fields to come from the same group. Group settings supply defaults for members, not icons for the TUI group headings. A default group entry does not assign hosts to a group or affect targeting. Explicit host/account overrides always win. Named account defaults apply across all hosts, including ungrouped hosts, and precede group user defaults. Usernames match exactly and case-sensitively. Host membership remains `hosts.<host>.group`; only the defaults collection uses `groups`.
+
+All structural levels are optional mappings; omit an unused level or use `{}`. `default.icon` accepts only `host` and `user`; `default.groups.<name>` accepts an `icon` mapping containing optional `host` and `user`; `default.users.<account>` accepts optional `icon` and `email`. An account without icon (including an email-only entry) continues to group/global icon fallback. Unknown fields, null/non-mapping levels and invalid icons fail loading, including unused group and named-user definitions. Explicit icons follow the same single Unicode Symbol validation as host icons; empty/null values do not hide icons. Defaults are permitted only in entry hosts.yaml and apply before included hosts load. Older default.icon.groups/users, singular default.icon.group and flat default-user-icon/default-host-icon/default-group-icon forms are unsupported and rejected.
+
+`default.users.<account>.email` is optional metadata: a string without NUL; an empty string is accepted and no email-address syntax validation is performed. Read it with `python -B tools/opsfeast.py dump default.users.operator.email --profile NAME` after selecting the intended profile. It remains in the source/default data, without being copied into effective host account settings, inherited through groups, sent as mail or used as credentials. No arbitrary default-property merge is implemented; future properties need their own documented precedence and validation. User defaults do not create accounts, declare su targets or authorize operations.
+
+Effective declared host/account settings contain their resolved `icon` in Core snapshots, CLI dumps and UI read models. Loading copies account mappings before adding defaults; raw source documents, aliases, comments and YAML files are preserved. Console diagnostic/access user labels and TUI account branches show the resolved icon. Operational JSON keeps plain host IDs/account names; icons do not change authentication, access policies or retained/exchange contracts. Historical views use current display settings when available, otherwise built-in defaults.
 
 ## Explicit host identity and human-readable metadata
 

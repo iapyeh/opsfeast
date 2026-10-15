@@ -6,6 +6,7 @@ import sys
 from threading import Lock
 
 from opsfeast import ConfigError
+from console_output import user_label, host_label as console_host_label
 from host_runtime import connected, identity, now, runtime_class, target_fingerprint, privilege_test, username
 
 VERSION = '0.1.0'
@@ -142,23 +143,33 @@ def display_value(value):
     return json.dumps(str(value), ensure_ascii=False)[1:-1]
 
 
-def host_summary(report):
+def host_label(host, icons=None):
+    return display_value(console_host_label(host, icons))
+
+
+def host_icons(root, hosts):
+    """Load validated display metadata without changing IDs or JSON reports."""
+    from opsfeast import Validator
+    config = Validator(root)
+    config.load(config.root / 'hosts.yaml')
+    from console_output import DisplayIcons
+    return DisplayIcons(config)
+
+
+def host_summary(report, icons=None):
     status = {'success': 'PASS', 'failed': 'FAIL', 'skipped': 'SKIP'}.get(report['status'], 'UNKNOWN')
-    label = f"{display_value(report['host'])} / {display_value(account_label(report))}"
+    label = f"{host_label(report['host'], icons)} / {display_value(user_label(account_label(report), report['host'], icons))}"
     reason = report.get('reason_code', 'unknown')
     return ('❌ ' if status == 'FAIL' else '') + f"{status}  {label}" + (f"  ({display_value(reason)})" if status != 'PASS' else '')
 
 
 def table_formatter():
     """Check display dependencies before the CLI makes any connection."""
+    from console_output import table_formatter as formatter, ConsoleDependencyError
     try:
-        import tabulate
-        if not tabulate.WIDE_CHARS_MODE:
-            raise ImportError('wide character support unavailable')
-    except ImportError:
-        raise ConfigError('check-access table output requires tabulate[widechars]==0.10.0; '
-                          'install requirements-init.txt with the selected interpreter') from None
-    return tabulate.tabulate
+        return formatter()
+    except ConsoleDependencyError as exc:
+        raise ConfigError(str(exc)) from None
 
 
 def summary_tests(report):
@@ -243,14 +254,14 @@ def summary_tests(report):
     return rows
 
 
-def format_summary(report):
+def format_summary(report, icons=None):
     rows = []
     for host in report['hosts']:
         for test in summary_tests(host):
             status = {'success': 'PASS', 'failed': '❌ FAIL', 'skipped': 'SKIP'}.get(test['status'], 'UNKNOWN')
-            rows.append([status, display_value(host['host']), test['test'], display_value(account_label(test)),
+            rows.append([status, host_label(host['host'], icons), test['test'], display_value(user_label(account_label(test), host['host'], icons)),
                          display_value(test['reason_code'])])
-    rows.extend(['EXCLUDED', display_value(item['host']), '-', '-', display_value(item['reason_code'])]
+    rows.extend(['EXCLUDED', host_label(item['host'], icons), '-', '-', display_value(item['reason_code'])]
                 for item in report.get('excluded_hosts', []))
     counts = {state: sum(host['status'] == state for host in report['hosts'])
               for state in ('success', 'failed', 'skipped')}
@@ -260,7 +271,7 @@ def format_summary(report):
                              disable_numparse=True, preserve_whitespace=True) + '\n' + total
 
 
-def progress_printer(total):
+def progress_printer(total, icons=None):
     """Serialize parallel progress and flush before potentially slow connections."""
     lock = Lock()
     completed = 0
@@ -269,14 +280,14 @@ def progress_printer(total):
         nonlocal completed
         with lock:
             if stage in ('start', 'account_start'):
-                message = f"CHECK  {display_value(report['host'])} / {display_value(account_label(report))}"
+                message = f"CHECK  {host_label(report['host'], icons)} / {display_value(user_label(account_label(report), report['host'], icons))}"
             elif stage == 'account_finish':
-                message = host_summary(report)
+                message = host_summary(report, icons)
             else:
                 completed += 1
-                message = (f"[{completed}/{total}] {display_value(report['host'])}: {report['status']}"
+                message = (f"[{completed}/{total}] {host_label(report['host'], icons)}: {report['status']}"
                            if len(report.get('accounts', [])) > 1 else
-                           f"[{completed}/{total}] {host_summary(report)}")
+                           f"[{completed}/{total}] {host_summary(report, icons)}")
             print(message, file=sys.stderr, flush=True)
     return progress
 

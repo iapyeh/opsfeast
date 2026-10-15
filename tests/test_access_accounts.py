@@ -58,8 +58,8 @@ class AccountAccessTests(unittest.TestCase):
         accounts = report['hosts'][0]['accounts']
         self.assertEqual([a['status'] for a in accounts], ['success', 'failed', 'success'])
         self.assertEqual(report['status'], 'failed')
-        self.assertRegex(access.format_summary(report), r'❌ FAIL\s+│ h\s+│ su\s+│ user2\s+│ su_entry_failed')
-        self.assertRegex(access.format_summary(report), r'PASS\s+│ h\s+│ connection\s+│ login\s+│')
+        self.assertRegex(access.format_summary(report), r'❌ FAIL\s+│ 🍎 h\s+│ su\s+│ 👤 user2\s+│ su_entry_failed')
+        self.assertRegex(access.format_summary(report), r'PASS\s+│ 🍎 h\s+│ connection\s+│ 👤 login\s+│')
         self.assertFalse(any(e[0] == 'sudo' for e in self.events))
 
     def test_sudo_failure_is_distinct_and_preserves_su_evidence(self):
@@ -78,8 +78,8 @@ class AccountAccessTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()) as err:
             code = ops.main(['check-access', '--all', '--root', str(self.root)])
         self.assertEqual(code, 1)
-        self.assertRegex(out.getvalue(), r'SKIP\s+│ h\s+│ su\s+│ user2\s+│ missing_su_password')
-        self.assertIn('CHECK  h / user2', err.getvalue())
+        self.assertRegex(out.getvalue(), r'SKIP\s+│ 🍎 h\s+│ su\s+│ 👤 user2\s+│ missing_su_password')
+        self.assertIn('CHECK  🍎 h / 👤 user2', err.getvalue())
         self.assertFalse(any(e[0] in ('su', 'sudo') for e in self.events))
 
     def test_login_sudo_rejection_still_checks_other_accounts(self):

@@ -5,6 +5,8 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 # OpsFeast recipes
 
+Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
+
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
 
 For the public Python package, installation identity, profile/hosts snapshots, scoped sessions and Recipe su/sudo, read [opsfeast-core](../opsfeast-core/SKILL.md) and its [API guide](../../docs/core-api.md). New python-recipe 0.1.0 entrypoints receive execute(recipe); legacy python-session Session/context interfaces remain unchanged.
@@ -137,7 +139,7 @@ Read the [inventory-system guide](../../recipes/inventory/system/README.md) for 
 - Record recipe version, implementation ID/version, schema version, source name/root/reference, variable names and file/bundle digests; omit effective variable values from progress/reports. Validation reads version literals without executing candidates; execution loads only the chosen entrypoint. Do not retry another implementation after selected code fails.
 - Custom inventory entrypoints now execute within this contract. Review their complete code/helpers/dependencies first; valid metadata/digests are not authenticity, isolation or execution authorization. Independent files reduce Git conflicts, but descriptor/schema edits may still conflict. Extension overlays and third-party installation remain planned.
 - Summarize each host's actual result, saved path, retention receipt, identity quality/warnings and verification limits. Runner exit code zero requires complete inventory success for every selected host and no retention failure; partial/unsupported/skipped/failed results return nonzero. Preserve observations and human records in the management environment.
-- The runner automatically shows host/stage progress on stderr when stdout is a terminal, with five-second waiting heartbeats. Use --verbose to force progress with redirected/piped stdout or --quiet to suppress it; stdout stays JSON. Heartbeats indicate controller waiting, not verified remote health or completion. See the [output reference](../../docs/cli.md#saved-results-and-stdout).
+- The runner automatically shows host/stage progress on stderr when stdout is a terminal, with five-second waiting heartbeats. Use --verbose to force progress with redirected/piped stdout or --quiet to suppress it; use --json to keep stdout JSON on a terminal. Heartbeats indicate controller waiting, not verified remote health or completion. See the [output reference](../../docs/cli.md#saved-results-and-stdout).
 
 ## Knowledge and capability boundaries
 

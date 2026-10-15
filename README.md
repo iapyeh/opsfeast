@@ -14,7 +14,7 @@ Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses *
 
 Use the bundled [Core Python API](docs/core-api.md) for installation identity, profiles, hosts, scoped Recipe sessions and su/sudo, and read-only inspection. Start with the [Core skill](skills/opsfeast-core/SKILL.md); logging and notification services remain deferred.
 
-Read the **[command-line reference](docs/cli.md)** for every opsfeast.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
+Read the **[command-line reference](docs/cli.md)** for every opsfeast.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Terminal summaries use tabulate; agents should explicitly select --json where supported. See [the output policy](docs/cli.md#terminal-tables-and-json). Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
 
 ## Why OpsFeast matters in the AI era
 

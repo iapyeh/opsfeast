@@ -30,8 +30,10 @@ def hosts_snapshot():
             group_names(settings.get('group', []), 'host group')
         sources = {host: str(path) for host, path in validator.sources.items()}
         # Raw settings never cross the boundary into UI state or exception text.
-        return {'profile': profile, 'root': str(root), 'hosts': [
-            {'host': name, 'source': sources[name], 'settings': masked(settings)}
+        return {'profile': profile, 'root': str(root), 'default_user_icon': validator.default_user_icon,
+                'user_icons': dict(validator.user_icon_defaults), 'hosts': [
+            {'host': name, 'source': sources[name], 'default_user_icon': validator.host_user_icons[name],
+             'settings': masked(settings)}
             for name, settings in validator.hosts.items()], 'message': 'Configuration only; no connectivity or privilege validation.'}
     except Exception as exc:
         return {'profile': None, 'hosts': [], 'message': 'Host settings unavailable: ' + type(exc).__name__}

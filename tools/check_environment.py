@@ -46,9 +46,15 @@ def inspect_environment(scope='full'):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--scope', choices=('init', 'full'), default='full')
+    parser.add_argument('--json', action='store_true', help='emit JSON even on a terminal')
     args = parser.parse_args(argv)
     report = inspect_environment(args.scope)
-    print(json.dumps(report, indent=2, ensure_ascii=False))
+    from console_output import print_report
+    # Readiness must remain reportable even when the display dependency is missing.
+    try:
+        print_report(report, json_output=args.json)
+    except (ValueError, RuntimeError, ImportError):
+        print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0 if report['ready'] else 1
 
 

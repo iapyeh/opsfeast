@@ -38,8 +38,16 @@ REPOSITORY_RECIPES = REPOSITORY_ROOT / 'recipes'
 INSTANCE_DEFINITION = 'feast.yaml'
 INSTANCE_SCHEMA = {'schema_version': 1, 'kind': 'opsfeast'}
 DEFAULT_HOST_ICON = '🍎'
+DEFAULT_USER_ICON = '👤'
+
 LEGACY_INSTANCE_DEFINITION = 'my-ops.yaml'
 LEGACY_INSTANCE_SCHEMA = {'schema_version': 1, 'kind': 'sshscript-ops'}
+
+
+def validate_icon(value, where):
+    if not isinstance(value, str) or len(value) != 1 or not unicodedata.category(value).startswith('S'):
+        raise ConfigError(f'{where}: expected exactly one Unicode Symbol code point')
+    return value
 
 
 def exclusive_path(root, current, legacy, label):
@@ -217,12 +225,18 @@ def register_profile(root, name, data):
     save_profiles(data)
 
 
-def list_profiles(data=None, numbered=False):
+def list_profiles(data=None, numbered=False, json_output=False):
+    from console_output import human_output, table, print_report
     data = load_profiles() if data is None else data
     if not data['profiles']:
-        print('No registered profiles. Run opsfeast.py init or opsfeast.py attach <directory> first.')
+        if json_output:
+            print_report({'report_version': '0.1.0', 'profiles': []}, json_output=True)
+        else:
+            print('No registered profiles. Run opsfeast.py init or opsfeast.py attach <directory> first.')
         return
-    print('PROFILE  ROOT  STATUS  DEFAULT')
+    rows = []
+    if not human_output(json_output) and not json_output:
+        print('PROFILE  ROOT  STATUS  DEFAULT')
     for index, (name, item) in enumerate(data['profiles'].items(), 1):
         prefix = f'{index}. ' if numbered else ''
         mark = (' [current default]' if numbered else ' *') if name == data['default_profile'] else ''
@@ -240,7 +254,14 @@ def list_profiles(data=None, numbered=False):
                 status = 'unavailable'
         except OSError:
             status = 'unavailable'
-        print(f"{prefix}{name}  {root}  {status}{mark}")
+        rows.append([index if numbered else name, name, str(root), status, name == data["default_profile"]])
+        if not human_output(json_output) and not json_output:
+            print(f"{prefix}{name}  {root}  {status}{mark}")
+    if json_output:
+        print_report({"report_version": "0.1.0", "profiles": [{"name": r[1], "root": r[2], "status": r[3], "default": r[4]} for r in rows]}, json_output=True)
+    elif human_output():
+        print(table(["selection", "profile", "root", "status", "default"] if numbered else
+                    ["profile", "root", "status", "default"], rows if numbered else [row[1:] for row in rows]))
 
 
 def detach_profile(name):
@@ -388,6 +409,11 @@ class Validator:
         self.root = root.resolve(strict=True)
         if not self.root.is_dir():
             raise ConfigError('management root must be a directory')
+        self.default_host_icon = DEFAULT_HOST_ICON
+        self.default_user_icon = DEFAULT_USER_ICON
+        self.group_icon_defaults = {}
+        self.user_icon_defaults = {}
+        self.host_user_icons = {}
         self.hosts = {}
         self.sources = {}
         self.documents = {}
@@ -473,6 +499,13 @@ class Validator:
                 return Validator(item['root']).inside(path)
         return self.inside(path)
 
+    def icon_default(self, kind, groups=()):
+        for group in groups:
+            values = self.group_icon_defaults.get(group, {})
+            if kind in values:
+                return values[kind]
+        return getattr(self, f'default_{kind}_icon')
+
     def load(self, path):
         path = self.inside(path)
         if path in self.active:
@@ -480,8 +513,30 @@ class Validator:
         if path in self.loaded:
             return
         entry = path == self.inside(self.root / 'hosts.yaml') and not self.active
-        data = mapping(read_yaml(path), str(path), ('include', 'hosts', 'recipe_sources') if entry else ('include', 'hosts'))
+        data = mapping(read_yaml(path), str(path), ('include', 'hosts', 'recipe_sources', 'default') if entry else ('include', 'hosts'))
         if entry:
+            defaults = mapping(data.get('default', {}), f'{path}: default', ('icon', 'groups', 'users'))
+            icons = mapping(defaults.get('icon', {}), f'{path}: default.icon', ('host', 'user'))
+            for kind in ('host', 'user'):
+                if kind in icons:
+                    setattr(self, f'default_{kind}_icon', validate_icon(icons[kind], f'{path}: default.icon.{kind}'))
+            groups = mapping(defaults.get('groups', {}), f'{path}: default.groups')
+            for group, values in groups.items():
+                string(group, f'{path}: default.groups: group name')
+                where = f'{path}: default.groups.{group}'
+                values = mapping(values, where, ('icon',))
+                values = mapping(values.get('icon', {}), where + '.icon', ('host', 'user'))
+                self.group_icon_defaults[group] = {kind: validate_icon(value, f'{where}.icon.{kind}')
+                                                   for kind, value in values.items()}
+            users = mapping(defaults.get('users', {}), f'{path}: default.users')
+            for user, values in users.items():
+                string(user, f'{path}: default.users: account name')
+                where = f'{path}: default.users.{user}'
+                values = mapping(values, where, ('icon', 'email'))
+                if 'icon' in values:
+                    self.user_icon_defaults[user] = validate_icon(values['icon'], where + '.icon')
+                if 'email' in values and (not isinstance(values['email'], str) or '\x00' in values['email']):
+                    raise ConfigError(f'{where}.email: expected a string without NUL')
             for name, settings in mapping(data.get('recipe_sources', {}), 'recipe_sources').items():
                 if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', name) or name == 'repository':
                     raise ConfigError('recipe source names must be simple identifiers; repository is reserved')
@@ -534,10 +589,18 @@ class Validator:
             if isinstance(config, dict) and 'groups' in config:
                 raise ConfigError(f'{path}: {host}: groups has been renamed to group; use group: NAME or group: [NAME, ...]')
             host_config = dict(mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes', 'identity_key', 'label', 'description', 'icon')))
-            icon = host_config.get('icon', DEFAULT_HOST_ICON)
-            if not isinstance(icon, str) or len(icon) != 1 or not unicodedata.category(icon).startswith('S'):
-                raise ConfigError(f'{path}: {host}.icon: expected exactly one Unicode Symbol code point')
-            host_config['icon'] = icon
+            groups = group_names(host_config.get('group', []), f'{path}: {host}.group')
+            fallback = self.icon_default('host', groups)
+            self.host_user_icons[host] = self.icon_default('user', groups)
+            host_config['icon'] = validate_icon(host_config.get('icon', fallback), f'{path}: {host}.icon')
+            if 'users' in host_config:
+                users = mapping(host_config['users'], f'{path}: {host}.users')
+                host_config['users'] = {}
+                for user, account in users.items():
+                    where = f'{path}: {host}.users.{user}'
+                    account = dict(mapping(account, where))
+                    account['icon'] = validate_icon(account.get('icon', self.user_icon_defaults.get(user, self.host_user_icons[host])), where + '.icon')
+                    host_config['users'][user] = account
             self.hosts[host] = host_config
             self.sources[host] = path
         self.active.pop()
@@ -770,7 +833,7 @@ class Validator:
                 for user, account in users.items():
                     string(user, where + '.users: account name')
                     account_where = where + '.users.' + user
-                    account = mapping(account, account_where, ('password', 'vars', 'sudo', 'sudo-password'))
+                    account = mapping(account, account_where, ('password', 'vars', 'sudo', 'sudo-password', 'icon'))
                     if 'password' in account and not isinstance(account['password'], str):
                         raise ConfigError(f'{account_where}.password: expected a string')
                     if 'sudo' in account and type(account['sudo']) is not bool:
@@ -797,6 +860,19 @@ class Validator:
 TEMPLATE = '''# First host: read docs/first-host.md for minimal examples and test commands.
 # host-01 / host.example below is synthetic and NOT ready to connect.
 # Replace the example host ID and hostname before use.
+# Optional entry-file display defaults (exactly one Unicode Symbol each):
+# default:
+#   icon:
+#     user: 👤
+#     host: 🍎
+#   groups:
+#     web-server:
+#       icon: {user: 👨, host: 🖥}
+#     backup-server:
+#       icon: {host: 🗂}
+#   users:
+#     operator: {icon: 👨, email: operator@example.org}
+#     maintainer: {icon: 👩}
 # Bare recipe names select this checkout; :names select this profile's recipes/.
 # Optional recipe_sources at this entrypoint registers external local roots.
 # recipe_sources:
@@ -807,7 +883,7 @@ TEMPLATE = '''# First host: read docs/first-host.md for minimal examples and tes
 #     enabled: true
 #     vars: {command_timeout_seconds: 15}
 hosts:
-  # Each host ID requires connection; icon defaults to 🍎 (one Unicode Symbol code point).
+  # Each host ID requires connection; icon resolves through defaults (built-in 🍎).
   # enabled, group, users, vars, recipes, identity_key, label and description are optional.
   # Available fields, for example:
   # host-01:
@@ -982,7 +1058,9 @@ def diagnostic_traceback(exc):
         print(f'  {frame.f_code.co_filename}:{lineno} in {frame.f_code.co_name}', file=sys.stderr)
 
 
-def test_connection(root, host, timeout, verbose=False, debug=False, show_traceback=False, init_host=False):
+def test_connection(root, host, timeout, verbose=False, debug=False, show_traceback=False, init_host=False, json_output=False):
+    from console_output import DisplayIcons, prepare, print_report
+    prepare(json_output)
     config = Validator(root)
     config.load(config.root / 'hosts.yaml')
     if host not in config.hosts:
@@ -1078,7 +1156,8 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
             report['success'] = report['success'] and report['host_init']['status'] == 'success'
         else:
             report['host_init'] = {'status': 'skipped', 'reason_code': 'connection_failed'}
-    print(json.dumps(report, indent=4, ensure_ascii=False))
+    print_report(report, json_output=json_output, kind='diagnostic', test='connection', indent=4,
+                 icons=DisplayIcons(config), user=config.hosts[host]['connection'].get('user'))
     return 0 if report['success'] else 1
 
 
@@ -1107,12 +1186,14 @@ def main(argv=None):
     parser.epilog = 'Add --tui to supported inspection, check, diagnostic or recipes commands for an optional Textual display.'
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
-    commands.add_parser('profiles', help='list all registered profiles')
+    profiles_parser = commands.add_parser('profiles', help='list all registered profiles')
+    profiles_parser.add_argument('--json', action='store_true')
     instance_parser = commands.add_parser('instance', help='inspect or explicitly initialize/update installation identity')
     instance_parser.add_argument('action', choices=('inspect', 'init', 'set', 'renew', 'relocate'))
     instance_parser.add_argument('--installation', type=Path, default=REPOSITORY_ROOT)
     instance_parser.add_argument('--name')
     instance_parser.add_argument('--description')
+    instance_parser.add_argument('--json', action='store_true')
 
     inspection = commands.add_parser('inspect-recipe', help='inspect recipe metadata, platform coverage and entrypoints without executing code')
     inspection.add_argument('recipe', nargs='?', help='checkout short path or explicit directory; omitted: discover checkout recipes')
@@ -1129,6 +1210,8 @@ def main(argv=None):
     detach.add_argument('profile', help='exact registered profile name; main cannot be detached')
     for command in ('init', 'check', 'dump', 'test-connection'):
         command_parser = commands.add_parser(command)
+        if command in ('check', 'test-connection'):
+            command_parser.add_argument('--json', action='store_true')
         if command == 'dump':
             command_parser.add_argument('setting', help='dot-separated setting path, such as hosts.host-01')
         if command == 'test-connection':
@@ -1142,6 +1225,7 @@ def main(argv=None):
         command_parser.add_argument('--profile', help='init: registration name; other commands: profile for this invocation')
     for command in ('host-init', 'test-su', 'test-sudo', 'test-host'):
         diagnostic = commands.add_parser(command)
+        diagnostic.add_argument('--json', action='store_true')
         diagnostic.add_argument('host', help='host ID from hosts.yaml')
         if command in ('test-su', 'test-sudo'):
             diagnostic.add_argument('usernames', nargs='*', help='independent account tests')
@@ -1167,7 +1251,13 @@ def main(argv=None):
     access.add_argument('--json', action='store_true', help='output the full access report as JSON')
     access.add_argument('-q', '--quiet', action='store_true', help='suppress access progress on stderr')
     args = parser.parse_args(argv)
+    from console_output import DisplayIcons, human_output, prepare, print_report, table
     try:
+        table_commands = {'instance', 'profiles', 'check', 'init', 'test-connection', 'host-init',
+                          'test-host', 'test-su', 'test-sudo'}
+        if (args.command in table_commands or args.command == 'use' and args.profile is None or
+                args.command == 'inspect-recipe' and not args.details):
+            prepare(getattr(args, 'json', False))
         if args.command == 'instance':
             from .core import Instance
             instance = Instance.open(args.installation)
@@ -1183,11 +1273,11 @@ def main(argv=None):
                 result = instance.renew_identity()
             else:
                 result = instance.relocate_identity()
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            print_report(result, json_output=args.json)
             return 1 if result.get('status') == 'partial' else 0
         if args.command == 'check-access':
             from run_recipe import select_hosts
-            from access_check import check_many, format_summary, progress_printer, table_formatter
+            from access_check import check_many, format_summary, progress_printer, table_formatter, host_icons
             root = resolve_root(args.root, args.profile)
             targets = [('host', h) for h in args.host] + [('group', g) for g in args.group]
             if args.threads <= 0:
@@ -1196,20 +1286,25 @@ def main(argv=None):
                 raise ConfigError('choose --host/--group or --all; --exclude requires --all')
             excluded = []
             hosts = select_hosts(root, targets, args.all_hosts, args.exclude, excluded)
+            icons = host_icons(root, hosts + [item['host'] for item in excluded])
             if not args.json:
                 table_formatter()
             report = check_many(root, hosts, args.timeout, args.threads,
-                                progress=None if args.quiet else progress_printer(len(hosts)), include_users=True)
+                                progress=None if args.quiet else progress_printer(len(hosts), icons), include_users=True)
             report['excluded_hosts'] = excluded
-            print(json.dumps(report, indent=2) if args.json else format_summary(report))
+            print(json.dumps(report, indent=2) if args.json else format_summary(report, icons))
             return 0 if report['status'] == 'success' else 1
         if args.command == 'inspect-recipe':
             from recipe_inspection import inspect_recipes, format_report
             report = inspect_recipes(args.recipe, args.platform)
-            print(json.dumps(report, indent=2, ensure_ascii=False) if args.json else format_report(report, details=args.details))
+            if human_output(args.json) and not args.details:
+                from console_output import inspection
+                print(inspection(report))
+            else:
+                print(json.dumps(report, indent=2, ensure_ascii=False) if args.json else format_report(report, details=args.details))
             return 1 if report['status'] == 'failed' else 0
         if args.command == 'profiles':
-            list_profiles()
+            list_profiles(json_output=args.json)
             return 0
         if args.command == 'use':
             return use_profile(args.profile)
@@ -1241,12 +1336,13 @@ def main(argv=None):
                 else:
                     report = privilege_test(config, args.host, args.command[5:], args.usernames,
                                             getattr(args, 'chain', None), getattr(args, 'run_as', 'root'), args.timeout)
-            print(json.dumps(report, indent=2, ensure_ascii=False))
+            print_report(report, json_output=args.json, kind='diagnostic', test=args.command.removeprefix('test-'),
+                         icons=DisplayIcons(config), user=config.hosts[args.host]['connection'].get('user'))
             return 1 if report['status'] == 'failed' else 0
         if args.command == 'test-connection' and args.host_init:
-            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback, init_host=True)
+            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback, init_host=True, json_output=args.json)
         if args.command == 'test-connection':
-            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback)
+            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback, json_output=args.json)
         if args.command == 'dump':
             result = Validator(args.root)
             result.load(result.root / 'hosts.yaml')
@@ -1270,8 +1366,17 @@ def main(argv=None):
             from .identity import initialize_identity
             initialize_identity(REPOSITORY_ROOT)
             print(f'Registered profile: {name}  {root}')
+        if getattr(args, 'json', False):
+            print_report({'report_version': '0.1.0', 'status': 'success', 'yaml_files': len(result.loaded),
+                          'hosts': [{'host': h, 'selected_recipes': len(items), 'skipped': result.recipe_skips.get(h, [])}
+                                    for h, items in result.selected.items()], 'notes': result.notes}, json_output=True)
+            return 0
         print(f'OK: {len(result.loaded)} YAML files, {len(result.hosts)} hosts; configuration checks passed.')
-        for host, recipes in result.selected.items():
+        if human_output():
+            print(table(["host", "selected recipes", "skipped"],
+                        [[result.hosts[h]["icon"] + " " + h, len(items), result.recipe_skips.get(h, [])]
+                         for h, items in result.selected.items()]))
+        for host, recipes in ([] if human_output() else result.selected.items()):
             print(f'  {host}: {len(recipes)} selected recipes')
             for skipped in result.recipe_skips.get(host, []):
                 print(f"    skipped {skipped['reference']}: {skipped['reason_code']}")

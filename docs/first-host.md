@@ -1,5 +1,7 @@
 # Connect your first host
 
+Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
+
 Start with one host and one successful connection. You do not need recipes, groups, su or sudo for this step. This guide provides small examples first; the [hosts.yaml reference](hosts-yaml.md) defines the complete configuration contract.
 
 ## 1. A minimal remote host
@@ -52,7 +54,7 @@ When ready to connect to server-01, run:
 .venv/bin/python -B tools/opsfeast.py test-connection server-01 --profile main
 ```
 
-This connects to the selected host and required jumps, and runs `hostname` and `date`. It does not run recipes, su or sudo. Expect JSON with `connected: true`, `success: true`, successful command results and exit zero. Review the returned hostname to confirm the intended server. A connected session alone is not a successful test if either command fails.
+This connects to the selected host and required jumps, and runs `hostname` and `date`. It does not run recipes, su or sudo. With --json, expect JSON with `connected: true`, `success: true`, successful command results and exit zero. Review the returned hostname to confirm the intended server. A connected session alone is not a successful test if either command fails.
 
 | If it fails | Next check |
 | --- | --- |
@@ -200,4 +202,4 @@ Agent prompt:
 
 Documentation examples are synthetic. Configuration validation and automated mock tests do not prove native SSH, su or sudo behavior on your host.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

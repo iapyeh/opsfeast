@@ -1,5 +1,7 @@
 # 初次使用 OpsFeast
 
+Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
+
 本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
 
 The bundled [Core API and installation identity guide](core-api.md) covers instance UUID/name/description, copy versus move rules, profile-scoped Python access and read-only inspection. Successful init creates identity; setup still does not authorize host operations.

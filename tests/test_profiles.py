@@ -192,7 +192,7 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(self.snapshot(root), before)
         code, output, errors = self.cli('use', interactive=True, answers=['main'])
         self.assertEqual(code, 0, errors)
-        self.assertIn('default  ' + str(root) + '  available [current default]', output)
+        self.assertRegex(output, r'default\s+│ ' + __import__('re').escape(str(root)) + r'\s+│ available\s+│ true')
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_attach_legacy_and_modern_directory_preserves_all_contents(self):

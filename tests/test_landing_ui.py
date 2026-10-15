@@ -138,8 +138,9 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
     async def test_grouped_sidebar_layout_and_shared_host_settings(self):
         from textual.widgets import RichLog, Tree
         profiles = {'profiles': [], 'message': 'fixture'}
-        hosts = {'profile': 'main', 'message': 'fixture', 'hosts': [
-            {'host': 'shared', 'source': 'fixture.yaml', 'settings': {'group': ['web', 'production'], 'password': '********'}},
+        hosts = {'profile': 'main', 'message': 'fixture', 'default_user_icon': '👤', 'user_icons': {'operator': '👩', 'alice': '★'}, 'hosts': [
+            {'host': 'shared', 'source': 'fixture.yaml', 'default_user_icon': '★', 'settings': {'group': ['web', 'production'], 'password': '********', 'icon': '🐧',
+             'connection': {'hostname': 'fixture', 'user': 'operator'}, 'users': {'alice': {'icon': '♠'}}}},
             {'host': 'solo', 'source': 'fixture.yaml', 'settings': {}},
         ]}
         app = home.make_home_class()()
@@ -155,6 +156,9 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertLessEqual(tree.region.right, details.region.x)
                 self.assertGreater(details.region.width, 30)
                 self.assertEqual([node.label.plain for node in tree.root.children], ['web', 'production', 'Ungrouped (no group)'])
+                self.assertEqual(tree.root.children[0].children[0].label.plain, '🐧 shared')
+                self.assertEqual([node.label.plain for node in tree.root.children[0].children[0].children],
+                                 ['👩 operator (login)', '♠ alice'])
                 for branch in tree.root.children[:2]:
                     tree.select_node(branch.children[0])
                     await pilot.pause()

@@ -1,5 +1,7 @@
 # Core Python API 0.1.0
 
+Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
+
 OpsFeast bundles a public Python package for user agents, standalone programs and recipes. Python 3.11+, PyYAML 6.0.3 and tabulate[widechars] 0.10.0 are package dependencies; connection and privilege operations additionally require matching SSHScript import/distribution 5.0.0. Configuration and inspection do not import SSHScript or contact hosts. Logging and notifications are deferred and have no callable Core service yet.
 
 ## Installation, instance and profile
@@ -46,13 +48,13 @@ other = instance.profile("inventory")        # Does not change active profile.
 external = instance.profile(root="/srv/feasts/other")  # Explicit root; name may be None.
 settings = profile.hosts.list()              # Independent, masked dictionaries.
 host = profile.hosts.get("host-01")
-icon = host["icon"]                         # Explicit symbol or default 🍎.
+icon = host["icon"]                         # Resolved explicit/global/built-in host symbol.
 profile.reload()                             # Explicitly replace configuration snapshot.
 ```
 
 Instance.open requires an existing directory and writes nothing. Missing identity/profiles do not prevent instance inspection. Profile selection validates the existing management entry/definition; configuration loading uses the same Validator as the CLI, including includes, duplicate/path and connection checks. It does not statically validate every selected recipe or prove connectivity. Invalid/missing configuration raises ConfigError. Failed reload retains the previous valid snapshot.
 
-`hosts.get(host_id, reveal_secrets=True)` explicitly returns raw values for a caller that actually needs them. Neither form changes live configuration; returned dictionaries are copies. Masking is key-based, not a guarantee that arbitrary strings contain no secrets. Do not print entire settings or treat masked values as execution credentials. Every effective host includes icon, default 🍎 when omitted. An explicit icon must be exactly one Unicode Symbol code point; invalid values fail loading. Defaults do not rewrite source YAML. See [host icon semantics](hosts-yaml.md#host-icon). Connection creation privately copies the selected configuration snapshot. Configuration edits take effect after reload/new profile selection, never halfway through a connection scope.
+`hosts.get(host_id, reveal_secrets=True)` explicitly returns raw values for a caller that actually needs them. Neither form changes live configuration; returned dictionaries are copies. Masking is key-based, not a guarantee that arbitrary strings contain no secrets. Do not print entire settings or treat masked values as execution credentials. Effective hosts and declared accounts include resolved icon fields. Entry hosts.yaml uses default.icon.host/user and default.groups.<name>.icon.host/user, with built-ins 🍎/👤. Explicit host/account icons override defaults; default.users.<account>.icon then takes priority for accounts. Each remaining field independently takes the first configured group value in host group order before the global default. An explicit icon must be exactly one Unicode Symbol code point; invalid values fail loading. Defaults do not rewrite source YAML. Optional default.users.<account>.email remains source metadata readable through CLI dump; it is not merged into host-account snapshots. See [host icon semantics](hosts-yaml.md#host-icon). Connection creation privately copies the selected configuration snapshot. Configuration edits take effect after reload/new profile selection, never halfway through a connection scope.
 
 `instance.inspect()` returns API version, UTC inspection time, installation identity, profiles/active selection, configuration validity/host counts, installed dependency versions and safe component error types. Status is success or partial; missing identity is a usable placeholder. Dependency metadata is not proof of import/native runtime readiness. `profile.inspect()` freshly reads local configuration, returns masked hosts, loaded paths/time, standard storage paths and unimplemented service states. Its fresh inspection does not replace the profile's execution snapshot. Invalid profile inspection raises ConfigError; instance inspection captures per-profile failures.
 

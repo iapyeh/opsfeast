@@ -224,14 +224,14 @@ class AccessTests(unittest.TestCase):
                 self.assertNotIn('cleanup_error', report['hosts'][0])
             else:
                 self.assertEqual([[cell.strip() for cell in line.split('│')[1:-1]] for line in out.getvalue().splitlines() if line.startswith('│')],
-                                 [['status', 'host', 'test', 'user', 'reason'], ['PASS', 'h', 'connection', 'operator', ''],
-                                  ['PASS', 'h', 'sudo', 'operator', '']])
+                                 [['status', 'host', 'test', 'user', 'reason'], ['PASS', '🍎 h', 'connection', '👤 operator', ''],
+                                  ['PASS', '🍎 h', 'sudo', '👤 operator', '']])
                 self.assertIn('Hosts: 1 passed, 0 failed, 0 skipped, 0 excluded', out.getvalue())
             if '--quiet' in flags:
                 self.assertEqual(err.getvalue(), '')
             else:
-                self.assertIn('CHECK  h / unresolved', err.getvalue())
-                self.assertIn('[1/1] PASS  h / operator', err.getvalue())
+                self.assertIn('CHECK  🍎 h / 👤 unresolved', err.getvalue())
+                self.assertIn('[1/1] PASS  🍎 h / 👤 operator', err.getvalue())
             self.assertNotIn('synthetic-login', out.getvalue() + err.getvalue())
 
     def test_access_cli_failure_and_disabled_summary(self):
@@ -240,7 +240,7 @@ class AccessTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
             code = ops.main(['check-access', '--all', '--root', str(self.root)])
         self.assertEqual(code, 1)
-        self.assertRegex(out.getvalue(), r'❌ FAIL\s+│ h\s+│ sudo\s+│ operator\s+│ sudo_failed')
+        self.assertRegex(out.getvalue(), r'❌ FAIL\s+│ 🍎 h\s+│ sudo\s+│ 👤 operator\s+│ sudo_failed')
         data = ops.yaml.safe_load((self.root / 'hosts.yaml').read_text())
         data['hosts']['h']['enabled'] = False
         data['hosts']['h']['connection'] = {'hostname': 'host.example.invalid', 'user': 'operator'}
@@ -249,7 +249,7 @@ class AccessTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
             code = ops.main(['check-access', '--host', 'h', '--root', str(self.root)])
         self.assertEqual(code, 1)
-        self.assertRegex(out.getvalue(), r'SKIP\s+│ h\s+│ connection\s+│ operator\s+│ host_disabled')
+        self.assertRegex(out.getvalue(), r'SKIP\s+│ 🍎 h\s+│ connection\s+│ 👤 operator\s+│ host_disabled')
         connect.assert_not_called()
 
     def test_progress_precedes_connection_and_parallel_results_stay_ordered(self):
@@ -286,8 +286,8 @@ class AccessTests(unittest.TestCase):
                   'excluded_hosts': [{'host': 'other', 'reason_code': 'cli_excluded'}]}
         text = access.format_summary(report)
         self.assertIn(r'h\n\u001b', text)
-        self.assertRegex(text, r'❌ FAIL\s+│ .*│ unresolved\s+│ connection_failed')
-        self.assertRegex(text, r'EXCLUDED\s+│ other\s+│ -\s+│ -\s+│ cli_excluded')
+        self.assertRegex(text, r'❌ FAIL\s+│ .*│ 👤 unresolved\s+│ connection_failed')
+        self.assertRegex(text, r'EXCLUDED\s+│ 🍎 other\s+│ -\s+│ -\s+│ cli_excluded')
         self.assertIn('0 passed, 1 failed, 0 skipped, 1 excluded', text)
         self.assertEqual(len([line for line in text.splitlines() if line.startswith('│')]), 3)
         self.assertIn('0 passed, 0 failed', access.format_summary({'hosts': []}))
@@ -296,11 +296,38 @@ class AccessTests(unittest.TestCase):
         from wcwidth import wcswidth
         report = {'hosts': [{'host': '001', 'user': '0002', 'status': 'success'},
                             {'host': '中文主機', 'user': '管理員', 'status': 'failed', 'reason_code': 'sudo_failed'}]}
-        table = access.format_summary(report)
+        table = access.format_summary(report, {'001': '🐧', '中文主機': '★'})
         self.assertIn('001', table)
         self.assertIn('0002', table)
         self.assertIn('❌ FAIL', table)
         self.assertEqual(len({wcswidth(line) for line in table.splitlines()[:-1]}), 1)
+
+    def test_cli_host_icons_include_exclusions_without_changing_ids_or_yaml(self):
+        path = self.root / 'hosts.yaml'
+        data = ops.yaml.safe_load(path.read_text())
+        data['hosts']['h']['icon'] = '🐧'
+        data['hosts']['off'] = {'connection': {'local': True}, 'icon': '★', 'enabled': False}
+        data['hosts']['legacy'] = {'connection': {'local': True}, 'icon': '☀'}
+        path.write_text(ops.yaml.safe_dump(data, allow_unicode=True))
+        original = path.read_bytes()
+        for flags in ([], ['--json', '--quiet']):
+            with patch.object(access, 'runtime_class', return_value=self.cls), \
+                    contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()) as err:
+                code = ops.main(['check-access', '--all', '--exclude', 'legacy', '--root', str(self.root), *flags])
+            self.assertEqual(code, 0)
+            if '--json' in flags:
+                report = json.loads(out.getvalue())
+                self.assertEqual(report['hosts'][0]['host'], 'h')
+                self.assertNotIn('icon', report['hosts'][0])
+                self.assertEqual({item['host'] for item in report['excluded_hosts']}, {'off', 'legacy'})
+                self.assertEqual(err.getvalue(), '')
+            else:
+                self.assertIn('🐧 h', out.getvalue())
+                self.assertIn('★ off', out.getvalue())
+                self.assertIn('☀ legacy', out.getvalue())
+                self.assertIn('CHECK  🐧 h /', err.getvalue())
+                self.assertIn('[1/1] PASS  🐧 h /', err.getvalue())
+            self.assertEqual(path.read_bytes(), original)
 
     def test_missing_table_dependency_stops_before_connections_but_json_works(self):
         with patch.object(access, 'table_formatter', side_effect=ops.ConfigError('missing tabulate')), \

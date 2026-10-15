@@ -41,6 +41,8 @@ These principles are public project guidance. Keep checkout-specific paths, priv
 
 See [ecosystem roles and repository boundaries](docs/ecosystem.md) and [rename compatibility and migration](docs/migration.md). OpsFeast is the local product; OpsBuffet is the planned exchange product. Current tools use SSHScript; other backends and Exchange services remain planned. New commands use opsfeast.py; preserve legacy registrations and definitions, and report naming-generation conflicts rather than choosing silently.
 
+For CLI automation, explicitly select `--json` where supported: stdout terminals now receive shared tabulate summaries, while non-TTY contracts and raw-data export commands retain their formats. Follow [the console policy](docs/cli.md#terminal-tables-and-json).
+
 ## Execution tool principles
 
 OpsFeast welcomes recipes built with different execution tools and also serves as a practical showcase of SSHScript. Prefer SSHScript for command execution and session orchestration when it fits the task, supported versions and authorized environment. User-selected tools, safety requirements and existing environment constraints take precedence. Suitability includes verifiable behavior and reasonable dependency and maintenance costs, not merely technical possibility.

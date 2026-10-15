@@ -1,5 +1,7 @@
 # Feasts and profiles
 
+Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
+
 A **Feast** is a private management instance with hosts.yaml, recipe selections, observations, records and runs. A **profile** registers a Feast under a name and selects it for a command. Built-in recipes are shared from the tool checkout's recipes/. Initialization and registration do not connect or execute recipes.
 
 Use the [CLI reference](cli.md) for exact interfaces and the [migration guide](migration.md) for former SSHScript Ops names.
@@ -79,4 +81,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

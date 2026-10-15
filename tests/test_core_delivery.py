@@ -133,6 +133,7 @@ def execute(recipe):
             self.assertIn('Requires-Dist: tabulate[widechars]==0.10.0\n', metadata)
             self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
+            self.assertIn('_opsfeast_data/tools/console_output.py', names)
             self.assertIn('_opsfeast_data/tests/test_core_delivery.py', names)
             self.assertIn('_opsfeast_data/recipes/check/port/LICENSE', names)
             self.assertFalse(any('AGENTS.local' in name or '__pycache__' in name or '.opsfeast-instance' in name for name in names))

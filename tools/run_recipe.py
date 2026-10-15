@@ -16,6 +16,7 @@ import tempfile
 import time
 from uuid import uuid4
 from terminal_events import emit
+from console_output import prepare as prepare_console, print_report, ConsoleDependencyError
 
 from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint, connected, now
 from recipe_dispatch import validate, select, bundle_digest, validate_observations
@@ -566,7 +567,8 @@ def main(argv=None):
     output_options.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                                 help='show progress on stderr even when stdout is redirected')
     output_options.add_argument('-q', '--quiet', dest='verbose', action='store_false',
-                                help='suppress progress; errors and final JSON remain visible')
+                                help='suppress progress; errors and the final report remain visible')
+    parser.add_argument('--json', action='store_true', help='emit JSON even on a terminal')
     parser.add_argument('--tui', action='store_true', help='optional interactive Textual display (requires a terminal)')
     parser.set_defaults(verbose=None)
     args = parser.parse_args(argv)
@@ -586,10 +588,15 @@ def main(argv=None):
     show_progress = sys.stdout.isatty() if args.verbose is None else args.verbose
     excluded = []
     try:
+        prepare_console(args.json)
+        icons = {}
         with reporting(show_progress, '[setup]'):
             progress('resolving environment and targets')
             root = resolve_root(args.root, args.profile)
             hosts = select_hosts(root, args.targets or [], args.all_hosts, args.exclude, excluded)
+            if sys.stdout.isatty() and not args.json:
+                from access_check import host_icons
+                icons = host_icons(root, hosts + [row['host'] for row in excluded])
             values = json_object(args.vars_file) if args.vars_file else None
             workers = min(args.threads, len(hosts))
             progress(f'selected {len(hosts)} host(s); concurrency {workers}')
@@ -622,7 +629,7 @@ def main(argv=None):
                 checks.update(mode='dryrun' if args.dryrun else 'preflight', collection_started=False)
                 if excluded:
                     checks['excluded_hosts'] = excluded
-                print(json.dumps(checks, indent=2))
+                print_report(checks, json_output=args.json, kind='execution', icons=icons, recipe=recipe, host=hosts[0] if len(hosts) == 1 else None, ensure_ascii=True)
                 return 0 if checks['status'] == 'success' else 1
             for check in checks['hosts']:
                 access_results[check['host']] = check
@@ -674,7 +681,7 @@ def main(argv=None):
             summary = {'hosts': reports, 'access_checks': checks, 'counts': counts}
             if excluded:
                 summary['excluded_hosts'] = excluded
-            print(json.dumps(summary, indent=2))
+            print_report(summary, json_output=args.json, kind='execution', icons=icons, recipe=recipe, host=hosts[0] if len(hosts) == 1 else None, ensure_ascii=True)
             return 0 if all(r['status'] == 'success' and not (r.get('access') or {}).get('degraded') and (r.get('retention') or {}).get('status') != 'failed' for r in reports) else 1
         report, path = execute(hosts[0], 1)
         summary = {key: report[key] for key in (
@@ -685,13 +692,13 @@ def main(argv=None):
             summary['data'] = report['data']
         if excluded:
             summary['excluded_hosts'] = excluded
-        print(json.dumps(summary, indent=2))
+        print_report(summary, json_output=args.json, kind='execution', icons=icons, recipe=recipe, host=hosts[0] if len(hosts) == 1 else None, ensure_ascii=True)
         return 0 if report['status'] == 'success' and not report.get('access', {}).get('degraded') and (report.get('retention') or {}).get('status') != 'failed' else 1
-    except (ConfigError, OSError, ImportError) as exc:
+    except (ConfigError, OSError, ImportError, ConsoleDependencyError) as exc:
         # Do not print third-party exception text or potentially sensitive config values.
         if excluded:
             print(json.dumps({'hosts': [], 'excluded_hosts': excluded}, indent=2))
-        print(f'ERROR: {str(exc) if isinstance(exc, ConfigError) else type(exc).__name__}', file=sys.stderr)
+        print(f'ERROR: {str(exc) if isinstance(exc, (ConfigError, ConsoleDependencyError)) else type(exc).__name__}', file=sys.stderr)
         return 1
 
 

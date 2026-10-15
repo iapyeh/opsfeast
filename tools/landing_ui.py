@@ -213,13 +213,18 @@ def make_home_class():
             tree.root.expand()
             leaves = []
             for group, names in grouped_hosts(hosts['hosts']).items():
-                branch = tree.root.add(Text(group if group is not None else 'Ungrouped (no group)'), expand=True)
+                group_label = group if group is not None else 'Ungrouped (no group)'
+                branch = tree.root.add(Text(group_label), expand=True)
                 for name in names:
-                    host_node = branch.add(Text(name), data=name, expand=True)
+                    settings = self.host_entries[name]['settings']
+                    host_node = branch.add(Text(settings.get('icon', '🍎') + ' ' + name), data=name, expand=True)
                     leaves.append(host_node)
                     login, accounts = user_accounts(self.host_entries[name]['settings'])
                     for user in accounts:
-                        leaves.append(host_node.add_leaf(Text(user + (' (login)' if user == login else '')), data=('user', name, user)))
+                        fallback = hosts.get('user_icons', {}).get(user, self.host_entries[name].get(
+                            'default_user_icon', hosts.get('default_user_icon', '👤')))
+                        icon = settings.get('users', {}).get(user, {}).get('icon', fallback)
+                        leaves.append(host_node.add_leaf(Text(icon + ' ' + user + (' (login)' if user == login else '')), data=('user', name, user)))
             selected = next((node for node in leaves if node.data == previous), leaves[0] if leaves else None)
             self.host_selection_node = selected
             if selected is not None:

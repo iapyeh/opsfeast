@@ -11,6 +11,7 @@ import stat
 import sys
 import urllib.request
 import zipfile
+from console_output import ConsoleDependencyError
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_URL = 'https://iapyeh.github.io/sshscript/v3a/ai-agents/downloads/sshscript-skill.zip'
@@ -113,17 +114,21 @@ def stage(content, destination):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('check')
+    check_parser = commands.add_parser('check')
+    check_parser.add_argument('--json', action='store_true')
     download = commands.add_parser('download')
+    download.add_argument('--json', action='store_true')
     download.add_argument('destination', type=Path, help='new staging directory; existing paths are refused')
     args = parser.parse_args(argv)
     try:
+        from console_output import prepare, print_report
+        prepare(args.json)
         content = fetch_bundle()
         report = check(content) if args.command == 'check' else stage(content, args.destination)
-        print(json.dumps(report, indent=2, ensure_ascii=False))
+        print_report(report, json_output=args.json)
         return 0
     except Exception as exc:
-        message = str(exc) if isinstance(exc, BundleError) else type(exc).__name__
+        message = str(exc) if isinstance(exc, (BundleError, ConsoleDependencyError)) else type(exc).__name__
         print(f'ERROR: {message}', file=sys.stderr)
         return 1
 
