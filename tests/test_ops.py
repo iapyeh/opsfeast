@@ -1,5 +1,5 @@
 """Public, synthetic validation cases; no SSH or private host data."""
-import importlib.util
+import sys
 import contextlib
 import io
 import json
@@ -8,9 +8,8 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-spec = importlib.util.spec_from_file_location('opsfeast_test', Path(__file__).parents[1] / 'tools/opsfeast.py')
-ops = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(ops)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import opsfeast as ops
 
 
 class OpsTests(unittest.TestCase):
@@ -135,7 +134,7 @@ class OpsTests(unittest.TestCase):
                          '{glob: "recipes/**/system"}'):
             with self.subTest(selector=selector):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/inventory/system}}]}}}}')
-                expected = ([ops.REPOSITORY_RECIPES / 'check/port', ops.REPOSITORY_RECIPES / 'inventory/system', ops.REPOSITORY_RECIPES / 'report/summary']
+                expected = ([ops.REPOSITORY_RECIPES / 'check/identity', ops.REPOSITORY_RECIPES / 'check/port', ops.REPOSITORY_RECIPES / 'inventory/system', ops.REPOSITORY_RECIPES / 'report/summary']
                             if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'inventory/system'])
                 self.assertEqual(self.check().selected['web'], expected)
 

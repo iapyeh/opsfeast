@@ -8,7 +8,7 @@ People define goals, target systems and authorization. Agents drive daily operat
 
 | Name | Technical meaning | Responsibility |
 | --- | --- | --- |
-| Feast | Private management instance | Configuration, selected recipes, observations, execution records and results. A profile registers and selects a Feast; it is not the Feast itself. |
+| Feast | Private management environment | Configuration, selected recipes, observations, execution records and results. A profile registers and selects a Feast; it is not the Feast itself. |
 | Buffet | Exchange instance | Discover, acquire and share recipes. Exchange services are planned. |
 | Recipe | Versioned operational procedure and implementation | Inputs, dependencies, targets, privileges, side effects, outputs and verification evidence. |
 | Dish | Execution result and supporting evidence | Retain complete, partial, failed and unknown states. The metaphor never implies success. Technical interfaces continue to use result/report. |
@@ -20,7 +20,7 @@ People define goals, target systems and authorization. Agents drive daily operat
 
 Host, organizer and guest are responsibilities, not hard-coded permissions tied to job titles. Actual authority follows explicit delegation and policy. In connection settings, `host` retains its technical machine meaning; the banquet role does not rename configuration fields.
 
-The story is: acquire a recipe from an authorized Buffet, prepare it in an authorized Kitchen, and retain the resulting Dish in the user's Feast. Use the metaphor for orientation and branding; use instance, exchange, agent, execution environment, run and result for precise operational interfaces.
+The story is: acquire a recipe from an authorized Buffet, prepare it in an authorized Kitchen, and retain the resulting Dish in the user's Feast. An OpsFeast instance is the entire installation/checkout with its own UUID, name and optional description; profiles select management roots within or outside it. See [Core API](core-api.md). Use the metaphor for orientation and branding; use instance, exchange, agent, execution environment, run and result for precise operational interfaces.
 
 ## Product and repository boundaries
 
@@ -46,4 +46,4 @@ OpsFeast currently provides profiles, configuration checks, explicit host/accoun
 
 Use OpsFeast and OpsBuffet as complete public brands; Feast and Buffet are internal concepts. Prefer opsfeast for the local repository and tools/opsfeast.py for new commands. Existing CLI and configuration compatibility is documented in the [migration guide](migration.md).
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-15_

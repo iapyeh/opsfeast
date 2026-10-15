@@ -30,53 +30,21 @@ feasts/main/
 
 ## Read host configuration from Python
 
-For a standalone Python tool that needs Feast settings, reuse `Validator` from [tools/opsfeast.py](../tools/opsfeast.py) at runtime. Do not implement a separate `yaml.safe_load()` path for operational settings or copy the currently observed hostname, account, jump chain or credentials into generated source. Keep the Feast root/profile and host ID as invocation inputs; reload configuration for each invocation so subsequent configuration edits take effect. Synthetic examples and explicitly requested snapshots are separate uses, not live configuration loaders.
-
-This is an existing checkout-level Python interface, not an installed package or a separately versioned stable SDK. It requires Python 3.11+ and PyYAML (see `requirements-init.txt`); configuration loading does not require SSHScript. Use the selected interpreter and a trusted OpsFeast checkout. The caller must put that checkout's `tools/` on `sys.path` or `PYTHONPATH`; do not assume `import opsfeast` works from an arbitrary directory or that recipes are always nested under the checkout.
-
-The following standalone example only loads and validates settings. Its checkout/root/profile/host arguments are supplied at runtime:
+For new standalone Python tools, use the bundled [Core API](core-api.md) and [Core skill](../skills/opsfeast-core/SKILL.md):
 
 ```python
-import argparse
-from pathlib import Path
-import sys
+from opsfeast import Instance
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--checkout", type=Path, required=True)
-selection = parser.add_mutually_exclusive_group()
-selection.add_argument("--root", type=Path)
-selection.add_argument("--profile")
-parser.add_argument("--host", required=True)
-args = parser.parse_args()
-
-sys.path.insert(0, str(args.checkout.expanduser().resolve() / "tools"))
-from opsfeast import ConfigError, Validator, resolve_root
-
-try:
-    root = resolve_root(root=args.root, profile=args.profile)
-    config = Validator(root)
-    config.load(config.root / "hosts.yaml")
-    config.check_connections()
-    if args.host not in config.hosts:
-        raise ConfigError("Unknown selected host")
-    host = config.hosts[args.host]
-    connection = host["connection"]
-    users = host.get("users", {})
-    variables = host.get("vars", {})
-except (ConfigError, OSError):
-    raise SystemExit("Cannot load the selected Feast/host configuration") from None
+instance = Instance.open(installation="/srv/opsfeast")
+profile = instance.profile("main")
+hosts = profile.hosts.list()  # Masked, independent snapshot.
+host = profile.hosts.get("host-01")
+# profile.reload() explicitly refreshes the configuration snapshot.
 ```
 
-For example, run it as `python -B read_settings.py --checkout /path/to/opsfeast --root /path/to/feast --host host-01`, substituting authorized local paths and a configured host ID. Omit `--root` to use the importing checkout's default registered profile, or select `--profile NAME`. Explicit roots are relative to the shell directory; profile registry paths follow the [profile guide](profiles.md). A missing profile/root/file or invalid configuration is an error, not a reason to fall back to embedded settings or another Feast.
+Core reuses Validator include/path/duplicate/connection validation. Keep installation/profile and host ID as invocation inputs; do not generate another YAML parser or freeze private connection settings into code. Raw values require explicit reveal_secrets=True and must not be logged. Loading requires Python 3.11+/PyYAML and makes no connections. See the canonical guide for package installation, errors and snapshot semantics.
 
-- `Validator(root)` requires an existing directory supplied as a `Path`. `load(config.root / "hosts.yaml")` follows includes, rejects duplicate YAML keys/host IDs, cycles and paths outside the management root, and reads entry-only recipe-source settings.
-- `config.hosts` maps host IDs to their original field values across the include tree; absent optional fields are not filled with defaults. `config.sources` maps host IDs to their source `Path`. `config.recipe_sources` contains named external roots/settings; `config.default_recipe_sources` holds bundle/profile controls. These are in-memory objects, not a write-back API.
-- `check_connections()` statically validates connection/account/variable/group/identity settings and jump references/cycles. It does not connect, resolve SSH aliases to live endpoints, verify credentials or test privilege policies. To also validate recipe selections, use `Validator(root).check()` instead of the load/check_connections sequence; it may require referenced recipe files and metadata.
-- Settings include raw secrets. Consume only needed fields locally; do not print the dictionaries or embed them in source, reports or bundles. Loading all hosts does not select or authorize all hosts for execution. Preserve host/source enabled controls; a valid disabled host remains disabled.
-
-For a runner-managed Python-session recipe, use the borrowed `session`, `context.host_id` and validated `context.vars` supplied by the [execution contract](recipe-execution.md#entrypoint-and-available-capabilities). The runner already loads settings and manages connections/jumps; do not reload credentials to reconnect. `RecipeContext` does not expose the complete host dictionary or a Feast root. Declare task-specific inputs through the [input contract](recipe-sources.md#variables-and-implementation-context) instead of inventing context fields or embedding host settings.
-
-Verify generated standalone readers with synthetic included hosts, a changed setting between invocations, and an invalid/missing selected host before any authorized operational use. These checks establish configuration behavior only; native SSH and privilege behavior require separate evidence and scope. Inspect the importing checkout's implementation when updating compatibility; this documentation does not turn the internal interface into a stable SDK.
+The existing `opsfeast.Validator(root).load(root / "hosts.yaml")` and check_connections() remain compatibility interfaces. Runner-managed python-recipe entrypoints use execute(recipe), recipe.session and Recipe vars; legacy python-session recipes retain execute(session, *, context, timeout), with context.host_id/vars only. Neither should reload credentials or reconnect independently.
 
 ## 建立與重複檢查管理目錄
 
@@ -521,4 +489,4 @@ hosts:
 
 identity_key is an exact, case-sensitive nonempty string without leading/trailing whitespace or control characters. Use a shared organization namespace and OS-installation-specific suffix. Duplicate keys anywhere in the resolved include tree fail before connecting. A and B may use the same key in independent Feasts to assert the same installation. This explicit assignment takes priority over native candidates; it does not verify machine identity. Change it after OS reinstall or target replacement. Labels/descriptions are copied into each raw/retained observation and JSON exchange; differing source labels are preserved rather than overwritten. See [identity precedence and sharing](result-data.md#explicit-identity-and-display-metadata).
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

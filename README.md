@@ -4,13 +4,15 @@
 
 OpsFeast helps AI agents manage IT systems through reusable, verifiable and shareable recipes. People define goals, targets and authorization; agents handle planning and routine work within that scope and request human input for exceptions or decisions beyond it.
 
-A **Feast** is your private management instance: configuration, selected recipes, execution records and results. **OpsBuffet** is the planned exchange platform for discovering, acquiring and sharing recipes, with separately operated public and enterprise instances. See [the ecosystem and naming guide](docs/ecosystem.md) for roles, repository responsibilities and implementation limits.
+An **OpsFeast instance** is the entire installation/checkout, with one installation UUID and active profile. A **Feast management environment** is the profile-selected root containing configuration, selected recipes, execution records and results. **OpsBuffet** is the planned exchange platform for discovering, acquiring and sharing recipes, with separately operated public and enterprise instances. See [the ecosystem and naming guide](docs/ecosystem.md) for roles, repository responsibilities and implementation limits.
 
 OpsFeast welcomes recipes built with different execution tools. When SSHScript fits the task and the authorized environment, prefer it for command execution and session orchestration. The project also serves as a practical showcase of SSHScript through reusable recipes and verifiable examples. User-selected tools and operational constraints take precedence; see the [tool selection workflow](docs/recipe-authoring.md#choose-execution-tools).
 
 SSHScript is the currently supported execution foundation for the host diagnostics and recipe execution. Other tools require explicit dependencies and verifiable contracts; the open ecosystem direction does not implement additional runner backends.
 
 Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The CLI is `tools/opsfeast.py`; the former `tools/ops.py` entrypoint and `import ops` are removed. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
+
+Use the bundled [Core Python API](docs/core-api.md) for installation identity, profiles, hosts, scoped Recipe sessions and su/sudo, and read-only inspection. Start with the [Core skill](skills/opsfeast-core/SKILL.md); logging and notification services remain deferred.
 
 Read the **[command-line reference](docs/cli.md)** for every opsfeast.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
 

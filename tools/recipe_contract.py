@@ -11,6 +11,7 @@ from recipe_inputs import prepare_vars
 
 CONTRACT = 'python-session'
 REPORT_CONTRACT = 'python-report'
+CORE_CONTRACT = 'python-recipe'
 VERSION = '0.1.0'
 STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 
@@ -31,7 +32,7 @@ def validate(directory, metadata):
         if not isinstance(values, list) or any(not isinstance(item, str) or not item for item in values):
             raise ConfigError('recipe platforms must contain lists of nonempty strings')
     runner = mapping(metadata.get('runner'), 'recipe runner', ('contract', 'version', 'entrypoint'))
-    if runner.get('contract') not in (CONTRACT, REPORT_CONTRACT) or runner.get('version') != VERSION:
+    if runner.get('contract') not in (CONTRACT, REPORT_CONTRACT, CORE_CONTRACT) or runner.get('version') != VERSION:
         raise ConfigError('unsupported recipe runner contract/version')
     output = mapping(metadata.get('output'), 'recipe output', ('schema_version',))
     if not isinstance(output.get('schema_version'), str) or not output['schema_version']:
@@ -67,7 +68,9 @@ def validate(directory, metadata):
         parameters.append(inspect.Parameter(args.kwarg.arg, inspect.Parameter.VAR_KEYWORD))
     try:
         signature = inspect.Signature(parameters)
-        if runner['contract'] == REPORT_CONTRACT:
+        if runner['contract'] == CORE_CONTRACT:
+            signature.bind(object())
+        elif runner['contract'] == REPORT_CONTRACT:
             signature.bind(context=object(), timeout=30)
         else:
             signature.bind(object(), context=object(), timeout=30)

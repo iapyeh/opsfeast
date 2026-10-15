@@ -9,6 +9,12 @@ OpsFeast provides two command-line entrypoints:
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
+## Installation identity and read-only inspection
+
+`python -B tools/opsfeast.py instance ACTION [--installation DIRECTORY] [--name NAME] [--description TEXT]` emits JSON. ACTION is inspect (read-only instance/configuration/dependency snapshot), init (create/preserve identity and optionally set name/description), set (update existing metadata), renew (new UUID for this copy), or relocate (preserve identity after moving the original). Name/description apply only to init/set. Default installation is this checkout; it is not a management root. Exit 0 is success, 1 is partial inspection/configuration/filesystem failure; syntax errors use 2. The command does not connect or execute recipes. See [identity/copy semantics and API](core-api.md).
+
+Normal management `init` also initializes installation identity after successful validation/registration; repeated init preserves it. Profile selection does not change instance identity. Missing UUID inspection uses a nil placeholder and writes nothing. New python-recipe 0.1.0 recipes use the same run_recipe.py/recipes run options as python-session; no extra execution flag is required.
+
 ## Inventory access, dryrun and CSV
 
 `opsfeast.py check-access (--host HOST... / --group GROUP... | --all) [--exclude HOST...] [--root ROOT | --profile NAME] [--timeout SECONDS] [--threads N]` validates selected login/root access without platform discovery or collection. Default threads is 1. Choose explicit hosts/groups or all; exclude requires all. Unknown targets/configurations fail before connections. Disabled/excluded targets are not contacted. JSON stdout preserves per-host failure and cleanup states; exit 0 requires every selected test to pass.
@@ -383,4 +389,4 @@ Host identity refers to an OS installation. Linux uses a hashed machine-id candi
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

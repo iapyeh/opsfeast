@@ -1,0 +1,15 @@
+[build-system]
+requires = []
+build-backend = "build_backend"
+backend-path = ["."]
+
+[project]
+name = "opsfeast"
+dynamic = ["version"]
+description = "Agent-driven IT operations with reusable recipes and a bundled Core Python API"
+requires-python = ">=3.11"
+dependencies = ["PyYAML==6.0.3"]
+
+[project.optional-dependencies]
+execution = ["sshscript==5.0.0"]
+tui = ["textual==8.2.8"]

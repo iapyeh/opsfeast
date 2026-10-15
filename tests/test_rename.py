@@ -141,6 +141,7 @@ class RenameTests(unittest.TestCase):
         tools.mkdir()
         source = Path(__file__).resolve().parents[1] / 'tools'
         shutil.copyfile(source / 'opsfeast.py', tools / 'opsfeast.py')
+        shutil.copytree(source.parent / 'opsfeast', self.checkout / 'opsfeast', ignore=shutil.ignore_patterns('__pycache__'))
         for args in (['init'], ['profiles'], ['init']):
             result = subprocess.run([sys.executable, '-B', str(tools / 'opsfeast.py'), *args],
                                     cwd='/', capture_output=True, text=True, timeout=10)

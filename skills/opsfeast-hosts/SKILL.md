@@ -5,6 +5,8 @@ description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform
 
 # OpsFeast 主機設定維護
 
+For the public Python package, installation identity, profile/hosts snapshots, scoped sessions and Recipe su/sudo, read [opsfeast-core](../opsfeast-core/SKILL.md) and its [API guide](../../docs/core-api.md). New python-recipe 0.1.0 entrypoints receive execute(recipe); legacy python-session Session/context interfaces remain unchanged.
+
 Start with the [central skill index](../README.md). Keep newly authored Feast-specific skills in the selected management root's `skills/`; check task-relevant source/loaded copies and agree with the user on any naming, version, instruction or loader conflict before the affected action. Follow [storage and conflict resolution](../../docs/agent-guidance.md#skill-storage-and-conflict-resolution).
 
 初次設定環境時先依 [初次使用指南](../../docs/getting-started.md) 檢查 Python、依賴與授權範圍，完成初始化後告知使用者應設定的主機、帳號與 recipes。需要準備或檢查公開 SSHScript skill 時依 [下載與更新指南](../../docs/skill-updates.md)；檢查不自動替換快照或升級套件。本 skill 與連結的 Markdown 可直接閱讀，不要求特定 agent loader。
@@ -147,4 +149,4 @@ The bare OpsFeast TUI includes a read-only Hosts view of default-profile configu
 
 For an explicitly requested human terminal display, supported diagnostics accept `--tui`. Read the [display guide](../../docs/terminal-ui.md) for optional Textual installation, terminal checks, shortcuts and limits. The diagnostic starts immediately within its existing authorization scope; the UI does not grant connections or privilege tests. Preserve skipped/failed states and inspect per-step details. Agents and pipelines should use ordinary JSON output.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

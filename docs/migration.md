@@ -2,6 +2,12 @@
 
 The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local checkout does not need to move. Private management directories, profile names, targets, credentials, human notes, observations and execution history retain their existing locations and contents.
 
+## Core package and installation identity (2026-10-15)
+
+Instance now precisely means the entire installation/checkout; management roots are profile environments. Existing profile registry and feast.yaml schemas/data remain valid. Read-only use of an older installation exposes a nil UUID placeholder; the next authorized init creates identity. Copies receive a new UUID; actual moves explicitly relocate identity. See [Core API](core-api.md).
+
+The public package owns shared configuration functions; tools/opsfeast.py remains a compatibility launcher/import bridge. Distribute the complete checkout or built wheel, not that launcher alone. Legacy Python-session, report and inventory recipes retain their entrypoints and results. New python-recipe 0.1.0 explicitly receives execute(recipe); change descriptor and code together. No automatic recipe rewrite, package installation, data migration or PyPI publication occurs.
+
 ## Centralized skill sources (2026-10-13)
 
 The complete bundled SSHScript snapshot moved from `.agents/skills/sshscript/` to `skills/sshscript/`, alongside all OpsFeast skills. Its contents, documentation contract and provenance are unchanged. Environment and bundle-check tools use the new location. Update explicit links and local integrations that used the former path; do not create a second source copy there. Existing agent installation copies are not automatically moved or updated. For duplicate names, version/instruction differences or loader conflicts, preserve local files and agree on the user's integration plan as described in [agent guidance](agent-guidance.md#skill-storage-and-conflict-resolution). Feast-specific user skills use `<management-root>/skills/`; this convention adds no automatic installer or discovery mechanism.
@@ -102,4 +108,4 @@ Six-section inventory-values 0.1.0 is an additive raw/retained/exchange extensio
 
 New inventory results use `YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`, derived from started_at in UTC with seconds only. Prior unprefixed names remain untouched and readable. External consumers that glob only inventory-system-*.json must accept the new prefix or use the built-in result query interfaces; JSON contracts and timestamp precision are unchanged. Filename sorting groups new runs by start second; UUID ties and mixed historical names are not strict chronological ordering.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

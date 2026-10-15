@@ -23,6 +23,10 @@ The second example requires a reviewed compatible recipe already present at the 
 
 Precedence is recipe defaults → source vars → first matching host recipe vars → vars-file → --var. This is a shallow overlay with an independent deep copy per host. Invalid effective inputs are rejected before that host's Session is created or entrypoint is loaded. Batch hosts remain independent: one host's preflight failure does not cancel others; target-name/configuration selection errors and invalid vars-file syntax fail before any host executes. Disabled hosts/sources return their existing skip states without reading unavailable recipe code or initializing a runtime. Per-invocation overrides do not rewrite hosts.yaml. Parameter values may be sensitive: use a private input file for secrets rather than shell arguments/history; provenance records names only, while recipe-owned output must avoid disclosure.
 
+## Core Recipe execution 0.1.0
+
+New recipes may declare runner.contract python-recipe, runner.version 0.1.0 and define synchronous execute(recipe). This is a separate explicit contract; [Core API](core-api.md#runner-integration-and-migration) defines Recipe fields, session ownership, su/sudo scopes, instance metadata and cleanup evidence. Descriptor 0.3.0, typed inputs, selection, common results and storage behavior are shared. See [check/identity](../recipes/check/identity/README.md) for a complete example. Existing python-session/python-report/inventory contracts remain unchanged.
+
 ## Descriptor 0.3.0 and Python-session 0.1.0
 
 A general recipe uses a simple unique ID other than the reserved inventory-system ID, one Python entrypoint, a literal matching VERSION and typed inputs:
@@ -98,4 +102,4 @@ Exit 0 requires every attempted host's status to be success (and no inventory re
 
 To add another Python-session recipe, use a new ID, implement this entrypoint/result contract, declare typed inputs and target dependencies, publish synthetic success/failure/boundary tests, and register a reviewed source when external. If this interface cannot express a required backend, platform dispatch or result capability, document the gap and propose an explicitly versioned extension rather than guessing support.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-15_

@@ -2,6 +2,8 @@
 
 本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
 
+The bundled [Core API and installation identity guide](core-api.md) covers instance UUID/name/description, copy versus move rules, profile-scoped Python access and read-only inspection. Successful init creates identity; setup still does not authorize host operations.
+
 ## Agent-led checkout bootstrap
 
 The [single first-use prompt](first-use.md#2-let-your-agent-learn-about-the-project) authorizes cloning `https://github.com/iapyeh/opsfeast.git` into the active project directory, then reading guidance and checking prerequisites. It does not authorize software installation, environment creation, profile initialization, host connections or recipe execution. This is an agent procedure, not a bundled bootstrap installer.
@@ -148,4 +150,4 @@ See [host diagnostics](host-diagnostics.md) for platform initialization/cache se
 
 Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, retention receipt and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

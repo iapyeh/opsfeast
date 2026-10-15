@@ -207,7 +207,7 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
         'runtime': runtime or {'verification': 'mock'}, 'hops': [], 'execution_errors': [],
         'host_metadata': {key: config.hosts[host][key] for key in ('label', 'description') if key in config.hosts[host]},
         'recipe': {'id': metadata['id'], 'version': metadata['version'], 'recipe_version': metadata['version'],
-                   'runner_contract': recipe_contract.CONTRACT, 'runner_version': recipe_contract.VERSION,
+                   'runner_contract': metadata['runner']['contract'], 'runner_version': metadata['runner']['version'],
                    'entrypoint': metadata['runner']['entrypoint'],
                    'implementation_sha256': hashlib.sha256(entry.read_bytes()).hexdigest(),
                    'descriptor_sha256': hashlib.sha256((directory / 'recipe.yaml').read_bytes()).hexdigest(),
@@ -229,7 +229,22 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
             stage = 'execution'
             progress('executing recipe ' + json.dumps(metadata['id'], ensure_ascii=True))
             context = RecipeContext(host, info['effective_vars'])
-            result = selected['execute'](session, context=context, timeout=timeout)
+            if metadata['runner']['contract'] == recipe_contract.CORE_CONTRACT:
+                from opsfeast import Instance, Profile, Recipe
+                instance = Instance.open(REPOSITORY_ROOT)
+                profile = Profile._from_config(instance, config)
+                execution = Recipe._create(profile, config, host, session, timeout, report,
+                                           vars=info['effective_vars'], owner='runner')
+                report['instance'] = dict(execution._state.identity)
+                report['profile'] = profile.name
+                report['run_id'] = execution.run_id
+                try:
+                    result = selected['execute'](execution)
+                finally:
+                    execution._state.active = False
+                    execution._active = False
+            else:
+                result = selected['execute'](session, context=context, timeout=timeout)
             stage = 'result_validation'
             report.update(recipe_contract.validate_result(result))
     except (Exception, SystemExit) as exc:
@@ -237,6 +252,8 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
                       message='Recipe result is invalid.' if stage == 'result_validation' else 'Recipe execution failed.')
         # Custom exception text may contain input values; preserve type/stage only.
         report['execution_errors'].append({'stage': stage, 'type': type(exc).__name__})
+    if report.get('scope_error'):
+        report.update(status='failed', reason_code=report['scope_error'], message='Session identity verification failed.')
     if 'cleanup_error' in report:
         report.update(status='failed', reason_code='cleanup_failed', message='Session cleanup failed.')
         report['execution_errors'].append({'stage': 'cleanup', 'type': report['cleanup_error']})

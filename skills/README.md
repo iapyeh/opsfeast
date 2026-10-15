@@ -20,7 +20,7 @@ These operational skills guide **DevOps users and their agents**, including auth
 
 Before generating operational code, read the [tool and Python module capability map](../docs/agent-capabilities.md) and the task-specific skill. Prefer an existing compatible recipe or complete CLI workflow; for in-process Python composition, reuse the documented modules after checking their current signatures/contracts and dependencies. Implement only a concrete missing capability, and explain why existing functionality is unsuitable. Do not regenerate configuration parsers, connection lifecycles, result storage/export, artifact checks or rerun machinery that OpsFeast already provides.
 
-Operating OpsFeast and developing with its modules are continuing skill-update priorities. Every usable capability change must update the map, relevant skill and canonical CLI/import examples in the same delivery; see [the development principle](../docs/vision.md#make-existing-capabilities-the-first-choice-for-agents). The bundled SSHScript skill owns execution-library APIs and provenance, while the three OpsFeast skills below own product workflows and module routing. Do not edit the upstream snapshot to document local OpsFeast features.
+Operating OpsFeast and developing with its modules are continuing skill-update priorities. Every usable capability change must update the map, relevant skill and canonical CLI/import examples in the same delivery; see [the development principle](../docs/vision.md#make-existing-capabilities-the-first-choice-for-agents). The bundled SSHScript skill owns execution-library APIs and provenance, while the OpsFeast skills below own product workflows and module routing. Do not edit the upstream snapshot to document local OpsFeast features.
 
 ## Skill source locations and learning order
 
@@ -32,9 +32,11 @@ Before creating or integrating a skill, check known task-relevant source and loa
 
 Inventory authoring/access/data tasks also require [the access and partitioned-result guide](../docs/inventory-access.md), linked from the three OpsFeast skills.
 
-When writing Python that consumes host settings, start with [runtime configuration loading](../docs/hosts-yaml.md#read-host-configuration-from-python), linked from both hosts and recipes skills. Standalone tools reuse the checkout loader; runner-managed recipes use their supplied Session and context. Do not freeze the agent's current view of hosts.yaml into generated connection parameters.
+When writing Python that consumes host settings, start with [runtime configuration loading](../docs/hosts-yaml.md#read-host-configuration-from-python), linked from both hosts and recipes skills. New standalone tools use the Core API loader; python-recipe recipes use their supplied Recipe, while legacy python-session recipes retain Session/context. Do not freeze the agent's current view of hosts.yaml into generated connection parameters.
 
 ## Available repository skills
+
+- [opsfeast-core](opsfeast-core/SKILL.md): public package API 0.1.0 for installation identity, profiles, configuration snapshots, scoped sessions/Recipe su/sudo and read-only inspection; [canonical guide](../docs/core-api.md).
 
 - [opsfeast-hosts](opsfeast-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).
 - [opsfeast-recipes](opsfeast-recipes/SKILL.md): discover, author and execute inventory and compatible Python-session recipes with typed invocation inputs, share one or many recipes, and acquire, verify and review third-party candidates before authorized installation. Start with the [recipe user guide](../docs/recipes.md).

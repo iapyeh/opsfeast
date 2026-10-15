@@ -16,3 +16,12 @@
 
 # Private installation recipe-author defaults.
 /.opsfeast-author.yaml
+
+# Private installation identity and serialized metadata writes.
+/.opsfeast-instance.json
+/.opsfeast-instance.lock
+/.opsfeast-instance-*.tmp
+/build/
+/dist/
+/*.egg-info/
+/.opsfeast-profiles.lock

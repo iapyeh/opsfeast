@@ -2,6 +2,8 @@
 
 This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent to create a recipe, share content or acquire someone else's work, start with the [user guide](../docs/recipes.md).
 
+The bundled [check/identity](check/identity/README.md) demonstrates python-recipe 0.1.0 with the Core Recipe scoped session. It observes the login account without su/sudo; local and synthetic evidence do not prove remote applicability.
+
 ## Available recipes
 
 | Recipe | Purpose | Implemented platform | Execution tools and showcase | Verification evidence | Usage |
@@ -33,4 +35,4 @@ The first result contract and synthetic example live with inventory-system. Inve
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-15_

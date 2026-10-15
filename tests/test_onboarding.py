@@ -28,6 +28,7 @@ class FirstHostExamplesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             # Copy tools to keep the generated registry out of the real checkout.
             shutil.copytree(ROOT / 'tools', Path(directory, 'tools'), ignore=shutil.ignore_patterns('__pycache__'))
+            shutil.copytree(ROOT / 'opsfeast', Path(directory, 'opsfeast'), ignore=shutil.ignore_patterns('__pycache__'))
             result = subprocess.run([sys.executable, '-B', str(Path(directory, 'tools/opsfeast.py')), 'init'],
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)

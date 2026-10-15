@@ -1,0 +1,31 @@
+descriptor_version: 0.3.0
+author: {name: Bundle, contacts: [Bundle]}
+license: MIT
+id: check-identity
+version: 0.1.0
+title: Observe the connection account through Core Recipe
+description: Run id -un using the runner-provided scoped session; no privilege transition.
+runner:
+  contract: python-recipe
+  version: 0.1.0
+  entrypoint: main.py
+platforms:
+  implemented: [linux, freebsd, macos]
+  tested: []
+  planned: []
+dependencies:
+  controller: [Python 3.11+, PyYAML 6.0.3, SSHScript 5.0.0, OpsFeast Core API 0.1.0]
+  target: [POSIX id command]
+permissions: {sudo: false, su: false}
+side_effects:
+  - Runner connects to the explicitly selected host and runs id -un.
+  - Runner saves raw JSON in the selected management root observations directory.
+inputs:
+  variables: {}
+output:
+  schema_version: 0.1.0
+verification:
+  synthetic: tested
+  local: tested
+  ssh: not-tested
+# Last modified: 2026-10-15

@@ -93,7 +93,7 @@ class WorkbenchTests(unittest.IsolatedAsyncioTestCase):
                 async def collect(): app.finish('{}',0)
                 with patch.object(app,'collect',side_effect=collect):
                     async with app.run_test(size=size) as pilot:
-                        await pilot.pause(0.1)
+                        await pilot.pause()  # Drain deferred mount/refresh callbacks before key input.
                         tree=app.query_one('#recipe-tree',Tree)
                         await pilot.press('down')
                         self.assertIs(app.focused,tree)
@@ -101,13 +101,13 @@ class WorkbenchTests(unittest.IsolatedAsyncioTestCase):
                         await pilot.pause()
                         self.assertEqual(app.query_one('#recipe-history',DataTable).row_count,1)
                         app.activate_section('actions-pane')
-                        await pilot.pause(0.05)
+                        await pilot.pause()
                         field=app.query_one('#field-query',Input)
                         field.focus()
                         await pilot.press('down')
                         self.assertIs(app.focused,field)
                         app.activate_section('output-pane')
-                        await pilot.pause(0.05)
+                        await pilot.pause()
                         await pilot.press('down')
                         self.assertEqual(tree.cursor_node.data,'third')
 

@@ -8,6 +8,8 @@ Read [recipe attribution and installation defaults](recipe-attribution.md) for a
 
 Start with the [agent capability map](agent-capabilities.md), catalog/list/show and static inspection before writing new code. Prefer a compatible reviewed recipe or CLI workflow for the complete task, and applicable modules for in-process composition. Reuse configuration loading, typed inputs, session/cleanup/result handling, report/artifact contracts, retained export/validation, attribution defaults, packaging and saved reruns. Record the concrete gap when existing functionality is unsuitable, then implement only that missing logic. User-selected tools and operational boundaries still apply; capability discovery does not authorize execution.
 
+For new Core recipes use [python-recipe 0.1.0](core-api.md#runner-integration-and-migration) and execute(recipe). Reuse its supplied session and scoped su/sudo; prefer the [Core skill](../skills/opsfeast-core/SKILL.md) for standalone programs. Existing python-session contracts and examples below remain compatible.
+
 ## Bind configuration at runtime
 
 For standalone operational Python tools, use the [existing configuration loader](hosts-yaml.md#read-host-configuration-from-python), supplying a Feast root/profile and host ID at invocation time. Reuse its include and validation behavior; do not independently parse hosts.yaml or freeze private connection values into generated code. For runner-managed recipes, consume the borrowed Session and `context.host_id`/`context.vars` from the [execution contract](recipe-execution.md#entrypoint-and-available-capabilities); declare task inputs rather than reconnecting or assuming the context carries complete host settings. Keep portable recipe code separate from private bindings and credentials.
@@ -110,4 +112,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_
