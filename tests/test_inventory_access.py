@@ -104,13 +104,18 @@ class AccessTests(unittest.TestCase):
                 self.assertNotIn('override', json.dumps(report))
                 self.assertFalse((self.root / 'observations').exists())
 
-    def test_false_is_exact_and_disables_sudo(self):
-        self.write({'sudo': 'false', 'password': 'login'})
+    def test_boolean_sudo_policy_and_rejected_non_booleans(self):
+        self.write({'sudo': False, 'password': 'login'})
         self.assertEqual(access.check_access(self.config, 'h', session_class=self.cls)['access']['mode'], 'user')
         self.assertEqual(self.cls.sudo_passwords, [])
-        for value in (False, 0, '0', 'No', 'False', 'true', True, None):
+        self.write({'sudo': True, 'password': 'login'})
+        self.assertEqual(access.check_access(self.config, 'h', session_class=self.cls)['access']['mode'], 'root')
+        self.assertEqual(self.cls.sudo_passwords, ['login'])
+        for value in ('false', 'true', 'False', 'No', 0, 1, '0', None, [], {}):
             with self.subTest(value=value), self.assertRaises(ops.ConfigError):
                 self.write({'sudo': value})
+            with self.subTest(runtime_value=value), self.assertRaises(ops.ConfigError):
+                access.sudo_settings(SimpleNamespace(hosts={'h': {'users': {'operator': {'sudo': value}}}}), 'h', 'operator')
         for value in (False, 0, []):
             with self.assertRaises(ops.ConfigError):
                 self.write({'sudo-password': value})
@@ -197,7 +202,7 @@ class AccessTests(unittest.TestCase):
 
     def test_dryrun_and_independent_command_never_collect_or_write(self):
         for invoke, args in ((runner.main, ['inventory/system', '--host', 'h', '--dryrun']),
-                             (ops.main, ['check-access', '--host', 'h'])):
+                             (ops.main, ['check-access', '--host', 'h', '--json', '--quiet'])):
             with patch.object(access, 'runtime_class', return_value=self.cls), patch.object(runner, 'run') as collect, \
                     contextlib.redirect_stdout(io.StringIO()) as output:
                 code = invoke([*args, '--root', str(self.root)])
@@ -205,6 +210,83 @@ class AccessTests(unittest.TestCase):
             self.assertEqual(json.loads(output.getvalue())['status'], 'success')
             collect.assert_not_called()
             self.assertEqual(sorted(p.name for p in self.root.iterdir()), ['hosts.yaml'])
+
+    def test_access_cli_concise_default_and_json_quiet(self):
+        for flags in ([], ['--json'], ['--json', '--quiet']):
+            with patch.object(access, 'runtime_class', return_value=self.cls), \
+                    contextlib.redirect_stdout(io.StringIO()) as out, \
+                    contextlib.redirect_stderr(io.StringIO()) as err:
+                code = ops.main(['check-access', '--all', '--root', str(self.root), *flags])
+            self.assertEqual(code, 0)
+            if '--json' in flags:
+                report = json.loads(out.getvalue())
+                self.assertEqual(report['hosts'][0]['access']['connection_identity']['username'], 'operator')
+                self.assertNotIn('cleanup_error', report['hosts'][0])
+            else:
+                self.assertEqual(out.getvalue(), 'PASS  h / operator\nTotal: 1 passed, 0 failed, 0 skipped, 0 excluded\n')
+            if '--quiet' in flags:
+                self.assertEqual(err.getvalue(), '')
+            else:
+                self.assertIn('CHECK  h / unresolved', err.getvalue())
+                self.assertIn('[1/1] PASS  h / operator', err.getvalue())
+            self.assertNotIn('synthetic-login', out.getvalue() + err.getvalue())
+
+    def test_access_cli_failure_and_disabled_summary(self):
+        self.cls.fail_sudo = True
+        with patch.object(access, 'runtime_class', return_value=self.cls), \
+                contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
+            code = ops.main(['check-access', '--all', '--root', str(self.root)])
+        self.assertEqual(code, 1)
+        self.assertIn('FAIL  h / operator  (sudo_failed)', out.getvalue())
+        data = ops.yaml.safe_load((self.root / 'hosts.yaml').read_text())
+        data['hosts']['h']['enabled'] = False
+        data['hosts']['h']['connection'] = {'hostname': 'host.example.invalid', 'user': 'operator'}
+        (self.root / 'hosts.yaml').write_text(ops.yaml.safe_dump(data))
+        with patch.object(access, 'runtime_class') as connect, \
+                contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
+            code = ops.main(['check-access', '--host', 'h', '--root', str(self.root)])
+        self.assertEqual(code, 1)
+        self.assertIn('SKIP  h / operator  (host_disabled)', out.getvalue())
+        connect.assert_not_called()
+
+    def test_progress_precedes_connection_and_parallel_results_stay_ordered(self):
+        from threading import Event
+        data = {'hosts': {host: {'connection': {'hostname': 'host.example.invalid', 'user': 'operator'}} for host in ('a', 'b')}}
+        (self.root / 'hosts.yaml').write_text(ops.yaml.safe_dump(data))
+        started = set()
+        second_done = Event()
+        finished = []
+
+        def progress(stage, report):
+            if stage == 'start':
+                started.add(report['host'])
+                self.assertEqual(access.account_label(report), 'operator')
+            else:
+                finished.append(report['host'])
+                if report['host'] == 'b':
+                    second_done.set()
+
+        def check(config, host, *args):
+            self.assertIn(host, started)
+            if host == 'a':
+                self.assertTrue(second_done.wait(5))
+            return {'host': host, 'status': 'success'}
+
+        with patch.object(access, 'check_access', side_effect=check):
+            report = access.check_many(self.root, ['a', 'b'], threads=2, progress=progress)
+        self.assertEqual(finished, ['b', 'a'])
+        self.assertEqual([row['host'] for row in report['hosts']], ['a', 'b'])
+        self.assertEqual(report['status'], 'success')
+
+    def test_summary_unknown_account_exclusions_and_terminal_controls(self):
+        report = {'hosts': [{'host': 'h\n\x1b', 'status': 'failed', 'reason_code': 'connection_failed'}],
+                  'excluded_hosts': [{'host': 'other', 'reason_code': 'cli_excluded'}]}
+        text = access.format_summary(report)
+        self.assertIn(r'FAIL  h\n\u001b / unresolved  (connection_failed)', text)
+        self.assertIn('EXCLUDED  other', text)
+        self.assertIn('0 passed, 1 failed, 0 skipped, 1 excluded', text)
+        self.assertEqual(len(text.splitlines()), 3)
+        self.assertIn('0 passed, 0 failed', access.format_summary({'hosts': []}))
 
     def test_entire_batch_gate_and_force_skip(self):
         check = {'status': 'failed', 'hosts': [{'host': 'h', 'status': 'failed', 'connected': False}]}

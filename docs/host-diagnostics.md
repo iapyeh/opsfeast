@@ -4,7 +4,7 @@ These commands use the selected management profile unless `--profile NAME` or an
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
-For inventory readiness, prefer [check-access or inventory --dryrun](inventory-access.md#check-access-without-collection): they do not initialize platform facts or test other users through su. Test-host is the broader explicit diagnostic and is not the inventory gate.
+For inventory readiness, use inventory --dryrun for login-only checks. For all declared accounts, use [check-access](inventory-access.md#check-access-without-collection): it checks login/root, independent su to other declared users and enabled sudo as each actor, without initializing platform facts. Test-host additionally handles platform facts and is not the inventory gate.
 
 ## Initialize platform facts
 
@@ -42,7 +42,7 @@ python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as service-user 
 
 Omitting usernames tests the actual connection account. Supplied usernames are independent **sudo actors**; `--run-as` is the sudo target, default root. For another actor, Ops first enters that account through su and verifies identity, then tests sudo. A failed prerequisite is reported with a su stage, rather than a claim that sudo was attempted.
 
-Sudo selects the actor password using the [credential precedence rules](#credential-precedence) below. Standalone `test-sudo` and `test-host` can test passwordless sudo when no password source is selected; account sudo: "false" skips sudo. Successful entry does not prove that a supplied password was consumed; sudo policy/cache may avoid a password prompt.
+Sudo selects the actor password using the [credential precedence rules](#credential-precedence) below. Standalone `test-sudo` and `test-host` can test passwordless sudo when no password source is selected; account sudo: false skips sudo. Successful entry does not prove that a supplied password was consumed; sudo policy/cache may avoid a password prompt.
 
 Tests enter an authenticated shell and query effective UID/name, compare UID with the requested account, then verify return to the connection identity. They test shell access, not command-specific sudo rules. Bash and id are required by the SSHScript authenticated-console contract. Authentication/identity/cleanup errors remain separate from skipped steps; exception messages, passwords and raw privileged outputs are omitted.
 
@@ -60,7 +60,7 @@ All host diagnostics accept `-v`/`--verbose`, `--debug` and `--traceback`; see [
 
 ## Credential precedence
 
-Sudo uses the canonical [access credential rules](inventory-access.md#configure-the-actual-connection-account), including account sudo: "false", sudo-password field presence, null/empty passwords, the exact "false" fallback marker, legacy explicit vars credentials and account-password fallback. No alternate source is tried after rejection. Host credentials remain exclusive to the actual connection account. Missing all password sources permits noninteractive passwordless sudo. Root-shell access and cached authentication do not prove that the password was consumed or that command-specific sudo is available.
+Sudo uses the canonical [access credential rules](inventory-access.md#configure-the-actual-connection-account), including account sudo: false, sudo-password field presence, null/empty passwords, the exact "false" fallback marker, legacy explicit vars credentials and account-password fallback. No alternate source is tried after rejection. Host credentials remain exclusive to the actual connection account. Missing all password sources permits noninteractive passwordless sudo. Root-shell access and cached authentication do not prove that the password was consumed or that command-specific sudo is available.
 
 Su rules are unchanged: users.<target>.vars.su.password → host vars.su.password only when the target is the connection account → users.<target>.password. Missing/null values advance to the next source; empty strings are explicitly selected. Missing all sources skips su; no passwordless su is probed. No reported credential source reveals the value.
 
@@ -73,7 +73,7 @@ python -B tools/opsfeast.py test-host host-01 --root /srv/feasts/main
 `test-host` always tests hostname/date and performs the following:
 
 1. Reuse successful, target-matching host-init data; otherwise initialize it.
-2. Test sudo for the actual connection account unless account sudo is "false"; use the selected password or attempt passwordless entry when none is selected.
+2. Test sudo for the actual connection account unless account sudo is false; use the selected password or attempt passwordless entry when none is selected.
 3. Independently test su from the connection account to other accounts declared in `users`. It does not enumerate system accounts or test chains.
 
 A connection failure skips all subsequent tests. A platform-probe failure does not prevent account diagnostics. Tests use fresh connections for independent groups. All results are returned in one JSON report, including cache/probe provenance and original facts timestamp. The summary is success, partial (some tests skipped) or failed. Individual diagnostics may also report skipped. Any actual failure returns exit code 1; success/partial/skipped return 0. Skipped never means verified.
@@ -86,4 +86,4 @@ Synthetic tests cover cache refresh/invalidation, platform parsing, identity mis
 
 SSHScript APIs follow the included public snapshot: [Agent Guide](https://iapyeh.github.io/sshscript/v3a/ai-agents/guide/), [canonical API](https://iapyeh.github.io/sshscript/v3a/recommended-api/) and `skills/sshscript/SOURCE.json`, documentation contract 5.0.0, bundle SHA-256 `e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b`. The su/sudo signatures were additionally checked against public repository branch `release`, commit `fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb`: [session.py](https://github.com/iapyeh/sshscript/blob/fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb/src/sshscript/session.py) and [sessionwrapper.py](https://github.com/iapyeh/sshscript/blob/fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb/src/sshscript/sessionwrapper.py). FreeBSD userland semantics follow the [FreeBSD manual](https://man.freebsd.org/cgi/man.cgi?query=freebsd-version&sektion=1), consulted 2026-10-11. macOS commands are verified by local read-only execution.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

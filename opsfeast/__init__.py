@@ -773,8 +773,8 @@ class Validator:
                     account = mapping(account, account_where, ('password', 'vars', 'sudo', 'sudo-password'))
                     if 'password' in account and not isinstance(account['password'], str):
                         raise ConfigError(f'{account_where}.password: expected a string')
-                    if 'sudo' in account and account['sudo'] != 'false':
-                        raise ConfigError(f'{account_where}.sudo: only the quoted string \"false\" is accepted; omit to enable')
+                    if 'sudo' in account and type(account['sudo']) is not bool:
+                        raise ConfigError(f'{account_where}.sudo: expected a boolean; use false to disable or true to enable')
                     if 'sudo-password' in account and account['sudo-password'] is not None and not isinstance(account['sudo-password'], str):
                         raise ConfigError(f'{account_where}.sudo-password: expected string or null')
                     if 'vars' in account:
@@ -1155,7 +1155,7 @@ def main(argv=None):
         diagnostic.add_argument('-v', '--verbose', action='store_true', help='show diagnostic progress on stderr')
         diagnostic.add_argument('--debug', action='store_true', help='show safe connection and credential-source details on stderr; implies verbose')
         diagnostic.add_argument('--traceback', action='store_true', help='show exception frames without source, locals or exception text')
-    access = commands.add_parser('check-access', help='test selected login/root access without inventory')
+    access = commands.add_parser('check-access', help='test login and configured users via su/sudo without inventory')
     access.add_argument('--root', type=Path)
     access.add_argument('--profile')
     access.add_argument('--host', nargs='+', action='extend', default=[])
@@ -1164,6 +1164,8 @@ def main(argv=None):
     access.add_argument('--exclude', nargs='+')
     access.add_argument('--threads', type=int, default=1)
     access.add_argument('--timeout', type=positive_timeout, default=30)
+    access.add_argument('--json', action='store_true', help='output the full access report as JSON')
+    access.add_argument('-q', '--quiet', action='store_true', help='suppress access progress on stderr')
     args = parser.parse_args(argv)
     try:
         if args.command == 'instance':
@@ -1185,7 +1187,7 @@ def main(argv=None):
             return 1 if result.get('status') == 'partial' else 0
         if args.command == 'check-access':
             from run_recipe import select_hosts
-            from access_check import check_many
+            from access_check import check_many, format_summary, progress_printer
             root = resolve_root(args.root, args.profile)
             targets = [('host', h) for h in args.host] + [('group', g) for g in args.group]
             if args.threads <= 0:
@@ -1194,9 +1196,10 @@ def main(argv=None):
                 raise ConfigError('choose --host/--group or --all; --exclude requires --all')
             excluded = []
             hosts = select_hosts(root, targets, args.all_hosts, args.exclude, excluded)
-            report = check_many(root, hosts, args.timeout, args.threads)
+            report = check_many(root, hosts, args.timeout, args.threads,
+                                progress=None if args.quiet else progress_printer(len(hosts)), include_users=True)
             report['excluded_hosts'] = excluded
-            print(json.dumps(report, indent=2))
+            print(json.dumps(report, indent=2) if args.json else format_summary(report))
             return 0 if report['status'] == 'success' else 1
         if args.command == 'inspect-recipe':
             from recipe_inspection import inspect_recipes, format_report

@@ -413,7 +413,7 @@ class PipelineTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
         from opsfeast import yaml
-        (root / 'hosts.yaml').write_text(yaml.safe_dump({'hosts': {'node': {'connection': {'local': True}, 'users': {'actor': {'sudo': 'false'}}, **(metadata or {})}}}, allow_unicode=True))
+        (root / 'hosts.yaml').write_text(yaml.safe_dump({'hosts': {'node': {'connection': {'local': True}, 'users': {'actor': {'sudo': False}}, **(metadata or {})}}}, allow_unicode=True))
         session = Mock()
         def execute(argv, **kwargs):
             if argv[:1] == ['uname']:

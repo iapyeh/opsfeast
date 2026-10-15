@@ -26,7 +26,7 @@ The [verification section](#results-and-verification) distinguishes synthetic te
 
 Linux reads `/etc/os-release`, falling back to `/usr/lib/os-release` only when the first file is absent. It never executes file contents, merges files or substitutes kernel version for missing distribution version. Missing, denied, failed, truncated and unparseable values retain their own states. Observations describe the environment visible to the login account, including a container/jail, not necessarily physical hardware.
 
-No su, installation or target configuration changes are performed. Version 0.3.0 tests login/root access before collection and prefers verified root by default. Disable sudo with account sudo: "false". Read the [canonical access policy, credential-presence rules, dryrun/force, field catalog and CSV guide](../../../docs/inventory-access.md) before execution. This includes real connections and sudo attempts. Controller requirements remain Python 3.11+, PyYAML and matching SSHScript import/distribution 5.0.0; SSH trust and jump settings are preserved.
+No su, installation or target configuration changes are performed. Version 0.3.0 tests login/root access before collection and prefers verified root by default. Disable sudo with account sudo: false. Read the [canonical access policy, credential-presence rules, dryrun/force, field catalog and CSV guide](../../../docs/inventory-access.md) before execution. This includes real connections and sudo attempts. Controller requirements remain Python 3.11+, PyYAML and matching SSHScript import/distribution 5.0.0; SSH trust and jump settings are preserved.
 
 ## Execute
 
@@ -122,4 +122,4 @@ Result schema remains 0.2.0 with additive identity evidence 0.1.0 and retention 
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-15_

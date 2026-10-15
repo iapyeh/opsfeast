@@ -271,7 +271,7 @@ class CoreTests(unittest.TestCase):
 
     def test_sudo_disabled_and_empty_credential_precedence(self):
         account = self.settings['hosts']['h']['users']['operator']
-        account['sudo'] = 'false'
+        account['sudo'] = False
         self.write()
         self.profile.reload()
         scope, actor = self.connection()

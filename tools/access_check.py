@@ -1,18 +1,21 @@
 """Inventory access contract 0.1.0: no inventory or host-fact collection."""
 from contextlib import contextmanager
+import json
 import shlex
+import sys
+from threading import Lock
 
 from opsfeast import ConfigError
-from host_runtime import connected, identity, now, runtime_class, target_fingerprint
+from host_runtime import connected, identity, now, runtime_class, target_fingerprint, privilege_test, username
 
 VERSION = '0.1.0'
 
 
 def sudo_settings(config, host, user):
     account = config.hosts[host].get('users', {}).get(user, {})
-    if 'sudo' in account and account['sudo'] != 'false':
-        raise ConfigError('users.<account>.sudo accepts only the quoted string "false"; omit to enable')
-    enabled = account.get('sudo') != 'false'
+    if 'sudo' in account and type(account['sudo']) is not bool:
+        raise ConfigError('users.<account>.sudo must be a boolean; use false to disable or true to enable')
+    enabled = account.get('sudo', True)
     # Canonical field wins by presence, including null and empty string.
     if 'sudo-password' in account:
         value = account['sudo-password']
@@ -128,7 +131,107 @@ def check_access(config, host, timeout=30, session_class=None):
     return report
 
 
-def check_many(root, hosts, timeout=30, threads=1, session_class=None):
+def account_label(report):
+    """Prefer the verified login; SSH aliases may resolve only after connecting."""
+    return (report.get('user') or report.get('access', {}).get('connection_identity', {}).get('username')
+            or report.get('configured_user') or 'unresolved')
+
+
+def display_value(value):
+    # Keep host/account controls on one terminal line without interpreting them.
+    return json.dumps(str(value), ensure_ascii=False)[1:-1]
+
+
+def host_summary(report):
+    status = {'success': 'PASS', 'failed': 'FAIL', 'skipped': 'SKIP'}.get(report['status'], 'UNKNOWN')
+    label = f"{display_value(report['host'])} / {display_value(account_label(report))}"
+    reason = report.get('reason_code', 'unknown')
+    return ('❌ ' if status == 'FAIL' else '') + f"{status}  {label}" + (f"  ({display_value(reason)})" if status != 'PASS' else '')
+
+
+def format_summary(report):
+    rows = [host_summary(dict(account, host=host['host']))
+            for host in report['hosts'] for account in host.get('accounts', [host])]
+    rows.extend(f"EXCLUDED  {display_value(item['host'])}  ({display_value(item['reason_code'])})"
+                for item in report.get('excluded_hosts', []))
+    counts = {state: sum(host['status'] == state for host in report['hosts'])
+              for state in ('success', 'failed', 'skipped')}
+    rows.append(f"Total: {counts['success']} passed, {counts['failed']} failed, "
+                f"{counts['skipped']} skipped, {len(report.get('excluded_hosts', []))} excluded")
+    return '\n'.join(rows)
+
+
+def progress_printer(total):
+    """Serialize parallel progress and flush before potentially slow connections."""
+    lock = Lock()
+    completed = 0
+
+    def progress(stage, report):
+        nonlocal completed
+        with lock:
+            if stage in ('start', 'account_start'):
+                message = f"CHECK  {display_value(report['host'])} / {display_value(account_label(report))}"
+            elif stage == 'account_finish':
+                message = host_summary(report)
+            else:
+                completed += 1
+                message = (f"[{completed}/{total}] {display_value(report['host'])}: {report['status']}"
+                           if len(report.get('accounts', [])) > 1 else
+                           f"[{completed}/{total}] {host_summary(report)}")
+            print(message, file=sys.stderr, flush=True)
+    return progress
+
+
+def check_host_accounts(config, host, timeout=30, session_class=None, *, progress=None):
+    """Explicit CLI account checks; inventory preflight remains login-only."""
+    report = check_access(config, host, timeout, session_class)
+    configured = config.hosts[host]['connection'].get('user')
+    report['configured_user'] = configured
+    login = report.get('access', {}).get('connection_identity', {}).get('username')
+    accounts = report['accounts'] = [
+        {'user': login or configured, 'status': report['status'], 'reason_code': report['reason_code'],
+         'role': 'login'}]
+    other_users = [user for user in config.hosts[host].get('users', {}) if user != (login or configured)]
+    if progress and other_users:
+        progress('account_finish', dict(accounts[0], host=host))
+    safe = (login and not report.get('cleanup_error')
+            and report.get('access', {}).get('restoration_verified') is True)
+    for user, settings in config.hosts[host].get('users', {}).items():
+        if user == (login or configured):
+            continue
+        account = {'user': user, 'role': 'su', 'status': 'skipped',
+                   'reason_code': 'login_unavailable' if not login else 'login_cleanup_unverified'}
+        accounts.append(account)
+        if progress:
+            progress('account_start', dict(account, host=host))
+        if safe and report.get('status') != 'skipped':
+            mode = 'su' if settings.get('sudo') is False else 'sudo'
+            detail = privilege_test(config, host, mode, [user], timeout=timeout,
+                                    session_class=session_class or runtime_class())
+            account.update(status=detail['status'], checks=detail,
+                           sudo='disabled' if mode == 'su' else 'enabled')
+            groups = detail.get('groups', [])
+            steps = [step for group in groups for step in group['steps']]
+            if detail.get('cleanup_error') or any(group.get('cleanup_error') for group in groups):
+                reason = 'cleanup_failed'
+            elif any(group.get('parent_identity_verification', {}).get('status') == 'failed' for group in groups):
+                reason = 'restoration_failed'
+            else:
+                problem = next((step for step in steps if step['status'] != 'success'), {})
+                reason = problem.get('reason_code') or (problem['stage'] + '_failed' if 'stage' in problem else
+                         'access_verified' if detail['status'] == 'success' else 'account_check_failed')
+            account['reason_code'] = reason
+        if progress:
+            progress('account_finish', dict(account, host=host))
+    report['status'] = ('failed' if any(a['status'] == 'failed' for a in accounts) else
+                        'skipped' if any(a['status'] == 'skipped' for a in accounts) else 'success')
+    if report['status'] != 'success' and report['reason_code'] == 'access_verified':
+        report['reason_code'] = 'account_access_unverified'
+    report['finished_at'] = now()
+    return report
+
+
+def check_many(root, hosts, timeout=30, threads=1, session_class=None, *, progress=None, include_users=False):
     from concurrent.futures import ThreadPoolExecutor
     from opsfeast import Validator
     config = Validator(root)
@@ -136,8 +239,20 @@ def check_many(root, hosts, timeout=30, threads=1, session_class=None):
     config.check_connections()
     if any(host not in config.hosts for host in hosts):
         raise ConfigError('unknown access-check target')
+    if include_users:
+        for host in hosts:
+            for user in config.hosts[host].get('users', {}):
+                username(user)
     def run(host):
-        return check_access(config, host, timeout, session_class)
+        configured_user = config.hosts[host]['connection'].get('user')
+        if progress:
+            progress('start', {'host': host, 'configured_user': configured_user})
+        report = (check_host_accounts(config, host, timeout, session_class, progress=progress) if include_users
+                  else check_access(config, host, timeout, session_class))
+        report['configured_user'] = configured_user
+        if progress:
+            progress('finish', report)
+        return report
     with ThreadPoolExecutor(max_workers=max(1, min(threads, len(hosts)))) as pool:
         reports = list(pool.map(run, hosts))
     return {'contract_version': VERSION, 'status': 'success' if all(r['status'] == 'success' for r in reports) else 'failed',

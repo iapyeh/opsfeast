@@ -372,7 +372,7 @@ hosts:
 
 `connection.user` 是 SSH 登入帳號；`vars.sudo.user` 是 sudo 切換到的目標帳號；`vars.sudo.password` 是 sudo 驗證所需的密碼，通常屬於登入帳號，而不是目標帳號。
 
-初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；Inventory now explicitly tests enabled sudo and uses verified root for the complete collection; set account sudo: "false" for intentional ordinary-account collection.
+初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；Inventory now explicitly tests enabled sudo and uses verified root for the complete collection; set account sudo: false for intentional ordinary-account collection.
 
 目標主機與跳板各自使用自己的變數，不自動繼承。也不自動把變數轉成環境變數或插入 shell 命令。Recipe 讀取變數的程式介面尚未定案。
 
@@ -468,7 +468,7 @@ Host configuration/path rules and inventory-system descriptor/result schema 0.2.
 
 ## Diagnostic credential interpretation
 
-New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su retains the diagnostic precedence; sudo follows [account field-presence rules](inventory-access.md#configure-the-actual-connection-account), with canonical sudo-password first and exact "false" controls. Su selects the target account; sudo selects the actor. Su overrides use vars.su.password, while sudo overrides use vars.sudo.password; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
+New host diagnostics are described in [host-diagnostics.md](host-diagnostics.md). They use the existing users/vars mappings without adding connection fields. Su retains the diagnostic precedence; sudo follows [account field-presence rules](inventory-access.md#configure-the-actual-connection-account), with Boolean account sudo (false disables; true/omission enables) and canonical sudo-password first. The quoted "false" control applies only to password-source selection; quoted sudo policy values are rejected. Su selects the target account; sudo selects the actor. Su overrides use vars.su.password, while sudo overrides use vars.sudo.password; --run-as selects the diagnostic sudo target (default root), rather than vars.sudo.user.
 
 Test-host is an explicit account-diagnostic request: it tests independent su to other declared users and tests enabled connection-account sudo, including passwordless policy when no password is selected. Configuring users alone does not trigger these actions. New commands take --root or --profile; existing test-connection retains its optional positional root. Test-connection --host-init explicitly refreshes saved platform facts.
 
