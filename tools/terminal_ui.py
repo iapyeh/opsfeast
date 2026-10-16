@@ -23,7 +23,7 @@ def child_arguments(script, argv):
         if args[0] == 'inspect-recipe' or recipe_allowed and args[1] in {'list', 'show', 'results'}:
             if '--json' not in args:
                 args.append('--json')
-        elif args[0] in allowed - {'check'} and '--verbose' not in args and '-v' not in args:
+        elif args[0] in allowed - {'check'} and not any(flag in args for flag in ('--verbose', '-v', '--quiet', '-q')):
             args.append('--verbose')
     elif script.name != 'run_recipe.py':
         raise ValueError('unsupported TUI entrypoint')

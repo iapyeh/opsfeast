@@ -156,4 +156,12 @@ The bare OpsFeast TUI includes a read-only Hosts view of default-profile configu
 
 For an explicitly requested human terminal display, supported diagnostics accept `--tui`. Read the [display guide](../../docs/terminal-ui.md) for optional Textual installation, terminal checks, shortcuts and limits. The diagnostic starts immediately within its existing authorization scope; the UI does not grant connections or privilege tests. Preserve skipped/failed states and inspect per-step details. Agents and pipelines should use ordinary JSON output.
 
-_Last modified: 2026-10-15_
+## Connection selection and progress
+
+Prefer `python -B tools/opsfeast.py test-connection HOST --profile NAME --debug --traceback --json` for authorized connection-only troubleshooting. For authorized batch tests, use `test-connection --group web database --profile NAME` or `test-connection --all --profile NAME`; --all cannot combine with HOST/--group. Unknown selectors fail before connections; disabled group/all members are excluded, and explicit disabled hosts skip without connecting. Tests are sequential and continue after individual failures. TTY stdout shows per-host tables with automatic flushed stderr progress; --verbose forces progress when redirected, --quiet suppresses it, and --debug implies verbose (incompatible with --quiet). Use --json --quiet for machine consumers. Single positional-host JSON is preserved; group/all produces report_version 0.1.0 with status, hosts, excluded_hosts and counts. Only hostname/date run unless --host-init explicitly requests fact refresh; no su/sudo or inventory runs. Read [canonical syntax, schemas and limitations](../../docs/cli.md#select-and-monitor-connection-tests). Native SSH behavior remains unverified by these synthetic changes.
+
+## ESXi identity compatibility
+
+For authorized ESXi access checks, reuse `python -B tools/opsfeast.py check-access --host HOST --profile NAME --json --quiet`. When id is missing, only a verified VMkernel kernel enables the fixed /bin/python or /bin/python3 effective-UID probe; no installation or new configuration is needed. Inspect access.identity_probe/configured_identity_probe and connection_identity. UID 0 skips sudo; a configured root name alone is insufficient. Missing prerequisites/malformed output/UID mismatch remain failures, with identity_error.reason_code and a separate failed identity table row after successful connection. This does not add ESXi authenticated su/sudo support or verify every ESXi release. Read the [shared probe, module invocation, failure and verification limits](../../docs/host-diagnostics.md#esxi-login-identity-without-id) before extending diagnostics or explaining results.
+
+_Last modified: 2026-10-16_

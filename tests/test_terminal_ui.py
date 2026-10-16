@@ -42,6 +42,9 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(ui.child_arguments(Path('run_recipe.py'), ['x', '--quiet', '--tui']), ['x', '--quiet'])
         self.assertEqual(ui.child_arguments(Path('opsfeast.py'), ['recipes', 'list', '--checkout-only', '--tui']),
                          ['recipes', 'list', '--checkout-only', '--json'])
+        for quiet in ('--quiet', '-q'):
+            invocation = ['test-connection', '--all', quiet, '--tui']
+            self.assertEqual(ui.child_arguments(Path('opsfeast.py'), invocation), invocation[:-1])
         for args in (['init', '--tui'], ['use', '--tui'], ['check', '--tui', '--tui']):
             with self.assertRaises(ValueError):
                 ui.child_arguments(Path('opsfeast.py'), args)

@@ -94,4 +94,10 @@ Every added or changed usable capability must update its canonical guide, this m
 
 The [development principle](vision.md#make-existing-capabilities-the-first-choice-for-agents) and [contributor gate](../AGENTS.md#before-every-commit) make agent knowledge transfer part of functionality delivery. Documentation is a procedure, not an automatic loader or enforcement mechanism; agents must read the current sources and installation copies need the [update procedure](skill-updates.md).
 
-_Last modified: 2026-10-15_
+Connection-only batch diagnostics are available through `test-connection --all --profile NAME` or `test-connection --group web database --profile NAME`; reuse this CLI before writing a connection loop. It preserves the existing single-host report, returns versioned batch JSON with --json, excludes disabled group/all members, validates selection before connections, and supplies automatic TTY progress/per-host tables. Combine --json --quiet for machine consumption. See [canonical syntax and result interpretation](cli.md#select-and-monitor-connection-tests) and the [hosts skill](../skills/opsfeast-hosts/SKILL.md#connection-selection-and-progress). This is a checkout CLI capability, not a new Core API or permission to connect.
+
+## ESXi login identity
+
+Reuse `check-access --host HOST --profile NAME --json --quiet` for login/root readiness; the shared `host_runtime.identity(session, timeout, console=False, target=None, verification=None, evidence=None)` checkout helper supplies OS-derived username/effective_uid and optional backend evidence on an already-authorized Session. Standard id is preferred; only missing id plus verified VMkernel selects the fixed system Python adapter. This adds no Core API/configuration field, installation or permission to connect/enter privileges. The access gate, diagnostics and existing Core identity checks reuse the helper. Read [prerequisites, canonical CLI/import examples, fields, errors, backend extension and verification limits](host-diagnostics.md#esxi-login-identity-without-id). Public tests are in tests/test_esxi_identity.py. One ESXi 7.0 root login passed; other releases/non-root access and native su/sudo/inventory remain unverified. Do not write a second ESXi identity probe in each recipe.
+
+_Last modified: 2026-10-16_

@@ -118,7 +118,7 @@ Run `python -B tools/opsfeast.py COMMAND --help` for that command's parser help.
 | `check [ROOT] [--profile NAME]` | Validate YAML, duplicate definitions, connections/users/vars, include/jump cycles, recipe selections and path boundaries. Does not connect or validate complete recipe execution contracts. |
 | `inspect-recipe [RECIPE] [--platform OS_NAME ...] [--details | --json]` | Read recipe metadata, declared platform coverage, entrypoint/version status and verification evidence. Omitted RECIPE discovers checkout recipes; repeat --platform for desired OS names. No management profile, SSHScript import or connection. |
 | `dump SETTING [ROOT] [--profile NAME]` | Print a dot-separated mapping path from loaded configuration as JSON, including merged hosts. This performs loading checks, not a complete check. List indexes are unsupported. |
-| `test-connection HOST [ROOT] [--profile NAME]` | Connect to the host and required hops, then independently run hostname and date. Does not switch accounts or run recipes. |
+| `test-connection [HOST] [ROOT] [--all | --group GROUP...] [--root ROOT | --profile NAME]` | Connect to selected hosts and required hops, then independently run hostname and date. See [selection and progress](#select-and-monitor-connection-tests). Does not switch accounts or run recipes. |
 | `host-init HOST [--root ROOT] [--profile NAME]` | Connect and freshly discover platform facts, updating saved initialization data on every explicit invocation. |
 | `test-host HOST [--root ROOT] [--profile NAME]` | Test login, reuse or initialize facts, then test the configured account capabilities described below. |
 | `test-sudo HOST [USER ...] [--run-as TARGET] [--root ROOT] [--profile NAME]` | Independently test each sudo actor; omitted USER means the actual connection identity. Default TARGET: root. |
@@ -151,6 +151,26 @@ Coverage compares declarations: `not_declared_implemented` lists requested OS na
 Inspection reads YAML and parses Python VERSION literals without importing or executing entrypoints. Missing files, invalid syntax, version mismatches and escaping descriptor/entrypoint symlinks are reported. For inventory-system, it also uses the current runner's descriptor validator; Python-session descriptors are statically validated (entrypoint path, literal VERSION, execute signature and input definitions) and report valid-python-session or invalid-python-session. Other contracts remain unsupported-recipe-id; there is no arbitrary backend loader. One bad discovered recipe does not hide the others; any inspection error returns 1, and a completed inspection returns 0. Command/path errors use stderr; completed reports use stdout, including failed per-recipe reports in JSON mode.
 
 These are declared capabilities and static checks. They do not establish publisher authenticity, installed dependencies, actual host applicability, platform detection or successful execution. Match conditions may restrict OS/distribution/version/architecture even when a platform name is listed. Read recorded verification and review code before authorized execution.
+
+
+### Select and monitor connection tests
+
+`test-connection [HOST] [ROOT] [--root ROOT | --profile NAME] [--group GROUP...] [--all] [--timeout SECONDS] [--host-init] [--json] [-v | -q] [--debug] [--traceback]`
+
+Choose a positional host, one or more groups, or their union. Repeat --group to combine groups; duplicate targets run once. --all selects every enabled host and cannot be combined with HOST or --group. Group names refer to hosts.yaml `group` membership. Unknown hosts/groups and invalid connection configuration fail before any connection. Disabled group/all members appear in excluded_hosts with host_disabled; an explicitly selected disabled host produces a skipped result and nonzero exit. An empty selection fails before connection. Use --root for batch management-directory selection; the legacy positional HOST ROOT form remains supported. Do not supply both positional ROOT and --root.
+
+```sh
+python -B tools/opsfeast.py test-connection host-01 --profile inventory
+python -B tools/opsfeast.py test-connection --group web database --profile inventory
+python -B tools/opsfeast.py test-connection --all --root /srv/feasts/main
+python -B tools/opsfeast.py test-connection --all --profile inventory --json --quiet
+```
+
+Tests run sequentially with independent Sessions, continuing after a host connection, command or cleanup failure. Each target still runs only hostname/date; no su/sudo or inventory is performed. --host-init explicitly refreshes facts for each connected target using the existing separate connection. Timeout applies per stage, not to the complete batch. Selecting all/groups authorizes the necessary configured jump paths as well as selected targets.
+
+When sys.stdout.isatty() is true, stderr displays flushed host start/completion counts and hop/command progress by default; stdout displays each host's status/host/test/user/reason table and command results as it finishes, then batch totals and exclusions. --quiet suppresses progress; --verbose forces it for redirected stdout. --debug implies verbose and cannot be combined with --quiet; --verbose and --quiet are mutually exclusive. --json overrides terminal tables without disabling terminal progress; combine --json --quiet for silent machine consumption.
+
+Non-TTY stdout remains JSON. A positional-host-only invocation retains the existing single-host JSON shape. --all or --group returns batch report_version 0.1.0 with status, hosts (the existing per-host reports), excluded_hosts (host/reason_code), and counts (total/passed/failed/skipped). Counts cover attempted/explicitly skipped targets; excluded members are separate. Overall status is success only when every selected test succeeds; exit 0 means success, 1 means a failed/skipped selected test or selection/configuration failure. Argument syntax errors use exit 2. Retain per-host hops, errors, command results, cleanup_error and optional host_init when interpreting failures. Excluded disabled members do not cause failure when enabled selected hosts all pass. These behaviors have synthetic tests; no new native SSH evidence is implied.
 
 ### Connection diagnostics and options
 
@@ -417,4 +437,6 @@ Host identity refers to an OS installation. Linux uses a hashed machine-id candi
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-15_
+For an ESXi VMkernel target lacking id, check-access uses existing system Python for effective UID/account verification, with additive access.identity_probe/configured_identity_probe and identity_error.reason_code fields. A reachable SSH session with failed identity is shown as PASS connection and FAIL identity; it never becomes successful access. Verified UID 0 skips sudo. See [adapter prerequisites, schemas and tested limits](host-diagnostics.md#esxi-login-identity-without-id). No new flag, setup or credential rule is introduced.
+
+_Last modified: 2026-10-16_

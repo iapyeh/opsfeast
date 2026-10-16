@@ -51,10 +51,11 @@ class ConsoleSession:
 
 @contextmanager
 def collection_actor(session, config, host, timeout, report, *, force=False, fallback=False):
-    login = identity(session, timeout)
+    login = identity(session, timeout, evidence=report.setdefault('identity_probe', {}))
     configured = config.hosts[host]['connection'].get('user')
     if configured is not None:
-        identity(session, timeout, target=configured)
+        identity(session, timeout, target=configured,
+                 evidence=report.setdefault('configured_identity_probe', {}))
     report['connection_identity'] = login
     report['actual_identity'] = login
     report['restoration_verified'] = True
@@ -124,6 +125,8 @@ def check_access(config, host, timeout=30, session_class=None):
                 report.update(status='success', reason_code='access_verified')
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__)
+        if report['reason_code'] == 'identity_failed':
+            report['identity_error'] = {'reason_code': getattr(exc, 'reason_code', 'identity_failed')}
         if report.get('access', {}).get('sudo', {}).get('status') == 'failed':
             report['reason_code'] = 'sudo_failed'
     if report.get('cleanup_error'):
@@ -189,9 +192,9 @@ def summary_tests(report):
     if report['status'] == 'skipped' and not report.get('connected'):
         add('connection', login, 'skipped', report.get('reason_code', 'not_run'))
     else:
-        verified = report.get('connected') and bool(access.get('connection_identity'))
-        add('connection', login, 'success' if verified else 'failed',
-            'identity_failed' if report.get('connected') else 'connection_failed')
+        add('connection', login, 'success' if report.get('connected') else 'failed', 'connection_failed')
+        if report.get('connected') and not access.get('connection_identity'):
+            add('identity', login, 'failed', report.get('identity_error', {}).get('reason_code', 'identity_failed'))
     sudo = access.get('sudo', {})
     state = sudo.get('status')
     add('sudo', login, 'success' if state == 'success' else 'failed' if state == 'failed' else 'skipped',
@@ -216,14 +219,18 @@ def summary_tests(report):
             reason = ('cleanup_failed' if detail.get('cleanup_error') else
                       'identity_failed' if detail.get('connected') else 'connection_failed')
             if reason != 'cleanup_failed':
-                add('connection', login, 'failed', reason)
+                add('connection', login, 'success' if detail.get('connected') else 'failed', reason)
+                if detail.get('connected'):
+                    add('identity', login, 'failed', reason)
             add('su', user, 'skipped', reason)
             add('sudo', user, 'skipped', 'su_failed')
         for group in groups:
             steps = group.get('steps', [])
             if not steps:
                 reason = 'identity_failed' if group.get('connected') else 'connection_failed'
-                add('connection', login, 'failed', reason)
+                add('connection', login, 'success' if group.get('connected') else 'failed', reason)
+                if group.get('connected'):
+                    add('identity', login, 'failed', reason)
                 add('su', user, 'skipped', reason)
                 add('sudo', user, 'skipped', 'su_failed')
             for step in steps:

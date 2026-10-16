@@ -38,6 +38,8 @@ def progress(stage, **details):
 
 def diagnostic_error(exc, stage=None):
     error = connection_error(exc)
+    if isinstance(exc, IdentityProbeError):
+        error['reason'] = exc.reason_code
     if isinstance(exc, PermissionError):
         error['reason'] = 'permission_denied'
         if stage in ('sudo_entry', 'su_entry'):
@@ -297,10 +299,82 @@ def username(value):
     return value
 
 
-def identity(session, timeout, console=False, target=None, verification=None):
+class IdentityProbeError(RuntimeError):
+    """Safe identity failure; never retain remote output or exception text."""
+    def __init__(self, reason_code):
+        self.reason_code = reason_code
+        super().__init__(reason_code)
+
+
+_ESXI_IDENTITY = (
+    'import json,os,pwd,sys; u=os.geteuid(); '
+    'print(json.dumps({"actual":{"username":pwd.getpwuid(u).pw_name,"effective_uid":u},'
+    '"expected_uid":pwd.getpwnam(sys.argv[1]).pw_uid if len(sys.argv)>1 else None}))'
+)
+
+
+def _esxi_identity(execute, target, verification, evidence):
+    # These are fixed ESXi system interpreter paths, not user-supplied programs.
+    for interpreter in ('/bin/python', '/bin/python3'):
+        result = execute([interpreter, '-B', '-c', _ESXI_IDENTITY] + ([target] if target is not None else []))
+        if getattr(result, 'stdout_truncated', False) or getattr(result, 'stderr_truncated', False):
+            raise IdentityProbeError('identity_invalid_output')
+        if result.exitcode == 127:
+            continue
+        if result.exitcode != 0:
+            raise IdentityProbeError('identity_probe_failed')
+        try:
+            if len(result.stdout) > 4096:
+                raise ValueError()
+            value = json.loads(line(result.stdout))
+            actual, expected = value['actual'], value['expected_uid']
+            name, uid = actual['username'], actual['effective_uid']
+            if (not isinstance(name, str) or name != line(name) or
+                    type(uid) is not int or uid < 0 or
+                    (target is None and expected is not None) or
+                    (target is not None and (type(expected) is not int or expected < 0))):
+                raise ValueError()
+        except (ValueError, TypeError, KeyError):
+            raise IdentityProbeError('identity_invalid_output') from None
+        evidence.update(source='esxi_python', interpreter=interpreter)
+        if verification is not None:
+            verification['actual'].update(username=name, effective_uid=uid)
+            if target is not None:
+                verification['expected']['effective_uid'] = expected
+                verification['matched'] = uid == expected
+        if target is not None and uid != expected:
+            raise IdentityProbeError('identity_mismatch')
+        return {'username': name, 'effective_uid': uid}
+    raise IdentityProbeError('identity_tool_missing')
+
+
+def identity(session, timeout, console=False, target=None, verification=None, evidence=None):
+    evidence = {} if evidence is None else evidence
+    if target is not None:
+        username(target)
+    def execute(argv):
+        progress('command: ' + shlex.join(argv))
+        return (session(shlex.join(argv), check=False, command_timeout=timeout) if console else
+                session.exec_command(argv, check=False, command_timeout=timeout))
     def run(argv):
-        return output(session(shlex.join(argv), check=False, command_timeout=timeout)) if console else query(session, argv, timeout)
-    name = line(run(['id', '-un']))
+        return output(execute(argv))
+    evidence.update(source='id', status='failed')
+    first = execute(['id', '-un'])
+    if (first.exitcode == 127 and not getattr(first, 'stdout_truncated', False)
+            and not getattr(first, 'stderr_truncated', False)):
+        evidence.update(source='id', status='failed', reason_code='identity_tool_missing')
+        if line(run(['uname', '-s'])) != 'VMkernel':
+            raise IdentityProbeError('identity_tool_missing')
+        try:
+            actual = _esxi_identity(execute, target, verification, evidence)
+        except IdentityProbeError as exc:
+            evidence['reason_code'] = exc.reason_code
+            raise
+        evidence.update(status='success')
+        evidence.pop('reason_code', None)
+        return actual
+    evidence.update(source='id')
+    name = line(output(first))
     if verification is not None:
         verification['actual']['username'] = name
     uid = line(run(['id', '-u']))
@@ -315,6 +389,7 @@ def identity(session, timeout, console=False, target=None, verification=None):
             verification['matched'] = uid == expected_uid
         if not expected_uid.isdecimal() or uid != expected_uid:
             raise RuntimeError('effective UID mismatch')
+    evidence.update(status='success')
     return {'username': name, 'effective_uid': int(uid)}
 
 

@@ -86,4 +86,36 @@ Synthetic tests cover cache refresh/invalidation, platform parsing, identity mis
 
 SSHScript APIs follow the included public snapshot: [Agent Guide](https://iapyeh.github.io/sshscript/v3a/ai-agents/guide/), [canonical API](https://iapyeh.github.io/sshscript/v3a/recommended-api/) and `skills/sshscript/SOURCE.json`, documentation contract 5.0.0, bundle SHA-256 `e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b`. The su/sudo signatures were additionally checked against public repository branch `release`, commit `fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb`: [session.py](https://github.com/iapyeh/sshscript/blob/fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb/src/sshscript/session.py) and [sessionwrapper.py](https://github.com/iapyeh/sshscript/blob/fea109ebcbf2b5c7bfa5ebd2cd17c44e9090ebeb/src/sshscript/sessionwrapper.py). FreeBSD userland semantics follow the [FreeBSD manual](https://man.freebsd.org/cgi/man.cgi?query=freebsd-version&sektion=1), consulted 2026-10-11. macOS commands are verified by local read-only execution.
 
-_Last modified: 2026-10-15_
+For connection-only troubleshooting, use `test-connection HOST --profile NAME --debug --traceback --json`. Batch selection supports `test-connection --group web --profile NAME` and `test-connection --all --profile NAME`; terminal output includes automatic progress and per-host result tables. Use --json --quiet for machine consumption. See [selection, output contracts and failure behavior](cli.md#select-and-monitor-connection-tests). These tests execute hostname/date, without su/sudo or inventory; --host-init explicitly adds a facts refresh.
+
+## ESXi login identity without id
+
+Connection-only tests run hostname/date and do not verify the effective account. Access checks verify the account separately. The shared identity probe first uses `id -un` and `id -u`, including `id -u TARGET` for a configured account. Only when the initial id command returns 127 (missing command) and an untruncated `uname -s` result is exactly `VMkernel`, it uses the ESXi adapter. Other id failures, malformed/truncated results and other kernels do not enable this fallback.
+
+The adapter executes a fixed, Python-2/3-compatible standard-library expression with `/bin/python -B -c ...`; only a missing interpreter (127) permits trying `/bin/python3`. It obtains the current effective UID from `os.geteuid()`, resolves that UID's account through `pwd.getpwuid()`, and resolves an explicit target through `pwd.getpwnam()`. Target names use the existing username validator and are separate argv arguments. It never infers privilege from hosts.yaml, environment variables, a shell prompt or account-list membership. The -B flag prevents bytecode cache writes. No program is installed, remote helper file uploaded, host setting changed or inventory performed. The same finite command timeout and strict Session cleanup apply. Interpreter errors are not retried with another credential or interpreter.
+
+A verified UID 0 login uses the existing root path: no sudo is attempted, even if sudo is enabled in users. Other UIDs remain ordinary users and follow their account policy. Standard id-based behavior on Linux/FreeBSD/macOS is unchanged. This adapter does not add ESXi su/sudo support: authenticated-console operations retain SSHScript's Bash/id prerequisites and must not be treated as supported merely because direct-login identity now works.
+
+Use the existing CLI; no new hosts.yaml property is required:
+
+```sh
+python -B tools/opsfeast.py check-access --host HOST --root /srv/feasts/main --json --quiet
+```
+
+The access contract remains 0.1.0 with additive `access.identity_probe` and `access.configured_identity_probe` evidence: source (`id` or `esxi_python`), status, and interpreter for the successful ESXi backend. A failed probe may include reason_code. Existing connection_identity keeps exactly username/effective_uid. Identity-stage failures keep the top-level identity_failed reason and add `identity_error.reason_code`: identity_tool_missing, identity_probe_failed, identity_invalid_output, identity_mismatch or the generic identity_failed. No raw Python output or exception text is retained. Table output shows successful SSH connection separately from a failed identity row, followed by unattempted sudo; the host still fails. This prevents a reachable host being described as an SSH failure or an unverified login being described as root. Retained observation schemas do not change.
+
+For an already-authorized connected Session, checkout maintainers can reuse the shared probe instead of generating platform-specific account logic:
+
+```python
+from host_runtime import identity
+
+probe = {}
+actual = identity(session, timeout=15, evidence=probe)
+# actual: {"username": ..., "effective_uid": ...}; inspect probe separately.
+```
+
+This is a checkout-level helper in tools/, not a new versioned Core API. `console=True`, `target=...` and the existing verification record are supported by the same helper; an appropriate authenticated console and its dependencies must already exist. Core privilege scopes and the inventory access gate reuse the shared helper; this does not authorize entering a privilege scope or executing inventory. Backend extensions belong in the shared probe with platform detection, verifiable OS identity, bounded output, failure preservation, public tests and documentation, rather than user-generated connection wrappers.
+
+Evidence: a real VMware ESXi 7.0.0 build 16324942 direct root login through two SSH hops passed the updated check-access on 2026-10-16: UID 0, sudo not_needed, strict cleanup without errors. BusyBox on that host lacked the id applet; both system Python paths could read the effective UID. Synthetic cases cover ordinary users, target mismatch, missing tools, malformed/truncated output, fallback selection and CLI failure reporting. Other ESXi releases, non-root SSH, native ESXi su/sudo and inventory execution remain unverified. Public API references: Python [effective UID](https://docs.python.org/3/library/os.html#os.geteuid) and [account lookup](https://docs.python.org/3/library/pwd.html); a Broadcom [ESXi troubleshooting example](https://knowledge.broadcom.com/external/article/427365/commands-from-ssh-session-on-esxi-host-f.html) also identifies /bin/python. These references support the interfaces, not universal ESXi-version compatibility.
+
+_Last modified: 2026-10-16_

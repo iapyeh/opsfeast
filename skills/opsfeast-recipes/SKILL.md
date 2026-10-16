@@ -159,4 +159,8 @@ For inventory-system, runner performs raw → retained automatically; humans/age
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-15_
+## ESXi access prerequisites for recipes
+
+Inventory access checks share the [ESXi effective-identity adapter](../../docs/host-diagnostics.md#esxi-login-identity-without-id). An ESXi VMkernel host lacking id can verify its actual UID/name using existing /bin/python or /bin/python3 standard-library calls, without installing anything. A verified UID 0 uses the existing root collection path without sudo. Reuse the runner's access gate or, for already-authorized standalone diagnostic composition, the documented host_runtime.identity(session, timeout, evidence=...) helper; never replace UID evidence with configured account names or environment variables. Preserve identity_tool_missing/identity_probe_failed/identity_invalid_output/identity_mismatch and raw access evidence; access success does not prove a recipe implementation or native su/sudo works. Non-root ESXi login, authenticated-console privileges and ESXi inventory remain unverified by the real root-login check. See the [capability catalog](../../docs/agent-capabilities.md#esxi-login-identity) and canonical guide for dependencies, output fields, extension rules and public tests.
+
+_Last modified: 2026-10-16_

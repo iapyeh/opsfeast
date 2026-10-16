@@ -1058,8 +1058,8 @@ def diagnostic_traceback(exc):
         print(f'  {frame.f_code.co_filename}:{lineno} in {frame.f_code.co_name}', file=sys.stderr)
 
 
-def test_connection(root, host, timeout, verbose=False, debug=False, show_traceback=False, init_host=False, json_output=False):
-    from console_output import DisplayIcons, prepare, print_report
+def test_connection(root, host, timeout, verbose=False, debug=False, show_traceback=False, init_host=False, json_output=False, *, _report_only=False):
+    from console_output import DisplayIcons, prepare, print_report, cell
     prepare(json_output)
     config = Validator(root)
     config.load(config.root / 'hosts.yaml')
@@ -1079,7 +1079,7 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
         from terminal_events import emit
         emit('stage', host=host, stage=message)
         if verbose or debug:
-            print(message, file=sys.stderr)
+            print(cell(message), file=sys.stderr, flush=True)
 
     def trace(exc):
         if show_traceback:
@@ -1156,9 +1156,59 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
             report['success'] = report['success'] and report['host_init']['status'] == 'success'
         else:
             report['host_init'] = {'status': 'skipped', 'reason_code': 'connection_failed'}
+    if _report_only:
+        return report
     print_report(report, json_output=json_output, kind='diagnostic', test='connection', indent=4,
                  icons=DisplayIcons(config), user=config.hosts[host]['connection'].get('user'))
     return 0 if report['success'] else 1
+
+
+def _test_connections(args):
+    """CLI selection/controller; each target uses its own connection lifecycle."""
+    from run_recipe import select_hosts
+    from console_output import DisplayIcons, diagnostic, human_output, table, host_label, cell
+    selectors = [('host', args.host)] if args.host else []
+    selectors.extend(('group', name) for name in args.group)
+    if bool(selectors) == bool(args.all_hosts):
+        raise ConfigError('choose a host/--group or --all')
+    excluded = []
+    hosts = select_hosts(args.root, selectors, args.all_hosts, excluded=excluded)
+    config = Validator(args.root)
+    config.load(config.root / 'hosts.yaml')
+    icons = DisplayIcons(config)
+    tty = bool(sys.stdout.isatty())
+    verbose = args.verbose or args.debug or (tty and not args.quiet)
+    batch = bool(args.group or args.all_hosts)
+    reports = []
+    for index, host in enumerate(hosts, 1):
+        if not config.hosts[host].get('enabled', True):
+            report = {'host': host, 'status': 'skipped', 'reason_code': 'host_disabled',
+                      'success': False}
+        else:
+            if verbose:
+                print(f'[{index}/{len(hosts)}] {cell(host_label(host, icons))}: checking', file=sys.stderr, flush=True)
+            report = test_connection(args.root, host, args.timeout, verbose, args.debug,
+                                     args.traceback, args.host_init, args.json, _report_only=True)
+        reports.append(report)
+        if verbose:
+            state = report.get('status') or ('PASS' if report['success'] else 'FAIL')
+            print(f'[{index}/{len(hosts)}] {cell(host_label(host, icons))}: {state}', file=sys.stderr, flush=True)
+        if human_output(args.json):
+            print(diagnostic(report, 'connection', icons, config.hosts[host]['connection'].get('user')), flush=True)
+    success = all(report['success'] for report in reports)
+    report = {'report_version': '0.1.0', 'status': 'success' if success else 'failed',
+              'hosts': reports, 'excluded_hosts': excluded,
+              'counts': {'total': len(reports), 'passed': sum(item['success'] for item in reports),
+                         'failed': sum(not item['success'] and item.get('status') != 'skipped' for item in reports),
+                         'skipped': sum(item.get('status') == 'skipped' for item in reports)}}
+    if human_output(args.json):
+        if excluded:
+            print(table(['excluded host', 'reason'], [[host_label(item['host'], icons), item['reason_code']] for item in excluded]))
+        if batch:
+            print(table(['total', 'passed', 'failed', 'skipped'], [list(report['counts'].values())]))
+    else:
+        print(json.dumps(report if batch else reports[0], indent=4, ensure_ascii=False))
+    return 0 if success else 1
 
 
 def positive_timeout(value):
@@ -1215,10 +1265,15 @@ def main(argv=None):
         if command == 'dump':
             command_parser.add_argument('setting', help='dot-separated setting path, such as hosts.host-01')
         if command == 'test-connection':
-            command_parser.add_argument('host', help='host ID from hosts.yaml')
+            command_parser.add_argument('host', nargs='?', help='host ID from hosts.yaml')
+            command_parser.add_argument('--all', dest='all_hosts', action='store_true')
+            command_parser.add_argument('--group', nargs='+', action='extend', default=[])
+            command_parser.add_argument('--root', dest='root_override', type=Path, help='management directory; recommended for batch selection')
             command_parser.add_argument('--host-init', action='store_true', help='also refresh saved platform facts after connecting')
             command_parser.add_argument('--timeout', type=positive_timeout, default=30, help='per-stage connection and command timeout in seconds (default: 30)')
-            command_parser.add_argument('-v', '--verbose', action='store_true', help='show hop and command progress on stderr')
+            output = command_parser.add_mutually_exclusive_group()
+            output.add_argument('-v', '--verbose', action='store_true', help='show hop and command progress on stderr (default on a terminal)')
+            output.add_argument('-q', '--quiet', action='store_true', help='suppress automatic terminal progress')
             command_parser.add_argument('--debug', action='store_true', help='show safe effective connection details on stderr; implies verbose')
             command_parser.add_argument('--traceback', action='store_true', help='show exception stack frames on stderr, without source, locals or exception text')
         command_parser.add_argument('root', type=str if command == 'init' else Path, nargs='?', help='init: name or path (default: feasts/main; existing named profiles are reused); other commands: optional management directory')
@@ -1324,6 +1379,12 @@ def main(argv=None):
         if args.command == 'init':
             args.root, name, registry = init_plan(args.root, args.profile)
         else:
+            if args.command == 'test-connection' and args.root_override is not None:
+                if args.root is not None:
+                    raise ConfigError('choose positional root or --root, not both')
+                args.root = args.root_override
+            if args.command == 'test-connection' and args.quiet and args.debug:
+                raise ConfigError('--quiet and --debug cannot be combined')
             args.root = resolve_root(args.root, args.profile)
         if args.command in ('host-init', 'test-su', 'test-sudo', 'test-host'):
             from host_runtime import load_config, initialize_host, privilege_test, test_host, diagnostic_options
@@ -1339,10 +1400,8 @@ def main(argv=None):
             print_report(report, json_output=args.json, kind='diagnostic', test=args.command.removeprefix('test-'),
                          icons=DisplayIcons(config), user=config.hosts[args.host]['connection'].get('user'))
             return 1 if report['status'] == 'failed' else 0
-        if args.command == 'test-connection' and args.host_init:
-            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback, init_host=True, json_output=args.json)
         if args.command == 'test-connection':
-            return test_connection(args.root, args.host, args.timeout, args.verbose, args.debug, args.traceback, json_output=args.json)
+            return _test_connections(args)
         if args.command == 'dump':
             result = Validator(args.root)
             result.load(result.root / 'hosts.yaml')

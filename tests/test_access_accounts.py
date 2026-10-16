@@ -52,6 +52,42 @@ class AccountAccessTests(unittest.TestCase):
         self.assertNotIn('secret', json.dumps(report))
         self.assertEqual(list(self.root.iterdir()), [self.root / 'hosts.yaml'])
 
+    def test_root_login_cli_skips_sudo_even_when_enabled(self):
+        class RootConsole(FakeConsole):
+            def sudo(self, *args, **kwargs):
+                raise AssertionError('root login must never invoke sudo')
+        self.factory = lambda: RootConsole('root', self.events)
+        for account in ({}, {'sudo': True}, {'sudo': False}):
+            for json_output in (False, True):
+                with self.subTest(account=account, json_output=json_output):
+                    self.write({'root': account})
+                    self.events.clear()
+                    flags = ['--json'] if json_output else []
+                    with patch.object(access, 'runtime_class', return_value=self.factory), \
+                            contextlib.redirect_stdout(io.StringIO()) as out, \
+                            contextlib.redirect_stderr(io.StringIO()):
+                        code = ops.main(['check-access', '--all', '--root', str(self.root), '--quiet', *flags])
+                    self.assertEqual(code, 0)
+                    if json_output:
+                        host = json.loads(out.getvalue())['hosts'][0]
+                        self.assertEqual(host['access']['connection_identity'],
+                                         {'username': 'root', 'effective_uid': 0})
+                        self.assertEqual(host['access']['sudo']['status'], 'not_needed')
+                        self.assertEqual(host['status'], 'success')
+                    else:
+                        self.assertRegex(out.getvalue(), r'SKIP\s+│ 🍎 h\s+│ sudo\s+│ 👤 root\s+│ already_root')
+                    self.assertFalse(any(event[0] in ('su', 'sudo') for event in self.events))
+                    self.assertIn(('close', 'root'), self.events)
+
+    def test_root_login_preserves_other_accounts_sudo_checks(self):
+        self.write({'root': {'sudo': True}, 'user2': {'password': 'two-secret'}})
+        self.factory = lambda: FakeConsole('root', self.events)
+        report = self.run_checks()
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['hosts'][0]['access']['sudo']['status'], 'not_needed')
+        operations = [event[:3] for event in self.events if event[0] in ('su', 'sudo')]
+        self.assertEqual(operations, [('su', 'root', 'user2'), ('sudo', 'user2', 'root')])
+
     def test_su_failure_does_not_sudo_and_other_accounts_continue(self):
         self.factory = lambda: FakeConsole('login', self.events, {'user2'})
         report = self.run_checks()

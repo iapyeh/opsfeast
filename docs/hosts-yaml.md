@@ -566,4 +566,6 @@ hosts:
 
 identity_key is an exact, case-sensitive nonempty string without leading/trailing whitespace or control characters. Use a shared organization namespace and OS-installation-specific suffix. Duplicate keys anywhere in the resolved include tree fail before connecting. A and B may use the same key in independent Feasts to assert the same installation. This explicit assignment takes priority over native candidates; it does not verify machine identity. Change it after OS reinstall or target replacement. Labels/descriptions are copied into each raw/retained observation and JSON exchange; differing source labels are preserved rather than overwritten. See [identity precedence and sharing](result-data.md#explicit-identity-and-display-metadata).
 
-_Last modified: 2026-10-15_
+Connection tests also accept --all and repeated --group selectors, plus --root for an explicit management directory. Terminal progress is automatic; --quiet suppresses it and --json selects structured output. Existing HOST ROOT invocations retain their single-host JSON contract. See [connection selection and output](cli.md#select-and-monitor-connection-tests) for batch schemas, disabled-host handling and examples.
+
+_Last modified: 2026-10-16_
