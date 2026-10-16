@@ -190,6 +190,8 @@ Use complete result_id for durable references. See [canonical examples and algor
 for alias lifetime, collision/symlink failures and synthetic verification limits. These
 remain checkout-level helpers, not a new versioned Core API or remote authorization.
 
+Human TTY results list hides the identity-warnings column only; execution status and identity quality remain visible. Use `recipes results list --json` or explicit detail/show for complete warnings. Reuse the [console policy](cli.md#terminal-tables-and-json); do not delete warnings from saved results to shorten the display.
+
 ## Human timestamps and preserved data
 
 Use existing CLI/TUI/HTML views for OS-local YYYY-MM-DD HH:MM:SS timestamps; do not

@@ -283,11 +283,24 @@ hosts:
                     if tty and not force:
                         self.assertIn('╭', output)
                         self.assertNotIn('must not expand', output)
-                        if args == ['results', 'list']: self.assertIn('🐧 h', output)
+                        if args == ['results', 'list']:
+                            self.assertIn('🐧 h', output)
+                            self.assertIn('partial', output)
+                            self.assertIn('fallback', output)
+                            self.assertNotIn('warnings', output)
+                            self.assertNotIn('synthetic warning', output)
                     elif force or args == ['jobs', 'list']:
                         self.assertIn(key, json.loads(output))
+                        if args == ['results', 'list']:
+                            self.assertEqual(json.loads(output), result)
                     elif args == ['list']:
                         self.assertIn('demo | 1 | operation', output)
+                    elif args == ['results', 'list']:
+                        self.assertIn('synthetic warning', output)
+            exported = self.root / 'results.html'
+            code, output = self.capture(recipe_cli.main, ['results', 'list', '--html', str(exported)])
+            self.assertEqual(code, 0)
+            self.assertIn('synthetic warning', exported.read_text())
             self.assertEqual(item['private_extra'], 'must not expand text output')
 
     def test_execution_and_dryrun_share_tables_without_changing_saved_reports(self):

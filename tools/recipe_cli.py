@@ -271,7 +271,8 @@ def main(argv=None):
                     icons = display_icons(root)
                     for row in rows:
                         row[2] = host_label(row[2], icons) if row[2] else '-'
-                    print(table(['result ID', 'recipe', 'host', 'status', 'completed', 'identity quality', 'warnings'], rows))
+                    print(table(['result ID', 'recipe', 'host', 'status', 'completed', 'identity quality'],
+                                [row[:-1] for row in rows]))
                 else:
                     for row in rows: print(' | '.join(str(value) for value in row))
                 for error in data['errors']: print('ERROR: ' + error.get('short_id', error['result_id']) + ' invalid result')
