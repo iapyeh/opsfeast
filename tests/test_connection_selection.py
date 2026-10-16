@@ -20,10 +20,10 @@ class ConnectionSelectionTests(unittest.TestCase):
         (self.root / 'hosts.yaml').write_text('''hosts:
   a:
     group: [web, mixed]
-    connection: {hostname: 192.0.2.1, user: operator}
+    connection: {hostname: 192.0.2.1, user: operator, allow_agent: true}
   b:
     group: [web]
-    connection: {hostname: 192.0.2.2, user: operator}
+    connection: {hostname: 192.0.2.2, user: operator, allow_agent: true}
   disabled:
     enabled: false
     group: [web]

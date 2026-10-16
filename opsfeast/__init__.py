@@ -26,6 +26,10 @@ class ConfigError(ValueError):
     pass
 
 
+class _MissingAuthenticationSource(ConfigError):
+    """A resolved SSH hop has no user-selected authentication source."""
+
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if not (REPOSITORY_ROOT / 'tools' / 'opsfeast.py').is_file():
     from importlib.resources import files
@@ -415,6 +419,10 @@ class Validator:
         self.user_icon_defaults = {}
         self.host_user_icons = {}
         self.hosts = {}
+        self._raw_hosts = {}
+        self.groups = {}
+        self._group_definitions = {}
+        self.group_sources = {}
         self.sources = {}
         self.documents = {}
         self.loaded = set()
@@ -513,21 +521,16 @@ class Validator:
         if path in self.loaded:
             return
         entry = path == self.inside(self.root / 'hosts.yaml') and not self.active
-        data = mapping(read_yaml(path), str(path), ('include', 'hosts', 'recipe_sources', 'default') if entry else ('include', 'hosts'))
+        data = mapping(read_yaml(path), str(path), ('include', 'hosts', 'groups', 'recipe_sources', 'default') if entry else ('include', 'hosts', 'groups'))
         if entry:
-            defaults = mapping(data.get('default', {}), f'{path}: default', ('icon', 'groups', 'users'))
+            defaults = mapping(data.get('default', {}), f'{path}: default')
+            if 'groups' in defaults:
+                raise ConfigError(f'{path}: default.groups has moved to top-level groups; move group icon definitions to groups.<id>.icon')
+            mapping(defaults, f'{path}: default', ('icon', 'users'))
             icons = mapping(defaults.get('icon', {}), f'{path}: default.icon', ('host', 'user'))
             for kind in ('host', 'user'):
                 if kind in icons:
                     setattr(self, f'default_{kind}_icon', validate_icon(icons[kind], f'{path}: default.icon.{kind}'))
-            groups = mapping(defaults.get('groups', {}), f'{path}: default.groups')
-            for group, values in groups.items():
-                string(group, f'{path}: default.groups: group name')
-                where = f'{path}: default.groups.{group}'
-                values = mapping(values, where, ('icon',))
-                values = mapping(values.get('icon', {}), where + '.icon', ('host', 'user'))
-                self.group_icon_defaults[group] = {kind: validate_icon(value, f'{where}.icon.{kind}')
-                                                   for kind, value in values.items()}
             users = mapping(defaults.get('users', {}), f'{path}: default.users')
             for user, values in users.items():
                 string(user, f'{path}: default.users: account name')
@@ -581,7 +584,33 @@ class Validator:
             if any(char in item for char in '*?['):
                 raise ConfigError(f'{path}: include cannot contain glob patterns')
             self.load(self.path(item, path))
-        hosts = mapping(data.get('hosts', {}), f'{path}: hosts')
+        definitions = mapping(data.get('groups', {}), f'{path}: groups')
+        for group, definition in definitions.items():
+            string(group, f'{path}: group ID')
+            where = f'{path}: groups.{group}'
+            definition = mapping(definition, where, ('label', 'description', 'icon', 'hosts'))
+            if group in self._group_definitions:
+                raise ConfigError(f'duplicate group {group}: {self.group_sources[group]} and {path}')
+            label = string(definition.get('label', group), where + '.label')
+            description = definition.get('description', '')
+            if not isinstance(description, str) or '\x00' in description:
+                raise ConfigError(f'{where}.description: expected a string without NUL')
+            if '\x00' in label:
+                raise ConfigError(f'{where}.label: expected a string without NUL')
+            icons = mapping(definition.get('icon', {}), where + '.icon', ('host', 'user'))
+            self._group_definitions[group] = {
+                'label': label, 'description': description,
+                'icon': {kind: validate_icon(value, f'{where}.icon.{kind}') for kind, value in icons.items()}}
+            self.group_sources[group] = path
+        self._add_hosts(mapping(data.get('hosts', {}), f'{path}: hosts'), path)
+        for group, definition in definitions.items():
+            self._add_hosts(mapping(definition.get('hosts', {}), f'{path}: groups.{group}.hosts'), path, group)
+        self.active.pop()
+        self.loaded.add(path)
+        if not self.active:
+            self._resolve_groups()
+
+    def _add_hosts(self, hosts, path, primary=None):
         for host, config in hosts.items():
             string(host, f'{path}: host ID')
             if host in self.hosts:
@@ -589,6 +618,23 @@ class Validator:
             if isinstance(config, dict) and 'groups' in config:
                 raise ConfigError(f'{path}: {host}: groups has been renamed to group; use group: NAME or group: [NAME, ...]')
             host_config = dict(mapping(config, f'{path}: {host}', ('connection', 'enabled', 'group', 'users', 'vars', 'recipes', 'identity_key', 'label', 'description', 'icon')))
+            memberships = group_names(host_config.get('group', []), f'{path}: {host}.group')
+            if primary is not None:
+                host_config['group'] = list(dict.fromkeys([primary, *memberships]))
+            self._raw_hosts[host] = host_config
+            self.hosts[host] = host_config
+            self.sources[host] = path
+
+    def _resolve_groups(self):
+        """Build one catalog and apply presentation after the whole include tree loads."""
+        self.groups = copy.deepcopy(self._group_definitions)
+        for definition in self.groups.values():
+            definition['hosts'] = []
+        self.group_icon_defaults = {group: definition['icon'] for group, definition in self.groups.items()}
+        self.host_user_icons = {}
+        for host, raw in self._raw_hosts.items():
+            host_config = copy.deepcopy(raw)
+            path = self.sources[host]
             groups = group_names(host_config.get('group', []), f'{path}: {host}.group')
             fallback = self.icon_default('host', groups)
             self.host_user_icons[host] = self.icon_default('user', groups)
@@ -601,10 +647,9 @@ class Validator:
                     account = dict(mapping(account, where))
                     account['icon'] = validate_icon(account.get('icon', self.user_icon_defaults.get(user, self.host_user_icons[host])), where + '.icon')
                     host_config['users'][user] = account
+            for group in dict.fromkeys(groups):
+                self.groups.setdefault(group, {'label': group, 'description': '', 'icon': {}, 'hosts': []})['hosts'].append(host)
             self.hosts[host] = host_config
-            self.sources[host] = path
-        self.active.pop()
-        self.loaded.add(path)
 
     def connection(self, value, where, active=None, reference=False):
         active = set() if active is None else active
@@ -631,7 +676,11 @@ class Validator:
             return [target]
         alias = 'ssh_config_alias' in value
         allowed = {'ssh_config_alias', 'via'} if alias else {'hostname', 'port', 'user', 'identity_file', 'via', 'proxy_command'}
+        allowed |= {'allow_agent', 'look_for_keys'}
         mapping(value, where, allowed)
+        for field in ('allow_agent', 'look_for_keys'):
+            if field in value and type(value[field]) is not bool:
+                raise ConfigError(f'{where}.{field}: must be a Boolean')
         string(value.get('ssh_config_alias' if alias else 'hostname'), where)
         for field in ('user', 'identity_file', 'proxy_command'):
             if field in value:
@@ -882,6 +931,13 @@ TEMPLATE = '''# First host: read docs/first-host.md for minimal examples and tes
 #     path: ~/Download/recipes
 #     enabled: true
 #     vars: {command_timeout_seconds: 15}
+# Optional group catalog and bulk host definitions:
+# groups:
+#   backup:
+#     label: BACKUP-SERVERS  # Defaults to backup.
+#     description: Backup servers  # Defaults to an empty string.
+#     icon: {host: 🗂, user: 👩}
+#     hosts: {}  # Same host definitions as hosts below; backup becomes first group.
 hosts:
   # Each host ID requires connection; icon resolves through defaults (built-in 🍎).
   # enabled, group, users, vars, recipes, identity_key, label and description are optional.
@@ -893,6 +949,8 @@ hosts:
   #     user: operator  # Optional SSH login user.
   #     # Password login: set users.operator.password below, not connection.password.
   #     identity_file: /path/to/id_rsa  # RSA key on the parent Session's host; omit for password login.
+  #     allow_agent: false  # Set true to use the local Python process's SSH agent.
+  #     look_for_keys: false  # Set true to discover local default private-key files.
   #     # For a target reached via a jump host, the key file is on that jump host.
   #     # Paths are passed literally to pkey_path; prefer absolute paths.
   #     # For key login, users.operator.password may be omitted.
@@ -1010,6 +1068,10 @@ def connection_plan(config, host, session_class, contexts=None):
             username=connection.get('user'), port=connection.get('port'),
             ssh_config=None if alias else False, **options,
         )
+        # Each hop opts into ambient credentials independently. Apply after SSH
+        # config resolution so it cannot override the management configuration.
+        for field in ('allow_agent', 'look_for_keys'):
+            settings[field] = connection.get(field, False)
         if hops and settings.get('proxyCommand'):
             raise ConfigError('SSH config proxy or proxy_command conflicts with YAML via')
         if settings.get('username') is None:
@@ -1017,9 +1079,13 @@ def connection_plan(config, host, session_class, contexts=None):
         account = owner.get('users', {}).get(settings['username'], {})
         if 'password' in account:
             settings['password'] = account['password']
-            # Select the supplied password rather than silently using another identity.
-            if not settings.get('pkey_path') and not settings.get('key_filename'):
-                settings.update(allow_agent=False, look_for_keys=False)
+        if ('password' not in settings
+                and not any(settings.get(field) for field in
+                            ('pkey', 'pkey_path', 'key_filename', 'allow_agent', 'look_for_keys'))):
+            raise _MissingAuthenticationSource(
+                f'{host_id}.connection: no SSH authentication source configured; '
+                'provide a login password or identity_file (SSH config IdentityFile '
+                'for an alias), or enable allow_agent/look_for_keys')
         hops.append(settings)
         if contexts is not None:
             contexts.append({'host': host_id, 'hostname': settings['hostname'],
@@ -1033,7 +1099,12 @@ def connection_error(exc):
     """Expose actionable categories without echoing third-party exception text."""
     error = {'type': type(exc).__name__}
     message = str(exc).lower()
-    if error['type'] == 'BadHostKeyException':
+    if isinstance(exc, _MissingAuthenticationSource):
+        error['reason'] = 'missing_authentication_source'
+        error['hint'] = ('Configure a login password or identity_file (SSH config '
+                         'IdentityFile for an alias), or explicitly enable '
+                         'connection.allow_agent/connection.look_for_keys for each SSH hop.')
+    elif error['type'] == 'BadHostKeyException':
         error['reason'] = 'host_key_mismatch'
     elif error['type'] == 'AuthenticationException':
         error['reason'] = 'authentication_failed'
@@ -1104,8 +1175,8 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
                                password_supplied='password' in settings,
                                identity_file=bool(settings.get('pkey_path')),
                                local_key_filename=bool(settings.get('key_filename')),
-                               allow_agent=settings.get('allow_agent', True),
-                               look_for_keys=settings.get('look_for_keys', True))
+                               allow_agent=settings.get('allow_agent', False),
+                               look_for_keys=settings.get('look_for_keys', False))
                 print('DEBUG ' + json.dumps(details, ensure_ascii=False), file=sys.stderr)
             options = dict(settings)
             hostname = options.pop('hostname')
@@ -1407,6 +1478,7 @@ def main(argv=None):
             result.load(result.root / 'hosts.yaml')
             value = dict(result.documents[result.root / 'hosts.yaml'])
             value['hosts'] = result.hosts
+            value['groups'] = result.groups
             for key in args.setting.split('.'):
                 if not key or not isinstance(value, dict) or key not in value:
                     raise ConfigError(f'setting not found: {args.setting}')
@@ -1430,11 +1502,16 @@ def main(argv=None):
                           'hosts': [{'host': h, 'selected_recipes': len(items), 'skipped': result.recipe_skips.get(h, [])}
                                     for h, items in result.selected.items()], 'notes': result.notes}, json_output=True)
             return 0
-        print(f'OK: {len(result.loaded)} YAML files, {len(result.hosts)} hosts; configuration checks passed.')
-        if human_output():
-            print(table(["host", "selected recipes", "skipped"],
-                        [[result.hosts[h]["icon"] + " " + h, len(items), result.recipe_skips.get(h, [])]
-                         for h, items in result.selected.items()]))
+        if human_output() and args.command == 'check':
+            from console_output import configuration_summary
+            print(f'OK: {len(result.loaded)} YAML files, {len(result.groups)} groups, {len(result.hosts)} hosts; configuration checks passed.')
+            print(configuration_summary(result))
+        else:
+            print(f'OK: {len(result.loaded)} YAML files, {len(result.hosts)} hosts; configuration checks passed.')
+            if human_output():
+                print(table(["host", "selected recipes", "skipped"],
+                            [[result.hosts[h]["icon"] + " " + h, len(items), result.recipe_skips.get(h, [])]
+                             for h, items in result.selected.items()]))
         for host, recipes in ([] if human_output() else result.selected.items()):
             print(f'  {host}: {len(recipes)} selected recipes')
             for skipped in result.recipe_skips.get(host, []):

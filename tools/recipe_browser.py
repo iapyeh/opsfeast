@@ -1,16 +1,11 @@
 """Read-only source/directory recipe tree and provenance-matched run history."""
 from pathlib import Path
 from datetime import datetime
+from display_time import local_datetime, human_times
 
 
 def local_started(value):
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        parsed = datetime.fromisoformat(value)
-        return parsed.astimezone() if parsed.tzinfo is not None else None
-    except (ValueError, OverflowError, OSError):
-        return None
+    return local_datetime(value)
 
 
 def display_started(value):
@@ -80,7 +75,7 @@ def describe(item):
                          ('Platforms',descriptor.get('platforms')), ('Permissions',descriptor.get('permissions')),
                          ('Side effects',descriptor.get('side_effects')), ('Output',descriptor.get('output')),
                          ('Verification',item.get('verification')), ('Inspection errors',item.get('errors'))]:
-        lines.extend([label, json.dumps(value, indent=2, ensure_ascii=False, default=str) if value is not None else '(not declared)', ''])
+        lines.extend([label, json.dumps(human_times(value), indent=2, ensure_ascii=False, default=str) if value is not None else '(not declared)', ''])
     lines.append('Static metadata only; installed dependencies, host applicability and successful execution are not established.')
     return '\n'.join(lines)
 
@@ -109,4 +104,4 @@ def execution_output(root, identifier, item):
         raise ConfigError('unrecognized result envelope')
     if metadata.get('source_name') != item['source'] or metadata.get('reference') != item['reference']:
         raise ConfigError('result no longer belongs to the selected recipe')
-    return {'details': json.dumps(document, indent=2, ensure_ascii=False), 'original': original}
+    return {'details': json.dumps(human_times(document), indent=2, ensure_ascii=False), 'original': original}

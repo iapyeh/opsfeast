@@ -97,6 +97,8 @@ def connected(config, host, session_class, timeout, report):
             session = session.connect(hostname, ssh_config=False, timeout=timeout,
                                       banner_timeout=timeout, auth_timeout=timeout, **options)
             hop['connected'] = True
+        if plan:
+            report['login_identity'] = {'username': plan[-1]['username'], 'source': 'ssh_connection'}
         report['connected'] = True
         yield session
     finally:
@@ -313,9 +315,22 @@ _ESXI_IDENTITY = (
 )
 
 
+def _missing_id(result):
+    if getattr(result, 'stdout_truncated', False) or getattr(result, 'stderr_truncated', False):
+        return False
+    if result.exitcode == 127:
+        return True
+    # Some ESXi SSH exec shells return 2 for the same missing-id error that an
+    # interactive shell reports as 127. Do not broaden this to arbitrary failures.
+    return (result.exitcode == 2 and not result.stdout.strip()
+            and re.fullmatch(r'(?:/[^\s:]+/)?sh: exec: (?:line \d+: )?id: not found',
+                             result.stderr.strip()) is not None)
+
+
 def _esxi_identity(execute, target, verification, evidence):
     # These are fixed ESXi system interpreter paths, not user-supplied programs.
     for interpreter in ('/bin/python', '/bin/python3'):
+        evidence.update(source='esxi_python', interpreter=interpreter)
         result = execute([interpreter, '-B', '-c', _ESXI_IDENTITY] + ([target] if target is not None else []))
         if getattr(result, 'stdout_truncated', False) or getattr(result, 'stderr_truncated', False):
             raise IdentityProbeError('identity_invalid_output')
@@ -336,7 +351,10 @@ def _esxi_identity(execute, target, verification, evidence):
                 raise ValueError()
         except (ValueError, TypeError, KeyError):
             raise IdentityProbeError('identity_invalid_output') from None
-        evidence.update(source='esxi_python', interpreter=interpreter)
+        if target is not None:
+            evidence.update(actual={'username': name, 'effective_uid': uid},
+                            expected={'username': target, 'effective_uid': expected},
+                            matched=uid == expected)
         if verification is not None:
             verification['actual'].update(username=name, effective_uid=uid)
             if target is not None:
@@ -360,11 +378,12 @@ def identity(session, timeout, console=False, target=None, verification=None, ev
         return output(execute(argv))
     evidence.update(source='id', status='failed')
     first = execute(['id', '-un'])
-    if (first.exitcode == 127 and not getattr(first, 'stdout_truncated', False)
-            and not getattr(first, 'stderr_truncated', False)):
+    evidence['id_exitcode'] = first.exitcode
+    if _missing_id(first):
         evidence.update(source='id', status='failed', reason_code='identity_tool_missing')
         if line(run(['uname', '-s'])) != 'VMkernel':
             raise IdentityProbeError('identity_tool_missing')
+        evidence['platform'] = 'esxi'
         try:
             actual = _esxi_identity(execute, target, verification, evidence)
         except IdentityProbeError as exc:
@@ -384,13 +403,60 @@ def identity(session, timeout, console=False, target=None, verification=None, ev
         verification['actual']['effective_uid'] = int(uid)
     if target is not None:
         expected_uid = line(run(['id', '-u', username(target)]))
+        evidence.update(actual={'username': name, 'effective_uid': int(uid)},
+                        expected={'username': target, 'effective_uid': int(expected_uid) if expected_uid.isdecimal() else None},
+                        matched=uid == expected_uid if expected_uid.isdecimal() else None)
         if verification is not None and expected_uid.isdecimal():
             verification['expected']['effective_uid'] = int(expected_uid)
             verification['matched'] = uid == expected_uid
         if not expected_uid.isdecimal() or uid != expected_uid:
-            raise RuntimeError('effective UID mismatch')
+            evidence['reason_code'] = 'identity_mismatch'
+            raise IdentityProbeError('identity_mismatch')
     evidence.update(status='success')
     return {'username': name, 'effective_uid': int(uid)}
+
+
+def verify_connection_identity(session, timeout, report, *, authenticated_user=None, configured_user=None):
+    """Verify the login/shell relationship; privilege-target probes stay strict."""
+    probe = report.setdefault('identity_probe', {})
+    shell = identity(session, timeout, evidence=probe)
+    report['actual_identity'] = dict(shell)
+    report['shell_identity'] = dict(shell)
+    if authenticated_user and configured_user and authenticated_user != configured_user:
+        raise IdentityProbeError('identity_mismatch')
+    expected = configured_user or authenticated_user
+    model = 'uid_match' if expected else 'effective_identity'
+    if expected:
+        configured = report.setdefault('configured_identity_probe', {})
+        try:
+            actual = identity(session, timeout, target=expected, evidence=configured)
+            if actual != shell:
+                raise IdentityProbeError('identity_mismatch')
+        except IdentityProbeError as exc:
+            # Authentication came from the successful final-hop connect call,
+            # never from YAML alone. UID 0 and a verified ESXi kernel are required.
+            if (exc.reason_code != 'identity_mismatch' or not authenticated_user
+                    or shell['effective_uid'] != 0 or configured.get('actual') != shell
+                    or configured.get('matched') is not False):
+                raise
+            if probe.get('platform') != 'esxi':
+                platform = report.setdefault('identity_platform_probe', {'status': 'failed'})
+                try:
+                    kernel = line(output(session.exec_command(['uname', '-s'], check=False, command_timeout=timeout)))
+                except (RuntimeError, ValueError):
+                    raise exc from None
+                platform.update(kernel=kernel, status='success')
+                if kernel != 'VMkernel':
+                    raise
+                probe['platform'] = 'esxi'
+            model = 'esxi_root_shell'
+            configured.update(status='success', accepted_by=model)
+            configured.pop('reason_code', None)
+    report['login_identity'] = {'username': authenticated_user or shell['username'],
+                                'source': 'ssh_connection' if authenticated_user else 'effective_identity'}
+    report['identity_model'] = model
+    report['connection_identity'] = dict(shell)
+    return shell
 
 
 def identity_check(expected):
@@ -462,19 +528,22 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
     try:
         # A fresh connection per group guarantees independent starting identity.
         with connected(config, host, session_class, timeout, report) as session:
-            login = identity(session, timeout)
+            login = verify_connection_identity(session, timeout, report,
+                authenticated_user=report.get('login_identity', {}).get('username'),
+                configured_user=config.hosts[host]['connection'].get('user'))
+        connection_user = report['login_identity']['username']
         if report.get('cleanup_error'):
             return report
-        report['connection_user'] = login['username']
+        report['connection_user'] = connection_user
         report['connection_identity'] = login
-        if mode == 'su' and any(login['username'] in c for c in ([targets] if targets else chains)):
+        if mode == 'su' and any(connection_user in c for c in ([targets] if targets else chains)):
             raise ConfigError('test-su cannot target the connection account')
-        groups = chains if chains else [[t] for t in (targets or [login['username']])]
+        groups = chains if chains else [[t] for t in (targets or [connection_user])]
         for group in groups:
             item = {'mode': 'chain' if chains else 'independent', 'accounts': group, 'steps': [], 'status': 'failed'}
             item['parent_identity_verification'] = identity_check(login)
             report['groups'].append(item)
-            current = login['username']
+            current = connection_user
             try:
                 with connected(config, host, session_class, timeout, item) as session:
                     if identity(session, timeout) != login:
@@ -492,8 +561,8 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                                 continue
                             stage = 'su_entry'
                             try:
-                                if mode == 'su' or target != login['username']:
-                                    password, source = privilege_password(config, host, target, 'su', login['username'])
+                                if mode == 'su' or target != connection_user:
+                                    password, source = privilege_password(config, host, target, 'su', connection_user)
                                     step.update(password_source=source, password_supplied=password is not None)
                                     if password is None:
                                         step['reason_code'] = 'missing_su_password'
@@ -511,7 +580,7 @@ def privilege_test(config, host, mode, targets=None, chains=None, run_as='root',
                                         else step['identity_verification'])
                                 if mode == 'sudo':
                                     stage = 'sudo_entry'
-                                    password, password_source = privilege_password(config, host, target, 'sudo', login['username'])
+                                    password, password_source = privilege_password(config, host, target, 'sudo', connection_user)
                                     step.update(from_user=target, to_user=run_as, password_source=password_source,
                                                 password_supplied=password is not None)
                                     if password_source == 'sudo_disabled':

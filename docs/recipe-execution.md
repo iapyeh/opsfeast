@@ -90,7 +90,7 @@ A successful diagnostic may observe an unhealthy service. For check/port, a refu
 
 The runner adds `run_contract: 0.1.0`, recipe-owned schema_version, host_id, started_at/completed_at UTC timestamps, runtime/evidence_kind, source/version/digest provenance, variable names, hops, host metadata and execution_errors. Result-validation failure produces failed/invalid_result and discards the invalid returned payload. Loading/connection/execute exceptions produce failed/execution_failed with exception type/stage, without custom exception text. Cleanup failure produces failed/cleanup_failed while preserving valid collected data. Recipe-returned partial/skipped/unsupported states remain explicit. Preflight failures do not fabricate a raw report.
 
-Completed attempts are atomically saved at `<management-root>/observations/recipe-run-<UUID>.json`; stdout provides result_path, status/reason/message and data for a single host, or ordered per-host summaries including data for batches. Output/save errors return nonzero. Arbitrary recipe code can still write or print beyond these conventions: this is not an output sandbox.
+Completed attempts are atomically saved at `<management-root>/observations/recipe-run-<UUID>.json`; with --json or non-TTY stdout, output provides result_path, status/reason/message and data for a single host, or ordered per-host summaries including data for batches. Terminal completion shows only host, collection identity and result; use the [saved-result viewing workflow](cli.md#inspect-one-hosts-saved-execution) for details. Output/save errors return nonzero. Arbitrary recipe code can still write or print beyond these conventions: this is not an output sandbox.
 
 General results carry `retention: {status: skipped, reason_code: no_retention_adapter}`. They do not run host identity/sudo probes and are not inserted into inventory SQLite/exchange storage; inventory retains its current raw → retained flow. Recipes requiring new retention adapters must define reviewed versioned data contracts before support is added. Use ordinary JSON tools to inspect general raw results; observation_store inventory ingest does not accept them.
 
@@ -102,4 +102,8 @@ Exit 0 requires every attempted host's status to be success (and no inventory re
 
 To add another Python-session recipe, use a new ID, implement this entrypoint/result contract, declare typed inputs and target dependencies, publish synthetic success/failure/boundary tests, and register a reviewed source when external. If this interface cannot express a required backend, platform dispatch or result capability, document the gap and propose an explicitly versioned extension rather than guessing support.
 
-_Last modified: 2026-10-15_
+Terminal presentation does not change recipe return values or saved reports. See
+[compact execution summaries](cli.md#compact-execution-summaries) for unknown actors,
+retention/fallback outcomes and existing offline host-specific inspection.
+
+_Last modified: 2026-10-16_

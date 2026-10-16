@@ -4,6 +4,7 @@ import hashlib
 import html
 import json
 from pathlib import Path
+import re
 import runpy
 import sys
 from uuid import uuid4
@@ -14,6 +15,7 @@ from recipe_contract import validate, validate_result
 from recipe_dispatch import bundle_digest
 from recipe_inputs import cli_variables, json_object, prepare_vars, parse_json_object
 from host_runtime import now
+from display_time import format_time
 
 VERSION = '0.1.0'
 
@@ -40,7 +42,7 @@ def write_json(path, value):
 
 
 def page(title, headers, rows, note=''):
-    escape = lambda value: html.escape(str(value), quote=True)
+    escape = lambda value: html.escape(str(format_time(value)), quote=True)
     cells = ''.join('<tr>' + ''.join('<td>' + escape(value) + '</td>' for value in row) + '</tr>' for row in rows)
     return ('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
             '<title>' + escape(title) + '</title><style>body{font:16px system-ui;margin:2em;line-height:1.5}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:.5em;text-align:left;vertical-align:top}td{overflow-wrap:anywhere}th{background:#eee}</style>'
@@ -141,39 +143,72 @@ def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
     return report, path
 
 
-def results(root, recipe=None, host=None, status=None):
-    records, errors = [], []
+def _result_files(root):
     for relative, pattern in (('observations', '*.json'), ('reports', '*/result.json')):
         base = safe_directory(root, relative)
         if not base.exists():
             continue
         for path in sorted(base.glob(pattern)):
-            identifier = path.relative_to(root).as_posix()
-            try:
-                safe_directory(root, path.parent.relative_to(root))
-                if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
-                    raise ConfigError('result escapes storage root')
-                raw = json_object(path)
-                meta = raw.get('recipe', {})
-                if not isinstance(meta, dict) or raw.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
-                    raise ConfigError('unrecognized result envelope')
-                row = {'result_id': identifier, 'recipe_id': meta.get('id'), 'recipe_version': meta.get('version'),
-                       'recipe_reference': meta.get('reference'), 'recipe_source': meta.get('source_name'),
-                       'host_id': raw.get('host_id'), 'status': raw['status'], 'reason_code': raw.get('reason_code'),
-                       'started_at': raw.get('started_at'), 'completed_at': raw.get('completed_at', raw.get('finished_at')),
-                       'identity_quality': raw.get('identity', {}).get('quality') if isinstance(raw.get('identity'), dict) else None,
-                       'identity_warnings': raw.get('identity', {}).get('warnings', []) if isinstance(raw.get('identity'), dict) else [],
-                       'retention': raw.get('retention'), 'kind': 'report' if 'report_contract' in raw else 'operation'}
-                if recipe and row['recipe_id'] != recipe or host and row['host_id'] != host or status and row['status'] != status:
-                    continue
-                records.append(row)
-            except (ConfigError, OSError, ValueError, TypeError):
-                errors.append({'result_id': identifier, 'reason_code': 'invalid-result-file'})
+            yield path.relative_to(root).as_posix(), path
+
+
+def _result_key(identifier):
+    return hashlib.sha256(identifier.encode('utf-8')).hexdigest()
+
+
+def _short_result_ids(identifiers):
+    ordered = sorted((_result_key(identifier), identifier) for identifier in identifiers)
+    short = {}
+    for index, (key, identifier) in enumerate(ordered):
+        neighbors = [ordered[i][0] for i in (index - 1, index + 1) if 0 <= i < len(ordered)]
+        length = 8
+        while any(other.startswith(key[:length]) for other in neighbors):
+            length += 1
+            if length > len(key):
+                raise ConfigError('result ID digest collision; use full storage-relative IDs')
+        short[identifier] = key[:length]
+    return short
+
+
+def results(root, recipe=None, host=None, status=None):
+    records, errors = [], []
+    files = list(_result_files(root))
+    short_ids = _short_result_ids(identifier for identifier, path in files)
+    for identifier, path in files:
+        try:
+            safe_directory(root, path.parent.relative_to(root))
+            if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
+                raise ConfigError('result escapes storage root')
+            raw = json_object(path)
+            meta = raw.get('recipe', {})
+            if not isinstance(meta, dict) or raw.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
+                raise ConfigError('unrecognized result envelope')
+            row = {'result_id': identifier, 'short_id': short_ids[identifier],
+                   'recipe_id': meta.get('id'), 'recipe_version': meta.get('version'),
+                   'recipe_reference': meta.get('reference'), 'recipe_source': meta.get('source_name'),
+                   'host_id': raw.get('host_id'), 'status': raw['status'], 'reason_code': raw.get('reason_code'),
+                   'started_at': raw.get('started_at'), 'completed_at': raw.get('completed_at', raw.get('finished_at')),
+                   'identity_quality': raw.get('identity', {}).get('quality') if isinstance(raw.get('identity'), dict) else None,
+                   'identity_warnings': raw.get('identity', {}).get('warnings', []) if isinstance(raw.get('identity'), dict) else [],
+                   'retention': raw.get('retention'), 'kind': 'report' if 'report_contract' in raw else 'operation'}
+            if recipe and row['recipe_id'] != recipe or host and row['host_id'] != host or status and row['status'] != status:
+                continue
+            records.append(row)
+        except (ConfigError, OSError, ValueError, TypeError):
+            errors.append({'result_id': identifier, 'short_id': short_ids[identifier],
+                           'reason_code': 'invalid-result-file'})
     records.sort(key=lambda row: (str(row['started_at'] or ''), row['result_id']), reverse=True)
     return {'results_version': VERSION, 'status': 'partial' if errors else 'success', 'results': records, 'errors': errors}
 
 
 def result_path(root, identifier):
+    if re.fullmatch(r'[0-9a-f]{8,64}', identifier):
+        matches = [name for name, path in _result_files(root) if _result_key(name).startswith(identifier)]
+        if not matches:
+            raise ConfigError('unknown short result ID')
+        if len(matches) != 1:
+            raise ConfigError('ambiguous short result ID; use a longer prefix or full result ID')
+        identifier = matches[0]
     relative = Path(identifier)
     if relative.is_absolute() or '..' in relative.parts or not relative.parts or relative.parts[0] not in ('observations', 'reports'):
         raise ConfigError('result ID must be relative to observations/ or reports/')

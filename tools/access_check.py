@@ -7,7 +7,7 @@ from threading import Lock
 
 from opsfeast import ConfigError
 from console_output import user_label, host_label as console_host_label
-from host_runtime import connected, identity, now, runtime_class, target_fingerprint, privilege_test, username
+from host_runtime import connected, identity, verify_connection_identity, now, runtime_class, target_fingerprint, privilege_test, username
 
 VERSION = '0.1.0'
 
@@ -50,16 +50,12 @@ class ConsoleSession:
 
 
 @contextmanager
-def collection_actor(session, config, host, timeout, report, *, force=False, fallback=False):
-    login = identity(session, timeout, evidence=report.setdefault('identity_probe', {}))
+def collection_actor(session, config, host, timeout, report, *, force=False, fallback=False, authenticated_user=None):
     configured = config.hosts[host]['connection'].get('user')
-    if configured is not None:
-        identity(session, timeout, target=configured,
-                 evidence=report.setdefault('configured_identity_probe', {}))
-    report['connection_identity'] = login
-    report['actual_identity'] = login
+    login = verify_connection_identity(session, timeout, report,
+        authenticated_user=authenticated_user, configured_user=configured)
     report['restoration_verified'] = True
-    enabled, password, source = sudo_settings(config, host, login['username'])
+    enabled, password, source = sudo_settings(config, host, report['login_identity']['username'])
     report['sudo'] = {'status': 'not_needed' if login['effective_uid'] == 0 else 'disabled' if not enabled else 'not_attempted',
                       'password_source': source, 'password_supplied': password is not None}
     if fallback and login['effective_uid'] != 0 and enabled:
@@ -121,7 +117,8 @@ def check_access(config, host, timeout=30, session_class=None):
             report['reason_code'] = 'identity_failed'
             access = {}
             report['access'] = access
-            with collection_actor(session, config, host, timeout, access):
+            with collection_actor(session, config, host, timeout, access,
+                                  authenticated_user=report.get('login_identity', {}).get('username')):
                 report.update(status='success', reason_code='access_verified')
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__)
@@ -137,7 +134,8 @@ def check_access(config, host, timeout=30, session_class=None):
 
 def account_label(report):
     """Prefer the verified login; SSH aliases may resolve only after connecting."""
-    return (report.get('user') or report.get('access', {}).get('connection_identity', {}).get('username')
+    return (report.get('user') or report.get('access', {}).get('login_identity', {}).get('username')
+            or report.get('access', {}).get('connection_identity', {}).get('username')
             or report.get('configured_user') or 'unresolved')
 
 
@@ -195,6 +193,9 @@ def summary_tests(report):
         add('connection', login, 'success' if report.get('connected') else 'failed', 'connection_failed')
         if report.get('connected') and not access.get('connection_identity'):
             add('identity', login, 'failed', report.get('identity_error', {}).get('reason_code', 'identity_failed'))
+        elif access.get('identity_model') == 'esxi_root_shell':
+            add('identity', login, 'success')
+            rows[-1]['reason_code'] = 'shell=' + access['shell_identity']['username'] + ', uid=0 (ESXi)'
     sudo = access.get('sudo', {})
     state = sudo.get('status')
     add('sudo', login, 'success' if state == 'success' else 'failed' if state == 'failed' else 'skipped',
@@ -304,7 +305,8 @@ def check_host_accounts(config, host, timeout=30, session_class=None, *, progres
     report = check_access(config, host, timeout, session_class)
     configured = config.hosts[host]['connection'].get('user')
     report['configured_user'] = configured
-    login = report.get('access', {}).get('connection_identity', {}).get('username')
+    login = (report.get('access', {}).get('login_identity', {}).get('username')
+             or report.get('access', {}).get('connection_identity', {}).get('username'))
     accounts = report['accounts'] = [
         {'user': login or configured, 'status': report['status'], 'reason_code': report['reason_code'],
          'role': 'login'}]

@@ -1,6 +1,7 @@
 """Checkout-level terminal presentation; structured data remains unchanged."""
 import json
 import sys
+from display_time import human_times
 
 
 class ConsoleDependencyError(RuntimeError):
@@ -35,7 +36,7 @@ def cell(value):
 
 
 def table(headers, rows):
-    return table_formatter()([[cell(v) for v in row] for row in rows], headers=headers,
+    return table_formatter()([[cell(human_times(v)) for v in row] for row in rows], headers=headers,
                              tablefmt='rounded_outline', disable_numparse=True, preserve_whitespace=True)
 
 
@@ -47,6 +48,11 @@ def fields(value, prefix=''):
 
 def details(value):
     return table(['field', 'value'], fields(value))
+
+
+def vertical(value):
+    """One escaped field/value per line, without terminal-width dependencies."""
+    return '\n'.join(f'{cell(key)}: {cell(item)}' for key, item in fields(human_times(value)))
 
 
 def inspection(report):
@@ -88,6 +94,51 @@ def user_label(user, host=None, icons=None):
 def host_label(host, icons=None):
     from opsfeast import DEFAULT_HOST_ICON
     return f"{(icons or {}).get(host, getattr(icons, 'default_host', DEFAULT_HOST_ICON))} {host}"
+
+
+def configuration_summary(config):
+    """Human-only check overview; derive labels without resolving SSH aliases."""
+    from opsfeast import group_names
+    from management_view import user_accounts
+    icons = DisplayIcons(config)
+    sections = [(group, config.groups[group]['hosts']) for group in sorted(config.groups)]
+    ungrouped = [host for host, settings in config.hosts.items() if not settings.get('group', [])]
+    if ungrouped:
+        sections.append((None, ungrouped))
+    rows, disabled, multiple = [], False, False
+    for group, hosts in sections:
+        definition = config.groups.get(group, {})
+        label = definition.get('label', group)
+        title = ('Ungrouped (no group)' if group is None else
+                 f'{label} ({group})' if label != group else group)
+        if definition.get('description'):
+            title += ' — ' + definition['description']
+        if not hosts:
+            rows.append([title, '(no hosts)', '-'])
+        for index, host in enumerate(hosts):
+            settings = config.hosts[host]
+            memberships = list(dict.fromkeys(group_names(settings.get('group', []), 'host group')))
+            name = host_label(host, icons)
+            if len(memberships) > 1:
+                multiple = True
+                if memberships[0] == group:
+                    name += ' (primary)'
+            if not settings.get('enabled', True):
+                name += ' [disabled]'
+                disabled = True
+            login, users = user_accounts(settings)
+            if login is not None:
+                users = [login, *(user for user in users if user != login)]
+            accounts = [user_label(user, host, icons) for user in users]
+            if login is None:
+                accounts.insert(0, 'login unresolved')
+            rows.append([title if index == 0 else '', name, ', '.join(accounts) or '-'])
+    output = table(['group', 'host', 'users'], rows)
+    if multiple:
+        output += '\n(primary) = first group membership; hosts may appear in multiple groups. Host total counts unique IDs.'
+    if disabled:
+        output += '\n[disabled] = host disabled in configuration.'
+    return output
 
 
 def display_icons(root):
@@ -185,20 +236,26 @@ def execution(report, icons=None, host=None, recipe=None):
         from access_check import format_summary
         return format_summary(report, icons)
     hosts = report.get('hosts', [report])
-    result = table(['status', 'host', 'recipe', 'reason', 'retention', 'identity', 'result_path'], [
-        [status(row), host_label(row.get('host', row.get('host_id', host)), icons) if row.get('host', row.get('host_id', host)) else '-', row.get('recipe_id', recipe or ''),
-         row.get('reason_code', row.get('error', '')), status(row['retention']) if row.get('retention') else 'not_reported',
-         row.get('identity_quality', 'not_reported'), row.get('result_path', '')] for row in hosts])
+    rows = []
     for row in hosts:
-        extra = {key: row[key] for key in ('message', 'data', 'artifacts', 'access') if key in row and row[key] is not None}
-        if extra:
-            result += '\n' + details(extra)
-    if report.get('excluded_hosts'):
-        result += '\n' + table(['excluded host', 'reason'], [
-            [host_label(item['host'], icons), item['reason_code']] for item in report['excluded_hosts']])
-    if report.get('counts'):
-        result += '\n' + details({'counts': report['counts']})
-    return result
+        target = row.get('host', row.get('host_id', host))
+        access = row.get('access') or {}
+        actor = access.get('actual_identity') or {}
+        name, uid = actor.get('username'), actor.get('effective_uid')
+        actor_text = f'{name} (uid={uid})' if name and type(uid) is int else 'unknown'
+        outcome = status(row)
+        if row.get('status') != 'success':
+            reason = row.get('reason_code') or row.get('error')
+            if reason:
+                outcome += f' ({reason})'
+        if (row.get('retention') or {}).get('status') == 'failed':
+            outcome = f'❌ FAIL (retention_failed; collection={outcome})'
+        elif access.get('degraded'):
+            outcome = ('PARTIAL' if row.get('status') == 'success' else outcome) + ' (fallback_user)'
+        rows.append([host_label(target, icons) if target else '-', actor_text, outcome])
+    rows.extend([host_label(item['host'], icons), '-', f"SKIP ({item['reason_code']})"]
+                for item in report.get('excluded_hosts', []))
+    return table(['host', 'collection identity', 'result'], rows)
 
 
 def print_report(value, *, json_output=False, kind='details', icons=None, test='', user=None, host=None, recipe=None,

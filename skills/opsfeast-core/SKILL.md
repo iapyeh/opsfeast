@@ -19,7 +19,7 @@ A new clone or copy into another directory must receive a new UUID. Use explicit
 
 ## Reuse configuration and sessions
 
-Effective hosts and declared users include resolved icon fields (built-ins 🍎/👤). Entry hosts.yaml supports default.icon.host/user and per-group default.groups.<name>.icon.host/user. Explicit host/account icons override defaults; default.users.<account>.icon then precedes group user defaults. Each remaining field independently takes the first defined value in host group order, then the global default. Include files inherit defaults; explicit values must be one Unicode Symbol code point, not a multi-code-point glyph. Optional default.users.<account>.email stays in source metadata and is not merged into host-account snapshots. This is display-only and does not rewrite YAML; see [icon rules](../../docs/hosts-yaml.md#host-icon).
+Effective hosts and declared users include resolved icon fields (built-ins 🍎/👤). Entry hosts.yaml supports global default.icon.host/user. Entry and included YAML support per-group groups.<name>.icon.host/user. Explicit host/account icons override defaults; default.users.<account>.icon then precedes group user defaults. Each remaining field independently takes the first defined value in host group order, then the global default. Include files inherit defaults; explicit values must be one Unicode Symbol code point, not a multi-code-point glyph. Optional default.users.<account>.email stays in source metadata and is not merged into host-account snapshots. This is display-only and does not rewrite YAML; see [icon rules](../../docs/hosts-yaml.md#host-icon).
 
 Use profile.hosts.list/get and explicit reload rather than another YAML parser or frozen addresses/credentials. Reads are masked copies; reveal_secrets=True is explicit and must never enter logs/shared examples. Masking is key-based and cannot sanitize arbitrary strings. A profile/connection uses a validated snapshot; fresh inspection does not replace that execution snapshot.
 
@@ -35,4 +35,77 @@ Instance/profile inspection reads local metadata/configuration/paths and depende
 
 Metadata init/update/renew/relocate, profile init/attach/use/detach are explicit writes with their own scope. Preserve existing roots/data and human notes. This API does not edit hosts YAML or delete history. Public configuration/inspection methods do not authorize host operations. Catch ConfigError/CoreError at the boundary, preserve stable reason codes and safe error types, and avoid arbitrary exception/settings output.
 
-_Last modified: 2026-10-15_
+## Select explicit SSH authentication sources
+
+Read [the canonical authentication policy and examples](../../docs/hosts-yaml.md#ssh-authentication-sources)
+before configuring or executing SSH hosts. connection.allow_agent and
+connection.look_for_keys are strict Booleans, both default false on every hop,
+including SSH config aliases; they are not allowed on local/reference objects.
+Preserve the user's intended sources: explicit login passwords/identity files
+remain usable, agent or default-key discovery requires an explicit true.
+Do not infer flags from password presence or bypass the shared planner in a recipe.
+Inline hops are independent; referenced hops use the referenced host's settings.
+
+Use check for local type validation. Missing all sources after alias/account resolution
+fails before that target chain opens any Session, with missing_authentication_source
+and a safe hint; check alone cannot confirm usable credentials. For an authorized
+connection test use test-connection HOST --json --debug to inspect effective flags
+and results without printing secrets. Configuration changes do not authorize probes.
+See [migration](../../docs/migration.md#explicit-ssh-authentication-sources) before
+resuming configurations that relied on ambient keys. Policy tests are synthetic;
+real SSH/agent authentication requires separate authorized evidence.
+
+## Group catalog and bulk host definitions
+
+Read [the canonical group schema and example](../../docs/hosts-yaml.md#host-groups).
+Use top-level groups.<id> for optional label (default ID), description (default empty
+string), icon.host/user and hosts. Bulk hosts use the ordinary host schema and enter
+the same effective host map; the enclosing group is prepended and memberships are
+deduplicated. First membership is primary. Keep host IDs globally unique and explicit
+group definitions unique across includes; use membership to share hosts across groups.
+Labels never substitute for IDs in selectors. Missing group definitions get default
+metadata. Defaults/icon resolution happens after all includes, with existing named-user
+and explicit host/account precedence. No connection/vars/recipe inheritance is added.
+
+Prefer `profile.hosts.groups()` for a copied runtime catalog, existing hosts.get and
+session/recipe methods for bulk hosts, and check / dump groups for local inspection.
+Catalog hosts are member ID lists, not nested raw host mappings. Inspect can show a
+fresh catalog without changing the execution snapshot; reload explicitly. See [Core
+examples](../../docs/core-api.md#host-group-catalog). The TUI shows labels plus IDs and
+read-only group descriptions/member IDs, including empty groups. Group rows do not
+start host actions. Old default.groups fails with a migration hint; follow [migration](../../docs/migration.md#group-catalog-and-bulk-host-definitions)
+without silently rewriting private configuration. Preserve source-relative paths,
+notes, authorization and skipped/failure states. Tests are synthetic; no SSH/privilege
+behavior follows from group parsing or display.
+
+## ESXi SSH-exec identity evidence
+
+Read [the shared ESXi diagnosis workflow](../../docs/host-diagnostics.md#diagnose-esxi-identity-failures)
+when SSH succeeds but identity fails. The adapter handles exit 127 and the narrowly
+recognized exit 2 / empty stdout / shell missing-id stderr form only after verifying
+VMkernel; do not broaden it to arbitrary failures. Inspect identity_probe.id_exitcode,
+identity_error.reason_code and configured_identity_probe.actual/expected/matched.
+access.actual_identity records the observed shell actor even when account comparison
+fails; connection_identity is not verified in that case. The ESXi connection-level root-shell model can accept different numeric UIDs with a known successful final-hop SSH login, verified VMkernel and consistently observed UID 0. Keep both identities and the acceptance rule visible; other platform and privilege-target mismatches remain failures. Do not rewrite private bindings to root. Existing authorized
+check-access --host HOST --root ROOT --json --quiet is the reusable CLI; Core and runner
+use the same probe without new APIs/configuration. No raw command output is retained.
+Native two-hop evidence covers a root missing-id exit 2 path and an ordinary login accepted with an effective root shell; other ESXi/privilege scenarios remain outside this evidence. These diagnostics do not
+change retained inventory schemas.
+
+## Distinguish SSH login from an ESXi root shell
+
+Read [the canonical identity model and JSON example](../../docs/host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+Reuse the shared CLI/Core/runner verifier: login_identity comes from the successful
+final-hop connection; shell_identity is the observed execution account. Verified
+VMkernel and a stable UID 0 shell may accept an ordinary account as esxi_root_shell.
+Numeric matched=false is then accepted with status=success and accepted_by explaining
+the policy; do not relabel it as failed or silently change hosts.yaml to root.
+Account policies, credential selection and extra-user exclusion use the SSH login;
+restoration uses the original shell. Explicit privilege targets, other kernels,
+non-root mismatches and unknown-principal cases remain strict. No configuration
+bypass or new invocation is added. check-access --host HOST --root ROOT --json --quiet
+returns the full evidence within an authorized host scope. Human tables explain the
+root shell and show sudo already_root. Native evidence covers the two tested two-hop
+paths; additional ESXi releases, role assignments and su/sudo remain unverified.
+
+_Last modified: 2026-10-16_

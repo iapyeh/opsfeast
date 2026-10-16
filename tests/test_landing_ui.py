@@ -143,6 +143,10 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
              'connection': {'hostname': 'fixture', 'user': 'operator'}, 'users': {'alice': {'icon': '♠'}}}},
             {'host': 'solo', 'source': 'fixture.yaml', 'settings': {}},
         ]}
+        hosts['groups'] = {
+            'web': {'label': 'WEB [SERVERS]', 'description': 'Synthetic web servers', 'hosts': ['shared']},
+            'production': {'label': 'production', 'description': '', 'hosts': ['shared']},
+            'empty': {'label': 'empty', 'description': '', 'hosts': []}}
         app = home.make_home_class()()
         async def collect(): app.finish('{"recipes": []}', 0)
         with patch.object(view, 'profiles_snapshot', return_value=profiles), \
@@ -155,7 +159,20 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
                 details = app.query_one('#host-details', RichLog)
                 self.assertLessEqual(tree.region.right, details.region.x)
                 self.assertGreater(details.region.width, 30)
-                self.assertEqual([node.label.plain for node in tree.root.children], ['web', 'production', 'Ungrouped (no group)'])
+                self.assertEqual([node.label.plain for node in tree.root.children],
+                                 ['WEB [SERVERS] (web)', 'production', 'empty', 'Ungrouped (no group)'])
+                for _ in range(20):
+                    if app.host_cursor_ready:
+                        break
+                    await pilot.pause()
+                self.assertTrue(app.host_cursor_ready)
+                tree.move_cursor(tree.root.children[0])
+                await pilot.pause()
+                self.assertIn('Synthetic web servers', '\n'.join(line.text for line in details.lines))
+                self.assertEqual(tree.root.children[0].data, ('group', 'web'))
+                with patch.object(app, 'push_screen') as push:
+                    app.action_host_menu()
+                    push.assert_not_called()
                 self.assertEqual(tree.root.children[0].children[0].label.plain, '🐧 shared')
                 self.assertEqual([node.label.plain for node in tree.root.children[0].children[0].children],
                                  ['👩 operator (login)', '♠ alice'])
@@ -165,7 +182,7 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
                     text = '\n'.join(line.text for line in details.lines)
                     self.assertIn('shared', text)
                     self.assertIn('********', text)
-                tree.select_node(tree.root.children[2].children[0])
+                tree.select_node(tree.root.children[3].children[0])
                 await pilot.pause()
                 self.assertIn('solo', '\n'.join(line.text for line in details.lines))
 

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import sys
 import time
+from display_time import human_times
 
 from terminal_events import decode
 
@@ -232,7 +233,7 @@ def make_app_class():
             detail.clear()
             if key in self.items:
                 item = {k: v for k, v in self.items[key].items() if not k.startswith('_')}
-                detail.write(Text(json.dumps(item, indent=2, ensure_ascii=False)))
+                detail.write(Text(json.dumps(human_times(item), indent=2, ensure_ascii=False)))
 
         def on_data_table_row_highlighted(self, event):
             self.show_details(event.row_key.value)

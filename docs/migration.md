@@ -116,6 +116,49 @@ New inventory results use `YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`, derived
 
 Supported CLI summaries now use tabulate only when stdout is a TTY; use --json explicitly for machine consumption, including under PTYs. Existing non-TTY JSON/text output is preserved, raw export commands stay structured, and Textual interfaces keep their pipe-based child behavior. Check-access retains its existing default table. New profiles/check JSON reports identify report_version 0.1.0. Display flags are not saved-job input fields, do not widen authorization and do not change data schemas, exit codes or retained records. See [the complete command/flag matrix](cli.md#terminal-tables-and-json).
 
-Icon defaults live in optional entry hosts.yaml `default.icon.user/host` and per-group `default.groups.<name>.icon.user/host`. Named-account defaults in `default.users.<account>.icon` precede group user defaults; explicit host-account icons still win. Otherwise resolve host/user separately using the first defined value in host group order, then the global default. Group/user defaults are siblings of default.icon: default.groups.<name>.icon and default.users.<account>.icon. Older default.icon.groups/users and singular default.icon.group are unsupported; host membership remains group. Flat default-user-icon/default-host-icon/default-group-icon keys are unsupported; use the nested structure. Existing configurations retain 🍎 for hosts and now show 👤 for account labels. Explicit `users.<account>.icon` overrides the user default; see [precedence and validation](hosts-yaml.md#global-and-account-icons). Optional default.users.<account>.email is readable metadata only, with no inheritance or notification behavior. Operational JSON identifiers remain unchanged; effective configuration dumps gain account icon fields.
+Icon defaults live in optional entry hosts.yaml `default.icon.user/host` and per-group `groups.<name>.icon.user/host`. Named-account defaults in `default.users.<account>.icon` precede group user defaults; explicit host-account icons still win. Otherwise resolve host/user separately using the first defined value in host group order, then the global default. Group icon defaults now live at top-level groups.<name>.icon; named-user defaults remain default.users.<account>.icon. See the group-catalog migration below. Older default.icon.groups/users and singular default.icon.group are unsupported; host membership remains group. Flat default-user-icon/default-host-icon/default-group-icon keys are unsupported; use the nested structure. Existing configurations retain 🍎 for hosts and now show 👤 for account labels. Explicit `users.<account>.icon` overrides the user default; see [precedence and validation](hosts-yaml.md#global-and-account-icons). Optional default.users.<account>.email is readable metadata only, with no inheritance or notification behavior. Operational JSON identifiers remain unchanged; effective configuration dumps gain account icon fields.
 
-_Last modified: 2026-10-15_
+## Explicit SSH authentication sources
+
+SSH connection.allow_agent and connection.look_for_keys now each default to false.
+There is no compatibility fallback and no password-dependent default. Set
+allow_agent: true for agent-based login or look_for_keys: true for default local
+key discovery, independently on every affected host or inline via hop. Referenced
+jump hosts use their own settings. Explicit identity_file, resolved SSH config
+IdentityFile and configured login passwords remain available with both flags false.
+Do not rewrite private settings automatically; inspect the intended credential source.
+
+The two flags accept only YAML Booleans, including with ssh_config_alias. They are
+invalid on local connections and via.host reference objects. YAML controls the flags
+after SSH config resolution. Missing all sources now fails during planning, before
+any session/connection in that host's chain, with missing_authentication_source.
+Static check validates fields but cannot prove resolved credentials or connectivity.
+Run check after editing; connect only with the user's existing authorization.
+See [complete rules and synthetic examples](hosts-yaml.md#ssh-authentication-sources).
+
+## Group catalog and bulk host definitions
+
+Move default.groups.<id>.icon to top-level groups.<id>.icon. The old location now
+fails with an explicit migration hint, even if empty or accompanied by new groups;
+there is no fallback or automatic YAML rewrite. Keep default.icon and default.users
+at their current locations in entry hosts.yaml. Groups may now be declared in entry
+or included YAML, but each explicit group ID must have exactly one definition.
+
+Groups accept optional label (default ID), description (default empty string), icon
+and hosts. To collect many host definitions, move each complete host mapping under
+groups.<id>.hosts and remove its old definition. Its enclosing group is prepended to
+its group memberships and duplicates removed; review ordering because the first
+group controls primary-group presentation and per-field icon precedence. Host IDs,
+connections, credentials and authorization do not change just because of nesting.
+Relative recipes still resolve from the actual declaring YAML file; if a move changes
+that file, review relative paths. Repeat host IDs anywhere are errors, not merged.
+
+Per-host group remains singular; host-groups is not an alias. CLI selection always
+uses group IDs, never labels. Effective dump groups now returns metadata/defaults
+and member ID lists; dump hosts is the flattened host map. Consumers needing original
+nested declarations must read their source files, not treat the catalog as source YAML.
+Core callers can use profile.hosts.groups(); profile.inspect and the TUI include the
+same catalog. Run check locally after migration; no connection is required or implied.
+See [the canonical rules and example](hosts-yaml.md#host-groups).
+
+_Last modified: 2026-10-16_

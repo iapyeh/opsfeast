@@ -21,7 +21,7 @@ Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 Py
 
 Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
 
-Host and users.<account>.icon are optional display metadata. Configure Feast-wide defaults only in entry hosts.yaml: default.icon.user/host (built-ins 👤/🍎), default.groups.<name>.icon.user/host, and default.users.<account>.icon. Account precedence is explicit host-account icon, named-account default, first defined group user value in host group order, global user default, 👤. Host precedence is explicit icon, first defined group host value in host group order, global host default, 🍎. Host membership remains group. Include files inherit these settings. Optional default.users.<account>.email is a string without NUL, readable with `python -B tools/opsfeast.py dump default.users.operator.email --profile NAME`; it is metadata only, not inherited or used for mail. No generic property merge or account creation occurs. Console/TUI labels show icons; JSON identifiers stay plain. Explicit icon values must be exactly one Unicode Symbol code point; null, empty, letters/digits/whitespace and multi-code-point emoji fail loading. Do not rewrite YAML to materialize the default or use icon as identity. See [canonical icon and metadata rules](../../docs/hosts-yaml.md#global-and-account-icons).
+Host and users.<account>.icon are optional display metadata. Configure global/named-account defaults only in entry hosts.yaml: default.icon.user/host (built-ins 👤/🍎) and default.users.<account>.icon. Configure per-group icon defaults in groups.<name>.icon.user/host in entry or included YAML. Account precedence is explicit host-account icon, named-account default, first defined group user value in host group order, global user default, 👤. Host precedence is explicit icon, first defined group host value in host group order, global host default, 🍎. Host membership remains group. Include files inherit these settings. Optional default.users.<account>.email is a string without NUL, readable with `python -B tools/opsfeast.py dump default.users.operator.email --profile NAME`; it is metadata only, not inherited or used for mail. No generic property merge or account creation occurs. Console/TUI labels show icons; JSON identifiers stay plain. Explicit icon values must be exactly one Unicode Symbol code point; null, empty, letters/digits/whitespace and multi-code-point emoji fail loading. Do not rewrite YAML to materialize the default or use icon as identity. See [canonical icon and metadata rules](../../docs/hosts-yaml.md#global-and-account-icons).
 
 ## Load configuration when writing Python tools
 
@@ -113,7 +113,7 @@ Use attach PATH [--profile NAME] for existing directories (the former add comman
 
 ## 不可改變的設定語意
 
-- Host-level `group` is an optional non-empty string or list of non-empty group names; one host may belong to multiple groups, including memberships declared in included files. Omitted/empty lists mean no membership; a scalar is treated as a one-element list for selection without rewriting stored configuration. Reject the former groups field with a migration hint, including when both names are present. Groups only select runner targets and do not inherit connection settings, variables or recipes. Read [host groups](../../docs/hosts-yaml.md#host-groups) and the [runner reference](../../docs/cli.md#toolsrun_recipepy-inventory-execution) for mixed host/group unions, explicit --host/--group options, required recipe selection, exclusive --all and deduplication. Diagnostic commands still require individual host IDs. Group/all selection does not authorize execution.
+- Host-level `group` is an optional non-empty string or list of non-empty group names; one host may belong to multiple groups, including memberships declared in included files. Omitted/empty lists mean no membership; a scalar is treated as a one-element list for selection without rewriting stored configuration. Reject the former groups field with a migration hint, including when both names are present. Groups select targets through the shared CLI selection path and do not inherit connection settings, variables or recipes. Read [host groups](../../docs/hosts-yaml.md#host-groups) and the [runner reference](../../docs/cli.md#toolsrun_recipepy-inventory-execution) for mixed host/group unions, explicit --host/--group options, required recipe selection, exclusive --all and deduplication. test-connection and check-access also support group/all selection; narrower diagnostics keep their own documented selectors. Group/all selection does not authorize execution.
 - `hosts` 的鍵是穩定主機 ID；`connection.hostname` 是 DNS 或 IP。
 - 新建的 init 樣板包含 `localhost: {connection: {local: true}, users: {}, vars: {}, recipes: []}`。本機 connection 只接受 `local: true`，不建立 SSH 連線，不能作為跳板或混用 SSH 欄位；既有設定仍保留，不自行覆寫。
 - 明確 SSH 連線可使用 `connection.proxy_command` 非空字串，不能與同一層的 `via` 或 `ssh_config_alias` 混用。命令原樣保存，不展開 `%h`、`%p` 或 shell 變數；使用具體目標值。check 只驗證設定；明確要求 test-connection 時可啟動代理並測試連線。
@@ -162,6 +162,93 @@ Prefer `python -B tools/opsfeast.py test-connection HOST --profile NAME --debug 
 
 ## ESXi identity compatibility
 
-For authorized ESXi access checks, reuse `python -B tools/opsfeast.py check-access --host HOST --profile NAME --json --quiet`. When id is missing, only a verified VMkernel kernel enables the fixed /bin/python or /bin/python3 effective-UID probe; no installation or new configuration is needed. Inspect access.identity_probe/configured_identity_probe and connection_identity. UID 0 skips sudo; a configured root name alone is insufficient. Missing prerequisites/malformed output/UID mismatch remain failures, with identity_error.reason_code and a separate failed identity table row after successful connection. This does not add ESXi authenticated su/sudo support or verify every ESXi release. Read the [shared probe, module invocation, failure and verification limits](../../docs/host-diagnostics.md#esxi-login-identity-without-id) before extending diagnostics or explaining results.
+For authorized ESXi access checks, reuse `python -B tools/opsfeast.py check-access --host HOST --profile NAME --json --quiet`. When id is missing, only a verified VMkernel kernel enables the fixed /bin/python or /bin/python3 effective-UID probe; no installation or new configuration is needed. Inspect access.identity_probe/configured_identity_probe and connection_identity. UID 0 skips sudo; a configured root name alone is insufficient. Missing prerequisites, malformed output and unaccepted UID mismatches remain failures, with identity_error.reason_code and a separate failed identity table row after successful connection. This does not add ESXi authenticated su/sudo support or verify every ESXi release. Read the [shared probe, module invocation, failure and verification limits](../../docs/host-diagnostics.md#esxi-login-identity-without-id) before extending diagnostics or explaining results.
+
+## Select explicit SSH authentication sources
+
+Read [the canonical authentication policy and examples](../../docs/hosts-yaml.md#ssh-authentication-sources)
+before configuring or executing SSH hosts. connection.allow_agent and
+connection.look_for_keys are strict Booleans, both default false on every hop,
+including SSH config aliases; they are not allowed on local/reference objects.
+Preserve the user's intended sources: explicit login passwords/identity files
+remain usable, agent or default-key discovery requires an explicit true.
+Do not infer flags from password presence or bypass the shared planner in a recipe.
+Inline hops are independent; referenced hops use the referenced host's settings.
+
+Use check for local type validation. Missing all sources after alias/account resolution
+fails before that target chain opens any Session, with missing_authentication_source
+and a safe hint; check alone cannot confirm usable credentials. For an authorized
+connection test use test-connection HOST --json --debug to inspect effective flags
+and results without printing secrets. Configuration changes do not authorize probes.
+See [migration](../../docs/migration.md#explicit-ssh-authentication-sources) before
+resuming configurations that relied on ambient keys. Policy tests are synthetic;
+real SSH/agent authentication requires separate authorized evidence.
+
+## Group catalog and bulk host definitions
+
+Read [the canonical group schema and example](../../docs/hosts-yaml.md#host-groups).
+Use top-level groups.<id> for optional label (default ID), description (default empty
+string), icon.host/user and hosts. Bulk hosts use the ordinary host schema and enter
+the same effective host map; the enclosing group is prepended and memberships are
+deduplicated. First membership is primary. Keep host IDs globally unique and explicit
+group definitions unique across includes; use membership to share hosts across groups.
+Labels never substitute for IDs in selectors. Missing group definitions get default
+metadata. Defaults/icon resolution happens after all includes, with existing named-user
+and explicit host/account precedence. No connection/vars/recipe inheritance is added.
+
+Prefer `profile.hosts.groups()` for a copied runtime catalog, existing hosts.get and
+session/recipe methods for bulk hosts, and check / dump groups for local inspection.
+Catalog hosts are member ID lists, not nested raw host mappings. Inspect can show a
+fresh catalog without changing the execution snapshot; reload explicitly. See [Core
+examples](../../docs/core-api.md#host-group-catalog). The TUI shows labels plus IDs and
+read-only group descriptions/member IDs, including empty groups. Group rows do not
+start host actions. Old default.groups fails with a migration hint; follow [migration](../../docs/migration.md#group-catalog-and-bulk-host-definitions)
+without silently rewriting private configuration. Preserve source-relative paths,
+notes, authorization and skipped/failure states. Tests are synthetic; no SSH/privilege
+behavior follows from group parsing or display.
+
+## Interpret the human check overview
+
+Use check --json for the existing detailed machine report (selected_recipes, skipped,
+notes and report_version 0.1.0 remain unchanged). On a human terminal without --json,
+check instead shows group/host/users sorted by group ID: labels, descriptions, empty groups,
+ungrouped hosts last, (primary) for a multi-group host's first membership and [disabled]
+for a host disabled in settings. Repeated membership does not increase the unique-host
+total. The known login is first, without a (login) suffix; remaining declared users
+keep their declaration order without duplicates. Icons and login names are presentation
+only; SSH aliases show login unresolved before declared users rather than resolving or connecting. No password/vars fields
+appear in the human table. Recipe validation/errors still apply even though count/skip
+columns are omitted. Redirected text and init output are unchanged. Read [the CLI rules](../../docs/cli.md#human-check-overview)
+before explaining markers or treating configured account names as verified identities.
+
+## ESXi SSH-exec identity evidence
+
+Read [the shared ESXi diagnosis workflow](../../docs/host-diagnostics.md#diagnose-esxi-identity-failures)
+when SSH succeeds but identity fails. The adapter handles exit 127 and the narrowly
+recognized exit 2 / empty stdout / shell missing-id stderr form only after verifying
+VMkernel; do not broaden it to arbitrary failures. Inspect identity_probe.id_exitcode,
+identity_error.reason_code and configured_identity_probe.actual/expected/matched.
+access.actual_identity records the observed shell actor even when account comparison
+fails; connection_identity is not verified in that case. The ESXi connection-level root-shell model can accept different numeric UIDs with a known successful final-hop SSH login, verified VMkernel and consistently observed UID 0. Keep both identities and the acceptance rule visible; other platform and privilege-target mismatches remain failures. Do not rewrite private bindings to root. Existing authorized
+check-access --host HOST --root ROOT --json --quiet is the reusable CLI; Core and runner
+use the same probe without new APIs/configuration. No raw command output is retained.
+Native two-hop evidence covers a root missing-id exit 2 path and an ordinary login accepted with an effective root shell; other ESXi/privilege scenarios remain outside this evidence. These diagnostics do not
+change retained inventory schemas.
+
+## Distinguish SSH login from an ESXi root shell
+
+Read [the canonical identity model and JSON example](../../docs/host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+Reuse the shared CLI/Core/runner verifier: login_identity comes from the successful
+final-hop connection; shell_identity is the observed execution account. Verified
+VMkernel and a stable UID 0 shell may accept an ordinary account as esxi_root_shell.
+Numeric matched=false is then accepted with status=success and accepted_by explaining
+the policy; do not relabel it as failed or silently change hosts.yaml to root.
+Account policies, credential selection and extra-user exclusion use the SSH login;
+restoration uses the original shell. Explicit privilege targets, other kernels,
+non-root mismatches and unknown-principal cases remain strict. No configuration
+bypass or new invocation is added. check-access --host HOST --root ROOT --json --quiet
+returns the full evidence within an authorized host scope. Human tables explain the
+root shell and show sudo already_root. Native evidence covers the two tested two-hop
+paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
 _Last modified: 2026-10-16_

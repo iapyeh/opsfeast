@@ -3,7 +3,23 @@ from datetime import datetime, timezone
 import html
 import json
 
-VERSION = '0.1.1'
+VERSION = '0.1.2'
+
+
+def _human_times(value):
+    # Keep the exported recipe self-contained; follow OpsFeast's display policy.
+    if isinstance(value, dict):
+        return {key: _human_times(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_human_times(item) for item in value]
+    if isinstance(value, str):
+        try:
+            instant = datetime.fromisoformat(value)
+            if instant.tzinfo is not None:
+                return instant.astimezone().strftime('%Y-%m-%d %H:%M:%S')
+        except (ValueError, OverflowError, OSError):
+            pass
+    return value
 
 
 def execute(*, context, timeout):
@@ -30,11 +46,11 @@ def execute(*, context, timeout):
     table = '<table><thead><tr>' + ''.join('<th>'+esc(key)+'</th>' for key in keys) + '<th>Details</th></tr></thead><tbody>'
     for row in rows:
         details = {key:row[key] for key in ('recipe_version', 'source_schema_version', 'source_evidence_kind', 'data', 'observations', 'inventory', 'collection_scope')}
-        table += ('<tr>' + ''.join('<td>'+esc(json.dumps(row[key], ensure_ascii=False))+'</td>' for key in keys) +
-                  '<td><details><summary>Data and provenance</summary><pre>'+esc(json.dumps(details, ensure_ascii=False, indent=2))+'</pre></details></td></tr>')
+        table += ('<tr>' + ''.join('<td>'+esc(json.dumps(_human_times(row[key]), ensure_ascii=False))+'</td>' for key in keys) +
+                  '<td><details><summary>Data and provenance</summary><pre>'+esc(json.dumps(_human_times(details), ensure_ascii=False, indent=2))+'</pre></details></td></tr>')
     content = ('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
                '<title>'+esc(title)+'</title><style>body{font:16px system-ui;margin:2em}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:.5em;vertical-align:top;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>'
-               '<h1>'+esc(title)+'</h1><p>Generated '+esc(generated)+'. Source times remain unchanged. Execution success does not imply service health. Missing values are unknown.</p>'+table+'</tbody></table></html>')
+               '<h1>'+esc(title)+'</h1><p>Generated '+esc(_human_times(generated))+'. Times use controller local time to seconds; JSON preserves source times. Execution success does not imply service health. Missing values are unknown.</p>'+table+'</tbody></table></html>')
     (context.artifact_dir/'summary.html').write_text(content, encoding='utf-8')
     (context.artifact_dir/'summary.json').write_text(json.dumps({'generated_at':generated, 'rows':rows}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     return {'status':'success', 'reason_code':'report_complete' if rows else 'empty_selection',

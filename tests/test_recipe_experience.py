@@ -233,11 +233,11 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_report_runtime_failure_does_not_expose_exception_text(self):
         directory=self.copy_report()
-        (directory/'main.py').write_text("VERSION='0.1.1'\ndef execute(*,context,timeout): raise RuntimeError('private-value')")
+        (directory/'main.py').write_text("VERSION='0.1.2'\ndef execute(*,context,timeout): raise RuntimeError('private-value')")
         report,path=reports.run_report(self.root,catalog.choose(self.root,':report/summary'),[])
         self.assertEqual(report['status'],'failed')
         self.assertNotIn('private-value',path.read_text())
-        (directory/'main.py').write_text("VERSION='0.1.1'\ndef execute(*,context,timeout): return {'status':'success'}")
+        (directory/'main.py').write_text("VERSION='0.1.2'\ndef execute(*,context,timeout): return {'status':'success'}")
         report,_=reports.run_report(self.root,catalog.choose(self.root,':report/summary'),[])
         self.assertEqual(report['reason_code'],'invalid_result')
 
@@ -265,6 +265,102 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertTrue(target.exists())
         for name in ('../hosts.yaml','hosts.yaml',str(path),'reports/../../hosts.yaml'):
             with self.assertRaises(ops.ConfigError): reports.show_result(self.root,name)
+
+    def test_result_detail_filtered_index_empty_and_invalid_files(self):
+        report, path = self.run_report()
+        code, out, error = self.invoke('results', 'detail', '--host', 'synthetic-host')
+        self.assertEqual(code, 0, error)
+        self.assertIn('No saved results.', out)
+        for flags in ([], ['--recipe-id', report['recipe']['id']]):
+            code, out, error = self.invoke('results', 'detail', *flags, '--json')
+            self.assertEqual(code, 0, error)
+            self.assertEqual(json.loads(out), reports.results(self.root))
+        (self.root / 'reports' / 'broken').mkdir()
+        (self.root / 'reports' / 'broken' / 'result.json').write_text('{')
+        code, out, error = self.invoke('results', 'detail')
+        self.assertEqual(code, 1)
+        self.assertIn('******** Result 1 ********', out)
+        self.assertIn('******** Invalid result ********', out)
+        self.assertIn('reason_code: invalid-result-file', out)
+
+    def test_result_detail_rejects_missing_paths_filters_and_html(self):
+        report, path = self.run_report()
+        identifier = path.relative_to(self.root).as_posix()
+        for arguments in (['../hosts.yaml'], ['observations/missing.json'],
+                          [identifier, '--host', 'h'], [identifier, '--recipe-id', 'x'],
+                          [identifier, '--status', 'success'], ['--html', str(self.base / 'detail.html')]):
+            code, out, error = self.invoke('results', 'detail', *arguments)
+            self.assertEqual(code, 1, arguments)
+            self.assertIn('ERROR:', error)
+        self.assertFalse((self.base / 'detail.html').exists())
+
+    def test_short_result_ids_work_for_old_files_reports_and_cli(self):
+        report, path = self.run_report()
+        observations = self.root / 'observations'
+        observations.mkdir()
+        old = observations / 'legacy-inventory-name.json'
+        old.write_bytes(self.input.read_bytes())
+        before = {file: file.read_bytes() for file in (old, path)}
+        rows = reports.results(self.root)['results']
+        self.assertEqual(len(rows), 2)
+        for row in rows:
+            identifier, short = row['result_id'], row['short_id']
+            self.assertRegex(short, r'^[0-9a-f]{8}$')
+            self.assertEqual(reports.show_result(self.root, short), reports.show_result(self.root, identifier))
+            self.assertEqual(reports.result_path(self.root, reports._result_key(identifier)), self.root / identifier)
+            code, out, error = self.invoke('results', 'show', short)
+            self.assertEqual(code, 0, error)
+            self.assertEqual(json.loads(out), reports.show_result(self.root, identifier))
+            code, out, error = self.invoke('results', 'detail', short)
+            self.assertEqual(code, 0, error)
+            self.assertIn('result_id: ' + identifier, out)
+        code, out, error = self.invoke('results', 'list')
+        self.assertEqual(code, 0, error)
+        for row in rows:
+            self.assertIn(row['short_id'], out)
+            self.assertNotIn(row['result_id'], out)
+        for file, content in before.items():
+            self.assertEqual(file.read_bytes(), content)
+        alias = self.base / 'relocated-feast'
+        shutil.copytree(self.root, alias)
+        self.assertEqual(reports.results(alias), reports.results(self.root))
+
+    def test_short_result_collisions_extend_across_filters_and_reject_ambiguity(self):
+        directory = self.root / 'observations'
+        directory.mkdir()
+        names = ['observations/a.json', 'observations/b.json']
+        for name, host in zip(names, ('a', 'b')):
+            (self.root / name).write_text(json.dumps({'host_id': host, 'status': 'success', 'recipe': {}}))
+        keys = {names[0]: '12345678a' + '0' * 55, names[1]: '12345678b' + '0' * 55}
+        with patch.object(reports, '_result_key', side_effect=keys.__getitem__):
+            all_rows = reports.results(self.root)['results']
+            self.assertEqual({row['short_id'] for row in all_rows}, {'12345678a', '12345678b'})
+            filtered, = reports.results(self.root, host='a')['results']
+            self.assertEqual(filtered['short_id'], '12345678a')
+            self.assertEqual(reports.show_result(self.root, filtered['short_id'])['host_id'], 'a')
+            with self.assertRaisesRegex(ops.ConfigError, 'ambiguous'):
+                reports.show_result(self.root, '12345678')
+            with self.assertRaisesRegex(ops.ConfigError, 'unknown'):
+                reports.show_result(self.root, 'ffffffff')
+        with patch.object(reports, '_result_key', return_value='0' * 64):
+            with self.assertRaisesRegex(ops.ConfigError, 'digest collision'):
+                reports.results(self.root)
+            self.assertEqual(reports.show_result(self.root, names[0])['host_id'], 'a')
+
+    def test_short_ids_preserve_invalid_file_and_symlink_checks(self):
+        directory = self.root / 'observations'
+        directory.mkdir()
+        bad = directory / 'bad.json'
+        bad.write_text('{')
+        link = directory / 'link.json'
+        link.symlink_to(self.input)
+        data = reports.results(self.root)
+        self.assertEqual(data['status'], 'partial')
+        self.assertEqual(len(data['errors']), 2)
+        for error in data['errors']:
+            self.assertIn('short_id', error)
+            with self.assertRaises(ops.ConfigError):
+                reports.show_result(self.root, error['short_id'])
 
     def test_result_symlink_parent_and_file_rejected(self):
         report,path=self.run_report()

@@ -31,7 +31,7 @@ def hosts_snapshot():
         sources = {host: str(path) for host, path in validator.sources.items()}
         # Raw settings never cross the boundary into UI state or exception text.
         return {'profile': profile, 'root': str(root), 'default_user_icon': validator.default_user_icon,
-                'user_icons': dict(validator.user_icon_defaults), 'hosts': [
+                'user_icons': dict(validator.user_icon_defaults), 'groups': validator.groups, 'hosts': [
             {'host': name, 'source': sources[name], 'default_user_icon': validator.host_user_icons[name],
              'settings': masked(settings)}
             for name, settings in validator.hosts.items()], 'message': 'Configuration only; no connectivity or privilege validation.'}
@@ -65,10 +65,10 @@ def profiles_snapshot():
         return {'profiles': [], 'message': 'Profile registry unavailable: ' + type(exc).__name__}
 
 
-def grouped_hosts(entries):
+def grouped_hosts(entries, catalog=None):
     """Stable group/host order; None is a distinct ungrouped bucket."""
     from opsfeast import group_names
-    groups = {}
+    groups = {group: [] for group in catalog or {}}
     for row in entries:
         names = list(dict.fromkeys(group_names(row['settings'].get('group', []), 'host group')))
         for name in names or [None]:

@@ -75,4 +75,42 @@ Contract versions and database physical version are distinct. Never mutate schem
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-15_
+## Inspect long result IDs vertically
+
+Reuse `python -B tools/opsfeast.py recipes results detail --host HOST --root ROOT`
+for a filtered saved-result index with one field: value per line, then
+`python -B tools/opsfeast.py recipes results detail RESULT_ID --root ROOT` for one
+complete raw result. This avoids wide filename tables without reconnecting. Nested
+object fields use dotted names, arrays remain JSON and controls are escaped.
+Explicit --json returns the unchanged index/raw data contract; human detail stays
+vertical even through pipes. Empty indexes, invalid files, unsafe/missing IDs and
+option conflicts retain explicit outcomes. Use [the canonical detail reference](../../docs/cli.md#vertical-result-details)
+for syntax and verification limits. Existing list/show and result files are unchanged;
+no remote authorization is required or expanded by these read-only commands.
+
+## Select saved results by short ID
+
+Human `recipes results list --host HOST` displays short IDs; pass a displayed ID to
+`recipes results show SHORT_ID` or `recipes results detail SHORT_ID` using the same
+--root/--profile. Artifact lookup accepts the same IDs. For automation use --json:
+index records/errors add short_id and preserve full result_id; raw show JSON and saved
+files are unchanged. Prefer complete result_id for durable stored references.
+Do not derive aliases by truncating filenames. Reuse the checked resolver: the alias
+is a SHA-256 path prefix, at least eight lowercase hexadecimal characters, extended
+for uniqueness across the entire root before filtering. Unknown/ambiguous prefixes
+and unsafe paths fail explicitly. Old files need no migration/rewrite or host access.
+Read [the canonical short-ID workflow and lifecycle](../../docs/cli.md#short-result-ids)
+for copying/renaming, collision boundaries and synthetic verification evidence.
+
+## Interpret human local timestamps
+
+Human CLI tables/results detail, HTML and TUI Details display OS-local time to seconds
+(YYYY-MM-DD HH:MM:SS). Reuse these views rather than rewriting saved data. report/summary
+0.1.2 HTML uses controller local time at generation; its portable implementation needs
+no checkout display-module import. --json, raw results show, Original output, JSON/CSV
+exports and saved data preserve original precision/offsets for analysis and hashing.
+Missing/unzoned instants do not acquire an invented timezone. Read [the canonical display
+policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
+comparing display strings, interpreting DST or authoring another human report.
+
+_Last modified: 2026-10-16_

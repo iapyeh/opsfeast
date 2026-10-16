@@ -218,8 +218,9 @@ hosts:
                     code = runner.main(['inventory/system', '--all', '--root', str(self.root), *flags])
                 self.assertEqual(code, 0)
                 if tty and '--json' not in flags:
-                    self.assertIn('│ status', out.getvalue())
-                    self.assertIn('result_path', out.getvalue())
+                    self.assertIn('│ host', out.getvalue())
+                    self.assertIn('collection identity', out.getvalue())
+                    self.assertNotIn('result_path', out.getvalue())
                 else:
                     self.assertEqual(len(json.loads(out.getvalue())['hosts']), 5)
                 if expected:

@@ -49,6 +49,10 @@ class Hosts:
     def list(self):
         return {host: self.get(host) for host in self._config.hosts}
 
+    def groups(self):
+        """Return an independent group catalog with metadata and member host IDs."""
+        return copy.deepcopy(self._config.groups)
+
     def get(self, host_id, *, reveal_secrets=False):
         if host_id not in self._config.hosts:
             raise ConfigError('unknown host ID')
@@ -245,7 +249,8 @@ class Profile:
                  {'hosts': 'hosts.yaml', 'results': 'observations', 'records': 'records',
                   'runs': 'runs', 'reports': 'reports', 'jobs': 'jobs'}.items()}
         return {'api_version': API_VERSION, 'instance': self.instance.identity, 'profile': self.name,
-                'root': str(self.root), 'status': 'success', 'hosts': current.list(), 'paths': paths,
+                'root': str(self.root), 'status': 'success', 'hosts': current.list(),
+                'groups': current.groups(), 'paths': paths,
                 'configuration_loaded_at': current.loaded_at,
                 'loaded_files': sorted(str(p) for p in current._config.loaded),
                 'services': {'logging': 'unimplemented', 'notifications': 'unimplemented'},
@@ -355,26 +360,26 @@ class Recipe:
 
     @contextmanager
     def _privilege(self, mode, user):
-        from host_runtime import identity, privilege_password, username
+        from host_runtime import identity, verify_connection_identity, privilege_password, username
         self._check()
         user = username(user)
         try:
             before = identity(self._actor, self.timeout, console=self._console)
             login = self._report.get('connection_identity')
             if login is None:
-                login = before
                 configured = self._config.hosts[self.host_id]['connection'].get('user')
-                if configured:
-                    identity(self._actor, self.timeout, console=self._console, target=configured)
-                self._report['connection_identity'] = login
+                login = verify_connection_identity(self._actor, self.timeout, self._report,
+                    authenticated_user=self._report.get('login_identity', {}).get('username'),
+                    configured_user=configured)
         except Exception:
             self._state.failed = True
             self._report['scope_error'] = 'identity_verification_failed'
             raise CoreError('identity_verification_failed') from None
         if mode == 'su' and user not in self._config.hosts[self.host_id].get('users', {}):
             raise ConfigError('su target must be declared in hosts users')
-        credential_user = user if mode == 'su' else before['username']
-        password, source = privilege_password(self._config, self.host_id, credential_user, mode, login['username'])
+        principal = self._report.get('login_identity', {}).get('username', login['username'])
+        credential_user = user if mode == 'su' else before['username'] if self._console else principal
+        password, source = privilege_password(self._config, self.host_id, credential_user, mode, principal)
         if source == 'sudo_disabled':
             raise CoreError('sudo_disabled')
         if mode == 'su' and password is None:

@@ -2,6 +2,7 @@
 import asyncio
 from pathlib import Path
 import sys
+from display_time import format_time, human_times
 
 ROOT = Path(__file__).resolve().parents[1]
 AUTHOR_LABELS = {'name': 'Recipe Author', 'contacts': 'Author Contact Info', 'license': 'Default Recipe License'}
@@ -17,7 +18,7 @@ DOCUMENTS = {
 def overview():
     from checkout_info import information
     info = information()
-    return f'OpsFeast {info["version"]}\nDownloaded: {info["downloaded_at"]}'
+    return f'OpsFeast {info["version"]}\nDownloaded: {format_time(info["downloaded_at"])}'
 
 
 
@@ -98,8 +99,10 @@ def make_home_class():
         def __init__(self):
             super().__init__()
             self.host_entries = {}
+            self.group_entries = {}
             self.host_root = None
             self.host_selection_node = None
+            self.host_cursor_ready = False
             self.profile_entries = {}
             self.management_busy = False
             self.host_operation_busy = False
@@ -165,10 +168,13 @@ def make_home_class():
         def restore_host_cursor(self):
             if self.query_one('#workbench-tabs', TabbedContent).active == 'hosts-pane' and self.host_selection_node is not None:
                 tree = self.query_one('#host-list', Tree)
-                if tree.cursor_node is not None and tree.cursor_node.data is not None:
+                if tree.cursor_node is not None and (self.node_host(tree.cursor_node.data) in self.host_entries
+                        or (self.host_cursor_ready and isinstance(tree.cursor_node.data, tuple)
+                            and tree.cursor_node.data[0] == 'group')):
                     self.host_selection_node = tree.cursor_node
                 else:
                     tree.move_cursor(self.host_selection_node)
+                self.host_cursor_ready = True
         def check_action(self, action, parameters):
             if action == 'host_menu':
                 tree = self.query_one('#host-list', Tree)
@@ -209,12 +215,17 @@ def make_home_class():
             from management_view import grouped_hosts, user_accounts
             tree = self.query_one('#host-list', Tree)
             previous = tree.cursor_node.data if tree.cursor_node else None
+            self.host_cursor_ready = False
             tree.clear()
             tree.root.expand()
-            leaves = []
-            for group, names in grouped_hosts(hosts['hosts']).items():
-                group_label = group if group is not None else 'Ungrouped (no group)'
-                branch = tree.root.add(Text(group_label), expand=True)
+            leaves, branches = [], []
+            self.group_entries = hosts.get('groups', {})
+            for group, names in grouped_hosts(hosts['hosts'], self.group_entries).items():
+                metadata = self.group_entries.get(group, {})
+                label = metadata.get('label', group)
+                group_label = (f'{label} ({group})' if label != group else group) if group is not None else 'Ungrouped (no group)'
+                branch = tree.root.add(Text(group_label), data=('group', group), expand=True)
+                branches.append(branch)
                 for name in names:
                     settings = self.host_entries[name]['settings']
                     host_node = branch.add(Text(settings.get('icon', '🍎') + ' ' + name), data=name, expand=True)
@@ -225,7 +236,8 @@ def make_home_class():
                             'default_user_icon', hosts.get('default_user_icon', '👤')))
                         icon = settings.get('users', {}).get(user, {}).get('icon', fallback)
                         leaves.append(host_node.add_leaf(Text(icon + ' ' + user + (' (login)' if user == login else '')), data=('user', name, user)))
-            selected = next((node for node in leaves if node.data == previous), leaves[0] if leaves else None)
+            selected = next((node for node in leaves + branches if node.data == previous),
+                            leaves[0] if leaves else branches[0] if branches else None)
             self.host_selection_node = selected
             if selected is not None:
                 tree.move_cursor(selected)
@@ -239,6 +251,12 @@ def make_home_class():
             import json
             log = self.query_one('#host-details', RichLog)
             log.clear()
+            if isinstance(key, tuple) and len(key) == 2 and key[0] == 'group':
+                group = key[1]
+                row = {'group': group, **self.group_entries.get(group, {
+                    'label': group, 'description': '', 'icon': {}})}
+                log.write(Text(json.dumps(human_times(row), ensure_ascii=False, indent=2)))
+                return
             host = self.node_host(key)
             if host in self.host_entries:
                 row = self.host_entries[host]
@@ -246,10 +264,16 @@ def make_home_class():
                     user = key[2]
                     row = {'host': host, 'user': user, 'source': row['source'],
                            'settings': row['settings'].get('users', {}).get(user, {})}
-                log.write(Text(json.dumps(row, ensure_ascii=False, indent=2, default=str)))
+                log.write(Text(json.dumps(human_times(row), ensure_ascii=False, indent=2, default=str)))
         def on_tree_node_highlighted(self, event):
             if event.control.id == 'host-list':
-                if event.node.data is not None:
+                # Deferred highlights from rebuilding the tree must not replace
+                # details or selection for the node the user has since chosen.
+                if event.node is not event.control.cursor_node:
+                    return
+                if self.node_host(event.node.data) in self.host_entries or (
+                        self.host_cursor_ready and isinstance(event.node.data, tuple)
+                        and event.node.data[0] == 'group'):
                     self.host_selection_node = event.node
                 self.show_host(event.node.data)
                 if event.node.data is None:
@@ -266,6 +290,9 @@ def make_home_class():
             tree = self.query_one('#host-list', Tree)
             data = tree.cursor_node.data
             host = self.node_host(data)
+            if host not in self.host_entries:
+                self.notify('Select a host or account for host actions.')
+                return
             user = data[2] if isinstance(data, tuple) else None
             from management_view import user_accounts
             login, _ = user_accounts(self.host_entries[host]['settings'])

@@ -89,24 +89,114 @@ Check validates descriptor mappings and per-source ID conflicts. The inventory r
 
 ## Host groups
 
-Each host may declare an optional `group` string or list of strings beside `connection`, `users`, `vars` and `recipes`. A host may belong to multiple groups; omitted group or `group: []` means no membership. Group names must be non-empty strings and match exactly, including case. Duplicate membership is accepted and never causes duplicate execution. Groups are derived from host memberships across the complete include tree; there is no top-level group definition, nesting, inheritance or group variable mapping.
+`groups` is the optional top-level catalog for group metadata and bulk host definitions.
+Host membership uses `group: NAME` or `group: [NAME, ...]`. Group IDs are non-empty,
+case-sensitive strings. Labels are presentation only; CLI selectors always use IDs.
 
 ```yaml
+groups:
+  backup:
+    label: BACKUP-SERVERS
+    description: Servers for backup files
+    icon:
+      host: 🗂
+      user: 👩
+    hosts:
+      backup-01:
+        connection:
+          hostname: backup-01.example.invalid
+          user: operator
+          identity_file: /synthetic/keys/backup_rsa
+        group: [production, linux]
+      backup-02:
+        connection:
+          hostname: backup-02.example.invalid
+          user: operator
+          allow_agent: true
+  production:
+    description: Production systems
 hosts:
-  web-01:
-    connection: {hostname: web-01.example}
-    group: [web, production]
-  web-02:
-    connection: {hostname: web-02.example}
-    group: web
-  db-01:
-    connection: {hostname: db-01.example}
-    group: [database, production]
+  other-backup:
+    connection: {local: true}
+    group: backup
 ```
 
-`run_recipe.py inventory/system --group web` selects web-01 and web-02. `run_recipe.py inventory/system --group web production` selects their union (web-01, web-02 and db-01), running each host once. `--all` selects every configured host, including localhost and jump hosts regardless of membership. All examples require an authorized environment and recipe; see the [runner reference](cli.md#toolsrun_recipepy-inventory-execution) for complete commands, ordering, root/profile options and output.
+Each group accepts only optional label, description, icon and hosts:
 
-Use `--host NAME` for host IDs and `--group NAME` for group names, including when both share the same name. Unknown names fail before any host executes; the runner never guesses a target kind. Recipe and targets are required, and --all cannot be combined with --host/--group. `check` validates membership types without connecting. Groups only select targets in run_recipe.py; they do not change connection topology, authorize execution or add group support to diagnostic commands. Existing configurations without group remain valid. The former groups field is rejected with a migration hint; rename it to group, preserving its list values. If both names appear, validation fails. Scalar membership is treated as a one-element list for selection, while dump preserves the original string/list representation. Null, blank strings, numbers and non-string list members are rejected.
+| Field | Default and meaning |
+| --- | --- |
+| label | Group ID when omitted; a non-empty string without NUL when supplied |
+| description | Empty string when omitted; a string without NUL |
+| icon | Empty mapping; optional host/user defaults, each one Unicode Symbol code point |
+| hosts | Empty mapping; host definitions with the exact same fields/validation as top-level hosts |
+
+The example resolves backup-01.group to `[backup, production, linux]` and
+backup-02.group to `[backup]`. The enclosing group is prepended, any repeated
+memberships are removed while preserving order, and the first membership is the
+primary group. A top-level host keeps its original scalar/list membership form;
+its first listed group is primary when present. Groups affect selection and display,
+not connection, user privileges, variables or recipe inheritance.
+
+A group may define metadata without hosts. A host may refer to an undeclared group;
+the loader creates an implicit catalog entry with label equal to its ID, an empty
+description and no icon defaults. Omitted group or group: [] on a top-level host
+means no membership. A bulk host always belongs to its enclosing group, including
+when its own group is omitted or empty. Invalid null/numeric/non-string memberships
+fail validation. There is no group nesting, host reference syntax inside group hosts,
+or automatic copying of a host into another group definition.
+
+Both entry hosts.yaml and included YAML may define groups. Explicit definitions of
+the same group ID anywhere in the include tree are rejected, even if identical or
+metadata-only. Additional files can add ordinary hosts with that group membership.
+Each host ID must be globally unique across top-level hosts, group hosts and includes;
+repeated definitions are errors, never a merge of connections/users/credentials.
+Existing include de-duplication and cycle/path-boundary checks still apply.
+
+The loader collects the entire include tree before resolving group icons. Metadata
+in a later include applies to earlier host declarations. Each icon field independently
+uses the first configured value in membership order, then global defaults. Explicit
+host/account icons and named-account user defaults keep their precedence; see
+[icons](#global-and-account-icons). Group label/description/icon do not change IDs,
+identity keys or connection settings. Label/description are not inherited by hosts.
+
+Bulk hosts join the same effective host mapping used by CLI diagnostics, Core sessions,
+recipes, jump references, selection and the TUI. Their source file is preserved for
+relative recipe selection and diagnostics; nesting does not widen path boundaries.
+Disabled filtering, --all/--exclude, unknown-target errors and execution deduplication
+use the existing shared selection path. `--group backup` selects all backup members
+including ordinary top-level hosts; `--group BACKUP-SERVERS` does not select by label.
+A declared empty group is known but selecting only empty/disabled groups fails with
+no hosts selected, before execution. Group selection never grants operational authority.
+
+Use `python -B tools/opsfeast.py check --profile NAME` for local validation and
+`python -B tools/opsfeast.py dump groups --profile NAME` for the effective catalog.
+Each catalog value contains label, description, icon (declared defaults) and hosts
+(a list of all member IDs, not nested host definitions or credentials). Host loading
+visits listed includes recursively first, then the current file's top-level hosts,
+then its group-host mappings in group/member declaration order. Catalog member lists
+follow that effective host-load order; groups follow explicit-definition order
+then first-seen implicit membership order. Each member appears once. Dump hosts
+returns the flattened effective hosts, including bulk memberships/icons. Raw parsed
+documents and source YAML remain unchanged. Dump remains an explicit unmasked data
+export; do not print private host settings. Core callers use profile.hosts.groups()
+for independent catalog copies; see [Core API](core-api.md#host-group-catalog).
+
+The TUI shows a differing label as LABEL (ID), keeps the ID as the node identity,
+and shows description/member IDs when a group is highlighted. Declared empty groups
+are visible. Group nodes do not start host actions. See [TUI](terminal-ui.md#group-catalog-in-the-hosts-tree).
+Top-level host-groups is unsupported; the old per-host groups field remains invalid.
+The previous default.groups icon mapping now fails with a migration hint; see
+[group migration](migration.md#group-catalog-and-bulk-host-definitions).
+
+Delivery verification (2026-10-16): 540 tests passed on each of Python 3.11.15,
+3.13.13 and 3.14.4, including synthetic loader/selection/Core/CLI cases and headless
+TUI navigation/group details. The older interpreters reused the selected environment's
+pure-Python dependencies; native SSH readiness on those environments is not established.
+Wheel/sdist build, temporary installation and outside-checkout bulk-group selection,
+Core execution and the bundled check/identity recipe passed locally on 3.14.
+Changed-document links/dates, skill frontmatter and the canonical group YAML passed.
+No real SSH/agent/su/sudo or private configuration migration was performed.
+
 
 ## 測試指定主機的連線
 
@@ -122,7 +212,7 @@ python tools/opsfeast.py test-connection rms4 /srv/feasts/main --debug --traceba
 載入入口與 include，檢查連線、帳號與跳板循環後，只連線至指定 host 及其所需跳板，再於目標主機各執行一次 `hostname`、`date`。不要求 recipes 已選取、不執行 recipes、不切換 users 中的其他帳號，也不修改管理檔案。`localhost` 的 `local: true` 使用本機 Session 執行相同指令。
 
 - 明確 hostname 模式使用 YAML 連線資料，不自動混入 SSH config；省略的 user 使用目前本機帳號，省略 port 使用 22。
-- 使用 `users.<登入帳號>.password` 作為該主機的登入密碼。未指定私鑰且提供密碼時，停用 agent 與自動找金鑰，讓測試實際使用該密碼。未提供密碼或私鑰時使用 SSH agent／預設金鑰。
+- Use `users.<login-account>.password` for the SSH login password. Both automatic authentication sources default to false; explicitly configure `connection.allow_agent` or `connection.look_for_keys` to enable them. See [authentication sources](#ssh-authentication-sources).
 - `identity_file` 對應 SSHScript 的 `pkey_path`，讀取呼叫 connect 的 parent Session 所在主機上的 RSA 私鑰。直連時從 localhost 讀取；經由跳板連線時從前一跳主機透過 SFTP 讀取。路徑原樣傳入，不以 YAML 目錄為基準、不在 localhost 展開 `~`；建議使用該 parent 主機上的絕對路徑。它不受 include／recipe 的管理目錄邊界限制。
 - `via.host` 使用所引用主機自己的 connection 與 users 密碼；inline via 可用私鑰或 agent，不借用目標主機 users 的密碼。多層 via 依序建立巢狀 Session。
 - `proxy_command` 在本機啟動；SSH config alias 先解析為有效連線與帳號，再查 users。若 alias 解析出代理且同時使用 YAML via，於連線前拒絕衝突，不默默忽略。
@@ -200,7 +290,7 @@ hosts:
 
 `proxy_command` 與 SSH 登入帳密各自處理不同階段，可以同時設定：代理命令建立通往目標主機的資料通道，`connection.user` 與同一 host 的 `users.<帳號>.password` 用於目標主機的 SSH 驗證。上例使用代理通道後，以 `operator` 和 `users.operator.password` 登入 `target.internal`，不會因設定了 proxy_command 而忽略 SSH 密碼。
 
-若提供登入密碼且未設定 `identity_file`，`test-connection` 停用 SSH agent 與自動搜尋金鑰，讓目標 SSH 登入使用提供的密碼。若也提供 `identity_file`，仍將私鑰與密碼交給連線層處理，不宣稱一定以密碼登入。代理命令本身需要的帳號、密碼或 token 由代理命令自己的設定處理，不會自動使用或注入 `users` 中的 SSH 密碼。
+SSH agent and automatic key discovery default to disabled for every SSH hop, independently of password or identity_file presence. Explicit connection.allow_agent and connection.look_for_keys control these sources; see [SSH authentication sources](#ssh-authentication-sources). When both a key and password are provided, both remain available to the connection layer; this does not promise password-only login. 代理命令本身需要的帳號、密碼或 token 由代理命令自己的設定處理，不會自動使用或注入 `users` 中的 SSH 密碼。
 
 `proxy_command` 與同一層的 `via` 不能同時設定，也不能與 `ssh_config_alias` 混用。若由 SSH config 管理 ProxyCommand，使用 `ssh_config_alias` 並把命令留在 SSH config。
 
@@ -221,6 +311,8 @@ hosts:
 
 `local: true` 表示執行工具的本機，將來 runner 使用 SSHScript 的本機 session，不建立 SSH 連線，也不需要本機啟用 SSH server。這個 connection 只接受 `local: true`，不能混用 hostname、port、user、identity_file、ssh_config_alias、proxy_command 或 via，也不能作為跳板。`hostname: localhost` 則仍代表透過 SSH 連線到 loopback，與本機執行不同。
 
+The SSH authentication flags `allow_agent`/`look_for_keys` are also invalid with `local: true`.
+
 既有 `hosts.yaml`（包括 include）仍完整保留，重複 `init` 不會自動插入或覆寫 localhost；既有管理環境可手動加入上述項目。此設定不會在初始化或檢查時執行本機 recipe。
 
 ## 連線、跳板與主機引用
@@ -233,6 +325,8 @@ hosts:
 | `port` | SSH 連線埠；省略時為 22 |
 | `user` | SSH 登入帳號；建議明確指定以便搬移，省略時依執行環境的連線預設 |
 | `identity_file` | 可選的金鑰檔案路徑，由連線層處理，不是 include 或 recipe 路徑 |
+| `allow_agent` | Optional Boolean, default `false`; allow the local Python process to use SSH agent keys |
+| `look_for_keys` | Optional Boolean, default `false`; allow discovery of default private-key files on the local Python process host |
 | `via` | 可選的跳板設定，使用主機引用或巢狀連線 |
 | `proxy_command` | 可選的非空代理命令字串；與同一層的 `via` 互斥 |
 
@@ -279,7 +373,7 @@ connection:
   ssh_config_alias: production-web
 ```
 
-它指的是 SSH config 的 `Host production-web`，不是 YAML 的主機 ID。每層選用 alias 或明確連線欄位，不能混用。Alias 可以搭配 YAML 的 `via`；若 SSH config 已指定跳板，應省略 YAML 的 `via`，兩邊同時指定時必須檢查並拒絕衝突。Alias、金鑰與省略的登入預設可能依賴本機環境；完整描述 YAML 拓樸不代表複製設定後就具備網路與驗證條件。
+它指的是 SSH config 的 `Host production-web`，不是 YAML 的主機 ID。每層選用 alias 或明確連線欄位，不能混用。Both forms accept the independent `allow_agent`/`look_for_keys` flags and `via`. Alias 可以搭配 YAML 的 `via`；若 SSH config 已指定跳板，應省略 YAML 的 `via`，兩邊同時指定時必須檢查並拒絕衝突。Alias、金鑰與省略的登入預設可能依賴本機環境；完整描述 YAML 拓樸不代表複製設定後就具備網路與驗證條件。
 
 ### identity_file：私鑰位於前一跳主機
 
@@ -308,6 +402,87 @@ hosts:
 SSHScript 的 pkey_path 載入 RSA 私鑰，與 Paramiko 的 key_filename 始終從 localhost 讀取且支援其他格式的行為不同。本工具的 identity_file 採 pkey_path 語意，不提供 key_filename 的隱式替代。pkey_path 不將 users.password 當作私鑰解密 passphrase；加密 RSA key 的明確解密流程目前未納入此 YAML 格式。
 
 遠端 pkey 透過 SFTP，以前一跳的原始 SSH 登入帳號讀取。su／sudo 不改變 SFTP 身分，因此登入帳號必須有讀取權限；工具不自動提權讀取私鑰。
+
+## SSH authentication sources
+
+Every SSH connection defaults to `allow_agent: false` and `look_for_keys: false`.
+These are OpsFeast defaults applied by the shared connection planner to CLI diagnostics,
+recipe execution and Core sessions; they do not change SSHScript's own defaults.
+Omission means false regardless of a configured password or key. Only YAML Booleans
+are accepted: null, quoted "false"/"true", numbers, lists and mappings are errors.
+
+```yaml
+hosts:
+  password-host:
+    connection:
+      hostname: password.example.invalid
+      user: operator
+      allow_agent: false
+      look_for_keys: false
+    users:
+      operator:
+        password: "synthetic-example-password"
+  agent-host:
+    connection:
+      hostname: agent.example.invalid
+      user: operator
+      allow_agent: true
+  key-host:
+    connection:
+      hostname: key.example.invalid
+      user: operator
+      identity_file: /synthetic/keys/server_rsa
+  alias-host:
+    connection:
+      ssh_config_alias: example-alias
+      look_for_keys: true
+```
+
+Both switches control automatic sources only. Explicit identity_file and an SSH config
+alias's resolved IdentityFile remain usable when both are false. Agent and default-key
+discovery use the **local Python process's environment even for nested SSH**;
+identity_file retains its documented parent-host semantics. Every inline via hop has
+its own flags; a via.host reference uses the referenced host's flags and login account
+settings. Flags are not inherited from the target or parent. A reference accepts only
+host, and local: true accepts no authentication flags.
+
+YAML flags, including their false defaults, are applied after SSH config resolution.
+They override any resolved automatic-source switches without removing explicit key
+files. Opening a channel through a jump host or proxy does not enable its agent.
+An explicitly true switch remains true even when a password is present.
+
+After resolving aliases and per-hop login accounts, the shared planner requires at
+least one configured source per SSH hop: a login password (including an explicitly
+empty string), an explicit key, or an enabled automatic source. Missing sources fail
+before any Session is constructed or any SSH/proxy connection is attempted. Reports
+identify missing_authentication_source and include a safe configuration hint.
+The entire selected host's jump chain is planned before connecting; this is not a
+batch-wide authentication preflight. Local-only execution requires no credentials.
+
+Static check validates syntax/types but cannot confirm alias key resolution, agent
+availability, key readability or successful authentication. Incomplete host definitions
+may therefore pass check and fail during connection planning. Use the existing check
+command for local validation and test-connection HOST --json --debug only within an
+authorized connection scope; inspect the effective flags in stderr debug details.
+Dump returns the stored YAML values, not injected defaults.
+
+When multiple sources are enabled, the supported SSHScript/Paramiko connection path
+tries explicit keys, agent keys, discovered default keys, then a supplied password.
+This is fallback selection, not a configurable authentication order or an MFA contract.
+OpsFeast never retries a failure by silently enabling an unselected source. An enabled
+source is permission to try it, not evidence that a usable credential exists.
+Verification is synthetic: policy/validation, alias and jump planning, CLI forwarding,
+Core and runner regressions; native SSH/agent/PAM behavior is not established by these tests.
+
+Delivery verification (2026-10-16): 530 tests passed on each of Python 3.11.15,
+3.13.13 and 3.14.4. The older interpreters reused the selected environment's
+pure-Python dependencies; this does not establish their native SSH dependency readiness.
+Wheel/sdist build, temporary wheel installation, actual SSHScript 5.0.0 resolver use
+and credential-free local Core execution outside the checkout passed on 3.14.
+Changed-document links/dates, skill frontmatter and the synthetic YAML example passed.
+
+This intentionally changes configurations that relied on automatic discovery. See
+[migration](migration.md#explicit-ssh-authentication-sources).
 
 ## 多個帳號、密碼與帳號專屬變數
 
@@ -494,54 +669,63 @@ When icon is omitted, the loader applies the global precedence below, including 
 
 ### Global and account icons
 
-Configure defaults in the entry `<management-root>/hosts.yaml` only. They apply to the entire resolved include tree in that Feast/profile; included files cannot redefine them. They are not installation-wide settings shared by different profiles.
+Configure global icon and named-account defaults in the entry `<management-root>/hosts.yaml` only. They apply to the entire resolved include tree in that Feast/profile; included files cannot redefine those defaults. Group definitions and their icon defaults may be declared in entry or included YAML. Settings are not shared between profiles.
 
 ```yaml
 default:
   icon:
     user: 👤
     host: 🍎
-  groups:
-    web-server:
-      icon:
-        user: 👨
-        host: 🖥
-    backup-server:
-      icon:
-        host: 🗂
   users:
     operator:
       icon: 👩
       email: operator@example.org
     maintainer:
       icon: 👨
-include: [hosts/extra.yaml]
+include:
+- hosts/extra.yaml
 hosts:
   web:
     group: web-server
-    connection: {hostname: web.example.org, user: operator}
+    connection:
+      hostname: web.example.org
+      user: operator
     users:
-      operator: {}             # Uses 👩 from default.users.operator.icon.
-      maintainer: {icon: ★}    # Overrides named-account and group defaults.
+      operator: {}
+      maintainer:
+        icon: ★
   backup:
     group: backup-server
-    connection: {hostname: backup.example.org}  # Host 🗂; unnamed accounts use 👤.
+    connection:
+      hostname: backup.example.org
   mixed:
-    group: [backup-server, web-server]  # Host 🗂; unnamed accounts use 👨.
-    connection: {hostname: mixed.example.org}
+    group:
+    - backup-server
+    - web-server
+    connection:
+      hostname: mixed.example.org
   explicit:
     icon: 🐧
     group: web-server
-    connection: {hostname: explicit.example.org}  # Host override wins.
+    connection:
+      hostname: explicit.example.org
+groups:
+  web-server:
+    icon:
+      user: 👨
+      host: 🖥
+  backup-server:
+    icon:
+      host: 🗂
 ```
 
-Host precedence: explicit host `icon` → first matching `default.groups.<name>.icon.host` in the host's `group` order → `default.icon.host` → built-in 🍎.
+Host precedence: explicit host `icon` → first matching `groups.<name>.icon.host` in the host's `group` order → `default.icon.host` → built-in 🍎.
 
-Account precedence: `users.<account>.icon` → `default.users.<account>.icon` → first matching `default.groups.<name>.icon.user` in the host's `group` order → `default.icon.user` → built-in 👤. Undeclared login/resolved accounts use the same named-user/group/global user defaults for presentation, without creating a `users` entry.
+Account precedence: `users.<account>.icon` → `default.users.<account>.icon` → first matching `groups.<name>.icon.user` in the host's `group` order → `default.icon.user` → built-in 👤. Undeclared login/resolved accounts use the same named-user/group/global user defaults for presentation, without creating a `users` entry.
 
-Resolve host and user separately: skip groups that do not define the relevant field, including unknown groups. Multiple memberships have deterministic order; they do not require both fields to come from the same group. Group settings supply defaults for members, not icons for the TUI group headings. A default group entry does not assign hosts to a group or affect targeting. Explicit host/account overrides always win. Named account defaults apply across all hosts, including ungrouped hosts, and precede group user defaults. Usernames match exactly and case-sensitively. Host membership remains `hosts.<host>.group`; only the defaults collection uses `groups`.
+Resolve host and user separately: skip groups that do not define the relevant field, including unknown groups. Multiple memberships have deterministic order; they do not require both fields to come from the same group. Group settings supply defaults for members, not icons for the TUI group headings. A metadata-only group entry does not assign hosts; its optional hosts mapping does assign the enclosing membership. Explicit host/account overrides always win. Named account defaults apply across all hosts, including ungrouped hosts, and precede group user defaults. Usernames match exactly and case-sensitively. Host membership remains the singular `group` field; top-level `groups` defines the catalog and optional bulk hosts.
 
-All structural levels are optional mappings; omit an unused level or use `{}`. `default.icon` accepts only `host` and `user`; `default.groups.<name>` accepts an `icon` mapping containing optional `host` and `user`; `default.users.<account>` accepts optional `icon` and `email`. An account without icon (including an email-only entry) continues to group/global icon fallback. Unknown fields, null/non-mapping levels and invalid icons fail loading, including unused group and named-user definitions. Explicit icons follow the same single Unicode Symbol validation as host icons; empty/null values do not hide icons. Defaults are permitted only in entry hosts.yaml and apply before included hosts load. Older default.icon.groups/users, singular default.icon.group and flat default-user-icon/default-host-icon/default-group-icon forms are unsupported and rejected.
+All structural levels are optional mappings; omit an unused level or use `{}`. `default.icon` accepts only `host` and `user`; `groups.<name>` accepts optional label, description, hosts and an icon mapping containing optional host and user; `default.users.<account>` accepts optional `icon` and `email`. An account without icon (including an email-only entry) continues to group/global icon fallback. Unknown fields, null/non-mapping levels and invalid icons fail loading, including unused group and named-user definitions. Explicit icons follow the same single Unicode Symbol validation as host icons; empty/null values do not hide icons. Global icon and named-account defaults are permitted only in entry hosts.yaml. Group definitions are permitted in entry and included YAML; their icons resolve after the complete include tree loads. Older default.icon.groups/users, singular default.icon.group and flat default-user-icon/default-host-icon/default-group-icon forms are unsupported and rejected.
 
 `default.users.<account>.email` is optional metadata: a string without NUL; an empty string is accepted and no email-address syntax validation is performed. Read it with `python -B tools/opsfeast.py dump default.users.operator.email --profile NAME` after selecting the intended profile. It remains in the source/default data, without being copied into effective host account settings, inherited through groups, sent as mail or used as credentials. No arbitrary default-property merge is implemented; future properties need their own documented precedence and validation. User defaults do not create accounts, declare su targets or authorize operations.
 
@@ -567,5 +751,17 @@ hosts:
 identity_key is an exact, case-sensitive nonempty string without leading/trailing whitespace or control characters. Use a shared organization namespace and OS-installation-specific suffix. Duplicate keys anywhere in the resolved include tree fail before connecting. A and B may use the same key in independent Feasts to assert the same installation. This explicit assignment takes priority over native candidates; it does not verify machine identity. Change it after OS reinstall or target replacement. Labels/descriptions are copied into each raw/retained observation and JSON exchange; differing source labels are preserved rather than overwritten. See [identity precedence and sharing](result-data.md#explicit-identity-and-display-metadata).
 
 Connection tests also accept --all and repeated --group selectors, plus --root for an explicit management directory. Terminal progress is automatic; --quiet suppresses it and --json selects structured output. Existing HOST ROOT invocations retain their single-host JSON contract. See [connection selection and output](cli.md#select-and-monitor-connection-tests) for batch schemas, disabled-host handling and examples.
+
+## Human check summary
+
+For a human terminal, check now groups the host/account overview by the effective
+catalog, sorted by group ID, including labels/descriptions, empty groups and an
+ungrouped section last.
+Multi-group hosts repeat with (primary) on the first membership, disabled hosts carry
+[disabled], and users show icons with the configured/locally known login first,
+without a (login) suffix. SSH aliases show login unresolved before declared users. The summary does not perform alias resolution or connections
+and never prints password/vars fields. Recipe validation still runs; the compact TTY
+table omits its count/skip columns. JSON and redirected text retain their detailed
+existing contracts. See [the CLI's exact display rules](cli.md#human-check-overview).
 
 _Last modified: 2026-10-16_

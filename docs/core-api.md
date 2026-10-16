@@ -54,7 +54,7 @@ profile.reload()                             # Explicitly replace configuration 
 
 Instance.open requires an existing directory and writes nothing. Missing identity/profiles do not prevent instance inspection. Profile selection validates the existing management entry/definition; configuration loading uses the same Validator as the CLI, including includes, duplicate/path and connection checks. It does not statically validate every selected recipe or prove connectivity. Invalid/missing configuration raises ConfigError. Failed reload retains the previous valid snapshot.
 
-`hosts.get(host_id, reveal_secrets=True)` explicitly returns raw values for a caller that actually needs them. Neither form changes live configuration; returned dictionaries are copies. Masking is key-based, not a guarantee that arbitrary strings contain no secrets. Do not print entire settings or treat masked values as execution credentials. Effective hosts and declared accounts include resolved icon fields. Entry hosts.yaml uses default.icon.host/user and default.groups.<name>.icon.host/user, with built-ins 🍎/👤. Explicit host/account icons override defaults; default.users.<account>.icon then takes priority for accounts. Each remaining field independently takes the first configured group value in host group order before the global default. An explicit icon must be exactly one Unicode Symbol code point; invalid values fail loading. Defaults do not rewrite source YAML. Optional default.users.<account>.email remains source metadata readable through CLI dump; it is not merged into host-account snapshots. See [host icon semantics](hosts-yaml.md#host-icon). Connection creation privately copies the selected configuration snapshot. Configuration edits take effect after reload/new profile selection, never halfway through a connection scope.
+`hosts.get(host_id, reveal_secrets=True)` explicitly returns raw values for a caller that actually needs them. Neither form changes live configuration; returned dictionaries are copies. Masking is key-based, not a guarantee that arbitrary strings contain no secrets. Do not print entire settings or treat masked values as execution credentials. Effective hosts and declared accounts include resolved icon fields. Entry hosts.yaml uses global default.icon.host/user; entry and included YAML use groups.<name>.icon.host/user, with built-ins 🍎/👤. Explicit host/account icons override defaults; default.users.<account>.icon then takes priority for accounts. Each remaining field independently takes the first configured group value in host group order before the global default. An explicit icon must be exactly one Unicode Symbol code point; invalid values fail loading. Defaults do not rewrite source YAML. Optional default.users.<account>.email remains source metadata readable through CLI dump; it is not merged into host-account snapshots. See [host icon semantics](hosts-yaml.md#host-icon). Connection creation privately copies the selected configuration snapshot. Configuration edits take effect after reload/new profile selection, never halfway through a connection scope.
 
 `instance.inspect()` returns API version, UTC inspection time, installation identity, profiles/active selection, configuration validity/host counts, installed dependency versions and safe component error types. Status is success or partial; missing identity is a usable placeholder. Dependency metadata is not proof of import/native runtime readiness. `profile.inspect()` freshly reads local configuration, returns masked hosts, loaded paths/time, standard storage paths and unimplemented service states. Its fresh inspection does not replace the profile's execution snapshot. Invalid profile inspection raises ConfigError; instance inspection captures per-profile failures.
 
@@ -136,4 +136,51 @@ Public tests cover temporary identities/configuration, copies/moves, isolation, 
 
 Delivery verification (2026-10-15): 456 tests passed on each of Python 3.11.15, 3.13.13 and 3.14.4, including headless Textual checks. Older interpreters reused the selected environment's pure-Python dependencies; these runs do not establish native SSHScript dependency readiness. Matching SSHScript 5.0.0 and credential-free local Core/identity execution were verified on 3.14. Wheel build, pip installation into a temporary target, import/session use outside the checkout, public resource inspection, skill validation and changed-document checks passed. Native SSH/su/sudo remain unverified. An existing TUI regression test now waits for deferred refresh completion instead of fixed short sleeps.
 
-_Last modified: 2026-10-15_
+## SSH authentication source policy
+
+Profile sessions and Recipe execution reuse the shared connection planner without a
+new import or method. Configure connection.allow_agent/connection.look_for_keys in
+hosts.yaml; both default false per hop, including aliases. See [canonical examples
+and interpretation](hosts-yaml.md#ssh-authentication-sources). Explicit passwords and
+keys remain usable. Missing all sources raises ConfigError during planning before
+session creation; diagnostic/runner reports include missing_authentication_source
+and a safe hint. Static configuration loading alone does not establish usable credentials.
+This intentionally changes ambient-key-dependent configurations; see [migration](migration.md#explicit-ssh-authentication-sources).
+
+## Host group catalog
+
+`profile.hosts.groups()` returns a deep-copied catalog keyed by group ID, including
+explicit and implicit groups. Every value has label, description, icon (declared
+host/user defaults only), and hosts (a unique ordered list of member IDs). It contains
+no nested host credentials. Like hosts.list/get, it reads the profile's current
+snapshot; reload updates both atomically and a failed reload preserves both.
+`profile.inspect()` freshly returns groups alongside masked hosts without replacing
+the execution snapshot. No connections or writes occur.
+
+```python
+from opsfeast import Instance
+
+profile = Instance.open("/srv/opsfeast").profile("main")
+for group_id, group in profile.hosts.groups().items():
+    print(group_id, group["label"], group["description"], group["hosts"])
+```
+
+Use the public method instead of reconstructing membership or parsing nested YAML.
+Bulk hosts work with existing hosts.get, sessions.connect and profile.recipe by host
+ID; no alternate execution API is needed. See [configuration, ordering, validation
+and migration](hosts-yaml.md#host-groups). Metadata is user-authored display text,
+not identity or authorization evidence.
+
+## Authentication principal and execution shell
+
+Core connection reports record the successful final-hop login_identity, including
+aliases. On first privilege validation the shared connection identity model can accept
+an ordinary ESXi login with a verified UID 0 shell; report shell_identity and
+identity_model explain that relationship. Policy/credential lookup uses the original
+login for the unprivileged facade, while nested privileged scopes use their actual
+actor. Restoration compares shell identities. Explicit su/sudo targets remain strict,
+and recipe.sudo still enforces that actor's sudo policy even when already root.
+ESXi authenticated-console support is not added. Existing profile.recipe/session calls
+need no new arguments. See [rules, fields and evidence](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+
+_Last modified: 2026-10-16_

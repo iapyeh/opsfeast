@@ -76,7 +76,7 @@ python -B tools/opsfeast.py recipes results list --profile main --html /path/to/
 python -B tools/opsfeast.py recipes artifact reports/RUN_ID/result.json summary.html --profile main
 ```
 
-Use returned result_id values, not literal placeholders. Results 0.1.0 is a read-only index built from current observations/*.json and reports/*/result.json, without duplicating datasets into a new database. It contains result_id, recipe ID/version, host ID, kind, status/reason, start/completion times, inventory identity quality/warnings and retention receipt. Entries sort newest first by start time, then result ID; --recipe-id/--host/--status filter records. Malformed files are preserved and listed in errors, with partial overall status and exit 1. No results is success with an empty list. The index also includes recipe_reference and recipe_source from raw recipe metadata (null when absent). The Recipes TUI matches both fields for source-separated history; it does not guess attribution from a shared ID. This is an execution index; use [retained inventory tools](result-data.md) for identity-aware observation analysis and exchange.
+Use returned result_id values, not literal placeholders. Results 0.1.0 is a read-only index built from current observations/*.json and reports/*/result.json, without duplicating datasets into a new database. It contains result_id, short_id, recipe ID/version, host ID, kind, status/reason, start/completion times, inventory identity quality/warnings and retention receipt. Entries sort newest first by start time, then result ID; --recipe-id/--host/--status filter records. Malformed files are preserved and listed in errors, with partial overall status and exit 1. No results is success with an empty list. The index also includes recipe_reference and recipe_source from raw recipe metadata (null when absent). The Recipes TUI matches both fields for source-separated history; it does not guess attribution from a shared ID. This is an execution index; use [retained inventory tools](result-data.md) for identity-aware observation analysis and exchange.
 
 results show returns the selected raw JSON; --html presents its fields as escaped text, retaining error/data/time/quality information. A result ID is a storage-relative path, with no absolute paths, traversal or symlink parents. artifact verifies a declared output's path, size and digest before returning its actual local path/title/media type; modified/missing/unlisted artifacts fail. Neither command launches a viewer or publishes/transmits data. Generated HTML from third-party recipes may contain active content: review the renderer before execution/viewing. This framework does not claim all user-provided artifacts are escaped; the bundled basic views and summary are escaped.
 
@@ -117,4 +117,45 @@ Saving a job grants no future execution permission and establishes no scheduler.
 
 [Public synthetic tests](../tests/test_recipe_experience.py) cover source/ID selection, static discovery, HTML escaping, offline execution/inputs/status/quality/artifacts, paths, raw-result queries, bundle integrity/boundaries, independent Feast reuse and saved reruns/content drift. Existing operation tests remain applicable through the shared execution implementation. No real host or external scheduler was used. The [summary recipe](../recipes/report/summary/README.md) is an initial plain view; users' agents can author richer versioned report recipes with reviewed renderers and complete synthetic examples/tests. Keep new data/artifact/backends discoverable through canonical contracts and the recipe skill. UI/MCP/web integrations can consume these functions and JSON contracts but are not implemented by this CLI.
 
-_Last modified: 2026-10-15_
+## Inspect details after a compact run
+
+Completed run/job TTY summaries show only host, collection identity and result. Full
+access/data/artifacts and result paths remain in --json and saved reports. For one
+host, use results list --host HOST (optionally --recipe-id inventory-system), then
+results show RESULT_ID with the same --root/--profile; each raw result names host_id.
+These existing read-only commands require no new connection or execution. See [the
+canonical output and viewing workflow](cli.md#compact-execution-summaries) for exact
+invocations, JSON/HTML options, unknown actors and failed/unsaved attempts.
+
+## Vertical result browser
+
+For long result filenames, use `recipes results detail --host HOST` with the original
+--root/--profile. It prints the same filtered newest-first index as list, one record
+at a time with one field: value per line. Select its complete result_id with
+`recipes results detail RESULT_ID` to display a single full raw result vertically.
+Nested objects use dotted field names; arrays stay JSON values. detail stays vertical
+when redirected; --json retains complete result_id values and additive short_id metadata. show raw JSON remains unchanged. See [exact syntax, errors and limits](cli.md#vertical-result-details).
+This is an offline read-only browser, with no connection or collection.
+
+## Short IDs for result selection
+
+Human results list now displays a compact short ID, normally eight hexadecimal
+characters. Pass it directly to results show/detail (or artifact) in the same
+--root/--profile. The index JSON retains complete result_id and adds short_id;
+vertical detail includes the complete resolved result_id. Existing raw result documents
+and filenames are preserved. Short IDs are deterministic aliases derived from the
+storage-relative path, extended across the entire root on prefix collisions, before
+filters. Ambiguous/unknown prefixes fail; use full result_id for durable automation.
+See [the complete ID algorithm, lifecycle and error rules](cli.md#short-result-ids).
+Legacy inventory and report files need no migration or connection.
+
+## Human time formatting
+
+Results list/detail and human HTML exports display zoned instants in controller local
+time as YYYY-MM-DD HH:MM:SS. TUI Details uses the same policy as history. Raw show JSON,
+--json, Original output and saved/index timestamps retain their original precision and
+offsets. Bundled report/summary 0.1.2 applies this policy to HTML only, preserving its
+JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
+DST/unknown-time handling and verification limits. Source observations are not refreshed.
+
+_Last modified: 2026-10-16_

@@ -133,7 +133,8 @@ class AppTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(app.done)
             app.event({'kind': 'result', 'host': 'second', 'status': 'failed', 'reason_code': 'cleanup_failed'})
             report = {'hosts': [{'host': '[red]測試', 'status': 'skipped', 'reason_code': 'host_disabled'},
-                                {'host': 'second', 'status': 'failed', 'reason_code': 'cleanup_failed'}], 'excluded_hosts': ['third']}
+                                {'host': 'second', 'status': 'failed', 'reason_code': 'cleanup_failed',
+                                 'completed_at': '2026-10-14T20:34:56.987654Z'}], 'excluded_hosts': ['third']}
             app.finish(json.dumps(report), 1)
             table = app.query_one(DataTable)
             self.assertEqual(table.row_count, 2)
@@ -141,6 +142,13 @@ class AppTests(unittest.IsolatedAsyncioTestCase):
             table.move_cursor(row=1)
             await pilot.pause()
             self.assertTrue(app.query_one('#details', RichLog).lines)
+            from display_time import format_time
+            # Check formatting for a known item without depending on queued cursor events.
+            app.show_details('second')
+            details = '\n'.join(line.text for line in app.query_one('#details', RichLog).lines)
+            self.assertIn(format_time('2026-10-14T20:34:56.987654Z'), details)
+            self.assertNotIn('.987654', details)
+            self.assertEqual(app.items['second']['completed_at'], '2026-10-14T20:34:56.987654Z')
             await pilot.pause(0.6)
 
     async def test_non_json_error_and_no_false_success(self):

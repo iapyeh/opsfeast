@@ -98,7 +98,7 @@ Use [report/summary](../../recipes/report/summary/README.md) as a basic offline 
 
 ## Optional human terminal display
 
-The Recipes tab uses a docked source/directory Tree and Info/Executions tabs for the default Feast. Info exposes descriptive/static contract metadata and verification limits; Executions preserves saved run evidence. Selecting a recipe updates both views without switching the active tab. Match recipe_source plus recipe_reference; preserve stored timestamps, host_id and exact status (the history table converts to OS local time at second precision, with offsets in its heading; saved result timestamps remain unchanged), and do not attribute legacy records missing provenance. The checkout source displays OpsFeast Bundle; profile sources display the current profile name and are hidden when no recipes are cataloged. External sources keep registered names; internal provenance/reference identifiers are unchanged. Selecting an execution row displays only its saved JSON in Details/Original output; missing/invalid/provenance-changed files show an error and clear stale output. Original output means saved result text, not archived process stdout/stderr. Global live progress/results belongs to Actions → Output, alongside its Configure form. Other catalog roots retain disabled/unavailable states. See [the recipe browser guide](../../docs/terminal-ui.md#recipes-workbench-entrypoint) for refresh rules and empty/error states.
+The Recipes tab uses a docked source/directory Tree and Info/Executions tabs for the default Feast. Info exposes descriptive/static contract metadata and verification limits; Executions preserves saved run evidence. Selecting a recipe updates both views without switching the active tab. Match recipe_source plus recipe_reference; preserve stored timestamps, host_id and exact status (the history table converts to OS local time at second precision, with offsets in its heading; saved result timestamps remain unchanged), and do not attribute legacy records missing provenance. The checkout source displays OpsFeast Bundle; profile sources display the current profile name and are hidden when no recipes are cataloged. External sources keep registered names; internal provenance/reference identifiers are unchanged. Selecting an execution row displays its saved JSON in Details (local-time display copy) and Original output (unchanged saved text); missing/invalid/provenance-changed files show an error and clear stale output. Original output means saved result text, not archived process stdout/stderr. Global live progress/results belongs to Actions → Output, alongside its Configure form. Other catalog roots retain disabled/unavailable states. See [the recipe browser guide](../../docs/terminal-ui.md#recipes-workbench-entrypoint) for refresh rules and empty/error states.
 
 
 The Hosts sidebar also supports Enter → run recipe with an explicit path for exactly one selected host and captured Feast root. Use Actions for variable overrides or offline report inputs. See [host action dialogs](../../docs/terminal-ui.md#host-action-menu-progress-and-result-dialog) for scope, progress, result states and cleanup limits. This is a UI adapter over the existing runner, not a new recipe contract.
@@ -162,5 +162,130 @@ Host identity_key, label and description are now supported. An explicit identity
 ## ESXi access prerequisites for recipes
 
 Inventory access checks share the [ESXi effective-identity adapter](../../docs/host-diagnostics.md#esxi-login-identity-without-id). An ESXi VMkernel host lacking id can verify its actual UID/name using existing /bin/python or /bin/python3 standard-library calls, without installing anything. A verified UID 0 uses the existing root collection path without sudo. Reuse the runner's access gate or, for already-authorized standalone diagnostic composition, the documented host_runtime.identity(session, timeout, evidence=...) helper; never replace UID evidence with configured account names or environment variables. Preserve identity_tool_missing/identity_probe_failed/identity_invalid_output/identity_mismatch and raw access evidence; access success does not prove a recipe implementation or native su/sudo works. Non-root ESXi login, authenticated-console privileges and ESXi inventory remain unverified by the real root-login check. See the [capability catalog](../../docs/agent-capabilities.md#esxi-login-identity) and canonical guide for dependencies, output fields, extension rules and public tests.
+
+## Select explicit SSH authentication sources
+
+Read [the canonical authentication policy and examples](../../docs/hosts-yaml.md#ssh-authentication-sources)
+before configuring or executing SSH hosts. connection.allow_agent and
+connection.look_for_keys are strict Booleans, both default false on every hop,
+including SSH config aliases; they are not allowed on local/reference objects.
+Preserve the user's intended sources: explicit login passwords/identity files
+remain usable, agent or default-key discovery requires an explicit true.
+Do not infer flags from password presence or bypass the shared planner in a recipe.
+Inline hops are independent; referenced hops use the referenced host's settings.
+
+Use check for local type validation. Missing all sources after alias/account resolution
+fails before that target chain opens any Session, with missing_authentication_source
+and a safe hint; check alone cannot confirm usable credentials. For an authorized
+connection test use test-connection HOST --json --debug to inspect effective flags
+and results without printing secrets. Configuration changes do not authorize probes.
+See [migration](../../docs/migration.md#explicit-ssh-authentication-sources) before
+resuming configurations that relied on ambient keys. Policy tests are synthetic;
+real SSH/agent authentication requires separate authorized evidence.
+
+## Group catalog and bulk host definitions
+
+Read [the canonical group schema and example](../../docs/hosts-yaml.md#host-groups).
+Use top-level groups.<id> for optional label (default ID), description (default empty
+string), icon.host/user and hosts. Bulk hosts use the ordinary host schema and enter
+the same effective host map; the enclosing group is prepended and memberships are
+deduplicated. First membership is primary. Keep host IDs globally unique and explicit
+group definitions unique across includes; use membership to share hosts across groups.
+Labels never substitute for IDs in selectors. Missing group definitions get default
+metadata. Defaults/icon resolution happens after all includes, with existing named-user
+and explicit host/account precedence. No connection/vars/recipe inheritance is added.
+
+Prefer `profile.hosts.groups()` for a copied runtime catalog, existing hosts.get and
+session/recipe methods for bulk hosts, and check / dump groups for local inspection.
+Catalog hosts are member ID lists, not nested raw host mappings. Inspect can show a
+fresh catalog without changing the execution snapshot; reload explicitly. See [Core
+examples](../../docs/core-api.md#host-group-catalog). The TUI shows labels plus IDs and
+read-only group descriptions/member IDs, including empty groups. Group rows do not
+start host actions. Old default.groups fails with a migration hint; follow [migration](../../docs/migration.md#group-catalog-and-bulk-host-definitions)
+without silently rewriting private configuration. Preserve source-relative paths,
+notes, authorization and skipped/failure states. Tests are synthetic; no SSH/privilege
+behavior follows from group parsing or display.
+
+## ESXi SSH-exec identity evidence
+
+Read [the shared ESXi diagnosis workflow](../../docs/host-diagnostics.md#diagnose-esxi-identity-failures)
+when SSH succeeds but identity fails. The adapter handles exit 127 and the narrowly
+recognized exit 2 / empty stdout / shell missing-id stderr form only after verifying
+VMkernel; do not broaden it to arbitrary failures. Inspect identity_probe.id_exitcode,
+identity_error.reason_code and configured_identity_probe.actual/expected/matched.
+access.actual_identity records the observed shell actor even when account comparison
+fails; connection_identity is not verified in that case. The ESXi connection-level root-shell model can accept different numeric UIDs with a known successful final-hop SSH login, verified VMkernel and consistently observed UID 0. Keep both identities and the acceptance rule visible; other platform and privilege-target mismatches remain failures. Do not rewrite private bindings to root. Existing authorized
+check-access --host HOST --root ROOT --json --quiet is the reusable CLI; Core and runner
+use the same probe without new APIs/configuration. No raw command output is retained.
+Native two-hop evidence covers a root missing-id exit 2 path and an ordinary login accepted with an effective root shell; other ESXi/privilege scenarios remain outside this evidence. These diagnostics do not
+change retained inventory schemas.
+
+## Distinguish SSH login from an ESXi root shell
+
+Read [the canonical identity model and JSON example](../../docs/host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+Reuse the shared CLI/Core/runner verifier: login_identity comes from the successful
+final-hop connection; shell_identity is the observed execution account. Verified
+VMkernel and a stable UID 0 shell may accept an ordinary account as esxi_root_shell.
+Numeric matched=false is then accepted with status=success and accepted_by explaining
+the policy; do not relabel it as failed or silently change hosts.yaml to root.
+Account policies, credential selection and extra-user exclusion use the SSH login;
+restoration uses the original shell. Explicit privilege targets, other kernels,
+non-root mismatches and unknown-principal cases remain strict. No configuration
+bypass or new invocation is added. check-access --host HOST --root ROOT --json --quiet
+returns the full evidence within an authorized host scope. Human tables explain the
+root shell and show sudo already_root. Native evidence covers the two tested two-hop
+paths; additional ESXi releases, role assignments and su/sudo remain unverified.
+
+## Read execution details only when needed
+
+Completed execution TTY output contains only host, collection identity and result; do
+not expect access/data/path fields in human stdout. Use --json for the full structured
+summary. To inspect a selected host offline, run
+`python -B tools/opsfeast.py recipes results list --host HOST --recipe-id inventory-system --root ROOT`,
+then `python -B tools/opsfeast.py recipes results show RESULT_ID --root ROOT` using a
+returned result_id. The raw result identifies host_id and retains detailed evidence;
+--html NEW_FILE optionally exports a basic view without opening it. Reuse this existing
+browser rather than reconnecting or writing a private result scanner. Read [the canonical
+output and result-viewing rules](../../docs/cli.md#compact-execution-summaries) for
+unknown collection actors, retention/fallback failures, exclusions, absent saved results
+and synthetic verification limits. Dryrun/blocked preflight retain access-test tables.
+
+## Inspect long result IDs vertically
+
+Reuse `python -B tools/opsfeast.py recipes results detail --host HOST --root ROOT`
+for a filtered saved-result index with one field: value per line, then
+`python -B tools/opsfeast.py recipes results detail RESULT_ID --root ROOT` for one
+complete raw result. This avoids wide filename tables without reconnecting. Nested
+object fields use dotted names, arrays remain JSON and controls are escaped.
+Explicit --json returns the unchanged index/raw data contract; human detail stays
+vertical even through pipes. Empty indexes, invalid files, unsafe/missing IDs and
+option conflicts retain explicit outcomes. Use [the canonical detail reference](../../docs/cli.md#vertical-result-details)
+for syntax and verification limits. Existing list/show and result files are unchanged;
+no remote authorization is required or expanded by these read-only commands.
+
+## Select saved results by short ID
+
+Human `recipes results list --host HOST` displays short IDs; pass a displayed ID to
+`recipes results show SHORT_ID` or `recipes results detail SHORT_ID` using the same
+--root/--profile. Artifact lookup accepts the same IDs. For automation use --json:
+index records/errors add short_id and preserve full result_id; raw show JSON and saved
+files are unchanged. Prefer complete result_id for durable stored references.
+Do not derive aliases by truncating filenames. Reuse the checked resolver: the alias
+is a SHA-256 path prefix, at least eight lowercase hexadecimal characters, extended
+for uniqueness across the entire root before filtering. Unknown/ambiguous prefixes
+and unsafe paths fail explicitly. Old files need no migration/rewrite or host access.
+Read [the canonical short-ID workflow and lifecycle](../../docs/cli.md#short-result-ids)
+for copying/renaming, collision boundaries and synthetic verification evidence.
+
+## Interpret human local timestamps
+
+Human CLI tables/results detail, HTML and TUI Details display OS-local time to seconds
+(YYYY-MM-DD HH:MM:SS). Reuse these views rather than rewriting saved data. report/summary
+0.1.2 HTML uses controller local time at generation; its portable implementation needs
+no checkout display-module import. --json, raw results show, Original output, JSON/CSV
+exports and saved data preserve original precision/offsets for analysis and hashing.
+Missing/unzoned instants do not acquire an invented timezone. Read [the canonical display
+policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
+comparing display strings, interpreting DST or authoring another human report.
 
 _Last modified: 2026-10-16_

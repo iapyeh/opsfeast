@@ -9,7 +9,7 @@ OpsFeast provides two command-line entrypoints:
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
-Host configuration loading (including check/dump) validates icon as exactly one Unicode Symbol code point. Effective host/account dumps include resolved icons from entry hosts.yaml defaults (default.icon.host/user, per-group default.groups.<name>.icon.host/user, and named-account default.users.<account>.icon; built-ins 🍎/👤); other selected values remain unmasked, including credentials. See [host icons](hosts-yaml.md#host-icon).
+Host configuration loading (including check/dump) validates icon as exactly one Unicode Symbol code point. Effective host/account dumps include resolved icons from entry hosts.yaml defaults (default.icon.host/user, per-group groups.<name>.icon.host/user, and named-account default.users.<account>.icon; built-ins 🍎/👤); other selected values remain unmasked, including credentials. See [host icons](hosts-yaml.md#host-icon).
 
 ## Terminal tables and JSON
 
@@ -22,7 +22,7 @@ Human console output uses the shared `tools/console_output.py` presentation laye
 | instance inspect/init/set/renew/relocate | Field/value tables with the same report values | --json |
 | inspect-recipe | Recipe/platform/static-status table; requested platform constraints/errors remain visible | --json; --details retains the full text view |
 | test-connection, host-init, test-host, test-su, test-sudo | Status/host/test/user/reason tables; facts and cache/source times when available | --json |
-| run_recipe.py / recipes run, including inventory dryrun | Per-host collection status, recipe, reason, retention, identity quality and result path; returned data/access details remain available | --json |
+| run_recipe.py / recipes run, including inventory dryrun | Host, collection identity and result only; dryrun/preflight retain access-test tables | --json |
 | recipes list/show/results list | Catalog/source, metadata or result-index tables | --json; --html retains its explicit export behavior |
 | recipes jobs list/show/save/run | Job list/details, save report or execution summary | --json; this presentation flag is not persisted in job invocation data |
 | check_environment.py / recipe_identity.py defaults / skill_bundle.py check or download | Field/value readiness, author or bundle reports | --json (place after the subcommand where applicable) |
@@ -273,6 +273,7 @@ The [canonical recipe experience reference](recipe-experience.md) defines catalo
 | recipes run RECIPE [operation options] | Operations share run_recipe.py host/group/all/exclude/threads/timeout/--var/--vars-file/progress semantics. |
 | recipes run RECIPE [--input JSON_FILE ...] [--var NAME=VALUE ...] [--vars-file JSON_FILE] [--timeout SECONDS] | Offline python-report recipes receive selected JSON data and isolated parameters, no hosts/Sessions. Save new result/artifact files. |
 | recipes results list [--recipe-id ID] [--host HOST] [--status STATUS] [--json] [--html NEW_FILE] | Read ordered raw-run/report index; retain invalid-file errors and inventory quality/retention metadata. |
+| recipes results detail [RESULT_ID] [--recipe-id ID] [--host HOST] [--status STATUS] [--json] | Vertical field: value index entries or a selected full raw result; no table-width dependency. |
 | recipes results show RESULT_ID [--html NEW_FILE] | Return raw JSON or export an escaped field table. RESULT_ID is storage-relative, never an arbitrary path. |
 | recipes artifact RESULT_ID NAME | Verify a declared report artifact's path/size/digest and print its local path; do not launch/publish. |
 | recipes pack RECIPE --file RELATIVE_FILE ... --output NEW_ZIP | Package one recipe from an explicit file allowlist with manifest/digests; exclude private/storage/hidden/link entries. |
@@ -385,7 +386,7 @@ The shared result schema is **0.2.0**, independent of host facts schema 0.1.0. R
 
 Seven common observations cover hostname, platform, system name/version, kernel name/release and architecture. Each retains value, state, observed_at, source_ids and error. Missing/failed values remain null with explicit states. A command returning zero does not establish successful parsing or cleanup. Raw inventory command output may appear in private source records.
 
-Single-host stdout is a JSON summary containing status, reason_code, message, detected_kernel, supported_platforms, recipe_id and result_path. Using --all or resolving more than one unique host produces batch stdout: an object with a hosts array; each entry records host/status/reason/result_path, or a sanitized error type when no saved report is available. A selection resolving to one host retains the single-host summary unless --all is used. Nonempty exclusions add excluded_hosts with host_disabled/cli_excluded reasons. Explicit disabled hosts remain skipped results; disabled group/all members are omissions. If filtering removes every target, return 1 with empty hosts plus exclusion evidence and an error on stderr.
+With --json or non-TTY stdout, single-host output is a JSON summary containing status, reason_code, message, detected_kernel, supported_platforms, recipe_id and result_path. Using --all or resolving more than one unique host produces batch stdout: an object with a hosts array; each entry records host/status/reason/result_path, or a sanitized error type when no saved report is available. A selection resolving to one host retains the single-host summary unless --all is used. Nonempty exclusions add excluded_hosts with host_disabled/cli_excluded reasons. Explicit disabled hosts remain skipped results; disabled group/all members are omissions. If filtering removes every target, return 1 with empty hosts plus exclusion evidence and an error on stderr.
 
 See the [inventory guide](../recipes/inventory/system/README.md), [recipe descriptor](../recipes/inventory/system/recipe.yaml), [result schema](../recipes/inventory/system/schema.json) and [synthetic example](../recipes/inventory/system/examples/result.synthetic.json) for authoring and data consumers. Old copied descriptors must be migrated to 0.2.0. Reviewed custom inventory entrypoints and compatible Python-session recipes can execute; there is no arbitrary backend loader, extension-overlay installer or execution sandbox. General recipes return data in stdout summaries and save observations/recipe-run-<UUID>.json with skipped no_retention_adapter; read [general result semantics](recipe-execution.md#results-failure-states-and-storage).
 
@@ -438,5 +439,246 @@ Host identity refers to an OS installation. Linux uses a hashed machine-id candi
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
 For an ESXi VMkernel target lacking id, check-access uses existing system Python for effective UID/account verification, with additive access.identity_probe/configured_identity_probe and identity_error.reason_code fields. A reachable SSH session with failed identity is shown as PASS connection and FAIL identity; it never becomes successful access. Verified UID 0 skips sudo. See [adapter prerequisites, schemas and tested limits](host-diagnostics.md#esxi-login-identity-without-id). No new flag, setup or credential rule is introduced.
+
+### SSH authentication source selection
+
+All connecting commands use the shared [connection authentication policy](hosts-yaml.md#ssh-authentication-sources):
+connection.allow_agent and connection.look_for_keys are independent Booleans, each
+defaulting to false on every hop, including SSH config aliases. No CLI flags override
+this policy. Reuse test-connection HOST --json --debug for an authorized probe;
+effective switches appear in safe stderr debug output. check validates types without
+connecting; dump preserves stored values rather than materializing defaults.
+Missing all sources after resolution produces missing_authentication_source with a
+configuration hint and fails before that host's first connection. Existing command
+failure exit codes and partial/batch behavior still apply. See [migration](migration.md#explicit-ssh-authentication-sources).
+
+### Group catalog and bulk host definitions
+
+The shared loader accepts top-level groups with optional label/description/icon/hosts,
+flattens bulk hosts into the ordinary host map, and prepends the enclosing group to
+their membership. All CLI host IDs, jump references, recipe paths and filtering use
+that map. The existing --group selector uses IDs, never labels. A defined empty
+group is known but selecting no eligible hosts returns a nonzero no-hosts-selected
+error before execution. No new CLI switches are required.
+
+```sh
+python -B tools/opsfeast.py check --profile NAME
+python -B tools/opsfeast.py dump groups --profile NAME
+python -B tools/opsfeast.py dump groups.backup.label --profile NAME
+python -B tools/opsfeast.py dump hosts.backup-01.group --profile NAME
+```
+
+check/dump remain local reads. Effective dump groups includes defaults and member ID
+lists; dump hosts includes bulk hosts. Source YAML is not rewritten. dump is unmasked.
+Connection tests/recipes still need their actual operational authorization. See
+[canonical schema](hosts-yaml.md#host-groups) and [migration](migration.md#group-catalog-and-bulk-host-definitions).
+
+### Human check overview
+
+`python -B tools/opsfeast.py check --profile NAME` uses a group/host/users table only
+when sys.stdout.isatty() is true and --json is absent. The header counts YAML files,
+groups (including declared empty groups) and unique host IDs. Groups sort by ID
+(case-sensitive ascending string order), independently of labels or declaration order;
+members follow effective host order; ungrouped hosts appear last. Empty groups
+show (no hosts). A differing label displays as LABEL (ID), followed by the description
+when present. Membership determines grouping, never label text.
+
+Multi-group hosts appear in every membership. Only their first membership carries
+(primary); the host total still counts each ID once. Disabled hosts remain visible
+with [disabled], explained by a legend. This is configuration state, not a connection
+failure. Existing effective host/account icons are reused across every group row.
+The locally known/configured login is first, followed by the other declared users
+in declaration order, without duplicates or a (login) suffix. A local connection uses
+the current local account; an omitted
+explicit-host user uses the existing local-account fallback. SSH aliases show login
+unresolved before any declared users; check does not resolve aliases or create Sessions
+for display. Account names are configuration evidence, not authenticated identities.
+Only names and icons are shown; passwords, vars and other credential fields are omitted.
+
+The human table omits selected-recipe counts and recipe-skip details. Validation still
+checks recipe selections, and invalid recipes still fail with the existing exit code;
+notes and the configuration-only limitation remain visible. --json preserves the exact
+report_version 0.1.0 payload, including per-host selected_recipes/skipped and notes,
+on both terminals and pipes. Without --json, redirected output retains its previous
+text summary and detailed recipe/skip lines. init output is unchanged. No flags, data
+schemas, stored settings or operational authorization change.
+
+
+Delivery verification (2026-10-16): 545 tests passed on each of Python 3.11.15,
+3.13.13 and 3.14.4. The older interpreters reused the selected environment's
+pure-Python dependencies; these runs do not establish native SSH readiness.
+TTY fixtures cover group-ID sorting independent of labels, login-first ordering
+without suffixes, disabled/empty cases and recipe-validation failure; exact JSON and redirected-text regression assertions passed. Wheel/sdist
+build, temporary installation and outside-checkout TTY/JSON checks passed on 3.14.
+Documentation links/dates and skill frontmatter checks passed. No real SSH was used.
+
+### ESXi identity failure evidence
+
+check-access --json now includes access.identity_probe.id_exitcode, and ESXi
+configured_identity_probe actual/expected username/effective_uid and matched when
+that comparison is available. access.actual_identity preserves the observed actor
+before a configured-account mismatch; connection_identity remains unpublished until
+verification succeeds. No raw stderr or Python output is retained. The top-level
+identity_failed reason keeps the specific identity_error.reason_code. See [exact
+fallback conditions and interpretation](host-diagnostics.md#diagnose-esxi-identity-failures).
+An SSH exec missing-id exit 2 can use the same verified VMkernel/Python adapter as exit
+127; arbitrary command errors do not. Connection-level UID mismatch may use the ESXi
+root-shell model below; other mismatches fail before sudo/collection.
+
+### ESXi login versus execution identity
+
+check-access can report a successful ordinary SSH login with an effective root shell
+on verified ESXi. Its identity row explains shell=root, uid=0 (ESXi); sudo is SKIP /
+already_root, and the host passes if all other required checks/cleanup pass. JSON adds
+login_identity, shell_identity and identity_model esxi_root_shell. Numeric UID matched
+can remain false while configured_identity_probe.status is success and accepted_by
+records the model. The final-hop resolved SSH user drives account selection/policy;
+connection_identity remains the baseline shell actor. No new flags or YAML settings
+are needed. See [precise conditions and verification limits](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+
+## Compact execution summaries
+
+Completed recipe execution on a terminal prints one table with exactly three columns:
+`host`, `collection identity`, and `result`. This applies to run_recipe.py, recipes run
+and saved-job execution, for both single and batch targets. It does not append field/value
+access, data, artifact, count or path tables. Excluded hosts appear as SKIP rows in the
+same table. Progress/errors remain on stderr; --quiet suppresses runner progress.
+
+Collection identity uses access.actual_identity, for example root (uid=0) after sudo,
+not the login or pre-elevation shell. Missing evidence displays unknown; general recipes
+do not acquire new identity probes just for display. Failed/partial/skipped/unsupported
+states include their reason when available. Retention failure is explicitly FAIL with
+the separate collection outcome; fallback_user is PARTIAL when collection itself passed.
+Exit codes and the full JSON/saved-report contracts are unchanged. Inventory dryrun and
+a blocked preflight still show the existing access-test view because collection did not
+start. Recipe-authored stdout is not suppressed by this formatter.
+
+### Inspect one host's saved execution
+
+Use the existing read-only result browser after a run:
+
+```sh
+python -B tools/opsfeast.py recipes results list --host HOST --recipe-id inventory-system --root ROOT
+python -B tools/opsfeast.py recipes results show RESULT_ID --root ROOT
+```
+
+Select a displayed short ID (or the complete JSON result_id) from the newest-first list; HOST and ROOT identify the
+original management environment. Each saved result contains host_id. show returns the
+complete raw JSON, including access/collection evidence and saved data. For a basic
+HTML view, add --html NEW_FILE; it writes a new escaped file without launching a viewer.
+Use --json with list for agent automation. These commands do not connect, recollect,
+change sudo state or infer a latest result from a filename. Missing/invalid results
+remain explicit errors. Source-disabled or blocked preflight attempts may have no saved
+result; inspect the original --json diagnostic output in that case.
+
+Verification uses synthetic single/batch states, unknown identities, root/user actors,
+retention failures, exclusions and unchanged JSON, plus real local saved-result lookup
+by host without any Session. No remote recipe execution is needed for this display change.
+
+## Vertical result details
+
+Use recipes results detail for long result IDs, similar to MySQL's vertical \G view.
+Without RESULT_ID, it reads the same newest-first index as results list and accepts
+--host, --recipe-id and --status. It prints a numbered record separator and one
+field: value line per index field, including the complete result_id and host_id.
+It does not load every result's full collection payload into the display.
+
+```sh
+python -B tools/opsfeast.py recipes results detail --host HOST --recipe-id inventory-system --root ROOT
+python -B tools/opsfeast.py recipes results detail RESULT_ID --root ROOT
+```
+
+With RESULT_ID, detail reads one complete raw result. Nested object fields use dotted
+names (for example access.actual_identity.username); arrays remain JSON values on a
+single line. Null/Boolean values remain explicit and strings retain leading zeroes.
+Newlines and terminal controls in keys/values are escaped. No value is truncated or
+horizontally combined with other fields. This explicit human view stays vertical for
+both terminal and redirected stdout and does not require tabulate. It is not a parser
+contract: add --json for the existing index envelope or complete raw-result JSON,
+respectively. No new result schema or storage is introduced.
+
+No matches prints No saved results. and returns zero; malformed index files remain
+visible as invalid-result records and return one while preserving readable records.
+Missing/unsafe result IDs return an error. RESULT_ID cannot be combined with index
+filters; --html is rejected (use results list/show --html instead). Existing show JSON is unchanged; list now uses the short IDs described below. Use the original --root or --profile; detail performs no host
+connection, sudo, collection, file rewrite or viewer launch. Synthetic tests cover
+TTY/pipe/JSON, long names, escaped controls, filters, empty/partial indexes, unsafe IDs,
+option errors and operation without table dependencies.
+
+## Short result IDs
+
+Human results list output (terminal, redirected text and HTML rows) uses short IDs,
+for example a73c91e2, instead of long storage-relative filenames. Use them directly:
+
+```sh
+python -B tools/opsfeast.py recipes results list --host HOST --root ROOT
+python -B tools/opsfeast.py recipes results show a73c91e2 --root ROOT
+python -B tools/opsfeast.py recipes results detail a73c91e2 --root ROOT
+```
+
+The ID above is illustrative; use a displayed value from the same management root.
+Full storage-relative result IDs still work, and show JSON remains the unchanged raw
+document. detail displays the resolved complete result_id; detail without an ID shows
+both result_id and short_id vertically. Index JSON (results version 0.1.0) adds short_id
+to records and invalid-file errors while preserving the complete result_id. Use full
+result_id in durable automation and --json for machine parsing. Short IDs also work
+with the existing artifact selector through the same checked result resolver.
+
+The lookup key is the SHA-256 hexadecimal digest of the exact UTF-8 storage-relative
+result path. This provides a deterministic alias for old inventory filenames, general
+recipe runs and report directories, including legacy names without UUIDs. Normal IDs
+show the first eight lowercase hexadecimal characters. The prefix extends only as
+needed for uniqueness across all candidate result files in that root, including invalid
+files, before any recipe/host/status filter. Filtering cannot make a globally ambiguous
+prefix resolve silently. Any unique prefix of 8–64 characters can be used for lookup;
+unknown or ambiguous prefixes return a nonzero error. A full digest collision rejects
+index construction rather than selecting an arbitrary result; full paths remain usable.
+
+These aliases are local lookup handles, not host/observation identity or a new stored
+UUID. Existing timestamped filenames and embedded UUIDs, raw documents, result paths,
+SQLite records and chronological ordering are unchanged. No migration, manifest,
+rewrite or remote operation is needed. Copying an entire management root preserves
+aliases; renaming an individual result changes its alias. Adding a colliding result
+may extend displayed aliases and makes an old ambiguous prefix fail; retain full IDs
+for durable references. Deleted/missing files remain lookup errors, and all existing
+symlink/containment/envelope/artifact checks still apply after resolution.
+
+Synthetic verification covers legacy/new-style paths, reports, full and short lookup,
+filter-independent prefix extension, ambiguous/missing IDs, complete digest collision,
+invalid files, symlinks, unchanged raw bytes and copies of management roots. This
+changes local indexing and presentation only, without new SSH or privilege behavior.
+
+## Human time display policy
+
+Human-facing instants use the running computer's local timezone and
+YYYY-MM-DD HH:MM:SS, with no fractional seconds. For example,
+2026-10-14T20:34:56.987654Z displays as 2026-10-15 04:34:56 on a controller in
+Asia/Taipei. No timezone is hardcoded: the operating system/TZ environment selects
+it, and historical daylight-saving offsets apply to each instant. Fractions are
+omitted, not rounded into the next second. This is display formatting, not timestamp
+regeneration or a change in the observation's time.
+
+The policy covers CLI human tables, results list (including redirected text), vertical
+detail, nested human details, HTML result exports, Home download time and TUI Details.
+The existing TUI history heading retains its local GMT offset information. Bundled
+report/summary 0.1.2 renders both source/generation times in HTML using controller local
+time at generation, while its JSON artifact preserves the original timestamps. A static
+HTML artifact does not change timezone when opened on another computer.
+
+Formatting copies data at the view boundary. --json, raw results show JSON, TUI Original
+output, saved reports/receipts, JSON/CSV exports, SQLite, hash inputs, short IDs,
+filename UTC prefixes and ordering retain original precision/timezones. These are data
+interfaces, not human time views. Duration/measurement numbers and calendar-only dates
+are not reinterpreted as instants. Missing values remain missing; generic views leave
+malformed/timezone-less values unchanged rather than guessing UTC/local. TUI history
+retains its explicit unknown/invalid-or-unzoned indicators.
+
+The internal display_time module supplies format_time/human_times to shared views;
+this is a checkout implementation helper, not a versioned Core API. The portable
+report recipe includes its own standard-library formatter for the same policy so it
+remains shareable without importing an internal checkout module. Public synthetic
+checks cover offset/date rollover, fractional truncation, winter/summer DST, nested
+values, CLI TTY/pipe/JSON, HTML and TUI display copies, source-byte preservation and
+the standalone report's unchanged JSON artifact. No remote operation is required.
 
 _Last modified: 2026-10-16_

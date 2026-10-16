@@ -335,8 +335,8 @@ class RecipeSourcesTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             runner.main(['inventory/system', '--host', 'h', '--exclude', 'other'])
         # Exclusion is target-only; it does not mutate enabled or the jump plan.
-        self.data['hosts']['other']['connection'] = {'hostname': 'jump.example'}
-        self.data['hosts']['h']['connection'] = {'hostname': 'target.example', 'via': {'host': 'other'}}
+        self.data['hosts']['other']['connection'] = {'hostname': 'jump.example', 'allow_agent': True}
+        self.data['hosts']['h']['connection'] = {'hostname': 'target.example', 'allow_agent': True, 'via': {'host': 'other'}}
         self.write()
         fake = Mock()
         fake.resolve_connection.side_effect = lambda name, **kw: {'hostname': name, 'username': 'synthetic'}

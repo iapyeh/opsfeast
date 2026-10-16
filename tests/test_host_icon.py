@@ -63,8 +63,6 @@ class HostIconTests(unittest.TestCase):
   icon:
     user: ★
     host: 🐧
-  groups:
-    team: {icon: {host: ♣}}
 include: [extra.yaml]
 hosts:
   explicit:
@@ -74,6 +72,8 @@ hosts:
     users: {alice: {icon: ♠}, bob: {sudo: false}}
   plain:
     connection: {local: true}
+groups:
+  team: {icon: {host: ♣}}
 """)
         (self.root / 'extra.yaml').write_text('hosts:\n  grouped:\n    group: [team, ops]\n    connection: {local: true}\n    users: {carol: {}}\n')
         original = self.entry.read_bytes()
@@ -112,7 +112,10 @@ hosts:
                     default = {'users': {'alice': {'icon': invalid}}}
                 else:
                     default = {'icon': {field: invalid}}
-                self.entry.write_text(json.dumps({'default': default, 'hosts': {}}))
+                payload = {'default': default, 'hosts': {}}
+                if field == 'groups':
+                    payload['groups'] = payload['default'].pop('groups')
+                self.entry.write_text(json.dumps(payload))
                 with self.subTest(field=field, invalid=invalid), self.assertRaises(ConfigError):
                     self.load()
         self.entry.write_text('include: [extra.yaml]\n')
@@ -130,6 +133,7 @@ hosts:
             'web-server': {'icon': {'user': '👨', 'host': '🖥'}},
             'backup-server': {'icon': {'host': '🗂'}},
             'users-only': {'icon': {'user': '♣'}}}}, 'hosts': {}}
+        data['groups'] = data['default'].pop('groups')
         cases = {
             'web': (['web-server'], '🖥', '👨'),
             'backup': (['backup-server'], '🗂', '★'),
@@ -173,9 +177,6 @@ hosts:
         self.entry.write_text("""default:
   icon:
     user: 👤
-  groups:
-    web-server: {icon: {host: 🖥, user: 👨}}
-    backup-server: {icon: {host: 🗂}}
   users:
     alice: {icon: 👩}
     implicit-login: {icon: ★}
@@ -188,6 +189,9 @@ hosts:
   ungrouped:
     connection: {local: true}
     users: {alice: {}, bob: {}}
+groups:
+  web-server: {icon: {host: 🖥, user: 👨}}
+  backup-server: {icon: {host: 🗂}}
 """)
         (self.root / 'extra.yaml').write_text('hosts:\n  included:\n    group: web-server\n    connection: {local: true}\n    users: {alice: {icon: ♣}}\n')
         original = self.entry.read_bytes()
@@ -228,9 +232,6 @@ hosts:
 
     def test_metadata_only_user_and_empty_defaults_preserve_fallbacks(self):
         self.entry.write_text("""default:
-  groups:
-    web: {icon: {user: 👩}}
-    empty: {}
   users:
     alice: {email: alice@example.org}
     bob: {}
@@ -239,6 +240,9 @@ hosts:
     group: [empty, web]
     connection: {local: true}
     users: {alice: {}, bob: {}}
+groups:
+  web: {icon: {user: 👩}}
+  empty: {}
 """)
         v = self.load().check_connections()
         self.assertEqual(v.hosts['h']['icon'], '🍎')
@@ -254,7 +258,7 @@ hosts:
         for groups in (None, [], {'web': None}, {'web': {'host': '★'}},
                        {'web': {'icon': None}}, {'web': {'icon': {'user': False}}},
                        {'web': {'icon': {'host': '★'}, 'email': 'team@example.org'}}):
-            self.entry.write_text(yaml.safe_dump({'default': {'groups': groups}}))
+            self.entry.write_text(yaml.safe_dump({'groups': groups}))
             with self.subTest(groups=groups), self.assertRaises(ConfigError):
                 self.load()
         for defaults in ({'groups': {}}, {'users': {}}):

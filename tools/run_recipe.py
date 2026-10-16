@@ -25,7 +25,7 @@ import recipe_contract
 from host_identity import probe_identity, WARNING as IDENTITY_WARNING
 from observation_store import retain
 
-from opsfeast import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root, group_names
+from opsfeast import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root
 
 BUNDLE = Path(__file__).resolve().parents[1] / 'recipes/inventory/system'
 collector = runpy.run_path(str(BUNDLE / 'main.py'))
@@ -392,6 +392,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
                 from access_check import collection_actor
                 access = report.setdefault('access', {})
                 actor_context = collection_actor(session, config, host, timeout, access, force=force,
+                    authenticated_user=report.get('login_identity', {}).get('username'),
                     fallback=force and access_result is not None and access_result.get('reason_code') == 'sudo_failed') if runtime is not None else nullcontext(session)
                 with actor_context as actor:
                     selected['collect'](actor, report, timeout, facts['facts'], **options)
@@ -485,10 +486,7 @@ def select_hosts(root, selectors, all_hosts=False, exclude=None, excluded=None):
     for host in exclude:
         if host not in config.hosts:
             raise ConfigError(f'unknown excluded host ID: {host}')
-    groups = {}
-    for host, settings in config.hosts.items():
-        for group in group_names(settings.get('group', []), f'{config.sources[host]}: {host}.group'):
-            groups.setdefault(group, []).append(host)
+    groups = {group: definition['hosts'] for group, definition in config.groups.items()}
     selected, omitted = [], {}
     for kind, name in selectors:
         if kind == 'host':

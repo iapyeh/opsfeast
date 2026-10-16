@@ -94,7 +94,7 @@ python -B tools/opsfeast.py check-access --all --quiet
 python -B tools/opsfeast.py check-access --all --json --quiet > access.json
 ```
 
-Migration: scripts that parsed the previous default JSON must add --json; --quiet suppresses only stderr progress, not the final stdout report. The login access contract remains 0.1.0 with an additive per-host configured_user field (null when absent); verified login identity remains access.connection_identity. Check-access adds accounts in display order: user (nullable until login is known), role (login/su), status and reason_code. Additional attempted accounts retain full diagnostic evidence in checks and sudo policy as enabled/disabled. The login row references existing top-level access evidence; the host status aggregates all rows. No separate account list is added to inventory preflight/dryrun reports. Runner dryrun/gating JSON structures are unchanged; TTY presentation follows the [console policy](cli.md#terminal-tables-and-json). The optional check_many(..., progress=callback, include_users=True) checkout helper enables the CLI account scope and calls callback(stage, report) at start/account_start/account_finish/finish in worker threads; callers must serialize shared output and avoid raising from callbacks. include_users defaults to False for existing library/runner callers; no callback means no progress output. This helper is not a versioned public Core API.
+Migration: scripts that parsed the previous default JSON must add --json; --quiet suppresses only stderr progress, not the final stdout report. The login access contract remains 0.1.0 with an additive per-host configured_user field (null when absent); the verified initial shell remains access.connection_identity, while access.login_identity identifies the authenticated account. Check-access adds accounts in display order: user (nullable until login is known), role (login/su), status and reason_code. Additional attempted accounts retain full diagnostic evidence in checks and sudo policy as enabled/disabled. The login row references existing top-level access evidence; the host status aggregates all rows. No separate account list is added to inventory preflight/dryrun reports. Runner dryrun/gating JSON structures are unchanged; TTY presentation follows the [console policy](cli.md#terminal-tables-and-json). The optional check_many(..., progress=callback, include_users=True) checkout helper enables the CLI account scope and calls callback(stage, report) at start/account_start/account_finish/finish in worker threads; callers must serialize shared output and avoid raising from callbacks. include_users defaults to False for existing library/runner callers; no callback means no progress output. This helper is not a versioned public Core API.
 
 The test follows configured jump hosts, verifies actual login UID/name, enters the same root shell used for collection when enabled, verifies UID 0, exits and verifies original identity, then checks Session cleanup. It checks root-shell access, not sudo permissions limited to individual commands. SSHScript's authenticated console requires Bash and id. Supplied passwords may not be consumed when policy/cache permits entry; success cannot prove a password's correctness independently of that policy/cache. Every selected test runs even after another fails. Exit 0 means all selected targets passed; failed or explicitly skipped targets return 1. `--root` and `--profile` are mutually exclusive. `--timeout` is positive/finite, default 30 seconds per stage, not an entire invocation deadline. `--threads` is positive, defaults to 1 for check-access; dryrun uses the runner concurrency default. Disabled/excluded hosts are not contacted.
 
@@ -177,5 +177,31 @@ Per-test table verification on 2026-10-15: Python 3.11.15, 3.13.13 and 3.14.4 ea
 Access host-icon verification on 2026-10-15: Python 3.11.15, 3.13.13 and 3.14.4 each passed 479 public tests with temporary display dependencies. Default/custom icons, per-test host cells, stderr start/completion, disabled/CLI-excluded labels, Unicode widths and unchanged JSON IDs/YAML are covered. Static documentation/skill checks passed. No native host or privilege tests were added or run.
 
 ESXi login compatibility: when id is absent and uname reports VMkernel, the shared identity adapter can use the existing system Python to verify effective UID/name. Access JSON adds identity_probe/configured_identity_probe backend evidence and identity_error.reason_code on identity-stage failure; connection_identity remains unchanged. A successful SSH connection followed by failed identity is displayed as PASS connection plus FAIL identity; it remains a failed host and does not authorize trusting configured root. See [the canonical adapter contract](host-diagnostics.md#esxi-login-identity-without-id). UID 0 still skips sudo. Existing SSHScript authenticated-console prerequisites apply to other users; no native ESXi su/sudo or inventory execution is established.
+
+## ESXi identity diagnostics and configured-account mismatches
+
+The shared identity adapter accepts missing-id exit 127, or the narrowly recognized
+exit 2 / empty stdout / shell missing-id stderr form, only after confirming VMkernel.
+Access reports record identity_probe.id_exitcode. ESXi configured_identity_probe adds
+normalized actual/expected account and effective UID fields plus matched. The observed
+shell actor remains in access.actual_identity when a configured-account mismatch fails;
+connection_identity and privilege access are not marked verified. A root effective UID with a different authenticated-account UID can be accepted by the verified ESXi root-shell model described below. Other mismatches remain identity_mismatch. A failed relationship check stops sudo and collection. See [diagnostic rules and native
+evidence](host-diagnostics.md#diagnose-esxi-identity-failures). Retained inventory contracts
+are unchanged; these fields explain raw access diagnostics.
+
+## ESXi authenticated login with a root shell
+
+For verified ESXi, an authenticated ordinary account may have a UID 0 execution shell.
+The shared connection check accepts this as esxi_root_shell when final-hop login,
+stable root UID and VMkernel evidence satisfy the [identity model](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+Access login_identity identifies the SSH account; shell_identity and the legacy
+connection_identity describe the initial shell. Policies/passwords and exclusion of
+the login from extra-user tests use login_identity. Root execution sets mode root
+and sudo not_needed, including when that login disables sudo; no elevation occurs.
+The table names the login and explains its effective root shell rather than reporting
+an identity error. Numeric matched may be false with status success and accepted_by
+esxi_root_shell. Failed probes and other platform/privilege-target mismatches still
+stop access. Collector provenance keeps the effective actor; retained schemas are
+unchanged. This does not verify every command, a vSphere role or native ESXi su/sudo.
 
 _Last modified: 2026-10-16_

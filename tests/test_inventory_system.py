@@ -512,7 +512,7 @@ class RunnerTests(unittest.TestCase):
         self.session_class.assert_not_called()
 
     def test_connection_failure_saved_safely(self):
-        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {hostname: example.invalid, user: ops}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
+        (self.root / 'hosts.yaml').write_text('hosts:\n  example:\n    connection: {hostname: example.invalid, user: ops, allow_agent: true}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session_class.resolve_connection.return_value = {'hostname': 'example.invalid', 'username': 'ops', 'port': 22}
         self.session.connect.side_effect = OSError('private credential')
         report, _ = self.run_recipe()
@@ -522,7 +522,7 @@ class RunnerTests(unittest.TestCase):
         self.session.close.assert_called_once_with(strict=True)
 
     def test_nested_hops_receive_budgets_and_cleanup_root(self):
-        (self.root / 'hosts.yaml').write_text('hosts:\n  bastion:\n    connection: {hostname: bastion.example}\n  example:\n    connection:\n      hostname: target.example\n      via: {host: bastion}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
+        (self.root / 'hosts.yaml').write_text('hosts:\n  bastion:\n    connection: {hostname: bastion.example, allow_agent: true}\n  example:\n    connection:\n      hostname: target.example\n      allow_agent: true\n      via: {host: bastion}\n    recipes:\n      - recipe: ./recipes/inventory/system\n')
         self.session_class.resolve_connection.side_effect = [
             {'hostname': 'bastion.example', 'username': 'ops', 'port': 22},
             {'hostname': 'target.example', 'username': 'ops', 'port': 22}]
@@ -537,6 +537,8 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(all(hop['connected'] for hop in report['hops']))
         for session in (self.session, middle):
             kwargs = session.connect.call_args.kwargs
+            self.assertIs(kwargs['allow_agent'], True)
+            self.assertIs(kwargs['look_for_keys'], False)
             self.assertEqual(kwargs['timeout'], 30)
             self.assertEqual(kwargs['banner_timeout'], 30)
             self.assertEqual(kwargs['auth_timeout'], 30)

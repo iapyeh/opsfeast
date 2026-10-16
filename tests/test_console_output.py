@@ -99,6 +99,114 @@ class ConsoleTests(unittest.TestCase):
             code, output = self.capture(ops.main, ['instance', 'inspect', '--json'])
             self.assertEqual(json.loads(output)['status'], 'partial')
 
+    def test_check_tty_groups_users_primary_disabled_and_empty_groups(self):
+        (self.root / 'hosts.yaml').write_text('''groups:
+  backup:
+    label: BACKUP-SERVERS
+    description: Backup files
+    icon: {host: 🗂, user: 👩}
+    hosts:
+      first:
+        connection: {hostname: first.invalid, user: operator}
+        group: [production, backup]
+        users: {root: {}, operator: {password: SYNTHETIC-SECRET}}
+      second:
+        enabled: false
+        connection: {hostname: second.invalid, user: operator}
+  production: {}
+  empty: {}
+hosts:
+  solo:
+    connection: {hostname: solo.invalid, user: deploy}
+''')
+        original = (self.root / 'hosts.yaml').read_bytes()
+        with patch.object(ops, 'connection_plan', side_effect=AssertionError('no connection planning')):
+            code, output = self.capture(ops.main, ['check', str(self.root)])
+        self.assertEqual(code, 0)
+        self.assertIn('1 YAML files, 3 groups, 3 hosts', output)
+        self.assertIn('│ group', output)
+        self.assertIn('users', output)
+        self.assertLess(output.index('BACKUP-SERVERS (backup)'), output.index('│ empty'))
+        self.assertLess(output.index('│ empty'), output.index('│ production'))
+        self.assertLess(output.index('│ production'), output.index('Ungrouped (no group)'))
+        self.assertIn('Backup files', output)
+        first_rows = [line for line in output.splitlines() if '🗂 first' in line]
+        self.assertEqual(len(first_rows), 2)
+        self.assertIn('(primary)', first_rows[0])
+        self.assertNotIn('(primary)', first_rows[1])
+        self.assertIn('👩 operator, 👩 root', first_rows[0])
+        self.assertIn('🗂 second [disabled]', output)
+        self.assertIn('[disabled] = host disabled', output)
+        self.assertIn('(no hosts)', output)
+        self.assertIn('👤 deploy', output)
+        for unwanted in ('selected recipes', 'skipped', 'SYNTHETIC-SECRET', '(login)'):
+            self.assertNotIn(unwanted, output)
+        self.assertEqual((self.root / 'hosts.yaml').read_bytes(), original)
+
+    def test_check_tty_alias_login_is_unresolved_and_declared_users_are_listed(self):
+        (self.root / 'hosts.yaml').write_text('''hosts:
+  alias:
+    connection: {ssh_config_alias: synthetic-alias}
+    users: {declared: {password: SYNTHETIC-SECRET}}
+''')
+        with patch.object(ops, 'connection_plan', side_effect=AssertionError('no alias resolution')):
+            code, output = self.capture(ops.main, ['check', str(self.root)])
+        self.assertEqual(code, 0)
+        self.assertIn('login unresolved, 👤 declared', output)
+        self.assertNotIn('SYNTHETIC-SECRET', output)
+        self.assertNotIn('declared (login)', output)
+
+    def test_check_tty_sorts_by_group_id_rather_than_label(self):
+        (self.root / 'hosts.yaml').write_text('''groups:
+  z: {label: AAA}
+  a: {label: ZZZ}
+''')
+        code, output = self.capture(ops.main, ['check', str(self.root)])
+        self.assertEqual(code, 0)
+        self.assertLess(output.index('ZZZ (a)'), output.index('AAA (z)'))
+
+    def test_check_json_and_pipe_keep_detailed_recipe_contracts(self):
+        (self.root / 'hosts.yaml').write_text('''recipe_sources:
+  community: {path: ./uninstalled, enabled: false}
+groups:
+  backup: {}
+hosts:
+  h:
+    connection: {local: true}
+    group: backup
+    recipes: [community:example]
+''')
+        expected = {'report_version': '0.1.0', 'status': 'success', 'yaml_files': 1,
+                    'hosts': [{'host': 'h', 'selected_recipes': 0,
+                               'skipped': [{'reference': 'community:example', 'source': 'community',
+                                            'status': 'skipped', 'reason_code': 'source_disabled'}]}],
+                    'notes': []}
+        for tty in (True, False):
+            code, output = self.capture(ops.main, ['check', str(self.root), '--json'], tty)
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(output), expected)
+        code, output = self.capture(ops.main, ['check', str(self.root)], False)
+        self.assertEqual(code, 0)
+        self.assertEqual(output, 'OK: 1 YAML files, 1 hosts; configuration checks passed.\n'
+                         '  h: 0 selected recipes\n'
+                         '    skipped community:example: source_disabled\n'
+                         'No SSH connection or recipe execution performed; platform, authentication and full recipe contracts are not validated.\n')
+        code, output = self.capture(ops.main, ['check', str(self.root)])
+        self.assertEqual(code, 0)
+        self.assertNotIn('selected recipes', output)
+        self.assertNotIn('source_disabled', output)
+
+    def test_check_tty_still_rejects_invalid_recipes_and_handles_empty_catalog(self):
+        (self.root / 'hosts.yaml').write_text('hosts: {h: {connection: {local: true}, recipes: [{recipe: ./missing}]}}')
+        code, output = self.capture(ops.main, ['check', str(self.root)])
+        self.assertEqual(code, 1)
+        self.assertNotIn('configuration checks passed', output)
+        (self.root / 'hosts.yaml').write_text('hosts: {}')
+        code, output = self.capture(ops.main, ['check', str(self.root)])
+        self.assertEqual(code, 0)
+        self.assertIn('0 groups, 0 hosts', output)
+        self.assertIn('│ group', output)
+
     def test_diagnostics_keep_su_and_sudo_failures_and_exit_codes_separate(self):
         events = []
         factory = lambda: FakeConsole('login', events, {'root'})
@@ -204,6 +312,82 @@ class ConsoleTests(unittest.TestCase):
             self.assertIn('connection', output)
             run.assert_not_called()
         self.assertEqual(report, before)
+
+    def test_execution_summary_is_three_columns_with_verified_collection_actor(self):
+        report = {'hosts': [
+            {'host': 'h', 'status': 'success', 'result_path': '/private/long-result.json',
+             'access': {'actual_identity': {'username': 'root', 'effective_uid': 0},
+                        'shell_identity': {'username': 'login', 'effective_uid': 501}},
+             'data': {'private_extra': 'must-not-print'}},
+            {'host': 'ordinary', 'status': 'partial', 'reason_code': 'incomplete',
+             'access': {'actual_identity': {'username': 'operator', 'effective_uid': 1000}}},
+            {'host': 'broken', 'status': 'failed', 'error': 'RuntimeError'},
+            {'host': 'fallback', 'status': 'success',
+             'access': {'actual_identity': {'username': 'operator', 'effective_uid': 1000}, 'degraded': True}}
+        ], 'excluded_hosts': [{'host': 'disabled', 'reason_code': 'host_disabled'}],
+            'counts': {'root': 1}}
+        before = json.loads(json.dumps(report))
+        with patch.object(console, 'table', wraps=console.table) as render:
+            output = console.execution(report, {'h': '🐧'})
+        self.assertEqual(render.call_args.args[0], ['host', 'collection identity', 'result'])
+        self.assertEqual(len(render.call_args.args[1]), 5)
+        for value in ('🐧 h', 'root (uid=0)', 'operator (uid=1000)', 'PARTIAL (incomplete)',
+                      'RuntimeError', 'unknown', 'SKIP (host_disabled)', 'fallback_user'):
+            self.assertIn(value, output)
+        for value in ('/private/', 'must-not-print', 'access.', 'shell_identity', 'counts', '│ field'):
+            self.assertNotIn(value, output)
+        for tty, force in ((True, True), (False, False)):
+            stream = Terminal() if tty else io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                console.print_report(report, kind='execution', json_output=force)
+            self.assertEqual(json.loads(stream.getvalue()), before)
+        self.assertEqual(report, before)
+
+    def test_saved_results_can_be_selected_by_host_then_viewed_offline(self):
+        directory = self.root / 'observations'
+        directory.mkdir()
+        for host in ('h', 'other'):
+            document = {'host_id': host, 'status': 'success', 'recipe': {'id': 'inventory-system'},
+                        'access': {'actual_identity': {'username': 'root', 'effective_uid': 0}}}
+            (directory / (host + '.json')).write_text(json.dumps(document))
+        code, output = self.capture(recipe_cli.main, ['results', 'list', '--host', 'h',
+                                   '--root', str(self.root), '--json'])
+        self.assertEqual(code, 0)
+        result, = json.loads(output)['results']
+        self.assertEqual(result['host_id'], 'h')
+        code, output = self.capture(recipe_cli.main, ['results', 'show', result['result_id'],
+                                   '--root', str(self.root)])
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(output)['host_id'], 'h')
+        self.assertEqual(json.loads(output)['access']['actual_identity']['effective_uid'], 0)
+
+    def test_results_detail_is_vertical_on_tty_and_pipe_without_table_dependency(self):
+        directory = self.root / 'observations'
+        directory.mkdir()
+        identifier = 'observations/' + 'long-result-name-' * 8 + '.json'
+        document = {'host_id': 'h', 'status': 'success', 'recipe': {'id': 'inventory-system'},
+                    'access': {'actual_identity': {'username': 'root', 'effective_uid': 0}},
+                    'text': 'line1\nline2\x1b[31m', 'empty': None, 'leading': '001'}
+        (self.root / identifier).write_text(json.dumps(document))
+        with patch.object(console, 'table_formatter', side_effect=AssertionError('no tables needed')):
+            for tty in (True, False):
+                for extra in ([], [identifier]):
+                    code, output = self.capture(recipe_cli.main, ['results', 'detail', *extra,
+                                               '--root', str(self.root)], tty)
+                    self.assertEqual(code, 0)
+                    self.assertIn('result_id: ' + identifier, output)
+                    self.assertIn('host_id: h', output)
+                    self.assertNotIn('╭', output)
+                    if extra:
+                        self.assertIn('access.actual_identity.effective_uid: 0', output)
+                        self.assertIn('empty: null', output)
+                        self.assertIn('leading: 001', output)
+                        self.assertIn(r'text: line1\nline2\u001b[31m', output)
+                        self.assertNotIn('\x1b', output)
+                code, output = self.capture(recipe_cli.main, ['results', 'detail', identifier,
+                                           '--root', str(self.root), '--json'], tty)
+                self.assertEqual(code, 0)
+                self.assertEqual(json.loads(output), document)
 
     def test_data_commands_remain_json_on_a_terminal(self):
         code, output = self.capture(ops.main, ['dump', 'hosts.h.connection', str(self.root)])

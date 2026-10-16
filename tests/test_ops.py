@@ -377,7 +377,8 @@ class OpsTests(unittest.TestCase):
         self.assertEqual(jump.connect.call_args.kwargs['password'], 'target-password')
         self.assertEqual(jump.connect.call_args.kwargs['pkey_path'], 'keys/id_rsa')
         self.assertNotIn('key_filename', jump.connect.call_args.kwargs)
-        self.assertNotIn('look_for_keys', jump.connect.call_args.kwargs)
+        self.assertIs(jump.connect.call_args.kwargs['look_for_keys'], False)
+        self.assertIs(jump.connect.call_args.kwargs['allow_agent'], False)
         jump.exec_command.assert_not_called()
 
     def test_identity_file_paths_are_passed_literally(self):
@@ -441,7 +442,7 @@ class OpsTests(unittest.TestCase):
                     self.assertEqual(errors, '')
 
     def test_first_hop_failure_identifies_jump(self):
-        self.write('hosts.yaml', 'hosts: {jump: {connection: {hostname: jump}}, target: {connection: {hostname: target, via: {host: jump}}}}')
+        self.write('hosts.yaml', 'hosts: {jump: {connection: {hostname: jump, allow_agent: true}}, target: {connection: {hostname: target, allow_agent: true, via: {host: jump}}}}')
         session_class, local, remote = self.session_double()
         local.connect.side_effect = TimeoutError('secret')
         code, output, errors = self.connection_cli('target', session_class, '--debug')
@@ -454,7 +455,7 @@ class OpsTests(unittest.TestCase):
         remote.connect.assert_not_called()
 
     def test_command_and_cleanup_tracebacks_preserve_json(self):
-        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}}}')
+        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a, allow_agent: true}}}')
         session_class, local, remote = self.session_double()
         remote.exec_command.side_effect = [TimeoutError('COMMAND-SECRET'), ('date\n', '', 0)]
         local.close.side_effect = RuntimeError('CLEANUP-SECRET')
@@ -470,7 +471,7 @@ class OpsTests(unittest.TestCase):
         self.assertNotIn('CLEANUP-SECRET', output + errors)
 
     def test_connection_failures_and_cleanup(self):
-        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}}}')
+        self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a, allow_agent: true}}}')
         for failure in ('connect', 'command', 'exitcode', 'cleanup'):
             with self.subTest(failure=failure):
                 session_class, local, remote = self.session_double()

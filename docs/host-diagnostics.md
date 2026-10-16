@@ -52,7 +52,7 @@ Each step retains `identity` and adds `identity_verification`: `expected` and `a
 
 For example, a verified sudo-to-root step reports expected `{username: root, effective_uid: 0}`, actual `{username: root, effective_uid: 0}`, `matched: true`, and `status: success`. A UID mismatch retains both observed values with `matched: false` and `status: failed`. Incomplete checks retain available values with `matched: null`; entry failures and skipped steps have `status: not_run`, never implied success. When another sudo actor requires su first, `su_identity_verification` records that prerequisite separately from the final sudo check.
 
-The report's `connection_identity` records the original login name/UID. Each independent target or chain group includes `parent_identity_verification` with expected/actual identity and an explicit restoration result. This check runs after exiting the group's authenticated contexts; a chain reports restoration after the whole chain, not each intermediate exit. Restoration requires both name and UID to match the original connection identity. An unperformed or failed check remains explicit; successful restoration does not erase an operation or Session cleanup failure.
+The report's `connection_identity` records the original shell name/UID; `login_identity` separately identifies the authenticated SSH account. Each independent target or chain group includes `parent_identity_verification` with expected/actual identity and an explicit restoration result. This check runs after exiting the group's authenticated contexts; a chain reports restoration after the whole chain, not each intermediate exit. Restoration requires both name and UID to match the original connection identity. An unperformed or failed check remains explicit; successful restoration does not erase an operation or Session cleanup failure.
 
 Default stdout is a terminal table; use --json for the complete structured report. Non-TTY stdout remains JSON. See [console output policy](cli.md#terminal-tables-and-json). With --verbose/--debug, stderr also explains the expected/actual account and UID after successful verification and states whether the original identity was restored. Identity evidence verifies shell access; it does not establish command-specific permissions or whether a supplied password was consumed. These fields add explanation without additional probes or environment dumps.
 
@@ -90,7 +90,7 @@ For connection-only troubleshooting, use `test-connection HOST --profile NAME --
 
 ## ESXi login identity without id
 
-Connection-only tests run hostname/date and do not verify the effective account. Access checks verify the account separately. The shared identity probe first uses `id -un` and `id -u`, including `id -u TARGET` for a configured account. Only when the initial id command returns 127 (missing command) and an untruncated `uname -s` result is exactly `VMkernel`, it uses the ESXi adapter. Other id failures, malformed/truncated results and other kernels do not enable this fallback.
+Connection-only tests run hostname/date and do not verify the effective account. Access checks verify the account separately. The shared identity probe first uses `id -un` and `id -u`, including `id -u TARGET` for a configured account. When the initial id command returns 127 (missing command), or returns 2 with empty stdout and the exact shell error form `sh: exec: line N: id: not found` (optional shell path/line number), it checks the kernel. Only an untruncated `uname -s` result exactly equal to `VMkernel` enables the ESXi adapter. Exit 2 alone, unrelated stderr, nonempty stdout, truncated results and other kernels do not enable this fallback. This handles ESXi SSH exec channels whose missing-command exit code differs from interactive shells.
 
 The adapter executes a fixed, Python-2/3-compatible standard-library expression with `/bin/python -B -c ...`; only a missing interpreter (127) permits trying `/bin/python3`. It obtains the current effective UID from `os.geteuid()`, resolves that UID's account through `pwd.getpwuid()`, and resolves an explicit target through `pwd.getpwnam()`. Target names use the existing username validator and are separate argv arguments. It never infers privilege from hosts.yaml, environment variables, a shell prompt or account-list membership. The -B flag prevents bytecode cache writes. No program is installed, remote helper file uploaded, host setting changed or inventory performed. The same finite command timeout and strict Session cleanup apply. Interpreter errors are not retried with another credential or interpreter.
 
@@ -102,7 +102,7 @@ Use the existing CLI; no new hosts.yaml property is required:
 python -B tools/opsfeast.py check-access --host HOST --root /srv/feasts/main --json --quiet
 ```
 
-The access contract remains 0.1.0 with additive `access.identity_probe` and `access.configured_identity_probe` evidence: source (`id` or `esxi_python`), status, and interpreter for the successful ESXi backend. A failed probe may include reason_code. Existing connection_identity keeps exactly username/effective_uid. Identity-stage failures keep the top-level identity_failed reason and add `identity_error.reason_code`: identity_tool_missing, identity_probe_failed, identity_invalid_output, identity_mismatch or the generic identity_failed. No raw Python output or exception text is retained. Table output shows successful SSH connection separately from a failed identity row, followed by unattempted sudo; the host still fails. This prevents a reachable host being described as an SSH failure or an unverified login being described as root. Retained observation schemas do not change.
+The access contract remains 0.1.0 with additive `access.identity_probe` and `access.configured_identity_probe` evidence: source (`id` or `esxi_python`), status, and interpreter for the successful ESXi backend. Each probe records id_exitcode from its initial id -un attempt. A failed probe may include reason_code; source/interpreter identify the attempted Python backend even if that backend fails. When an ESXi configured-account comparison reaches UID validation, configured_identity_probe also records actual {username, effective_uid}, expected {username, effective_uid}, and matched. These are normalized fields, never raw remote output. Existing connection_identity keeps exactly username/effective_uid and is published only after the configured-account check succeeds. access.actual_identity records the observed shell actor as soon as the initial probe succeeds, including when a later configured-account mismatch rejects access. The ESXi root-shell relationship described below can accept a numeric mismatch when the successful final-hop SSH login is known, the effective shell is consistently UID 0, and the kernel is verified as VMkernel. Other mismatches remain failures. Identity-stage failures keep the top-level identity_failed reason and add `identity_error.reason_code`: identity_tool_missing, identity_probe_failed, identity_invalid_output, identity_mismatch or the generic identity_failed. No raw Python output or exception text is retained. Table output shows successful SSH connection separately from a failed identity row, followed by unattempted sudo; the host still fails. This prevents a reachable host being described as an SSH failure or an unverified login being described as root. Retained observation schemas do not change.
 
 For an already-authorized connected Session, checkout maintainers can reuse the shared probe instead of generating platform-specific account logic:
 
@@ -116,6 +116,112 @@ actual = identity(session, timeout=15, evidence=probe)
 
 This is a checkout-level helper in tools/, not a new versioned Core API. `console=True`, `target=...` and the existing verification record are supported by the same helper; an appropriate authenticated console and its dependencies must already exist. Core privilege scopes and the inventory access gate reuse the shared helper; this does not authorize entering a privilege scope or executing inventory. Backend extensions belong in the shared probe with platform detection, verifiable OS identity, bounded output, failure preservation, public tests and documentation, rather than user-generated connection wrappers.
 
-Evidence: a real VMware ESXi 7.0.0 build 16324942 direct root login through two SSH hops passed the updated check-access on 2026-10-16: UID 0, sudo not_needed, strict cleanup without errors. BusyBox on that host lacked the id applet; both system Python paths could read the effective UID. Synthetic cases cover ordinary users, target mismatch, missing tools, malformed/truncated output, fallback selection and CLI failure reporting. Other ESXi releases, non-root SSH, native ESXi su/sudo and inventory execution remain unverified. Public API references: Python [effective UID](https://docs.python.org/3/library/os.html#os.geteuid) and [account lookup](https://docs.python.org/3/library/pwd.html); a Broadcom [ESXi troubleshooting example](https://knowledge.broadcom.com/external/article/427365/commands-from-ssh-session-on-esxi-host-f.html) also identifies /bin/python. These references support the interfaces, not universal ESXi-version compatibility.
+Evidence: a real VMware ESXi 7.0.0 build 16324942 direct root login through two SSH hops passed the updated check-access on 2026-10-16: UID 0, sudo not_needed, strict cleanup without errors. BusyBox on that host lacked the id applet; both system Python paths could read the effective UID. Synthetic cases cover ordinary users, target mismatch, missing tools, malformed/truncated output, fallback selection and CLI failure reporting. Other ESXi releases, additional non-root accounts, native ESXi su/sudo and inventory execution remain outside this evidence; see the later root-shell login verification below. Public API references: Python [effective UID](https://docs.python.org/3/library/os.html#os.geteuid) and [account lookup](https://docs.python.org/3/library/pwd.html); a Broadcom [ESXi troubleshooting example](https://knowledge.broadcom.com/external/article/427365/commands-from-ssh-session-on-esxi-host-f.html) also identifies /bin/python. These references support the interfaces, not universal ESXi-version compatibility.
+
+### Diagnose ESXi identity failures
+
+Interactive id results can differ from SSH exec results; inspect access.identity_probe.id_exitcode.
+An exit 2 missing-id signature still requires the VMkernel gate and successful fixed
+Python UID/account probes. After any rejection, sudo stays unattempted and the report
+retains identity_failed plus the specific identity_error.reason_code.
+
+If configured_identity_probe.matched is false, compare its actual and expected UIDs.
+A configured ordinary account can produce a shell with effective root UID on the
+observed ESXi exec path. The connection-level ESXi root-shell model can accept that relationship with the evidence below. A numeric mismatch remains visible in matched; acceptance is recorded separately by identity_model and accepted_by. Other platforms and su/sudo target comparisons keep strict UID matching. Do not rewrite the configured account to root to hide the distinction. Report account/UID evidence
+without claiming the SSH server's internal cause from these probes alone.
+
+Use the existing authorized `check-access --host HOST --root ROOT --json --quiet` command.
+It opens real configured connections; collection, remote installation, configuration
+writes and other hosts are outside that command's diagnostic scope. Reuse the shared
+probe rather than adding recipe-specific identity fallbacks. No new configuration key
+is needed. Additive access diagnostics do not change retained inventory schemas.
+
+Native evidence (2026-10-16): a root login returning exit 2 and the missing-id signature
+over SSH exec was confirmed as VMkernel; fixed Python probes returned UID 0 and matched
+the root account. Another configured non-root login returned actual root UID 0 and
+expected account UID 1000. With the verified final-hop login and ESXi root-shell model, both paths now pass while preserving those distinct identities. Both configured paths used
+two SSH hops and strict cleanup completed without errors. Host bindings/credentials
+are private and are not test fixtures. Other ESXi releases and authenticated su/sudo
+remain outside this evidence.
+
+Delivery checks: 554 tests passed on each of Python 3.11.15, 3.13.13 and 3.14.4.
+Older interpreters reused the selected environment's pure-Python dependencies; this
+is not native SSH readiness evidence for those interpreters. Wheel/sdist build,
+temporary installation and outside-checkout synthetic exit-2 fallback, configured
+UID comparison, accepted ESXi root-shell mapping and local Core/recipe smoke checks passed on 3.14. Changed-document
+links/dates and skill frontmatter passed. Native host evidence is limited to the
+specific two-hop probes described above; no host configuration was rewritten.
+
+## SSH login and ESXi root-shell identity
+
+An SSH authentication principal and the shell's effective OS account are distinct.
+The shared connected lifecycle records login_identity {username, source: ssh_connection}
+only after the complete target chain connects, using the username passed to the
+successful final-hop Session.connect call. This includes resolved aliases and never
+uses a jump-host principal or YAML alone as authentication evidence. Local-only
+connections instead derive the account from verified effective identity.
+
+The shared verify_connection_identity helper records shell_identity and the observed
+actual_identity, then checks the configured/resolved login relationship. Its default
+identity_model is uid_match (or effective_identity for local observations without an
+account comparison). A connection-level numeric UID mismatch may be accepted as
+esxi_root_shell only when all of these conditions hold:
+
+1. The final-hop successful SSH username is known and agrees with an explicit
+   configured user when one is present.
+2. The initial and configured-account probes observe the same shell actor at UID 0.
+3. VMkernel is verified from an untruncated uname -s result. The existing missing-id
+   ESXi probe supplies this evidence; working-id paths make the same bounded kernel
+   check when considering a root-shell mismatch.
+4. The configured/resolved account lookup and UID comparison complete. Missing tools,
+   failed/malformed/truncated probes, changing actors and non-root mismatches fail.
+
+This model describes observed ESXi shell capability, not a verified vSphere role or
+permission for every command/API. No configuration override, account rewrite or privilege
+attempt is added. Other kernels and identity(..., target=...) calls used for su/sudo
+remain strict. The special rule belongs in connection identity verification only.
+
+Access reports contain login_identity, shell_identity and identity_model. Existing
+connection_identity remains the verified initial shell actor used for restoration;
+actual_identity may later describe an elevated collector actor. For an accepted ESXi
+mapping, configured_identity_probe.status is success, matched remains false to describe
+numeric UID inequality, and accepted_by is esxi_root_shell. The absence of a failure
+reason and the explicit policy distinguish successful relationship verification from
+simple UID equality. A synthetic example is:
+
+```json
+{
+  "login_identity": {"username": "operator", "source": "ssh_connection"},
+  "shell_identity": {"username": "root", "effective_uid": 0},
+  "identity_model": "esxi_root_shell",
+  "configured_identity_probe": {
+    "status": "success",
+    "actual": {"username": "root", "effective_uid": 0},
+    "expected": {"username": "operator", "effective_uid": 1000},
+    "matched": false,
+    "accepted_by": "esxi_root_shell"
+  }
+}
+```
+
+The access table shows PASS connection for the SSH login, PASS identity with
+shell=root, uid=0 (ESXi), and SKIP sudo / already_root. Status is success when all
+required checks and cleanup pass. Sudo/account policy and extra-user exclusion bind
+to the authentication principal, not the root shell username. This prevents treating
+the login as another su target or borrowing another account's credentials. Restoration
+still compares the original shell name/UID, and explicit privilege targets still need
+their own strict verification. Authenticated ESXi su/sudo console support is not added.
+Core scopes and inventory access reuse these distinctions; raw diagnostics are additive,
+while retained inventory schemas remain unchanged.
+
+Use the existing authorized check-access --host HOST --root ROOT --json --quiet CLI.
+No new setup, dependency or remote file is required. Native two-hop verification on
+2026-10-16 passed both a direct root login and an ordinary login whose shell runs at
+UID 0. Public tests use synthetic accounts and cover final-hop/alias evidence, missing
+principal, non-root/Linux mismatch rejection, strict privilege targets, account-policy
+binding and no duplicate login-user su. Host bindings and credentials remain private.
+Broadcom's [SSH access guidance](https://knowledge.broadcom.com/external/article/323375/enabling-secure-shell-ssh-access-for-loc.html)
+also distinguishes SSH shell access from UI-role restrictions; it does not establish
+this behavior on every ESXi installation.
 
 _Last modified: 2026-10-16_

@@ -4,14 +4,15 @@ import json
 import math
 from pathlib import Path
 import sys
+from display_time import format_time, human_times
 
 from opsfeast import ConfigError, resolve_root, positive_timeout
 from recipe_catalog import catalog, choose, configuration
 from recipe_inputs import json_object, cli_variables, prepare_vars
-from recipe_reports import run_report, results, show_result, show_artifact, page, export_html
+from recipe_reports import run_report, results, result_path, show_result, show_artifact, page, export_html
 from recipe_packages import pack, unpack
 import recipe_jobs
-from console_output import human_output, table, prepare as prepare_console, print_report, host_label, display_icons, ConsoleDependencyError
+from console_output import human_output, table, vertical, prepare as prepare_console, print_report, host_label, display_icons, ConsoleDependencyError
 
 
 def output(value):
@@ -143,7 +144,7 @@ def main(argv=None):
     mode.add_argument('--force', action='store_true')
     result = commands.add_parser('results')
     environment(result)
-    result.add_argument('action', choices=('list', 'show'))
+    result.add_argument('action', choices=('list', 'show', 'detail'))
     result.add_argument('result_id', nargs='?')
     result.add_argument('--recipe-id')
     result.add_argument('--host')
@@ -175,7 +176,7 @@ def main(argv=None):
         job.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
     try:
-        raw = args.command in ('artifact', 'pack', 'unpack') or args.command == 'results' and args.action == 'show' or bool(getattr(args, 'html', None))
+        raw = args.command in ('artifact', 'pack', 'unpack') or args.command == 'results' and args.action in ('show', 'detail') or bool(getattr(args, 'html', None))
         if not raw:
             prepare_console(getattr(args, 'json', False))
         if args.command == 'unpack':
@@ -224,16 +225,43 @@ def main(argv=None):
             output(pack(item, args.file, args.output))
             return 0
         if args.command == 'results':
+            if args.action == 'detail':
+                if args.html:
+                    raise ConfigError('results detail does not support --html; use results list/show --html')
+                if args.result_id:
+                    if args.host or args.recipe_id or args.status:
+                        raise ConfigError('results detail RESULT_ID cannot be combined with index filters')
+                    data = show_result(root, args.result_id)
+                    if args.json:
+                        output(data)
+                    else:
+                        identifier = result_path(root, args.result_id).relative_to(root).as_posix()
+                        print(vertical({'result_id': identifier, **data}))
+                    return 0
+                data = results(root, args.recipe_id, args.host, args.status)
+                if args.json:
+                    output(data)
+                else:
+                    for index, item in enumerate(data['results'], 1):
+                        print(f'******** Result {index} ********')
+                        print(vertical(item))
+                        print()
+                    if not data['results']:
+                        print('No saved results.')
+                    for error in data['errors']:
+                        print('******** Invalid result ********')
+                        print(vertical(error))
+                return 0 if data['status'] == 'success' else 1
             if args.action == 'show':
                 if not args.result_id: raise ConfigError('results show requires RESULT_ID')
                 data = show_result(root, args.result_id)
                 if args.html:
-                    output({'html_path': export_html(args.html, page('OpsFeast result', ['Field', 'Value'], [[key, json.dumps(value, ensure_ascii=False)] for key,value in data.items()], 'Raw evidence; check status, data, timestamps and quality warnings.'))})
+                    output({'html_path': export_html(args.html, page('OpsFeast result', ['Field', 'Value'], [[key, json.dumps(human_times(value), ensure_ascii=False)] for key,value in data.items()], 'Raw evidence; timestamps displayed in local time to seconds; check status, data and quality warnings.'))})
                 else: output(data)
                 return 0
             if args.result_id: raise ConfigError('results list does not accept RESULT_ID')
             data = results(root, args.recipe_id, args.host, args.status)
-            rows = [[r['result_id'], r['recipe_id'], r['host_id'], r['status'], r['completed_at'], r['identity_quality'], json.dumps(r['identity_warnings'], ensure_ascii=False)] for r in data['results']]
+            rows = [[r.get('short_id', r['result_id']), r['recipe_id'], r['host_id'], r['status'], format_time(r['completed_at']), r['identity_quality'], json.dumps(r['identity_warnings'], ensure_ascii=False)] for r in data['results']]
             if args.html:
                 output({'html_path': export_html(args.html, page('OpsFeast results', ['Result ID', 'Recipe', 'Host', 'Status', 'Completed', 'Identity quality', 'Identity warnings'], rows,
                                                                json.dumps(data['errors'], ensure_ascii=False))), 'status': data['status']})
@@ -246,7 +274,7 @@ def main(argv=None):
                     print(table(['result ID', 'recipe', 'host', 'status', 'completed', 'identity quality', 'warnings'], rows))
                 else:
                     for row in rows: print(' | '.join(str(value) for value in row))
-                for error in data['errors']: print('ERROR: ' + error['result_id'] + ' invalid result')
+                for error in data['errors']: print('ERROR: ' + error.get('short_id', error['result_id']) + ' invalid result')
             return 0 if data['status'] == 'success' else 1
         if args.command == 'artifact':
             output(show_artifact(root, args.result_id, args.name))

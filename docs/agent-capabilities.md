@@ -38,7 +38,7 @@ Commands below are command families, not permission grants or complete copyable 
 | Save/rerun reviewed work | `opsfeast.py recipes jobs save/list/show/run` | Private bindings and content verification; run executes again. No bundled scheduler. [Jobs](recipe-experience.md#saved-jobs-and-recurring-work) |
 | Check/stage public SSHScript skill updates | `tools/skill_bundle.py check/download` | Authorized network download/check only; no activation or package upgrade. [Skill updates](skill-updates.md) |
 
-The shared loader resolves host/account icons using entry hosts.yaml `default.icon.user`, `default.icon.host`, per-group `default.groups.<name>.icon.user/host`, and named-account `default.users.<account>.icon` (built-ins 👤/🍎). Explicit host/account icons override defaults; named-account defaults then precede group user defaults. For each remaining field independently, the first configured value in host group order precedes the global default. Optional default.users.<account>.email is readable source metadata (CLI dump), without host-account inheritance or notification behavior. Icons must be one Unicode Symbol code point. Core/CLI/runner share effective values without rewriting YAML. See [host icon contract](hosts-yaml.md#host-icon); it is display metadata, not host identity.
+The shared loader resolves host/account icons using entry hosts.yaml `default.icon.user`, `default.icon.host`, per-group `groups.<name>.icon.user/host`, and named-account `default.users.<account>.icon` (built-ins 👤/🍎). Explicit host/account icons override defaults; named-account defaults then precede group user defaults. For each remaining field independently, the first configured value in host group order precedes the global default. Optional default.users.<account>.email is readable source metadata (CLI dump), without host-account inheritance or notification behavior. Icons must be one Unicode Symbol code point. Core/CLI/runner share effective values without rewriting YAML. See [host icon contract](hosts-yaml.md#host-icon); it is display metadata, not host identity.
 
 ## Public Core Python API
 
@@ -99,5 +99,106 @@ Connection-only batch diagnostics are available through `test-connection --all -
 ## ESXi login identity
 
 Reuse `check-access --host HOST --profile NAME --json --quiet` for login/root readiness; the shared `host_runtime.identity(session, timeout, console=False, target=None, verification=None, evidence=None)` checkout helper supplies OS-derived username/effective_uid and optional backend evidence on an already-authorized Session. Standard id is preferred; only missing id plus verified VMkernel selects the fixed system Python adapter. This adds no Core API/configuration field, installation or permission to connect/enter privileges. The access gate, diagnostics and existing Core identity checks reuse the helper. Read [prerequisites, canonical CLI/import examples, fields, errors, backend extension and verification limits](host-diagnostics.md#esxi-login-identity-without-id). Public tests are in tests/test_esxi_identity.py. One ESXi 7.0 root login passed; other releases/non-root access and native su/sudo/inventory remain unverified. Do not write a second ESXi identity probe in each recipe.
+
+## Explicit SSH authentication sources
+
+Reuse the shared planner through existing diagnostics, runner or Core sessions.
+connection.allow_agent and connection.look_for_keys are strict Boolean settings,
+both default false for each SSH hop and SSH config alias. Explicit credentials
+remain usable; no password-dependent switching or automatic ambient fallback occurs.
+Missing sources fail planning before any Session is created for that target chain,
+with missing_authentication_source and a safe hint. Do not recreate authentication
+selection in recipes. See [configuration and examples](hosts-yaml.md#ssh-authentication-sources),
+[CLI](cli.md#ssh-authentication-source-selection) and [migration](migration.md#explicit-ssh-authentication-sources).
+Synthetic policy/CLI/Core/runner tests do not establish native SSH agent behavior.
+
+## Group catalog and bulk host definitions
+
+Reuse the shared loader and `profile.hosts.groups()` for group metadata/membership.
+Top-level groups can define label/description/icon and complete host mappings under
+hosts; hosts become ordinary IDs usable by all existing execution APIs. The catalog
+contains declared/implicit groups and member ID lists, including empty groups, without
+nested credentials. The first effective host membership is primary; enclosing groups
+are prepended and deduplicated. IDs drive selection; labels only affect presentation.
+Do not write a second YAML expander or silently merge repeated hosts/group definitions.
+Use check/dump groups for local CLI inspection, and the TUI for label/description
+browsing. default.groups has moved; private migration requires review, not an automatic
+rewrite. See [schema and examples](hosts-yaml.md#host-groups), [Core API](core-api.md#host-group-catalog),
+[CLI](cli.md#group-catalog-and-bulk-host-definitions) and [migration](migration.md#group-catalog-and-bulk-host-definitions).
+Configuration-only inspection does not authorize host operations.
+
+## Human check overview
+
+Reuse check for local configuration validation. Its interactive-terminal table now
+lists group/host/users with catalog labels/descriptions, account icons, primary-group
+and disabled-host markers. Groups sort by ID, and the known login is first without
+a (login) suffix. Declared empty groups and ungrouped hosts remain visible;
+unique host totals do not double-count repeated membership. This display does not
+connect or resolve SSH aliases. Recipe selections are still validated. Agents should
+continue selecting --json for the unchanged detailed report, including selected_recipes,
+skipped and notes. Redirected text is unchanged. See [CLI display and interpretation](cli.md#human-check-overview).
+This is a CLI presentation change; Core snapshots, selection and execution APIs are unchanged.
+
+## ESXi SSH-exec identity diagnostics
+
+Reuse check-access and the shared host_runtime identity probe for ESXi missing-id
+SSH exec channels. In addition to exit 127, the exact recognized exit 2 missing-id
+signature may reach the VMkernel/Python adapter. The access report now records the
+initial id exit code and configured-account actual/expected UID comparison, preserving
+the observed actor even on mismatch. An unequal UID can be accepted only by the verified ESXi root-shell model, keeping SSH login and shell identity separate. Other platforms and explicit privilege targets remain strict; root-shell access does not authorize new operations.
+No new CLI flags or recipe-specific fallback are needed. See [canonical diagnosis,
+boundaries and native evidence](host-diagnostics.md#diagnose-esxi-identity-failures).
+
+## ESXi login/root-shell relationship
+
+Reuse check-access, Core and runner connection verification rather than a per-recipe
+UID bypass. The successful final-hop SSH username is recorded separately from the
+observed shell. Verified VMkernel plus a stable UID 0 shell can accept an ordinary
+login as esxi_root_shell; Linux/non-root/unknown-principal mismatches and explicit
+su/sudo targets stay strict. Account policy and extra-user exclusion use login_identity;
+shell_identity is the execution/restoration baseline. JSON and the identity table row
+explain the accepted relationship. No flags, account rewrites or role inference are
+required. See [canonical model and examples](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+
+## Compact execution and host-specific result inspection
+
+Runner/recipes run/jobs run TTY completion shows only host, collection identity and
+result; full access/data/path details stay in JSON and saved results. Reuse
+`opsfeast.py recipes results list --host HOST --recipe-id inventory-system --root ROOT`,
+then `recipes results show RESULT_ID --root ROOT` for offline evidence with host_id.
+Use --json for agent-facing lists or runs. See [output semantics and the complete viewing workflow](cli.md#compact-execution-summaries),
+including unknown actors, failure/retention states and attempts with no saved result.
+These are existing checkout CLI capabilities, not a new Core API or collection authorization.
+
+## Vertical saved-result inspection
+
+`opsfeast.py recipes results detail [RESULT_ID]` is a read-only vertical alternative
+to results list/show. Omit the ID for a newest-first index with --host/--recipe-id/--status;
+provide the returned ID for one full raw result. Reuse --root/--profile and --json for
+automation (same index/raw contracts). Human output is field: value even through a
+pipe, without table dependencies. See [syntax, failures and verification limits](cli.md#vertical-result-details).
+No new Core API, storage, remote operation or execution authorization is added.
+
+## Resolve short saved-result IDs
+
+Human recipes results list now uses short IDs accepted by show/detail/artifact in the
+same root/profile. Reuse recipe_reports.results / show_result / result_path instead of
+truncating filenames or implementing a separate lookup. Index JSON adds short_id while
+retaining result_id; raw documents and their embedded UUIDs/paths are unchanged.
+Prefix uniqueness spans the whole root before filters, and ambiguity/missing IDs fail.
+Use complete result_id for durable references. See [canonical examples and algorithm](cli.md#short-result-ids)
+for alias lifetime, collision/symlink failures and synthetic verification limits. These
+remain checkout-level helpers, not a new versioned Core API or remote authorization.
+
+## Human timestamps and preserved data
+
+Use existing CLI/TUI/HTML views for OS-local YYYY-MM-DD HH:MM:SS timestamps; do not
+rewrite saved results to change timezone/precision. Human results list/detail and TUI
+Details now apply the same policy as history; Home download time and bundled
+report/summary 0.1.2 HTML do too. --json, raw show, Original output, JSON/CSV exports and
+storage remain unchanged. Preserve originals for identity, ordering and analysis.
+See [the canonical time policy and verification limits](cli.md#human-time-display-policy),
+including unknown timezone handling and portable report formatting. Shared display
+helpers remain internal, not a new Core API or remote service.
 
 _Last modified: 2026-10-16_

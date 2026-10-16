@@ -357,8 +357,8 @@ class CoreTests(unittest.TestCase):
                 self.calls.append((hostname, settings))
                 return Transport(owner=self.owner)
         self.settings['hosts'] = {
-            'jump': {'connection': {'hostname': 'jump.example.invalid', 'user': 'operator'}},
-            'h': {'connection': {'hostname': 'target.example.invalid', 'via': {'host': 'jump'}, 'user': 'operator'}}}
+            'jump': {'connection': {'hostname': 'jump.example.invalid', 'user': 'operator', 'allow_agent': True}},
+            'h': {'connection': {'hostname': 'target.example.invalid', 'allow_agent': True, 'via': {'host': 'jump'}, 'user': 'operator'}}}
         self.write()
         self.profile.reload()
         actor = Transport()
@@ -369,6 +369,9 @@ class CoreTests(unittest.TestCase):
         with self.profile.sessions._connect('h', session_class=Factory()) as recipe:
             self.assertEqual(len(recipe.report['hops']), 2)
         self.assertEqual([host for host, _ in Transport.calls], ['jump.example.invalid', 'target.example.invalid'])
+        for _, settings in Transport.calls:
+            self.assertIs(settings['allow_agent'], True)
+            self.assertIs(settings['look_for_keys'], False)
         self.assertEqual(actor.closed, 1)
         self.settings['hosts']['jump']['enabled'] = False
         self.write()
