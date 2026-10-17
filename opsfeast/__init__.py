@@ -1534,9 +1534,9 @@ if __name__ == '__main__':
 API_VERSION = '0.1.0'
 
 def __getattr__(name):
-    if name in {'Instance', 'Profile', 'Recipe', 'CoreError'}:
+    if name in {'Instance', 'Profile', 'Recipe', 'CoreError', 'RootUnavailableError'}:
         from . import core
         return getattr(core, name)
     raise AttributeError(name)
 
-__all__ = ['API_VERSION', 'Instance', 'Profile', 'Recipe', 'CoreError', 'ConfigError']
+__all__ = ['API_VERSION', 'Instance', 'Profile', 'Recipe', 'CoreError', 'RootUnavailableError', 'ConfigError']

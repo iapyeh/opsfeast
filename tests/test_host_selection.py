@@ -17,7 +17,7 @@ import run_recipe as runner
 class HostSelectionTests(unittest.TestCase):
     def setUp(self):
         from access_check import VERSION
-        checker = patch('access_check.check_many', side_effect=lambda root, hosts, *args: {'contract_version': VERSION, 'status': 'success', 'hosts': [{'host': h, 'status': 'success', 'connected': True} for h in hosts]})
+        checker = patch('access_check.check_many', side_effect=lambda root, hosts, *args, **kwargs: {'contract_version': VERSION, 'status': 'success', 'hosts': [{'host': h, 'status': 'success', 'connected': True} for h in hosts]})
         checker.start()
         self.addCleanup(checker.stop)
         temporary = tempfile.TemporaryDirectory()

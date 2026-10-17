@@ -4,6 +4,13 @@ For DevOps users and their AI agents creating specialized recipes for their own 
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
 
+For authorized root-only Python-recipe work, reuse
+[Recipe.root()](core-api.md#automatic-root-console): it provides a callable verified
+root console with the shared two-candidate policy and scoped cleanup. Do not regenerate
+account-selection/credential loops. RootUnavailableError is safe acquisition failure;
+identity or cleanup failure must stop the scope. No generic recipe escalates merely
+because it receives a Recipe.
+
 ## Reuse product capabilities before authoring new machinery
 
 Start with the [agent capability map](agent-capabilities.md), catalog/list/show and static inspection before writing new code. Prefer a compatible reviewed recipe or CLI workflow for the complete task, and applicable modules for in-process composition. Reuse configuration loading, typed inputs, session/cleanup/result handling, report/artifact contracts, retained export/validation, attribution defaults, packaging and saved reruns. Record the concrete gap when existing functionality is unsuitable, then implement only that missing logic. User-selected tools and operational boundaries still apply; capability discovery does not authorize execution.
@@ -112,4 +119,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-17_

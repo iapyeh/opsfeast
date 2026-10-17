@@ -2,6 +2,46 @@
 
 The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local checkout does not need to move. Private management directories, profile names, targets, credentials, human notes, observations and execution history retain their existing locations and contents.
 
+## Recipe.root console (2026-10-17)
+
+Core 0.1.0 adds `Recipe.root()` and public `RootUnavailableError`. Use
+`with recipe.root() as root:` then `root("id -u", check=True)` for authorized root-only
+operations. It shares inventory's ordered two-candidate selection, verifies UID 0 and
+raises on failure; there is no required/fallback argument. It yields a scoped callable
+console, whereas existing Recipe.su/sudo continue yielding child Recipe objects. Thus
+root uses command strings directly, not root.session.exec_command(argv). See
+[API examples, console prerequisites, lifetime and errors](core-api.md#automatic-root-console).
+
+No descriptor, CLI, configuration or retained schema migration is needed. Existing
+explicit privilege calls retain their behavior. Generic recipes must explicitly opt
+in; callers may inspect RootUnavailableError.report only after verified restoration.
+Unsafe acquisition/cleanup disables the scope. The runner and inventory share the
+strict helper; inventory alone chooses safe login fallback. The already-root public
+console requires Bash, while inventory's existing root exec path remains unchanged.
+
+## Inventory account selection (2026-10-17)
+
+Inventory now selects at most the login account and the first other `users` account
+whose sudo is true or omitted, preserving YAML order. An eligible second account named
+root is tried with su before login sudo; other second accounts follow login sudo and
+use su then sudo. No third account or alternate credential is tried. Missing su
+credentials skip that route. See [the complete policy and example](inventory-access.md#inventory-account-selection).
+
+Review users order and existing execution authorization before resuming inventory:
+login `sudo: false` now disables only that actor's sudo and can still allow root through
+the selected second account. To keep ordinary collection intentional, also leave no
+eligible second account. No new admin field or private configuration rewrite is needed.
+Safe login fallback no longer requires --force; its data remains retainable and its
+execution exit is nonzero. --force now permits skipping unusable hosts, never uncertain
+identity or recovery. Dryrun uses the same two-candidate access policy and can succeed
+with safe user fallback; explicit check-access continues independent account diagnostics.
+Failed/skipped preflight routes are not retried during collection. Existing result and
+retained schemas remain valid; raw access evidence adds selection and attempt details.
+The runner now preserves the authenticated final-hop login when accepting an ESXi root
+shell and includes identity reason codes in collection errors and summaries. Historical
+failed results are not rewritten or automatically rerun. Synthetic tests establish
+policy/cleanup behavior, not native SSH, su/sudo or ESXi inventory compatibility.
+
 ## Host icon default (2026-10-15)
 
 Effective loaded hosts now always include icon, default 🍎; source YAML/comments remain unchanged. Explicit icons must be exactly one Unicode Symbol code point. Consumers that assume an exact set of host dictionary keys must accept this optional configuration field/default. Persisted inventory/retained/exchange schemas and identities are unchanged. See [host icon rules](hosts-yaml.md#host-icon).
@@ -104,7 +144,7 @@ Host identity_key, label and description are now supported. An explicit identity
 
 ## Inventory 0.3.0 access and result extension
 
-Inventory now tests selected login/root access before the whole batch, attempts sudo by default and collects under the verified root actor. For intentional ordinary-account use, set users.<account>.sudo to Boolean false. Account sudo accepts only booleans: false disables, true/omission enables. Quoted "false"/"true", null and numeric values are rejected; change old sudo: "false" entries to sudo: false explicitly. Canonical sudo-password selects by presence; null/empty are empty passwords and "false" selects account password. Legacy explicit sudo vars follow the same presence migration; no alternate-credential retry. Test-host now permits enabled passwordless sudo when no password is selected; inventory --dryrun remains login-only without su/platform collection; check-access also tests independent su and enabled sudo for declared non-login users without platform collection. Review existing authorization before executing the changed defaults.
+Inventory now tests selected login/root access before the whole batch, attempts sudo by default and collects under the verified root actor. The current two-candidate selection is described in the dated migration section above; sudo false disables only that account's sudo, not another account's root route. Account sudo accepts only booleans: false disables, true/omission enables. Quoted "false"/"true", null and numeric values are rejected; change old sudo: "false" entries to sudo: false explicitly. Canonical sudo-password selects by presence; null/empty are empty passwords and "false" selects account password. Legacy explicit sudo vars follow the same presence migration; no alternate-credential retry. Test-host now permits enabled passwordless sudo when no password is selected; inventory --dryrun uses the bounded inventory account selection without platform collection; check-access also tests independent su and enabled sudo for declared non-login users without platform collection. Review existing authorization before executing the changed defaults.
 
 Six-section inventory-values 0.1.0 is an additive raw/retained/exchange extension; old seven-field results remain readable and unchanged. Update strict validators before reading new extension fields. New report-summary 0.1.1 displays values/scope. Recipe changes invalidate pinned jobs; review and save new definitions without automatic scheduling. No private settings, historical records or environments are rewritten. See [the complete access, CSV and migration guide](inventory-access.md).
 
@@ -161,4 +201,4 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

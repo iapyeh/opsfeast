@@ -1,6 +1,6 @@
 # Inventory access checks and partitioned results
 
-Inventory-system recipe 0.3.0 adds an access gate and inventory-values contract 0.1.0. Read this guide before execution: selecting inventory now includes connection-account sudo testing by default. These are real connections and authentication attempts, even in dryrun. Login-shell startup, configured proxies and authentication/audit records can have side effects. No installation, target configuration changes, environment-variable capture, process arguments or arbitrary file crawling is performed.
+Inventory-system recipe 0.3.0 adds an access gate and inventory-values contract 0.1.0. Read this guide before execution: selecting inventory includes bounded account selection with possible su/sudo by default. These are real connections and authentication attempts, even in dryrun. Login-shell startup, configured proxies and authentication/audit records can have side effects. No installation, target configuration changes, environment-variable capture, process arguments or arbitrary file crawling is performed.
 
 ## Configure the actual connection account
 
@@ -16,12 +16,12 @@ hosts:
         sudo-password: synthetic-sudo-password
 ```
 
-These examples use synthetic values. Keep credentials in the private Feast. `sudo` and `sudo-password` are optional fields of `users.<account>`; they are not connection fields or recipe variables. SSH aliases select the actual runtime login account. Local connections use the actual local account. Inventory/dryrun considers only that account. The explicit check-access command additionally tests other declared users through independent su and enabled sudo, as described below.
+These examples use synthetic values. Keep credentials in the private Feast. `sudo` and `sudo-password` are optional fields of `users.<account>`; they are not connection fields or recipe variables. SSH aliases select the actual runtime login account. Local connections use the actual local account. Inventory/dryrun considers that account and at most the first other sudo-enabled users account, using the selection rules below. The explicit check-access command additionally tests other declared users through independent su and enabled sudo, as described below.
 
 | Account setting | Meaning |
 | --- | --- |
 | `sudo: true` or `sudo` omitted | Attempt and verify sudo to root unless already UID 0 |
-| `sudo: false` | Disable sudo testing/elevation; ordinary-account collection is intentional and valid |
+| `sudo: false` | Disable this account's sudo; exclude it from inventory second-candidate selection |
 | `sudo-password` omitted | Use the selected legacy explicit sudo credential, if present; otherwise account `password` |
 | `sudo-password: "false"` | Use account `password` directly, bypassing legacy sudo overrides |
 | `sudo-password: ""` | Submit an empty password; no fallback |
@@ -33,7 +33,7 @@ The `sudo` field accepts only Boolean values: `false` disables sudo; `true` or o
 
 Legacy account `vars.sudo.password`, then host `vars.sudo.password` for the actual connection account, remain supported when the canonical sudo-password field is absent. Their presence uses the same null/empty/`"false"` rule: null/empty select an empty password; `"false"` selects account password. Host credentials are never borrowed for another sudo actor. The existing su credential rules remain unchanged. No stored configuration is rewritten. UI credential masking includes sudo-password.
 
-To deliberately collect as an ordinary account:
+To disable sudo for an account (inventory may still use an eligible second account):
 
 ```yaml
 users:
@@ -41,7 +41,92 @@ users:
     sudo: false
 ```
 
-Providing a login password does not prove sudo capability. The default policy means **attempt and verify**, not assume permission. Executing this version's check/collection includes those documented sudo attempts; set sudo to Boolean `false` to opt out. Effective UID 0 is root, regardless of the account name.
+Providing a login password does not prove sudo capability. The default policy means **attempt and verify**, not assume permission. Executing this version's check/collection includes those documented sudo attempts; set sudo to Boolean `false` to disable that account's sudo. Inventory may still select a second eligible account as described below. Effective UID 0 is root, regardless of the account name.
+
+## Inventory account selection
+
+Inventory and public [Recipe.root()](core-api.md#automatic-root-console) use the shared
+strict checkout helper `root_access.root_actor` with selection policy
+`two-candidate-v1`. The inventory_actor adapter alone chooses safe login fallback;
+the public root() API raises RootUnavailableError instead. No per-recipe
+admin account or extra configuration field is required. YAML `users` insertion order
+is preserved by the configuration loader, including hosts defined in included files
+or groups. Reordering accounts can therefore change inventory's second candidate.
+
+1. Verify the actual login shell. An effective UID 0 collects immediately without su
+   or sudo, including the verified ESXi root-shell model described in
+   [host diagnostics](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
+2. Candidate one is the authenticated login account. Candidate two is the **first
+   other** account in `users` whose `sudo` is true or omitted. Boolean false excludes
+   that account from second-candidate selection. Do not search for a third candidate.
+3. Normally try login-account sudo first (unless its `sudo` is false), then su to
+   candidate two, verify that account, and sudo to root if its effective UID is not 0.
+   **Exception:** if candidate two is named `root`, try `su root` before login-account
+   sudo. A root account with `sudo: false` is not eligible as candidate two.
+4. Missing su credentials skip the second route without probing passwordless su.
+   A rejected entry or deadline may advance only after verifying restoration to the
+   exact parent actor. Unknown/mismatched entered identities, failed context exits,
+   unverified recovery, transport loss or cleanup failures stop that host.
+5. If both routes are unavailable, collect as the verified original login shell.
+   `access.mode` is `fallback_user`, `degraded` is true and the overall execution exit
+   is nonzero even if all core data was collected. If login sudo is disabled and no
+   second candidate exists, ordinary collection is intentional (`mode: user`, no
+   degradation). An already-root shell always remains `mode: root`.
+
+For example, this order selects `maintainer` as the second candidate; a later root
+account is not attempted:
+
+```yaml
+hosts:
+  example:
+    connection:
+      hostname: host.example.invalid
+      user: operator
+    users:
+      operator:
+        password: synthetic-login-password
+        sudo: false
+      maintainer:
+        password: synthetic-su-password
+        sudo: true
+        sudo-password: synthetic-sudo-password
+      root:
+        password: synthetic-unused-password
+```
+
+Move the eligible root record ahead of maintainer to select root instead; inventory
+then tries `su root` first. These are synthetic configuration examples, not permission
+to connect. The login account need not appear in users. SSH aliases use the resolved
+successful final-hop account; local execution uses the actual shell account.
+
+Su credentials use the target's `vars.su.password`, then its account password. Sudo
+credentials use that actor's canonical/legacy rules above. Host-level legacy sudo
+credentials belong only to the login account and are never borrowed for candidate
+two. Each entry has one selected credential and no alternate-password retry. A missing
+sudo password still permits a configured passwordless policy.
+
+The runner and its dryrun use this selection; explicit `check-access`, `test-su`,
+`test-sudo` and `test-host` retain their diagnostic scopes and do not automatically
+replace a failed account test with another account. Generic Python recipes retain caller-selected privilege scope; their supplied Recipe
+can opt into the same policy with root(). Existing Recipe.su/sudo remain explicit.
+
+Raw `access` adds `selection_policy`, ordered `candidate_users`, `selected_user`, and
+ordered `attempts` (user/status/reason_code/steps). Steps retain operation, target,
+credential-source name/presence, identity verification, entry failure category and
+restoration evidence, never password values or third-party exception text.
+`actual_identity` identifies the final collection actor; `login_identity` and
+`shell_identity` preserve login/shell distinctions. No retained/exchange schema changes
+are needed: collection_scope continues to store only mode and effective_uid.
+
+Preflight success means a safe collection actor is available, possibly fallback_user;
+it does not promise root. During actual collection successful routes are re-entered
+and identities verified again. Failed/skipped preflight routes are copied with
+`reused_from_preflight: true` and not retried in that invocation. If a previously
+successful route later rejects entry, the remaining untried candidate may be attempted,
+then safe fallback applies. Collection-body failures never trigger a retry as another
+account. Both preflight and collection verify each nested parent after context exit;
+a working original SSH channel does not prove recovery of an inner su console. Raw errors preserve IdentityProbeError.reason_code and the summary names the
+identity failure, rather than only reporting a generic collection error.
 
 ## Check access without collection
 
@@ -59,7 +144,7 @@ python -B tools/run_recipe.py inventory/system --all --dryrun
 python -B tools/opsfeast.py recipes run inventory/system --all --dryrun
 ```
 
-Prefer check-access for hosts.yaml access validation and dryrun for a selected inventory invocation. Both share access contract 0.1.0. Check-access validates configuration/connections without inspecting recipe selections. Dryrun additionally statically validates the selected recipe and invocation inputs. No recipe collection, platform discovery/cache writes, identity inventory, raw inventory or retained records are created. Check-access defaults to a tabulate table with status, host, test, user and reason columns; inventory dryrun uses terminal tables and retains JSON with --json or non-TTY output. For the complete check-access report, use --json and redirect stdout to a private file if persistence is wanted. Config checks alone do not connect. Check-access tests declared accounts only; skipped accounts remain unverified. Neither workflow proves command-specific sudo policy, recipe platform support or hardware visibility.
+Prefer check-access for hosts.yaml access validation and dryrun for a selected inventory invocation. Both share access contract 0.1.0. Check-access validates configuration/connections without inspecting recipe selections. Dryrun additionally statically validates the selected recipe and invocation inputs and uses inventory's bounded two-candidate selection. No recipe collection, platform discovery/cache writes, identity inventory, raw inventory or retained records are created. Check-access defaults to a tabulate table with status, host, test, user and reason columns; inventory dryrun uses terminal tables and retains JSON with --json or non-TTY output. For the complete check-access report, use --json and redirect stdout to a private file if persistence is wanted. Config checks alone do not connect. Check-access tests declared accounts only; skipped accounts remain unverified. Neither workflow proves command-specific sudo policy, recipe platform support or hardware visibility.
 
 Check-access prints flushed progress to stderr before checking each host and after it finishes, even when stdout is redirected. Parallel progress follows actual completion order; the final stdout summary preserves selection order. Progress names the host/account; the table user column names the login for connection, the target account for su, and the actor for sudo. The sudo target remains root. Before identity verification, the configured connection user is shown; `unresolved` means the account is not yet known (for example, local or SSH-config-based login). If connection/identity verification fails, the configured name is only a requested account, not verified identity. The final summary has one row per connection/su/sudo test; a failure is prefixed with ❌. Totals count hosts: any failed account makes its host failed; otherwise any skipped account makes its host skipped. A host passes only when all its account checks pass.
 
@@ -94,17 +179,17 @@ python -B tools/opsfeast.py check-access --all --quiet
 python -B tools/opsfeast.py check-access --all --json --quiet > access.json
 ```
 
-Migration: scripts that parsed the previous default JSON must add --json; --quiet suppresses only stderr progress, not the final stdout report. The login access contract remains 0.1.0 with an additive per-host configured_user field (null when absent); the verified initial shell remains access.connection_identity, while access.login_identity identifies the authenticated account. Check-access adds accounts in display order: user (nullable until login is known), role (login/su), status and reason_code. Additional attempted accounts retain full diagnostic evidence in checks and sudo policy as enabled/disabled. The login row references existing top-level access evidence; the host status aggregates all rows. No separate account list is added to inventory preflight/dryrun reports. Runner dryrun/gating JSON structures are unchanged; TTY presentation follows the [console policy](cli.md#terminal-tables-and-json). The optional check_many(..., progress=callback, include_users=True) checkout helper enables the CLI account scope and calls callback(stage, report) at start/account_start/account_finish/finish in worker threads; callers must serialize shared output and avoid raising from callbacks. include_users defaults to False for existing library/runner callers; no callback means no progress output. This helper is not a versioned public Core API.
+Migration: scripts that parsed the previous default JSON must add --json; --quiet suppresses only stderr progress, not the final stdout report. The login access contract remains 0.1.0 with an additive per-host configured_user field (null when absent); the verified initial shell remains access.connection_identity, while access.login_identity identifies the authenticated account. Check-access adds accounts in display order: user (nullable until login is known), role (login/su), status and reason_code. Additional attempted accounts retain full diagnostic evidence in checks and sudo policy as enabled/disabled. The login row references existing top-level access evidence; the host status aggregates all rows. Inventory preflight/dryrun adds access.attempts for its two-candidate selection, rather than the diagnostic accounts list; TTY presentation follows the [console policy](cli.md#terminal-tables-and-json). The optional check_many(..., progress=callback, include_users=True) checkout helper enables the CLI account scope and calls callback(stage, report) at start/account_start/account_finish/finish in worker threads; callers must serialize shared output and avoid raising from callbacks. include_users defaults to False; inventory=True selects the inventory policy for runner callers; no callback means no progress output. This helper is not a versioned public Core API.
 
 The test follows configured jump hosts, verifies actual login UID/name, enters the same root shell used for collection when enabled, verifies UID 0, exits and verifies original identity, then checks Session cleanup. It checks root-shell access, not sudo permissions limited to individual commands. SSHScript's authenticated console requires Bash and id. Supplied passwords may not be consumed when policy/cache permits entry; success cannot prove a password's correctness independently of that policy/cache. Every selected test runs even after another fails. Exit 0 means all selected targets passed; failed or explicitly skipped targets return 1. `--root` and `--profile` are mutually exclusive. `--timeout` is positive/finite, default 30 seconds per stage, not an entire invocation deadline. `--threads` is positive, defaults to 1 for check-access; dryrun uses the runner concurrency default. Disabled/excluded hosts are not contacted.
 
 ## Gate and force behavior
 
-Before inventory, validate all selected inventory recipes/inputs, then complete all access tests. Any required access failure rejects the entire batch before inventory starts. No result/retention file is fabricated for rejected targets. The test report includes connection/identity evidence, sudo state and credential-source names, restoration/cleanup states and times, without credential values or third-party exception text.
+Before inventory, validate all selected inventory recipes/inputs, then complete all access tests. Any unsafe/unavailable access result rejects the entire batch before inventory starts; safe user fallback is a usable result and does not block collection. No result/retention file is fabricated for rejected targets. The test report includes connection/identity evidence, sudo state and credential-source names, restoration/cleanup states and times, without credential values or third-party exception text.
 
-`--force` permits unavailable connections to be skipped, and a failed sudo test to use the verified original account. It does not bypass malformed settings, unknown targets, path/manifest/runtime checks or uncertain identity/cleanup. A failed preflight sudo is not retried during collection. A successful test is time-local evidence: collection revalidates identity and re-enters root; a later sudo rejection stops that host unless force allows verified fallback. A later transport loss is skipped under force after successful cleanup, otherwise failed. A later collection or cleanup failure remains failed. Previously completed results are preserved; this is not an atomic batch transaction.
+`--force` permits unavailable/unsafe hosts to be skipped while other usable hosts continue. Verified ordinary-account fallback is automatic, with or without force. It does not bypass malformed settings, unknown targets, path/manifest/runtime checks or uncertain identity/cleanup. Failed/skipped preflight routes are not retried during collection. Successful routes are re-entered with fresh verification; later safe entry rejection can try the remaining candidate or fall back to the login shell. A later transport loss is skipped under force after successful cleanup, otherwise failed. A later collection or cleanup failure remains failed. Previously completed results are preserved; this is not an atomic batch transaction.
 
-Dryrun and force are mutually exclusive and apply only to enabled inventory-system recipes. Generic operation/report execution retains its existing privilege scope; force/dryrun are not saved-job fields. Saved inventory jobs still run through the default gate and current account settings; changed recipe content invalidates pinned jobs. Batch JSON includes access_checks and counts for root/user/fallback_user/skipped/failed. Raw inventories record access and the preflight report when available. A forced fallback retains collection results but returns nonzero; force authorizes continuation, not a success claim. Missing optional inventory fields alone do not fail a completed core inventory.
+Dryrun and force are mutually exclusive and apply only to enabled inventory-system recipes. Generic operation/report execution retains its existing privilege scope; force/dryrun are not saved-job fields. Saved inventory jobs still run through the default gate and current account settings; changed recipe content invalidates pinned jobs. Batch JSON includes access_checks and counts for root/user/fallback_user/skipped/failed. Raw inventories record access and the preflight report when available. A fallback retains collection results but returns nonzero even without force; force authorizes skipping unavailable hosts, not a success claim. Missing optional inventory fields alone do not fail a completed core inventory.
 
 ## Separate results and execution evidence
 
@@ -160,7 +245,7 @@ The bundled report/summary displays partitioned values and collection scope alon
 
 Synthetic tests cover credential presence/control values, default/passwordless/disabled/root modes, access gate, dryrun, forced skip/fallback, no retry, restoration and Session cleanup failures, collection-time sudo rejection, all platform parsers, budgets/truncation, retention/exchange and empty-cell CSV. Native SSH, sudo policy, FreeBSD/Linux/ESXi extended collection remain unverified; historical macOS evidence predates this extension. Documentation/command sources include the bundled SSHScript 5.0.0 public contract, [Linux proc documentation](https://www.kernel.org/doc/html/latest/filesystems/proc.html), [FreeBSD pkg query](https://man.freebsd.org/cgi/man.cgi?query=pkg-query&sektion=8), and platform manuals. A successful synthetic test is not real-host applicability evidence.
 
-Migration: account `sudo: "false"` is no longer accepted; change it explicitly to `sudo: false`. `sudo: true` is also accepted. This change does not alter `sudo-password: "false"` or legacy credential fallback markers. No private configuration is rewritten automatically. Ordinary accounts previously usable without sudo testing now need sudo: false when intentional. Empty/null explicit sudo credentials now select empty passwords; use the exact string "false" to request account-password fallback. Legacy identity_sudo remains accepted for descriptor compatibility but does not choose collection privilege or bypass the gate; account sudo policy controls the new workflow. New export extensions require updated strict validators. No private hosts.yaml, registrations, records or environments are automatically migrated.
+Migration: account `sudo: "false"` is no longer accepted; change it explicitly to `sudo: false`. `sudo: true` is also accepted. This change does not alter `sudo-password: "false"` or legacy credential fallback markers. No private configuration is rewritten automatically. For intentional ordinary-account collection, disable login sudo and leave no eligible second candidate. Existing users order now selects the second candidate; review that order and authorization before execution. Empty/null explicit sudo credentials now select empty passwords; use the exact string "false" to request account-password fallback. Legacy identity_sudo remains accepted for descriptor compatibility but does not choose collection privilege or bypass the gate; account sudo policy controls the new workflow. New export extensions require updated strict validators. No private hosts.yaml, registrations, records or environments are automatically migrated.
 
 Delivery verification on 2026-10-14: Python 3.11.15, 3.13.13 and 3.14.4 each passed 415 public synthetic/UI tests. The 3.11/3.13 suites reused the shared pure-Python dependency tree; this does not validate their native SSHScript dependency stack (the native cffi backend was unavailable for those interpreters). The selected 3.14 environment passed dependency/import-distribution checks and a credential-free local Session command with strict cleanup. AST/schema structure, synthetic retained/exchange examples, skill frontmatter, complete guide YAML and 39 added local documentation links passed. No native sudo or real SSH/host inventory was run.
 
@@ -204,4 +289,32 @@ esxi_root_shell. Failed probes and other platform/privilege-target mismatches st
 stop access. Collector provenance keeps the effective actor; retained schemas are
 unchanged. This does not verify every command, a vSphere role or native ESXi su/sudo.
 
-_Last modified: 2026-10-16_
+Two-candidate inventory verification (2026-10-17): Python 3.11.15, 3.13.13 and
+3.14.4 each passed all 588 public tests, including 22 added selection/runner/error
+regressions and the existing headless UI/package checks. Older interpreters reused
+the shared environment's Python dependency tree; native dependency readiness and a
+credential-free local Session with strict cleanup were checked only on 3.14. Wheel
+and sdist boundaries, temporary no-dependency installation, installed policy import
+and runner help, Python 3.11 grammar, skill frontmatter, document dates/local links,
+two complete synthetic guide YAML examples and diff whitespace checks passed.
+No private host connection, native su/sudo, ESXi inventory or release was performed
+during these checks. Public SSHScript 5.0.0 knowledge came from the bundled Agent Guide,
+API guide authenticated-console/failure sections, versioning guide and SOURCE.json;
+no SSHScript library source or upstream snapshot was modified.
+
+Recipe.root delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and
+3.14.4 each passed all 604 public tests, including 16 new root-console/Core/runner
+cases and the complete preceding inventory/ESXi changes. Older interpreters reused
+the shared maintenance environment's Python dependencies without modifying it;
+native dependency readiness was checked only on 3.14. Wheel/sdist boundaries,
+temporary no-dependency installation, installed Recipe.root/RootUnavailableError and
+shared-policy imports, installed runner help, a credential-free local Session,
+ordinary-user callable console/managed job and strict cleanup passed. Python 3.11
+grammar, Core/recipe Python example syntax, changed skill frontmatter, document dates,
+564 local links and diff whitespace checks passed. Operational native su/sudo and
+ESXi inventory remain unverified; no private host connection or package/tag release
+was performed. Existing data schemas and dependency settings need no update because
+the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
+capability routing and public reproducible tests are included in this delivery.
+
+_Last modified: 2026-10-17_

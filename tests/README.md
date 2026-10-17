@@ -10,6 +10,32 @@ Verification should cover result parsing, failure status, supported platforms, a
 
 `test_access_accounts.py` verifies check-access independent su → enabled sudo, actor-scoped credentials, sudo-disabled success, su/sudo failures, continued independent checks, missing-password skips/nonzero status, unavailable login, cleanup failure, account progress, JSON/quiet output and unchanged login-only inventory preflight. Per-test cases cover successful connection with failed login sudo, successful su with failed actor sudo, failed su with skipped sudo, missing credentials, suppressed duplicate successful reconnects, and separate restoration/cleanup failure rows. It reuses synthetic console fixtures; no native authentication is exercised.
 
+## Recipe.root console
+
+`test_recipe_root.py` covers callable console results/buffers, command/job budgets,
+interactive delegation, root-second and ordinary-second ordering, typed safe failure
+without body execution, copied/redacted evidence, already-root console setup, parent
+and cross-thread guards, cached methods after exit, explicit nested-scope rejection,
+identity/restoration/console-exit failures, preserved body errors with cleanup notes,
+runner-supplied Recipe integration and failure even when unsafe errors are swallowed.
+The package test also checks installed Recipe.root/RootUnavailableError and inclusion
+of the shared strict helper. Existing inventory tests exercise the adapter's explicit
+safe fallback and failed-preflight reuse. All authentication and root-console policy
+cases use synthetic actors; native su/sudo compatibility requires separate evidence.
+
+## Two-candidate inventory selection
+
+`test_inventory_actor.py` uses synthetic actors to cover login-first selection,
+first-eligible YAML order across include/group loading, root-second su priority,
+su/sudo failure and missing/empty credentials, actor-scoped credential selection,
+no third candidate or alternate credential, root UID verification, safe user fallback,
+preflight reuse without failed-route authentication retries, later entry rejection,
+unknown entered identity, nested recovery and exit failures, collection-body failure,
+force boundaries, human attempt rows and the runner's ESXi authenticated-login handoff.
+The existing inventory access suite also checks successful fallback collection and
+retention without --force. Explicit account diagnostics retain their original scope.
+Fixtures never use private host bindings or invoke native authentication.
+
 ## Configuration utility tests
 
 With Python 3.11+ and requirements-init.txt installed (PyYAML and tabulate[widechars]), run:
@@ -137,4 +163,32 @@ Root-login regression tests verify check-access CLI table/JSON success with sudo
 
 ESXi identity delivery verification (2026-10-16): Python 3.11.15, 3.13.13 and 3.14.4 each passed 521 public tests, including all prior pending connection-selection/root-login changes. Older interpreters reused shared maintenance dependencies without environment changes. Eight new adapter tests cover success/failure/boundaries, CLI evidence and the portable probe expression. Python 3.11 grammar, changed Markdown links/dates, hosts/recipes skill frontmatter, wheel build, temporary no-dependency installation, isolated installed-adapter execution and CLI help, and diff whitespace checks passed. Real two-hop ESXi 7.0 root check-access passed with effective UID 0, sudo not_needed and strict cleanup; no host settings, packages or inventory data were changed. Other ESXi releases/non-root login, native ESXi su/sudo and ESXi inventory execution remain unverified.
 
-_Last modified: 2026-10-16_
+Two-candidate inventory verification (2026-10-17): Python 3.11.15, 3.13.13 and
+3.14.4 each passed all 588 public tests, including 22 added selection/runner/error
+regressions and the existing headless UI/package checks. Older interpreters reused
+the shared environment's Python dependency tree; native dependency readiness and a
+credential-free local Session with strict cleanup were checked only on 3.14. Wheel
+and sdist boundaries, temporary no-dependency installation, installed policy import
+and runner help, Python 3.11 grammar, skill frontmatter, document dates/local links,
+two complete synthetic guide YAML examples and diff whitespace checks passed.
+No private host connection, native su/sudo, ESXi inventory or release was performed
+during these checks. Public SSHScript 5.0.0 knowledge came from the bundled Agent Guide,
+API guide authenticated-console/failure sections, versioning guide and SOURCE.json;
+no SSHScript library source or upstream snapshot was modified.
+
+Recipe.root delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and
+3.14.4 each passed all 604 public tests, including 16 new root-console/Core/runner
+cases and the complete preceding inventory/ESXi changes. Older interpreters reused
+the shared maintenance environment's Python dependencies without modifying it;
+native dependency readiness was checked only on 3.14. Wheel/sdist boundaries,
+temporary no-dependency installation, installed Recipe.root/RootUnavailableError and
+shared-policy imports, installed runner help, a credential-free local Session,
+ordinary-user callable console/managed job and strict cleanup passed. Python 3.11
+grammar, Core/recipe Python example syntax, changed skill frontmatter, document dates,
+564 local links and diff whitespace checks passed. Operational native su/sudo and
+ESXi inventory remain unverified; no private host connection or package/tag release
+was performed. Existing data schemas and dependency settings need no update because
+the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
+capability routing and public reproducible tests are included in this delivery.
+
+_Last modified: 2026-10-17_

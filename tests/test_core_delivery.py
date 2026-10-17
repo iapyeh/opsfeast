@@ -134,6 +134,7 @@ def execute(recipe):
             self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)
+            self.assertIn('_opsfeast_data/tools/root_access.py', names)
             self.assertIn('_opsfeast_data/tests/test_core_delivery.py', names)
             self.assertIn('_opsfeast_data/recipes/check/port/LICENSE', names)
             self.assertFalse(any('AGENTS.local' in name or '__pycache__' in name or '.opsfeast-instance' in name for name in names))
@@ -143,7 +144,10 @@ def execute(recipe):
 sys.path.insert(0, sys.argv[1])
 sys.path.append(sys.argv[3])  # Selected environment's dependency directory, not checkout source.
 from pathlib import Path
-from opsfeast import Instance
+from opsfeast import Instance, Recipe, RootUnavailableError, CoreError
+assert callable(Recipe.root)
+assert issubclass(RootUnavailableError, CoreError)
+from root_access import candidates
 from recipe_inspection import inspect_one
 root = Path(sys.argv[2])
 instance = Instance.open(root)

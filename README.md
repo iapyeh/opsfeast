@@ -12,7 +12,7 @@ SSHScript is the currently supported execution foundation for the host diagnosti
 
 Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The CLI is `tools/opsfeast.py`; the former `tools/ops.py` entrypoint and `import ops` are removed. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
 
-Use the bundled [Core Python API](docs/core-api.md) for installation identity, profiles, hosts, scoped Recipe sessions and su/sudo, and read-only inspection. Start with the [Core skill](skills/opsfeast-core/SKILL.md); logging and notification services remain deferred.
+Use the bundled [Core Python API](docs/core-api.md) for installation identity, profiles, hosts, scoped Recipe sessions and root/su/sudo, and read-only inspection. Start with the [Core skill](skills/opsfeast-core/SKILL.md); logging and notification services remain deferred. For authorized root-only commands, [Recipe.root()](docs/core-api.md#automatic-root-console) provides a callable console using the shared account policy and raises on failure.
 
 Read the **[command-line reference](docs/cli.md)** for every opsfeast.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Terminal summaries use tabulate; agents should explicitly select --json where supported. See [the output policy](docs/cli.md#terminal-tables-and-json). Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
 
@@ -57,7 +57,7 @@ Today, that approach is supported by setup and connection tools, agent guides an
 
 Read the [vision and design principles](docs/vision.md) for the shared direction followed by project contributors and recipe authors.
 
-Inventory now has a batch access gate, `check-access`, `--dryrun` and explicit `--force` fallback. Sudo is attempted by default unless account `sudo: false` disables it. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
+Inventory uses at most two accounts: the login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority; otherwise login sudo is first. Safe login-user fallback is automatic; `--force` permits unavailable hosts to be skipped. `--dryrun` previews the same access selection without collecting. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
 
 ## Getting started with your AI agent
 
@@ -281,8 +281,8 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 
 ## Retained observations and sharing
 
-Inventory execution automatically saves operational success/partial observations in each Feast records/observations.sqlite3 after saving raw JSON. Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes use the verified whole-collection actor; account sudo: false disables elevation. Legacy identity_sudo is compatibility-only. Old raw files are not automatically backfilled.
+Inventory execution automatically saves operational success/partial observations in each Feast records/observations.sqlite3 after saving raw JSON. Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes use the verified whole-collection actor; account sudo: false disables that account's sudo, while the ordered second candidate can still provide root. Legacy identity_sudo is compatibility-only. Old raw files are not automatically backfilled.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

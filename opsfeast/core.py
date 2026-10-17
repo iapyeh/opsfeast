@@ -21,6 +21,17 @@ class CoreError(RuntimeError):
         super().__init__(code)
 
 
+class RootUnavailableError(CoreError):
+    """No candidate established root; the original login is verified usable."""
+    def __init__(self, report):
+        super().__init__('root_unavailable')
+        self._evidence = copy.deepcopy(report)
+
+    @property
+    def report(self):
+        return copy.deepcopy(self._evidence)
+
+
 def _timeout(value):
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
         raise ConfigError('timeout must be positive finite seconds')
@@ -312,6 +323,64 @@ class SessionView:
         raise CoreError('session_not_owned')
 
 
+class _RootConsole:
+    """Callable SSHScript console surface tied to one active Recipe scope."""
+    def __init__(self, owner, console):
+        self._owner, self._console = owner, console
+        self._active = True
+
+    def _check(self):
+        state = self._owner._state
+        if (not self._active or not state.active or state.failed or state.top is not self
+                or state.thread != threading.get_ident()):
+            raise CoreError('session_scope_unavailable')
+
+    def __call__(self, command, **kwargs):
+        self._check()
+        kwargs.setdefault('command_timeout', self._owner.timeout)
+        return self._console(command, **kwargs)
+
+    exec_command = __call__
+
+    def start(self, command, **kwargs):
+        self._check()
+        kwargs.setdefault('timeout', self._owner.timeout)
+        return self._console.start(command, **kwargs)
+
+    def enter(self, *args, **kwargs):
+        self._check()
+        return self._console.enter(*args, **kwargs)
+
+    def expect(self, *args, **kwargs):
+        self._check()
+        kwargs.setdefault('timeout', self._owner.timeout)
+        return self._console.expect(*args, **kwargs)
+
+    def input(self, *args, **kwargs):
+        self._check()
+        kwargs.setdefault('timeout', self._owner.timeout)
+        return self._console.input(*args, **kwargs)
+
+    def send(self, *args, **kwargs):
+        self._check()
+        return self._console.send(*args, **kwargs)
+
+    @property
+    def stdout(self):
+        self._check()
+        return self._console.stdout
+
+    @property
+    def stderr(self):
+        self._check()
+        return self._console.stderr
+
+    @property
+    def exitcode(self):
+        self._check()
+        return self._console.exitcode
+
+
 class Recipe:
     """One execution scope, never a shared mutable recipe definition."""
     def __init__(self):
@@ -357,6 +426,77 @@ class Recipe:
 
     def su(self, user):
         return self._privilege('su', user)
+
+    @contextmanager
+    def root(self):
+        """Yield a callable verified root console, or raise before the body runs."""
+        from contextlib import ExitStack
+        from host_runtime import identity
+        from root_access import root_actor
+        self._check()
+        if self._console:
+            raise CoreError('root_requires_login_scope')
+        evidence = {'operation': 'root', 'target': 'root', 'status': 'failed',
+                    'restoration_verified': False}
+        self._report.setdefault('privileges', []).append(evidence)
+        view = None
+        body_error = None
+        try:
+            with ExitStack() as stack:
+                actor = stack.enter_context(root_actor(self._actor, self._config, self.host_id,
+                    self.timeout, evidence,
+                    authenticated_user=self._report.get('login_identity', {}).get('username')))
+                if actor is self._actor:
+                    # Already-root exec sessions still expose the same console API.
+                    context = actor.shell('bash')
+                    console = context.__enter__()
+                    evidence['console_cleanup_verified'] = False
+
+                    def leave_shell():
+                        context.__exit__(None, None, None)
+                        evidence['console_cleanup_verified'] = True
+
+                    stack.callback(leave_shell)
+                    actual = identity(console, self.timeout, console=True)
+                    if actual['effective_uid'] != 0:
+                        raise CoreError('identity_verification_failed')
+                    evidence['actual_identity'] = actual
+                else:
+                    console = actor
+                view = _RootConsole(self, console)
+                self._state.top = view
+                evidence['status'] = 'success'
+                try:
+                    yield view
+                except BaseException as exc:
+                    body_error = exc
+                    raise
+        except RootUnavailableError:
+            evidence.update(status='failed', error_type='RootUnavailableError')
+            if body_error is not None:
+                raise
+            if evidence.get('restoration_verified') is not True:
+                self._state.failed = True
+                self._report['scope_error'] = 'identity_restoration_failed'
+                raise CoreError('identity_restoration_failed') from None
+            raise RootUnavailableError(evidence) from None
+        except BaseException as exc:
+            evidence.update(status='failed', error_type=type(exc).__name__)
+            unsafe = (view is None or evidence.get('restoration_verified') is not True
+                      or evidence.get('console_cleanup_verified') is False)
+            if unsafe:
+                self._state.failed = True
+                self._report['scope_error'] = 'root_scope_failed'
+            if body_error is not None and exc is not body_error:
+                evidence['error_type'] = type(body_error).__name__
+                evidence['cleanup_error'] = type(exc).__name__
+                body_error.add_note('Root cleanup/restoration failed; session disabled.')
+                raise body_error from None
+            raise
+        finally:
+            if view is not None:
+                view._active = False
+            self._state.top = self
 
     @contextmanager
     def _privilege(self, mode, user):

@@ -85,7 +85,7 @@ with profile.recipe("host-01", vars={"purpose": "identity"}, timeout=15) as reci
     # Original actor is available again only after verified restoration.
 ```
 
-`profile.sessions.connect(host_id, timeout=30)` yields the same scoped Recipe capabilities without invocation vars. Recipe is a per-execution object; do not construct it directly or share across threads. It provides host_id, vars, timeout, run_id, instance_id, selected Profile, connection_owner (core or runner), session, sudo(), su() and a copied report. Standalone vars must be plain JSON-compatible mappings; runner vars additionally use descriptor validation/defaults.
+`profile.sessions.connect(host_id, timeout=30)` yields the same scoped Recipe capabilities without invocation vars. Recipe is a per-execution object; do not construct it directly or share across threads. It provides host_id, vars, timeout, run_id, instance_id, selected Profile, connection_owner (core or runner), session, root(), sudo(), su() and a copied report. Standalone vars must be plain JSON-compatible mappings; runner vars additionally use descriptor validation/defaults.
 
 The session facade provides exec_command and start. It applies a finite default command/job timeout and quotes argv for privileged consoles; privileged commands require string argv sequences. CommandResult/managed-job interpretation follows SSHScript 5.0.0, including truncation and unknown remote termination. Caller-owned jobs must finish/stop within scope; returned raw job objects are not lifetime-sandboxed. Shell/connect/settings and direct privilege factories are not exposed through this facade. Existing legacy recipes retain their full borrowed SSHScript Session.
 
@@ -98,6 +98,91 @@ Core owns standalone connection cleanup, including jump ancestors. Recipe/sessio
 Credentials reuse canonical OpsFeast policy: sudo checks the current actor's Boolean policy (false disables; true/omission enables; strings are rejected) and canonical sudo-password presence/null/empty/"false" rules, then legacy credential precedence. Host-level credentials apply only to the actual connection account. Su uses the target's vars.su.password then account password; missing su credentials fail before entry. Explicit empty strings stay empty. No lower-priority credential retry occurs. Sudo policy is not bypassed simply because the actor is already root.
 
 Core probes effective identity before entry, verifies target UID inside the authenticated SSHScript console, and verifies original username/UID after exit. Each attempt records operation, target, password source (never value), status, actual identity and restoration evidence. A rejected entry does not execute the body. Failed exit or uncertain restoration poisons the shared execution; further commands fail and runner cannot save claimed success. Command failures inside a scope still unwind it. When cleanup also fails, preserve the original exception and attach a safe note; otherwise raise CoreError. Connection cleanup and privilege cleanup remain distinct recorded evidence. No remote process-termination guarantee follows from successful channel cleanup.
+
+## Automatic root console
+
+Use the additive Core 0.1.0 `Recipe.root()` API when an authorized operation requires
+root and the agent should reuse the host's ordered account policy:
+
+```python
+from opsfeast import RootUnavailableError
+
+with profile.recipe("host-01", timeout=15) as recipe:
+    try:
+        with recipe.root() as root:
+            result = root("id -u", check=True, command_timeout=10)
+    except RootUnavailableError as error:
+        evidence = error.report  # Copied safe selection/restoration evidence.
+        raise  # This operation requires root; do not execute its commands as user.
+```
+
+Runner-provided recipes use the same API without reconnecting:
+
+```python
+VERSION = "0.1.0"
+
+def execute(recipe):
+    with recipe.root() as root:
+        uid = root("id -u", check=True).stdout.strip()
+    return {"status": "success", "reason_code": "root_verified",
+            "message": "Root command completed.", "data": {"effective_uid": int(uid)}}
+```
+
+`root()` has no arguments and no required/fallback flag. It enters the block only
+after verifying effective UID 0. It uses exactly the same
+[two-candidate account policy](inventory-access.md#inventory-account-selection) as
+inventory: verified root login is used immediately; otherwise login sudo normally
+precedes su/sudo through the first other sudo-enabled users account in YAML order.
+An eligible second account named root gets `su root` priority. Missing su credentials
+skip that route. No third account or alternate credential is tried. The user still
+authorizes host/privilege/command scope; calling the method does not grant authority.
+
+The yielded value is a **scoped callable console**, using SSHScript console calling
+conventions, not a child Recipe. Use `root(command_string, **kwargs)` or
+`root.exec_command(command_string, **kwargs)` for the original CommandResult;
+`root.start(command_string, **kwargs)` returns the underlying managed job. Commands
+are shell strings, so quote dynamic arguments with shlex.join. stdout/stderr are live
+console buffers and exitcode is the latest status; retain CommandResult for completed
+commands. `enter`, `expect`, `input` and `send` preserve native interactive conventions
+(input appends Enter, send does not). Command calls default command_timeout, start
+and expect/input default timeout to recipe.timeout; explicit values take precedence.
+Stop/finish jobs and leave interactive scopes before exiting root. The facade covers
+these documented operations; it does not expose raw Session ownership, connect/close,
+or another Recipe's session/su/sudo API. Existing explicit Recipe.su/sudo still yield
+child Recipe objects and keep their signatures/policy.
+
+An already-root exec Session opens a Bash console so the return interface is the same
+as an elevated console. Thus `Recipe.root()` requires a usable SSHScript Bash console
+as well as supported identity probes even when sudo is unnecessary. Inventory's raw
+already-root exec path does not open an extra console and keeps its platform support.
+The implementation follows the bundled SSHScript 5.0.0 Agent Guide/API console,
+authenticated-entry, job and cleanup contracts; no upstream library change is needed.
+
+Call root() from the active login-level Recipe, not a child returned by su/sudo
+(`CoreError.code: root_requires_login_scope`). Within root, parent Recipe command or
+privilege entry is unavailable. The returned console and cached command methods reject
+use after exit or from another thread. The original Recipe becomes usable after
+verified cleanup. No root context is opened merely by connecting.
+
+If both candidates are unavailable **and the original login has been verified usable**,
+root() raises public `RootUnavailableError`, a CoreError with code root_unavailable.
+Its copied `report` includes candidate order, selection policy, attempts/steps, safe
+credential-source names/presence, identity and restoration evidence. It contains no
+credential values or third-party exception text. A disabled login with no candidate
+also raises: root() never silently runs a root-only body as an ordinary user.
+
+Unknown/wrong entered identity, unverified recovery, console setup/exit or restoration
+failure are not RootUnavailableError. They raise their own error, set scope_error and
+disable the shared execution. A runner cannot claim success after swallowing them.
+Body command errors retain their type/result; when cleanup also fails, the original
+body error is preserved with a safe cleanup note and the scope is disabled.
+
+Inventory uses the shared strict root-acquisition helper and catches RootUnavailableError
+only while acquiring the actor, then explicitly chooses its documented safe user
+fallback. It does not catch collection-body failures as a reason to retry. The strict
+API and inventory therefore share selection and restoration behavior while keeping
+root-only operations explicit. Raw Core evidence is recorded in recipe.report.privileges
+with operation root; retained inventory collection_scope still stores only mode/UID.
 
 ## Runner integration and migration
 
@@ -183,4 +268,19 @@ and recipe.sudo still enforces that actor's sudo policy even when already root.
 ESXi authenticated-console support is not added. Existing profile.recipe/session calls
 need no new arguments. See [rules, fields and evidence](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
 
-_Last modified: 2026-10-16_
+Recipe.root delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and
+3.14.4 each passed all 604 public tests, including 16 new root-console/Core/runner
+cases and the complete preceding inventory/ESXi changes. Older interpreters reused
+the shared maintenance environment's Python dependencies without modifying it;
+native dependency readiness was checked only on 3.14. Wheel/sdist boundaries,
+temporary no-dependency installation, installed Recipe.root/RootUnavailableError and
+shared-policy imports, installed runner help, a credential-free local Session,
+ordinary-user callable console/managed job and strict cleanup passed. Python 3.11
+grammar, Core/recipe Python example syntax, changed skill frontmatter, document dates,
+564 local links and diff whitespace checks passed. Operational native su/sudo and
+ESXi inventory remain unverified; no private host connection or package/tag release
+was performed. Existing data schemas and dependency settings need no update because
+the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
+capability routing and public reproducible tests are included in this delivery.
+
+_Last modified: 2026-10-17_

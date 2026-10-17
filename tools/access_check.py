@@ -105,7 +105,7 @@ def collection_actor(session, config, host, timeout, report, *, force=False, fal
             raise RuntimeError('identity restoration failed')
 
 
-def check_access(config, host, timeout=30, session_class=None):
+def check_access(config, host, timeout=30, session_class=None, *, inventory=False):
     report = {'contract_version': VERSION, 'host': host, 'started_at': now(), 'status': 'failed',
               'connected': False, 'purpose': 'access-only', 'reason_code': 'connection_failed'}
     if not config.hosts[host].get('enabled', True):
@@ -117,9 +117,13 @@ def check_access(config, host, timeout=30, session_class=None):
             report['reason_code'] = 'identity_failed'
             access = {}
             report['access'] = access
-            with collection_actor(session, config, host, timeout, access,
+            if inventory:
+                from inventory_actor import collection_actor as actor_context
+            else:
+                actor_context = collection_actor
+            with actor_context(session, config, host, timeout, access,
                                   authenticated_user=report.get('login_identity', {}).get('username')):
-                report.update(status='success', reason_code='access_verified')
+                report.update(status='success', reason_code=access.get('reason_code', 'access_verified'))
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__)
         if report['reason_code'] == 'identity_failed':
@@ -196,11 +200,22 @@ def summary_tests(report):
         elif access.get('identity_model') == 'esxi_root_shell':
             add('identity', login, 'success')
             rows[-1]['reason_code'] = 'shell=' + access['shell_identity']['username'] + ', uid=0 (ESXi)'
-    sudo = access.get('sudo', {})
-    state = sudo.get('status')
-    add('sudo', login, 'success' if state == 'success' else 'failed' if state == 'failed' else 'skipped',
-        {'failed': 'sudo_failed', 'disabled': 'sudo_disabled', 'not_needed': 'already_root'}.get(
-            state, 'not_attempted' if access.get('connection_identity') else 'connection_unverified'))
+    if 'attempts' in access and access['attempts']:
+        for attempt in access['attempts']:
+            if not attempt['steps']:
+                add('sudo' if attempt['user'] == login else 'su', attempt['user'],
+                    'skipped', attempt.get('reason_code', 'not_attempted'))
+            for step in attempt['steps']:
+                add(step['operation'], attempt['user'], step['status'], step.get('reason_code', 'identity_failed'))
+        if access.get('degraded'):
+            add('selection', login, 'success')
+            rows[-1]['reason_code'] = 'fallback_user / root_unavailable'
+    else:
+        sudo = access.get('sudo', {})
+        state = sudo.get('status')
+        add('sudo', login, 'success' if state == 'success' else 'failed' if state == 'failed' else 'skipped',
+            {'failed': 'sudo_failed', 'disabled': 'sudo_disabled', 'not_needed': 'already_root'}.get(
+                state, 'not_attempted' if access.get('connection_identity') else 'connection_unverified'))
     if access.get('restoration_verified') is False:
         add('restoration', login, 'failed', 'restoration_failed')
     if report.get('cleanup_error'):
@@ -350,7 +365,7 @@ def check_host_accounts(config, host, timeout=30, session_class=None, *, progres
     return report
 
 
-def check_many(root, hosts, timeout=30, threads=1, session_class=None, *, progress=None, include_users=False):
+def check_many(root, hosts, timeout=30, threads=1, session_class=None, *, progress=None, include_users=False, inventory=False):
     from concurrent.futures import ThreadPoolExecutor
     from opsfeast import Validator
     config = Validator(root)
@@ -367,6 +382,7 @@ def check_many(root, hosts, timeout=30, threads=1, session_class=None, *, progre
         if progress:
             progress('start', {'host': host, 'configured_user': configured_user})
         report = (check_host_accounts(config, host, timeout, session_class, progress=progress) if include_users
+                  else check_access(config, host, timeout, session_class, inventory=True) if inventory
                   else check_access(config, host, timeout, session_class))
         report['configured_user'] = configured_user
         if progress:

@@ -547,7 +547,7 @@ hosts:
 
 `connection.user` 是 SSH 登入帳號；`vars.sudo.user` 是 sudo 切換到的目標帳號；`vars.sudo.password` 是 sudo 驗證所需的密碼，通常屬於登入帳號，而不是目標帳號。
 
-初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；Inventory now explicitly tests enabled sudo and uses verified root for the complete collection; set account sudo: false for intentional ordinary-account collection.
+初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；Inventory uses the [two-candidate selection](inventory-access.md#inventory-account-selection): login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority. Account sudo: false disables only that account's sudo; safe login fallback is automatic when root is unavailable.
 
 目標主機與跳板各自使用自己的變數，不自動繼承。也不自動把變數轉成環境變數或插入 shell 命令。Recipe 讀取變數的程式介面尚未定案。
 
@@ -764,4 +764,4 @@ and never prints password/vars fields. Recipe validation still runs; the compact
 table omits its count/skip columns. JSON and redirected text retain their detailed
 existing contracts. See [the CLI's exact display rules](cli.md#human-check-overview).
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

@@ -41,9 +41,9 @@ Inventory raw result filenames use the UTC started_at second plus UUID (`YYYYMMD
 
 Read [the complete inventory access/results guide](../../docs/inventory-access.md) before selecting accounts, testing access, running inventory, authoring collectors or interpreting/exporting new values. It documents exact interfaces, settings, source selection, dependencies, authorization, failure/skip/fallback states, units, scope and verification limits.
 
-- Use check-access for selected hosts.yaml login/root validation plus independent su to every other declared user and sudo as that actor unless its sudo is Boolean false. Missing su credentials are skipped and unverified; su failure prevents that actor's sudo. Inventory --dryrun adds static recipe/input checks but remains login-only. Both make real connections and privilege attempts without inventory or host-init data. See the [account-check scope and results](../../docs/inventory-access.md#check-access-without-collection). Test-host additionally handles platform facts.
-- Inventory 0.3.0 defaults to verified root/sudo; account sudo: false deliberately selects ordinary-account collection. Sudo policy is Boolean-only: true/omission enables it, and quoted "false"/"true" are rejected. Canonical sudo-password selects by presence: null/empty mean empty password; exact "false" means account-password fallback. Other disabling representations are invalid; no retry with another credential. Prefer these canonical fields; preserve legacy vars credentials and do not rewrite private configuration.
-- The default batch gate rejects collection after any required access failure. Force allows connection skips and verified user fallback; uncertain identity/restoration/cleanup still stops that host. Dryrun/force are mutually exclusive and inventory-only, not saved-job flags. Check access.mode, batch counts and exit code separately from collected values.
+- Use check-access for selected hosts.yaml login/root validation plus independent su to every other declared user and sudo as that actor unless its sudo is Boolean false. Missing su credentials are skipped and unverified; su failure prevents that actor's sudo. Inventory --dryrun adds static recipe/input checks and uses the bounded two-candidate inventory policy, including possible su. Both make real connections and privilege attempts without inventory or host-init data. See the [account-check scope and results](../../docs/inventory-access.md#check-access-without-collection). Test-host additionally handles platform facts.
+- Inventory selects at most the login account and the first other users account with sudo true/omitted, preserving YAML order. An eligible root second candidate gets su root priority; otherwise login sudo precedes second-account su/sudo. Account sudo: false disables that account's sudo and excludes it as a second candidate. Read the [canonical selection and evidence rules](../../docs/inventory-access.md#inventory-account-selection). Sudo policy is Boolean-only: true/omission enables it, and quoted "false"/"true" are rejected. Canonical sudo-password selects by presence: null/empty mean empty password; exact "false" means account-password fallback. Other disabling representations are invalid; no retry with another credential. Prefer these canonical fields; preserve legacy vars credentials and do not rewrite private configuration.
+- The default batch gate rejects collection after any required access failure. Verified login-user fallback is automatic when root is unavailable (nonzero execution exit); force permits unavailable hosts to be skipped; uncertain identity/restoration/cleanup still stops that host. Dryrun/force are mutually exclusive and inventory-only, not saved-job flags. Check access.mode, batch counts and exit code separately from collected values.
 - Pure results are inventory.system/hardware/storage/network/software/services with fixed nullable typed fields. Raw collection_process/observations/sources preserve execution evidence. Retention/exchange preserve inventory and minimal collection_scope, omit diagnostics, and keep original times/identity quality. Old records remain valid; update strict consumers before accepting new extension fields.
 - For CSV use observation_store.py export --format csv with explicit filters; null becomes an empty cell, zero stays zero, empty lists remain []. JSON is the exchange contract. For SQL query the retained payload with json_extract; for reports reuse the updated offline report/summary or reviewed user recipes. A later run with another account is separate history, not automatic field merging.
 - Extra queries have byte/item/command/shared time bounds and platform gaps. Root does not guarantee complete visibility. No new native SSH/sudo or all-platform collection evidence follows from synthetic tests. Do not install missing tools, probe arbitrary files or transmit exports without scope.
@@ -57,6 +57,20 @@ Before generating a new user recipe, read `python -B tools/recipe_identity.py de
 Follow the [tool selection workflow](../../docs/recipe-authoring.md#choose-execution-tools). Assess SSHScript first for command execution and session orchestration, and prefer it when it fits the task, verified capabilities and authorized environment. User-selected tools, safety and environment constraints take precedence. Other tools and mixed implementations are welcome; briefly record concrete reasons in the recipe's Implementation choice section. For SSHScript recipes, explain actual capabilities with implementation and verification links. Do not require conversion of acquired recipes, add superficial usage or change dependencies solely for promotion.
 
 Read the selected tools' task-relevant documentation. The SSHScript skill is required when using SSHScript, not for every recipe. This policy does not add runner backends or authorize installation or execution.
+
+## Reuse automatic root acquisition
+
+Python-recipe entrypoints receive Recipe. For authorized root-only work use
+`with recipe.root() as root:` then `root("id -u", check=True)`, following
+[the public console API and complete example](../../docs/core-api.md#automatic-root-console).
+root() has no required/fallback flag; it returns a callable console, not a Recipe.
+It shares inventory's two-candidate ordering and scoped credentials. Import
+RootUnavailableError from opsfeast to distinguish safe acquisition failure from
+identity/cleanup failures; do not silently rerun a root-only body as user. Reuse
+this API rather than generating account-selection loops or manually nesting su/sudo.
+The [Core skill](../opsfeast-core/SKILL.md) covers availability, lifetime and failures.
+Legacy python-session recipes keep their explicit interface; no new CLI option or
+automatic privilege escalation is added to generic recipes.
 
 ## Discover services when authoring recipes
 
@@ -157,7 +171,7 @@ See [host diagnostics](../../docs/host-diagnostics.md) for platform initializati
 
 ## Results, identity and sharing
 
-For inventory-system, runner performs raw → retained automatically; humans/agents use observation_store.py for selected recovery, export, validation and exchange combination. Follow the complete [result-data skill](../opsfeast-result-data/SKILL.md), not raw-file scanning for routine questions. Operational success/partial observations are retained; mock/failed/skipped/unsupported results are excluded. ESXi is a new independent inventory implementation with synthetic coverage only. Inventory privilege follows the default-sudo access gate; account sudo: false disables it and legacy identity_sudo is compatibility-only. Hardware serial is equipment evidence, not OS-installation identity. FreeBSD/macOS/ESXi currently use warned source-scoped fallback; Linux machine-id is a candidate with clone/reinstall caveats. Receiver analysis tools are user-selected and not bundled.
+For inventory-system, runner performs raw → retained automatically; humans/agents use observation_store.py for selected recovery, export, validation and exchange combination. Follow the complete [result-data skill](../opsfeast-result-data/SKILL.md), not raw-file scanning for routine questions. Operational success/partial observations are retained; mock/failed/skipped/unsupported results are excluded. ESXi is a new independent inventory implementation with synthetic coverage only. Inventory privilege follows the shared two-candidate policy; account sudo: false disables that account's sudo and legacy identity_sudo is compatibility-only. Hardware serial is equipment evidence, not OS-installation identity. FreeBSD/macOS/ESXi currently use warned source-scoped fallback; Linux machine-id is a candidate with clone/reinstall caveats. Receiver analysis tools are user-selected and not bundled.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
@@ -290,4 +304,4 @@ Missing/unzoned instants do not acquire an invented timezone. Read [the canonica
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
 comparing display strings, interpreting DST or authoring another human report.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

@@ -1,6 +1,6 @@
 ---
 name: opsfeast-core
-description: Use the bundled OpsFeast Python API for installation identity, profiles, runtime hosts loading, scoped sessions and Recipe su/sudo, or read-only instance inspection. Use for standalone agent programs and python-recipe authoring; logging and notification services remain unavailable.
+description: Use the bundled OpsFeast Python API for installation identity, profiles, runtime hosts loading, scoped sessions and Recipe root/su/sudo, or read-only instance inspection. Use for standalone agent programs and python-recipe authoring; logging and notification services remain unavailable.
 ---
 
 # Operate and compose OpsFeast Core
@@ -28,6 +28,25 @@ Use `with profile.recipe(host_id, vars=..., timeout=...) as recipe` for standalo
 Use recipe.session.exec_command(argv) or start(argv), read actual CommandResult/job states, and finish/stop owned jobs within scope. For privilege use `with recipe.sudo(user="root") as privileged` or `with recipe.su("declared-user") as privileged`, then privileged.session. Parent commands are unavailable while a nested scope is active. No host-init/privilege probe happens just by connecting. Read [SSHScript skill](../sshscript/SKILL.md), its Agent Guide and relevant API sections before command/job automation; Core's facade exposes only the documented subset.
 
 Credentials follow existing account policy with one selected source, no retry; su requires a declared target and credential. Verify authorized target/privilege scope before entry. Failed identity restoration disables the execution; preserve cleanup evidence and do not catch the error to claim success. Core is not a Python sandbox or approval enforcement mechanism.
+
+## Prefer the shared root console
+
+For authorized operations requiring root, use `with recipe.root() as root:` and call
+`root("id -u", check=True)` directly. root is a scoped callable console, not another
+Recipe; no required flag exists. It returns original CommandResult and supports
+exec_command(string), start(string), enter/expect/input/send and stdout/stderr/exitcode.
+Read [the canonical interface, examples and errors](../../docs/core-api.md#automatic-root-console)
+before use. Preserve finite budgets, shell quoting and job/interactive cleanup.
+
+Reuse the shared two-candidate policy instead of recreating users ordering, credentials
+or su/sudo orchestration. A root second candidate gets su priority; otherwise login
+sudo is first. Public `from opsfeast import RootUnavailableError` is safe acquisition
+failure only after verified restoration, never a license to execute root-only commands
+as user. Inspect its copied report. Identity/setup/cleanup failures disable the scope;
+do not swallow them. Root requires the login-level Recipe and a usable Bash console,
+even for an already-root login. Parent commands are blocked while active; console use
+after exit or across threads fails. Inventory alone adapts safe acquisition failure
+to its explicit user fallback. Existing Recipe.su/sudo still yield child Recipes.
 
 ## Inspect and perform explicit local operations
 
@@ -108,4 +127,4 @@ returns the full evidence within an authorized host scope. Human tables explain 
 root shell and show sudo already_root. Native evidence covers the two tested two-hop
 paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

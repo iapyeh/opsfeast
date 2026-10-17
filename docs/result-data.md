@@ -62,7 +62,7 @@ Every fallback emits a runner warning, raw identity warnings and retained `ident
 
 ### Sudo selection and authorization
 
-Inventory 0.3.0 uses the access gate and root/user actor for the whole collection, including identity. Read [inventory access and credential rules](inventory-access.md). Sudo is attempted by default unless users.<account>.sudo is Boolean false; root UID 0 needs no sudo. Canonical sudo-password selects by presence (null/empty become empty passwords), with the string "false" selecting account password. There is no alternate-credential retry. identity_sudo remains accepted for compatibility but no longer selects collection privilege. Unknown restoration/cleanup fails execution and prevents retention. No su to other accounts is attempted by inventory.
+Inventory 0.3.0 uses the access gate and root/user actor for the whole collection, including identity. Read [inventory access and credential rules](inventory-access.md). Sudo is attempted by default unless users.<account>.sudo is Boolean false; root UID 0 needs no sudo. Canonical sudo-password selects by presence (null/empty become empty passwords), with the string "false" selecting account password. There is no alternate-credential retry. identity_sudo remains accepted for compatibility but no longer selects collection privilege. Unknown restoration/cleanup fails execution and prevents retention. Inventory can su to the first other sudo-enabled users account in YAML order, using the [two-candidate policy](inventory-access.md#inventory-account-selection); safe login fallback is automatic. An eligible root second candidate is tried before login sudo.
 
 The additive inventory-values 0.1.0 extension retains the six-section inventory and collection_scope, while collection_process/access diagnostics stay raw-only. Old seven-field records remain valid; strict consumers must update for the new optional fields. See the [field catalog, CSV and migration rules](inventory-access.md#inventory-values-010-field-catalog).
 
@@ -105,4 +105,4 @@ The draft retained/exchange 0.1.0 contract now permits these optional fields and
 
 MAC addresses may be useful network-interface evidence but are not automatically used as fallback keys. They identify an interface, can remain unchanged across OS reinstall, and may be cloned, changed or randomized. Multiple interfaces also require an explicit selection rule. MAC collection is not implemented by this change. A manually assigned MAC-based identity_key remains a user assertion and needs an installation-specific component/rotation policy. Reference: [Apple private Wi-Fi addresses](https://support.apple.com/en-ie/102509), [NetworkManager address configuration](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/settings-802-11-wireless.html).
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-17_

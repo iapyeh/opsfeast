@@ -25,7 +25,9 @@ Precedence is recipe defaults → source vars → first matching host recipe var
 
 ## Core Recipe execution 0.1.0
 
-New recipes may declare runner.contract python-recipe, runner.version 0.1.0 and define synchronous execute(recipe). This is a separate explicit contract; [Core API](core-api.md#runner-integration-and-migration) defines Recipe fields, session ownership, su/sudo scopes, instance metadata and cleanup evidence. Descriptor 0.3.0, typed inputs, selection, common results and storage behavior are shared. See [check/identity](../recipes/check/identity/README.md) for a complete example. Existing python-session/python-report/inventory contracts remain unchanged.
+New recipes may declare runner.contract python-recipe, runner.version 0.1.0 and define synchronous execute(recipe). This is a separate explicit contract; [Core API](core-api.md#runner-integration-and-migration) defines Recipe fields, session ownership, root/su/sudo scopes, instance metadata and cleanup evidence. Descriptor 0.3.0, typed inputs, selection, common results and storage behavior are shared. See [check/identity](../recipes/check/identity/README.md) for a complete example. Existing python-session/python-report/inventory contracts remain unchanged.
+
+For authorized root-only work, call `with recipe.root() as root:` then `root("id -u", check=True)`. It uses the shared ordered account policy and raises RootUnavailableError if root is unavailable after safe restoration. The yielded value is a callable console, not a Recipe. See [the full example, prerequisites and failure rules](core-api.md#automatic-root-console). Generic recipes never acquire root merely by being invoked.
 
 ## Descriptor 0.3.0 and Python-session 0.1.0
 
@@ -106,4 +108,4 @@ Terminal presentation does not change recipe return values or saved reports. See
 [compact execution summaries](cli.md#compact-execution-summaries) for unknown actors,
 retention/fallback outcomes and existing offline host-specific inspection.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

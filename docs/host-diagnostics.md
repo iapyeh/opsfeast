@@ -4,7 +4,7 @@ These commands use the selected management profile unless `--profile NAME` or an
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
-For inventory readiness, use inventory --dryrun for login-only checks. For all declared accounts, use [check-access](inventory-access.md#check-access-without-collection): it checks login/root, independent su to other declared users and enabled sudo as each actor, without initializing platform facts. Test-host additionally handles platform facts and is not the inventory gate.
+For inventory readiness, use inventory --dryrun for the [bounded two-candidate selection](inventory-access.md#inventory-account-selection), including possible su/sudo and safe login fallback. For all declared accounts, use [check-access](inventory-access.md#check-access-without-collection): it checks login/root, independent su to other declared users and enabled sudo as each actor, without initializing platform facts. Test-host additionally handles platform facts and is not the inventory gate.
 
 ## Initialize platform facts
 
@@ -224,4 +224,4 @@ Broadcom's [SSH access guidance](https://knowledge.broadcom.com/external/article
 also distinguishes SSH shell access from UI-role restrictions; it does not establish
 this behavior on every ESXi installation.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-17_

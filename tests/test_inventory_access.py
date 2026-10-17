@@ -50,6 +50,8 @@ class SyntheticSession:
             return result('root\n' if self.elevated or self.uid == 0 else 'operator\n')
         if argv == ['id', '-u']:
             return result(str(0 if self.elevated else self.uid) + '\n')
+        if argv == ['id', '-u', 'root']:
+            return result('0\n')
         if argv[0] == 'uname':
             return result({'-s': 'Linux', '-n': 'synthetic', '-r': '6.1', '-m': 'x86_64'}[argv[1]] + '\n')
         if argv == ['cat', '/etc/machine-id']:
@@ -191,14 +193,32 @@ class AccessTests(unittest.TestCase):
         self.assertFalse(report['access']['restoration_verified'])
         self.assertEqual(report['retention']['status'], 'skipped')
 
-    def test_collection_sudo_race_without_force_preserves_failure(self):
+    def test_collection_sudo_race_without_force_uses_verified_fallback(self):
         self.cls.fail_sudo = True
         with contextlib.redirect_stderr(io.StringIO()):
             report, path = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
                                       runtime={'verification': 'synthetic'}, access_checked=True)
-        self.assertEqual(report['status'], 'failed')
-        self.assertNotIn('inventory', report)
-        self.assertEqual(report['retention']['status'], 'skipped')
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['access']['mode'], 'fallback_user')
+        self.assertTrue(report['access']['degraded'])
+        self.assertEqual(report['retention']['status'], 'stored')
+
+    def test_identity_failure_summary_is_actionable_without_third_party_details(self):
+        import inventory_actor
+        unrelated = RuntimeError('private exception text')
+        unrelated.reason_code = 'private third-party code'
+        for error in (hr.IdentityProbeError('identity_mismatch'), unrelated):
+            with self.subTest(error=type(error).__name__), \
+                    patch.object(inventory_actor, 'collection_actor', side_effect=error):
+                report, path = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
+                    runtime={'verification': 'synthetic'}, access_checked=True)
+                self.assertEqual(report['status'], 'failed')
+                saved = path.read_text()
+                self.assertNotIn('private exception text', saved)
+                self.assertNotIn('private third-party code', saved)
+                if isinstance(error, hr.IdentityProbeError):
+                    self.assertEqual(report['execution_errors'][0]['reason_code'], 'identity_mismatch')
+                    self.assertIn('identity_mismatch', report['message'])
 
     def test_dryrun_and_independent_command_never_collect_or_write(self):
         for invoke, args in ((runner.main, ['inventory/system', '--host', 'h', '--dryrun']),

@@ -18,7 +18,7 @@ from uuid import uuid4
 from terminal_events import emit
 from console_output import prepare as prepare_console, print_report, ConsoleDependencyError
 
-from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint, connected, now
+from host_runtime import discover, cached_facts, cache_path, save_facts, target_fingerprint, connected, now, IdentityProbeError
 from recipe_dispatch import validate, select, bundle_digest, validate_observations
 from recipe_inputs import RecipeContext, prepare_vars, supports_context, cli_variables, json_object
 import recipe_contract
@@ -287,13 +287,13 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
         return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime)
     if runtime is not None and not access_checked:
         from access_check import check_access
-        access = check_access(config, host, timeout, session_class)
+        access = check_access(config, host, timeout, session_class, inventory=True)
         access_result = access
         if access['status'] != 'success' and not force:
             return {'host_id': host, 'status': 'failed', 'reason_code': 'access_preflight_failed',
                     'message': 'Access test failed; inventory was not started.', 'access_check': access,
                     'detected_kernel': None, 'supported_platforms': [], 'recipe': {'id': 'inventory-system'}}, None
-        if access['status'] != 'success' and (not access['connected'] or access.get('cleanup_error') or not access.get('access', {}).get('restoration_verified')):
+        if access['status'] != 'success':
             return {'host_id': host, 'status': 'skipped', 'reason_code': 'access_unavailable',
                     'message': 'No verified collection account; inventory was skipped.', 'access_check': access,
                     'detected_kernel': None, 'supported_platforms': [], 'recipe': {'id': 'inventory-system'}}, None
@@ -340,6 +340,8 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
             session = session.connect(hostname, ssh_config=False, timeout=timeout,
                                       banner_timeout=timeout, auth_timeout=timeout, **options)
             hop['connected'] = True
+        if plan:
+            report['login_identity'] = {'username': plan[-1]['username'], 'source': 'ssh_connection'}
         stage = 'host_init'
         progress('checking cached host facts')
         facts = cached_facts(config, host)
@@ -389,11 +391,11 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
                 stage = 'collection'
                 progress('collecting inventory with ' + json.dumps(implementation['id'], ensure_ascii=True))
                 options = {'context': context} if supports_context(entry) else {}
-                from access_check import collection_actor
+                from inventory_actor import collection_actor
                 access = report.setdefault('access', {})
-                actor_context = collection_actor(session, config, host, timeout, access, force=force,
+                actor_context = collection_actor(session, config, host, timeout, access,
                     authenticated_user=report.get('login_identity', {}).get('username'),
-                    fallback=force and access_result is not None and access_result.get('reason_code') == 'sudo_failed') if runtime is not None else nullcontext(session)
+                    preflight=access_result) if runtime is not None else nullcontext(session)
                 with actor_context as actor:
                     selected['collect'](actor, report, timeout, facts['facts'], **options)
                     stage = 'result_validation'
@@ -431,7 +433,10 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
             dispatch_status = ('skipped', 'connection_failed', 'Collection connection unavailable; inventory was skipped.')
             report['connection_error'] = connection_error(exc)
         else:
-            report['execution_errors'].append({'stage': stage, **connection_error(exc)})
+            error = {'stage': stage, **connection_error(exc)}
+            if isinstance(exc, IdentityProbeError):
+                error['reason_code'] = exc.reason_code
+            report['execution_errors'].append(error)
     finally:
         if local is not None:
             try:
@@ -451,6 +456,10 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
             report['execution_errors'].append({'stage': 'result_validation', 'type': 'ConfigError'})
     platforms = report['supported_platforms']
     collector['finish'](report)
+    identity_reasons = list(dict.fromkeys(error['reason_code'] for error in report['execution_errors']
+                                        if error.get('type') == 'IdentityProbeError' and error.get('reason_code')))
+    if identity_reasons:
+        report['message'] += ' Identity verification: ' + ', '.join(identity_reasons) + '.'
     report['supported_platforms'] = platforms
     if dispatch_status and not report['execution_errors']:
         report.update(status=dispatch_status[0], reason_code=dispatch_status[1], message=dispatch_status[2])
@@ -557,8 +566,8 @@ def main(argv=None):
     parser.add_argument('--timeout', type=positive_timeout, default=30,
                         help='per-hop connection stages and per-command seconds; not a whole-run deadline')
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--dryrun', action='store_true', help='test login/root access only; no inventory or host-fact writes')
-    mode.add_argument('--force', action='store_true', help='skip inaccessible hosts and collect with login identity when sudo fails')
+    mode.add_argument('--dryrun', action='store_true', help='test inventory account selection and root access; no collection or host-fact writes')
+    mode.add_argument('--force', action='store_true', help='skip inaccessible inventory hosts; verified user fallback is automatic')
     parser.add_argument('--threads', type=positive_threads, default=default_threads(), metavar='N',
                         help='concurrent hosts (default: min(8, CPU count), fallback 1); use 1 for sequential execution')
     output_options = parser.add_mutually_exclusive_group()
@@ -622,7 +631,7 @@ def main(argv=None):
             from access_check import check_many
             with reporting(show_progress, '[access]'):
                 progress('testing selected login/root access before collection')
-                checks = check_many(root, inventory_hosts, args.timeout, args.threads)
+                checks = check_many(root, inventory_hosts, args.timeout, args.threads, inventory=True)
             if args.dryrun or checks['status'] != 'success' and not args.force:
                 checks.update(mode='dryrun' if args.dryrun else 'preflight', collection_started=False)
                 if excluded:
@@ -631,7 +640,7 @@ def main(argv=None):
                 return 0 if checks['status'] == 'success' else 1
             for check in checks['hosts']:
                 access_results[check['host']] = check
-                if check['status'] != 'success' and (not check['connected'] or check.get('cleanup_error') or not check.get('access', {}).get('restoration_verified')):
+                if check['status'] != 'success':
                     blocked[check['host']] = check
         def execute(host, index):
             label = f'[{index}/{len(hosts)}] {json.dumps(host, ensure_ascii=True)}:'
