@@ -170,6 +170,30 @@ def _short_result_ids(identifiers):
     return short
 
 
+def collection_user(raw):
+    """Return only a supported, observed collection actor; never guess from login."""
+    if not isinstance(raw, dict) or not isinstance(raw.get('recipe'), dict) or raw['recipe'].get('id') != 'inventory-system':
+        return None
+    access = raw.get('access')
+    observations = raw.get('observations')
+    if not isinstance(access, dict) or not isinstance(observations, dict):
+        return None
+    attempted = {'success', 'unavailable', 'unsupported', 'permission_denied',
+                 'timeout', 'command_failed', 'parsing_failed'}
+    if not any(isinstance(item, dict) and isinstance(item.get('status'), str)
+               and item['status'] in attempted for item in observations.values()):
+        return None
+    actor = access.get('actual_identity')
+    mode = access.get('mode')
+    if not isinstance(actor, dict) or mode not in ('root', 'user', 'fallback_user'):
+        return None
+    name, uid = actor.get('username'), actor.get('effective_uid')
+    if (not isinstance(name, str) or not name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name)
+            or type(uid) is not int or uid < 0 or (mode == 'root') != (uid == 0)):
+        return None
+    return name
+
+
 def results(root, recipe=None, host=None, status=None):
     records, errors = [], []
     files = list(_result_files(root))
@@ -189,6 +213,7 @@ def results(root, recipe=None, host=None, status=None):
                    'host_id': raw.get('host_id'), 'status': raw['status'], 'reason_code': raw.get('reason_code'),
                    'started_at': raw.get('started_at'), 'completed_at': raw.get('completed_at', raw.get('finished_at')),
                    'identity_quality': raw.get('identity', {}).get('quality') if isinstance(raw.get('identity'), dict) else None,
+                   'collection_user': collection_user(raw),
                    'identity_warnings': raw.get('identity', {}).get('warnings', []) if isinstance(raw.get('identity'), dict) else [],
                    'retention': raw.get('retention'), 'kind': 'report' if 'report_contract' in raw else 'operation'}
             if recipe and row['recipe_id'] != recipe or host and row['host_id'] != host or status and row['status'] != status:

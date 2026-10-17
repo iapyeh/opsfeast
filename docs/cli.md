@@ -29,7 +29,7 @@ Human console output uses the shared `tools/console_output.py` presentation laye
 
 Exceptions preserve data interfaces: dump, recipes results show, artifact, pack/unpack and observation-store JSON/CSV/export/validation/combination remain structured even on a terminal. Check-access preserves its existing default table even for non-TTY stdout; use --json for its full report. Textual Home/workbench/--tui keep their DataTable interfaces and pipe-based child streams. Help, prompts, simple confirmations, stderr progress/errors/debug and raw saved files are not converted into tables.
 
-TTY `recipes results list` omits the identity-warnings column to keep the overview compact. It still shows execution status and identity quality. Full warnings remain in `--json`, raw saved results and explicit detail/HTML views; redirected list text retains its existing warning values. This is a presentation choice and does not remove or change generated identity evidence.
+Human `recipes results list` replaces identity quality with the actual collection user (unknown when unsupported or unverified). TTY lists omit the long identity-warnings column; redirected list text and list HTML retain warnings. Identity quality and warnings remain available through --json and detail/show without changing saved evidence. See [the collection-user rules](#saved-result-collection-user).
 
 Tables preserve failure/partial/skipped/unknown states; no missing evidence becomes PASS. Connection, prerequisite su, actor sudo, restoration and cleanup remain distinct where present. A successful collection with failed retention still returns nonzero. Host and diagnostic/access account labels include resolved icons (built-ins 🍎/👤; see [global precedence](hosts-yaml.md#global-and-account-icons)); historical result views use the default when current configuration is unavailable, without rewriting IDs/data. Unicode widths, leading-zero identifiers and escaped terminal control characters use the same renderer settings as check-access. Tables expand rather than truncate long values. Existing JSON/report/SQLite schemas, observation times, execution scope and exit codes are unchanged.
 
@@ -577,6 +577,36 @@ Verification uses synthetic single/batch states, unknown identities, root/user a
 retention failures, exclusions and unchanged JSON, plus real local saved-result lookup
 by host without any Session. No remote recipe execution is needed for this display change.
 
+## Saved-result collection user
+
+Human `recipes results list` tables, redirected list text and list HTML show **user**
+in place of identity quality. Use --json or results detail/show to inspect preserved
+identity_quality and identity warnings. Existing warning display remains unchanged:
+the compact TTY table omits warnings, while redirected text and list HTML retain them.
+
+The result index adds nullable `collection_user`; JSON consumers keep identity_quality
+and identity_warnings with their existing meanings. Index detail includes all three.
+Explicit raw-result detail/show and saved files are unchanged. Python consumers can
+reuse `recipe_reports.collection_user(raw)` on an already loaded result, or obtain
+the value through `recipe_reports.results(root, ...)`; no host access is required.
+
+Only inventory-system with an explicitly recorded root/user/fallback_user collection
+mode, consistent actual_identity username/effective UID and at least one attempted
+core observation supplies a known account. Display actual_identity.username, not the
+SSH login, selected su account, or an access-only preflight actor. For example,
+operator → su admin → sudo root displays root. A collection that attempted commands
+can still display its known account when the final result is failed (for example,
+command or cleanup failure). Before collection, all-not_attempted observations leave
+the collector unknown even if a login/root identity was probed successfully.
+
+Missing/invalid actor evidence, legacy data without collection scope and unsupported
+generic/report recipes return JSON null and display unknown. A generic recipe may
+use multiple privilege scopes; its login or last privilege attempt does not prove
+who obtained the entire result. No connection, rerun, historical file rewrite or
+host-identity quality change occurs. Synthetic tests cover root/user/fallback,
+precollection and malformed evidence, failed collections, generic/legacy unknowns,
+TTY/pipe/HTML rendering, preserved JSON/detail quality and unchanged raw files.
+
 ## Vertical result details
 
 Use recipes results detail for long result IDs, similar to MySQL's vertical \G view.
@@ -682,5 +712,14 @@ remains shareable without importing an internal checkout module. Public syntheti
 checks cover offset/date rollover, fractional truncation, winter/summer DST, nested
 values, CLI TTY/pipe/JSON, HTML and TUI display copies, source-byte preservation and
 the standalone report's unchanged JSON artifact. No remote operation is required.
+
+Saved-result user display verification (2026-10-17): Python 3.11.15 and 3.14.4
+passed all 608 public tests. The first parallel 3.13.13 run hit the existing TUI
+0.5-second child-process timing assertion; an independent full rerun passed all 608
+without code/test changes. Older interpreters reused shared Python dependencies.
+Wheel/sdist and temporary installed imports/CLI checks, credential-free local console
+checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links and
+diff whitespace passed. Offline browsing of an existing failed result showed unknown
+because collection never started; no host operation or saved-result rewrite occurred.
 
 _Last modified: 2026-10-17_

@@ -42,6 +42,78 @@ class RecipeExperienceTests(unittest.TestCase):
     def write_config(self):
         (self.root/'hosts.yaml').write_text(json.dumps(self.settings))
 
+    def inventory_result(self):
+        return {'recipe': {'id': 'inventory-system'}, 'status': 'success', 'host_id': 'h',
+                'observations': {'hostname': {'status': 'success', 'value': 'synthetic'}},
+                'access': {'mode': 'root', 'actual_identity': {'username': 'root', 'effective_uid': 0},
+                           'login_identity': {'username': 'operator'}, 'selected_user': 'admin'},
+                'identity': {'quality': 'fallback', 'warnings': ['synthetic warning']}}
+
+    def test_collection_user_uses_actual_collection_actor(self):
+        for mode, name, uid, status in [('root', 'root', 0, 'success'),
+                ('user', 'operator', 1000, 'success'), ('fallback_user', 'operator', 1000, 'partial'),
+                ('root', 'root', 0, 'failed')]:
+            raw = self.inventory_result()
+            raw.update(status=status)
+            raw['access'].update(mode=mode, actual_identity={'username': name, 'effective_uid': uid})
+            with self.subTest(mode=mode, status=status):
+                self.assertEqual(reports.collection_user(raw), name)
+
+    def test_collection_user_missing_ambiguous_and_precollection_evidence_is_unknown(self):
+        cases = [None, {}, {'recipe': []}]
+        for path, value in [('access', None), ('observations', {}), ('recipe', {'id': 'generic'})]:
+            raw = self.inventory_result(); raw[path] = value; cases.append(raw)
+        for observation in ({'status': 'not_attempted'}, {'status': []}, {}):
+            raw = self.inventory_result(); raw['observations'] = {'hostname': observation}; cases.append(raw)
+        for actor in ({}, {'username': 'root'}, {'username': 'root', 'effective_uid': True},
+                      {'username': 'root', 'effective_uid': 1000},
+                      {'username': 'root\nunsafe', 'effective_uid': 0}):
+            raw = self.inventory_result(); raw['access']['actual_identity'] = actor; cases.append(raw)
+        raw = self.inventory_result(); del raw['access']['mode']; cases.append(raw)
+        raw = self.inventory_result(); raw['report_contract'] = '0.1.0'; raw['recipe']['id'] = 'report'; cases.append(raw)
+        for index, raw in enumerate(cases):
+            with self.subTest(case=index):
+                self.assertIsNone(reports.collection_user(raw))
+
+    def test_results_human_user_with_quality_preserved_in_json_detail_and_raw(self):
+        directory = self.root / 'observations'; directory.mkdir()
+        path = directory / 'synthetic.json'
+        path.write_text(json.dumps(self.inventory_result()))
+        original = path.read_bytes()
+        record, = reports.results(self.root)['results']
+        self.assertEqual(record['collection_user'], 'root')
+        self.assertEqual(record['identity_quality'], 'fallback')
+        identifier = record['short_id']
+        code, text, _ = self.invoke('results', 'list')
+        self.assertEqual(code, 0)
+        self.assertIn('root', text)
+        self.assertNotIn('fallback', text)
+        code, text, _ = self.invoke('results', 'list', '--json')
+        self.assertEqual(json.loads(text)['results'][0]['identity_quality'], 'fallback')
+        code, text, _ = self.invoke('results', 'detail')
+        self.assertIn('identity_quality: fallback', text)
+        code, text, _ = self.invoke('results', 'detail', identifier)
+        self.assertIn('identity.quality: fallback', text)
+        html = self.base / 'results.html'
+        self.invoke('results', 'list', '--html', str(html))
+        self.assertIn('<th>User</th>', html.read_text())
+        self.assertIn('<td>root</td>', html.read_text())
+        self.assertNotIn('Identity quality', html.read_text())
+        self.assertEqual(path.read_bytes(), original)
+
+    def test_results_list_unknown_does_not_infer_login_or_privilege_account(self):
+        directory = self.root / 'observations'; directory.mkdir()
+        raw = self.inventory_result()
+        raw['observations']['hostname']['status'] = 'not_attempted'
+        (directory / 'synthetic.json').write_text(json.dumps(raw))
+        record, = reports.results(self.root)['results']
+        self.assertIsNone(record['collection_user'])
+        code, text, _ = self.invoke('results', 'list')
+        self.assertEqual(code, 0)
+        self.assertIn('unknown', text)
+        self.assertNotIn('operator', text)
+        self.assertNotIn('admin', text)
+
     def invoke(self,*args):
         output,error=io.StringIO(),io.StringIO()
         with contextlib.redirect_stdout(output),contextlib.redirect_stderr(error):

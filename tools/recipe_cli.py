@@ -261,9 +261,9 @@ def main(argv=None):
                 return 0
             if args.result_id: raise ConfigError('results list does not accept RESULT_ID')
             data = results(root, args.recipe_id, args.host, args.status)
-            rows = [[r.get('short_id', r['result_id']), r['recipe_id'], r['host_id'], r['status'], format_time(r['completed_at']), r['identity_quality'], json.dumps(r['identity_warnings'], ensure_ascii=False)] for r in data['results']]
+            rows = [[r.get('short_id', r['result_id']), r['recipe_id'], r['host_id'], r['status'], format_time(r['completed_at']), r.get('collection_user') or 'unknown', json.dumps(r['identity_warnings'], ensure_ascii=False)] for r in data['results']]
             if args.html:
-                output({'html_path': export_html(args.html, page('OpsFeast results', ['Result ID', 'Recipe', 'Host', 'Status', 'Completed', 'Identity quality', 'Identity warnings'], rows,
+                output({'html_path': export_html(args.html, page('OpsFeast results', ['Result ID', 'Recipe', 'Host', 'Status', 'Completed', 'User', 'Identity warnings'], rows,
                                                                json.dumps(data['errors'], ensure_ascii=False))), 'status': data['status']})
             elif args.json: output(data)
             else:
@@ -271,7 +271,7 @@ def main(argv=None):
                     icons = display_icons(root)
                     for row in rows:
                         row[2] = host_label(row[2], icons) if row[2] else '-'
-                    print(table(['result ID', 'recipe', 'host', 'status', 'completed', 'identity quality'],
+                    print(table(['result ID', 'recipe', 'host', 'status', 'completed', 'user'],
                                 [row[:-1] for row in rows]))
                 else:
                     for row in rows: print(' | '.join(str(value) for value in row))

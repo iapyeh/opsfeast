@@ -10,6 +10,13 @@ Verification should cover result parsing, failure status, supported platforms, a
 
 `test_access_accounts.py` verifies check-access independent su → enabled sudo, actor-scoped credentials, sudo-disabled success, su/sudo failures, continued independent checks, missing-password skips/nonzero status, unavailable login, cleanup failure, account progress, JSON/quiet output and unchanged login-only inventory preflight. Per-test cases cover successful connection with failed login sudo, successful su with failed actor sudo, failed su with skipped sudo, missing credentials, suppressed duplicate successful reconnects, and separate restoration/cleanup failure rows. It reuses synthetic console fixtures; no native authentication is exercised.
 
+## Saved-result collection user
+
+Result browser tests cover actual root/user/fallback actors, intermediate/login-account
+exclusion, failed-but-attempted collection, precollection and malformed/legacy unknowns,
+generic/report uncertainty, human table/pipe/HTML output and preserved JSON/detail
+identity quality. Raw-result bytes remain unchanged and no host operations occur.
+
 ## Recipe.root console
 
 `test_recipe_root.py` covers callable console results/buffers, command/job budgets,
@@ -190,5 +197,14 @@ ESXi inventory remain unverified; no private host connection or package/tag rele
 was performed. Existing data schemas and dependency settings need no update because
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
+
+Saved-result user display verification (2026-10-17): Python 3.11.15 and 3.14.4
+passed all 608 public tests. The first parallel 3.13.13 run hit the existing TUI
+0.5-second child-process timing assertion; an independent full rerun passed all 608
+without code/test changes. Older interpreters reused shared Python dependencies.
+Wheel/sdist and temporary installed imports/CLI checks, credential-free local console
+checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links and
+diff whitespace passed. Offline browsing of an existing failed result showed unknown
+because collection never started; no host operation or saved-result rewrite occurred.
 
 _Last modified: 2026-10-17_

@@ -269,7 +269,7 @@ hosts:
                                 'runnable': True, 'errors': []}]}
         result = {'status': 'success', 'errors': [], 'results': [{'result_id': 'r', 'recipe_id': 'demo',
                   'host_id': 'h', 'status': 'partial', 'completed_at': 'synthetic-time',
-                  'identity_quality': 'fallback', 'identity_warnings': ['synthetic warning']}]}
+                  'collection_user': 'root', 'identity_quality': 'fallback', 'identity_warnings': ['synthetic warning']}]}
         item = dict(catalog['recipes'][0], description='Synthetic description', contract='0.1', inputs={},
                     dependencies={}, verification={}, availability_evidence='static only', private_extra='must not expand text output')
         with patch.object(recipe_cli, 'resolve_root', return_value=self.root), \
@@ -286,7 +286,9 @@ hosts:
                         if args == ['results', 'list']:
                             self.assertIn('🐧 h', output)
                             self.assertIn('partial', output)
-                            self.assertIn('fallback', output)
+                            self.assertIn('root', output)
+                            self.assertNotIn('identity quality', output)
+                            self.assertNotIn('fallback', output)
                             self.assertNotIn('warnings', output)
                             self.assertNotIn('synthetic warning', output)
                     elif force or args == ['jobs', 'list']:
