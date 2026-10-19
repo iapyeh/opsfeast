@@ -1,5 +1,9 @@
 # Observe the connection account
 
+## Host-vault state page
+
+In a namespace-enabled profile this read recipe retains declared safe scalar result fields through host-values 0.1.0 and produces a per-host Markdown state page. Failed/mock results are excluded; missing values remain unavailable. Read [vault setup and output rules](../../../docs/host-vault.md). Unmigrated profiles retain raw-only behavior.
+
 This minimal Core example uses descriptor 0.3.0 and python-recipe 0.1.0. The runner supplies a per-execution Recipe; the entrypoint uses its scoped session and returns the existing common result fields. It never reloads credentials, opens another connection or closes the runner's transport.
 
 ## Prerequisites and invocation
@@ -23,4 +27,4 @@ Success data.account is the observed nonempty single-line account name, not proo
 
 Synthetic runner/result tests and a temporary local credential-free execution are validation evidence. Remote SSH and native su/sudo are unverified; listed platforms are declared applicability, not all-platform execution evidence. Attribution is Bundle, MIT; include LICENSE when packaging.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-17_

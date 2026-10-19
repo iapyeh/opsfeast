@@ -1,5 +1,9 @@
 # Feasts and profiles
 
+## Profile roots as host vaults
+
+A profile's existing root is also its optional host vault, including external attached roots. Enable through [explicit namespace migration](host-vault.md). Renaming a profile or moving its root does not change namespace. Viewer data lives under hosts, groups and overview within that root; profile selection chooses the same storage for collection and viewing. A vault may contain private hosts.yaml/raw files; it is not automatically a sanitized sharing artifact.
+
 Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
 
 A **Feast** is a private management instance with hosts.yaml, recipe selections, observations, records and runs. A **profile** registers a Feast under a name and selects it for a command. Built-in recipes are shared from the tool checkout's recipes/. Initialization and registration do not connect or execute recipes.
@@ -81,4 +85,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-17_

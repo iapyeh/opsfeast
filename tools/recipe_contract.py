@@ -19,6 +19,10 @@ STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 def validate(directory, metadata):
     from recipe_identity import validate as validate_identity
     validate_identity(metadata, directory)
+    if metadata.get('access_mode', 'unknown') not in ('read', 'write', 'unknown'):
+        raise ConfigError('access_mode must be read, write or unknown')
+    from host_vault import validate_retention
+    validate_retention(metadata, directory)
     plain_values(metadata, 'recipe descriptor')
     if metadata.get('descriptor_version') != '0.3.0':
         raise ConfigError('Python-session recipes require descriptor_version 0.3.0')

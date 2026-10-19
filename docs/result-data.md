@@ -1,5 +1,11 @@
 # Result retention, identity and exchange
 
+For raw-to-vault recovery and source-scoped read-only deletion, use [the replay workflow](retention-replay.md). New raw has a fixed source UUID; inventory IDs hash that UUID rather than raw content. Old raw retains legacy content-derived IDs. Raw SHA-256 and snapshot/version provenance are stored separately in the vault envelope. Legacy observation_store ingest remains inventory-only; vault ingest supports general snapshots and explicit descriptor overrides.
+
+## Namespace-enabled host vaults
+
+[Host-vault 0.1.0](host-vault.md) is the current host-centered retention model after explicit migration. Logical host identity is `(namespace, host_id)` and continues across OS/hardware replacement. Per-host yearly SQLite is authoritative; records is cumulative/rebuildable and overview retains recent fleet observations. The inventory adapter payload below remains nested unchanged as environment evidence and for legacy exchange compatibility. General typed host-values retention and write/unknown operation journals are also supported in vaults. **The Feast-wide SQLite layout and OS-installation identity rules below describe unmigrated legacy profiles and the legacy inventory payload, not the management identity of a vault host.**
+
 OpsFeast separates four data needs. Stage 1 is raw execution evidence; stage 2 is retained business observations; stage 3 is a selected exchange of those observations; stage 4 is the recipient's query, chart or reporting store. Stage 4 is not implemented and does not require SQLite. No central service, transmission or company asset registry is required for stages 1–3.
 
 The inventory runner now performs stage 1 → 2 after every completed report. Humans and agents invoke stage 2 → 3 explicitly. Exporting creates data; it does not send it to anyone. See the [CLI reference](cli.md#retained-observations-and-exchange) and [result-data skill](../skills/opsfeast-result-data/SKILL.md).
@@ -105,4 +111,4 @@ The draft retained/exchange 0.1.0 contract now permits these optional fields and
 
 MAC addresses may be useful network-interface evidence but are not automatically used as fallback keys. They identify an interface, can remain unchanged across OS reinstall, and may be cloned, changed or randomized. Multiple interfaces also require an explicit selection rule. MAC collection is not implemented by this change. A manually assigned MAC-based identity_key remains a user assertion and needs an installation-specific component/rotation policy. Reference: [Apple private Wi-Fi addresses](https://support.apple.com/en-ie/102509), [NetworkManager address configuration](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/settings-802-11-wireless.html).
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

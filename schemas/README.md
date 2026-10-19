@@ -1,5 +1,11 @@
 # Schemas
 
+Replay adds [raw-retention-context.schema.json](raw-retention-context.schema.json), [retention-snapshot.schema.json](retention-snapshot.schema.json) and optional [retention-provenance.schema.json](retention-provenance.schema.json) in vault envelopes. Operation events can link a source observation UUID. Read [runtime validation and compatibility](../docs/retention-replay.md); SHA-256 equality and cross-record deletion protection are enforced by code beyond JSON Schema.
+
+## Host-vault contracts
+
+[host-vault-record.schema.json](host-vault-record.schema.json) defines namespace-based management identity, immutable origin, recipe provenance and future mappings. [host-vault-package.schema.json](host-vault-package.schema.json) defines the future manifest structure. Read [runtime storage and validation](../docs/host-vault.md); package generation/import/export are deferred. Existing retained schemas describe the unchanged nested inventory payload.
+
 This directory will define versioned data contracts for host records, service relationships, observations, and recipe execution results.
 
 For the current host configuration object, read [hosts.yaml](../docs/hosts-yaml.md); a standalone host JSON Schema is not implemented. [Core API](../docs/core-api.md) and [profiles](../docs/profiles.md) define installation/profile and runtime objects; [recipe execution](../docs/recipe-execution.md) and [recipe experience](../docs/recipe-experience.md) define the implemented execution/report/artifact/bundle/job contracts. Written contracts are authoritative where no JSON Schema exists.
@@ -14,4 +20,4 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [Inventory-values 0.1.0](inventory-values.schema.json) defines nullable system/hardware/storage/network/software/services sections. Raw and retained schemas accept this optional extension with inventory_contract_version; retained records also require collection_scope. Older records remain valid, while strict consumers must update before accepting extended records. See [access, data semantics, CSV and migration](../docs/inventory-access.md). CSV is an inspection format with empty missing cells, not the JSON exchange contract.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-19_

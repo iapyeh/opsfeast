@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$comment": "Last modified: 2026-10-19",
+  "title": "OpsFeast retention source provenance 0.1.0",
+  "required": [
+    "contract_version",
+    "source_observation_id",
+    "raw_sha256",
+    "execution_access_mode",
+    "snapshot_sha256",
+    "retention_recipe_version"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "source_observation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "execution_access_mode": {
+      "enum": [
+        "read",
+        "write",
+        "unknown"
+      ]
+    },
+    "snapshot_sha256": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      ]
+    },
+    "retention_recipe_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    }
+  }
+}

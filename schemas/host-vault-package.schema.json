@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$comment": "Last modified: 2026-10-17",
+  "title": "OpsFeast future host package manifest 0.1.0",
+  "required": [
+    "contract_version",
+    "kind",
+    "created_at",
+    "source",
+    "source_instance_id",
+    "record_contract",
+    "files",
+    "mappings"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "kind": {
+      "const": "opsfeast-host-package"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "host_id"
+      ],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+        },
+        "host_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_instance_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "record_contract": {
+      "const": "0.1.0"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Package-relative POSIX path; no absolute path, dot/dotdot components, backslashes or symlinks. Receiver must enforce path containment."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "mapped_at",
+          "basis"
+        ],
+        "properties": {
+          "from": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "namespace",
+              "host_id"
+            ],
+            "properties": {
+              "namespace": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+              },
+              "host_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "to": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "namespace",
+              "host_id"
+            ],
+            "properties": {
+              "namespace": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+              },
+              "host_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "mapped_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "basis": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

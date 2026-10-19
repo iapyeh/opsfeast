@@ -1,5 +1,9 @@
 # Check a TCP port from a host
 
+## Host-vault state page
+
+In a namespace-enabled profile this read recipe retains declared safe scalar result fields through host-values 0.1.0 and produces a per-host Markdown state page. Failed/mock results are excluded; missing values remain unavailable. Read [vault setup and output rules](../../../docs/host-vault.md). Unmigrated profiles retain raw-only behavior.
+
 This recipe makes one TCP connection attempt **from the selected host** to an explicit IP address and port. By default it checks 127.0.0.1 on that host. It does not test accessibility from the controller, UDP, listener configuration or application/HTTP health. Selecting a different address expands the target network operation and must remain within the user's scope.
 
 ## Run
@@ -41,4 +45,4 @@ SSHScript supplies local/SSH command execution through the runner's borrowed Ses
 
 [Public tests](../../../tests/test_general_recipes.py) cover open/refused/timeout/network error with synthetic sockets, invalid/truncated command output, runner inputs and failure states. No real target, SSH or local TCP probe has been performed. Review target prerequisites and the complete recipe before authorized use. No distribution license is currently declared by the repository.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-17_

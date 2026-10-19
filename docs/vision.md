@@ -1,5 +1,9 @@
 # Vision and design principles
 
+## Host-centered management and portable knowledge
+
+A logical host is identified by user-selected namespace + host ID. Its history continues across replacement, VM relocation and OS reinstall; native identifiers are observations. Provide a plain profile-root vault for groups of hosts, annual authoritative data, rebuildable views and durable write-operation history. Users can add human notes beside generated Markdown. See [implemented contracts and limits](host-vault.md). Recipe adapters and product read interfaces own normalization so users and agents need not repeatedly clean raw outputs.
+
 OpsFeast aims to build an ecosystem in which AI agents drive IT operations through reusable, verifiable and shareable recipes, under human-defined goals and authorization. Agent-driven, human-authorized operations should become easier to request, more economical to repeat and easier for administrators to improve together.
 
 This document is the shared direction for project development and recipe authoring. It describes design goals, not a claim that every capability already exists. Consult the [README status](../README.md#status) and [recipe catalog](../recipes/README.md) for current features and verification limits.
@@ -131,4 +135,4 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-17_

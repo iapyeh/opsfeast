@@ -1,5 +1,9 @@
 # SSHScript skill 下載與更新檢查
 
+After release updates, reread [raw replay, snapshots and deletion protection](retention-replay.md) and its linked additive schemas. Older raw/envelopes remain readable; unknown historical execution classification is never upgraded from the current descriptor.
+
+For namespace-enabled Feasts, also read [host-vault contracts](host-vault.md), including the linked record, scalar values, operation-event and future package schemas, after every release update. Logical identity and retention layout supersede legacy inventory identity rules at the management layer.
+
 Git 隨附 `skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為 5.0.0。初次使用可離線閱讀，不必重新下載。
 
 公開入口：https://iapyeh.github.io/sshscript/v3a/ai-agents/
@@ -89,4 +93,4 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 
 文件不會啟動排程。使用者授權後，由其 agent 平台排程執行相同 `check` 命令，保留 scope、週期、環境與通知約定。預設未變更時保持安靜；有差異、檢查失敗或需使用者決定時通知。定期檢查授權不等於套用、套件升級或遠端執行授權；若另外授權特定更新流程，按其明確範圍執行。
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-19_

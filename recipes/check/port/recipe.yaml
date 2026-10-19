@@ -2,6 +2,15 @@ descriptor_version: 0.3.0
 author: {name: Bundle, contacts: [Bundle]}
 license: MIT
 id: check-port
+access_mode: read
+retention:
+  contract: host-values
+  version: 0.1.0
+  fields:
+    address: {type: string, unit: ip-address}
+    port: {type: integer, unit: tcp-port}
+    reachable: {type: boolean, unit: ""}
+    state: {type: string, unit: ""}
 version: 0.1.0
 title: Check a TCP port from the selected host
 description: Connect once to an explicit IP address and port from the selected host; TCP success does not prove application health.
@@ -31,4 +40,4 @@ verification:
   synthetic: tested
   local: not-tested
   ssh: not-tested
-# Last modified: 2026-10-14
+# Last modified: 2026-10-17

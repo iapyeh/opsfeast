@@ -161,7 +161,12 @@ def extract(raw, source):
             evidence.append({'kind': item['kind'], 'scope': 'device', 'value': nonempty(item.get('value'), 'identifier'),
                              'observed_at': timestamp(item.get('observed_at'))})
     identity_raw = {key: value for key, value in raw.items() if key != 'retention'}
-    record = {'contract_version': VERSION, 'observation_id': source + ':' + hashlib.sha256(canonical(identity_raw).encode()).hexdigest(),
+    if 'source_observation_id' in raw:
+        from retention_replay import source_identity
+        identity_content = source_identity(raw)
+    else:
+        identity_content = canonical(identity_raw)
+    record = {'contract_version': VERSION, 'observation_id': source + ':' + hashlib.sha256(identity_content.encode()).hexdigest(),
               'source_id': source, 'host_id': host, 'host_key': key if derived or user_assigned else fallback_key(source, host),
               'identity_method': method if derived or user_assigned else 'source-host-id',
               'identity_quality': 'user-assigned' if user_assigned else 'machine-derived' if derived else 'fallback',
@@ -276,6 +281,9 @@ def retain(root, raw):
         return {'status': 'skipped', 'reason_code': 'result_not_retained'}
     if raw.get('evidence_kind') not in ('local', 'ssh'):
         return {'status': 'skipped', 'reason_code': 'non_operational_evidence'}
+    from host_vault import settings as vault_settings, retain as vault_retain
+    if vault_settings(root) is not None:
+        return vault_retain(root, raw)
     with database(root, write=True) as connection:
         record, reason = extract(raw, source_id(connection))
         added = insert(connection, record)
@@ -284,6 +292,22 @@ def retain(root, raw):
 
 
 def export(root, *, recipe=None, hosts=None, since=None, until=None):
+    from host_vault import settings as vault_settings, records as vault_records
+    if vault_settings(root) is not None:
+        since = timestamp(since) if since else None
+        until = timestamp(until) if until else None
+        if since and until and since > until:
+            raise ConfigError('since must not follow until')
+        selected = [item['data'] for item in vault_records(root)
+                    if item['kind'] == 'observation' and item['recipe_id'] == 'inventory-system'
+                    and (recipe is None or item['recipe_id'] == recipe)
+                    and (not hosts or item['host_id'] in hosts)
+                    and (since is None or item['observed_at'] >= since)
+                    and (until is None or item['observed_at'] <= until)]
+        bundle = {'exchange_version': VERSION, 'kind': 'opsfeast-observations',
+                  'exported_at': datetime.now(timezone.utc).isoformat(), 'records': selected}
+        validate_exchange(bundle)
+        return bundle
     since = timestamp(since) if since else None
     until = timestamp(until) if until else None
     if since and until and since > until:
@@ -365,6 +389,17 @@ def main(argv=None):
             else:
                 # Validate every eligible input before mutating the database.
                 raws = [json.loads(Path(name).read_text(encoding='utf-8')) for name in args.files]
+                from host_vault import settings as vault_settings
+                if vault_settings(root) is not None:
+                    from host_vault import checked
+                    source_file = checked(root, '.vault-source.json')
+                    source = uuid_text(json.loads(source_file.read_text())['source_id']) if source_file.exists() else '00000000-0000-0000-0000-000000000001'
+                    for raw in raws:
+                        extract(raw, source)
+                    # All input validates first; per-host archive commits are independent.
+                    result = {'files': [retain(root, raw) for raw in raws]}
+                    print(json.dumps(result, ensure_ascii=False))
+                    return 0
                 preflight_source = '00000000-0000-0000-0000-000000000001'
                 if store_path(root).exists():
                     with database(root) as existing:

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$comment": "Last modified: 2026-10-19",
+  "title": "OpsFeast replayable retention snapshot 0.1.0",
+  "required": [
+    "contract_version",
+    "recipe_id",
+    "recipe_version",
+    "access_mode",
+    "retention",
+    "markdown_template_text",
+    "sha256"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "recipe_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recipe_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "access_mode": {
+      "enum": [
+        "read",
+        "write",
+        "unknown"
+      ]
+    },
+    "retention": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contract",
+            "version",
+            "fields"
+          ],
+          "properties": {
+            "contract": {
+              "const": "host-values"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "fields": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": {
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "unit"
+                ],
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "string",
+                      "number",
+                      "integer",
+                      "boolean"
+                    ]
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "markdown_template": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "markdown_template_text": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

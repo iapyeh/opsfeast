@@ -1,5 +1,11 @@
 # OpsFeast
 
+Saved raw observations can now be replayed with `opsfeast.py vault ingest --all`; explicit read-only observation deletion and protected write/unknown journals are documented in [retention replay](docs/retention-replay.md).
+
+## Host-centered vault
+
+The selected profile root can serve as a Markdown/Obsidian vault. Read [host-vault setup, migration and contracts](docs/host-vault.md) for namespace + host ID identity, annual per-host SQLite archives, cumulative records, rolling fleet observations, recipe-defined Markdown and durable write/unknown operation journals. Enable explicitly with `python -B tools/opsfeast.py vault migrate --profile main --namespace example-production --json`. New package import/export tools remain deferred; future record/mapping/manifest structures are defined.
+
 **Agent-Driven IT Operations. Human-Authorized.**
 
 OpsFeast helps AI agents manage IT systems through reusable, verifiable and shareable recipes. People define goals, targets and authorization; agents handle planning and routine work within that scope and request human input for exceptions or decisions beyond it.
@@ -285,4 +291,4 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

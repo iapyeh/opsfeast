@@ -5,6 +5,10 @@ description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform
 
 # OpsFeast 主機設定維護
 
+## Host-vault 0.1.0
+
+Read [the canonical host-vault guide](../../docs/host-vault.md) before selecting namespace, migrating storage, interpreting logical identity or authoring retained outputs. Namespace + configured host ID defines a logical host across OS/hardware replacement; native keys remain evidence. Reuse vault migrate/rebuild/groups/inspect and checkout-level host_vault interfaces. Annual per-host journals are authoritative; records is cumulative and overview recent. General recipes may declare typed host-values retention/Markdown and access_mode; write/unknown runner operations persist long-lived intent/result events. Direct Core calls require explicit journaling. Unmigrated profiles retain the legacy behavior below. Future mapping/package schemas exist; new transfer tools are deferred.
+
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
 
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.

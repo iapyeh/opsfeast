@@ -1,5 +1,11 @@
 # AI Agent Guidance
 
+For saved raw replay, retention author iteration or source-scoped observation deletion, route to [result-data](opsfeast-result-data/SKILL.md) and [replay contracts](../docs/retention-replay.md). Prefer the bundled ingest/delete CLI; do not independently delete SQLite rows or recreate recovery scripts.
+
+## Host-centered vault routing
+
+For namespace, annual host archives, cumulative records, recent overview, Markdown state pages and durable operation journals, use [opsfeast-result-data](opsfeast-result-data/SKILL.md) and [the host-vault guide](../docs/host-vault.md). Recipe authors also use [opsfeast-recipes](opsfeast-recipes/SKILL.md). Profile selection chooses the vault root. Future package/mapping schemas exist without new transfer tools.
+
 This directory contains AI agent entry points and skills for establishing and maintaining a user's operations environment.
 
 Guidance should help agents discover recipes, check compatibility and prerequisites, interpret execution status, maintain records, and verify outcomes. General Markdown guidance should remain usable without a skill loader.
@@ -47,4 +53,4 @@ These skills rely on the repository layout and can be read directly by any agent
 
 Start with the [getting-started guide](../docs/getting-started.md). The `tools/opsfeast.py` utility initializes and validates management configuration. [Skill download and update checks](../docs/skill-updates.md) use `tools/skill_bundle.py` to compare or stage complete public SSHScript bundles; they do not activate skills or install them into agent-specific locations. The Ops hosts skill above is updated with this repository. Read [recipe experience](../docs/recipe-experience.md) for shared catalog, offline reports/artifacts, basic views, bundles and saved reruns. Read [general execution](../docs/recipe-execution.md) for Python-session capabilities and --var/--vars-file; the inventory-specific flow is described in the [recipe guide](../recipes/inventory/system/README.md).
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

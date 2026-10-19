@@ -1,5 +1,9 @@
 # Core Python API 0.1.0
 
+## Host vault integration
+
+Use a selected Profile.root with the [checkout host-vault interfaces](host-vault.md#checkout-module-interfaces). These provide settings/history inspection, local rebuild/group refresh, typed retention and explicit operation intent/result recording. Runner-managed write/unknown recipes journal automatically only in namespace-enabled vaults; direct Core session calls are not automatically audited. General logging/notifications remain unavailable.
+
 Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
 
 OpsFeast bundles a public Python package for user agents, standalone programs and recipes. Python 3.11+, PyYAML 6.0.3 and tabulate[widechars] 0.10.0 are package dependencies; connection and privilege operations additionally require matching SSHScript import/distribution 5.0.0. Configuration and inspection do not import SSHScript or contact hosts. Logging and notifications are deferred and have no callable Core service yet.

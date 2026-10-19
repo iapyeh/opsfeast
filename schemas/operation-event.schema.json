@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$comment": "Last modified: 2026-10-19",
+  "title": "OpsFeast operation lifecycle event 0.1.0",
+  "required": [
+    "phase",
+    "status",
+    "access_mode",
+    "recipe_version",
+    "descriptor_sha256",
+    "implementation_sha256",
+    "purpose",
+    "controller_user",
+    "variable_names",
+    "authorization",
+    "verification",
+    "verification_observation_ids"
+  ],
+  "properties": {
+    "phase": {
+      "enum": [
+        "intent",
+        "result"
+      ]
+    },
+    "status": {
+      "enum": [
+        "unknown",
+        "success",
+        "partial",
+        "failed",
+        "skipped",
+        "unsupported"
+      ]
+    },
+    "access_mode": {
+      "enum": [
+        "write",
+        "unknown"
+      ]
+    },
+    "recipe_version": {
+      "type": "string"
+    },
+    "descriptor_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "implementation_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "controller_user": {
+      "type": "string"
+    },
+    "variable_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "authorization": {
+      "type": "string"
+    },
+    "verification": {
+      "enum": [
+        "not_observed",
+        "evidence_linked"
+      ]
+    },
+    "verification_observation_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "intent_id": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reason_code": {
+      "type": "string"
+    },
+    "source_observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "bundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "phase": {
+            "const": "result"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "intent_id",
+          "completed_at",
+          "reason_code"
+        ]
+      }
+    }
+  ]
+}

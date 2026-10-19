@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$comment": "Last modified: 2026-10-17",
+  "title": "OpsFeast scalar host-values 0.1.0",
+  "required": [
+    "contract_version",
+    "recipe_version",
+    "status",
+    "observations"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "recipe_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "success",
+        "partial"
+      ]
+    },
+    "observations": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "value",
+          "status",
+          "observed_at",
+          "unit"
+        ],
+        "properties": {
+          "value": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "success",
+              "unavailable"
+            ]
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "markdown": {
+      "type": "string"
+    }
+  }
+}

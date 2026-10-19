@@ -1,5 +1,11 @@
 # Execute and author Python-session recipes
 
+New raw adds source_observation_id and execution_access_mode; general results also capture retention_snapshot before connection/code execution. These are additive [replay context fields](../schemas/raw-retention-context.schema.json). [Offline replay](retention-replay.md) uses the original snapshot by default, preserving execution classification independently of an author override.
+
+## Vault retention and operation journals
+
+[Namespace-enabled vaults](host-vault.md) add opt-in typed host-values retention to general recipes. Write/unknown general recipes persist intent before connections/code and append outcome after cleanup. Missing access_mode means unknown; read skips the operation journal. Retention/audit failure yields explicit failure, and no automatic raw cleanup occurs. Profiles without namespace retain the legacy raw-only general-recipe behavior described below.
+
 Use `tools/run_recipe.py` to execute one explicitly selected recipe on explicitly selected hosts. It supports the existing inventory-system descriptor/result 0.2.0 and the Python-session contract 0.1.0 described here. The shared [recipes list/show/run surface](recipe-experience.md) adds discovery and delegates operation execution to this implementation; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
 
 Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
@@ -108,4 +114,4 @@ Terminal presentation does not change recipe return values or saved reports. See
 [compact execution summaries](cli.md#compact-execution-summaries) for unknown actors,
 retention/fallback outcomes and existing offline host-specific inspection.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

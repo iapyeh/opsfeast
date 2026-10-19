@@ -1,5 +1,11 @@
 # Ops command-line reference
 
+For offline conversion/recovery use `vault ingest --profile NAME --all [--dry-run] --json`, or `vault ingest FILE... --profile NAME [--recipe-dir DIRECTORY] --json`. Explicit `vault delete-observation SOURCE_OR_RECORD_ID --profile NAME [--dry-run] --json` deletes read observations only; write/unknown data and operation-linked evidence are protected. Files/IDs precede options. See [replay, snapshots and deletion](retention-replay.md) for statuses, compatibility and examples.
+
+## Host vault commands
+
+Read [the host-vault reference](host-vault.md) before selecting a namespace or migrating retained data. `python -B tools/opsfeast.py vault migrate --profile main --namespace example-production --overview-months 3 --json` enables annual host archives without deleting legacy storage. `vault rebuild`, `vault groups` and `vault inspect` accept `--profile NAME` or `--root ROOT`, and `--json`. They perform local work only; groups refresh is explicit. Inspect is read-only. Results are JSON; success exits 0, sanitized configuration/storage failures 1, argparse errors 2. Legacy export reads inventory payloads from full vault archives after migration, not the recent overview.
+
 For task-to-tool discovery and Python composition, consult [the existing capability map](agent-capabilities.md). Prefer suitable implemented interfaces before writing replacement configuration, execution, storage or export code.
 
 OpsFeast provides two command-line entrypoints:
@@ -722,4 +728,4 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

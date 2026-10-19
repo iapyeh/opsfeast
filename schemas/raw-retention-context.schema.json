@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Last modified: 2026-10-19",
+  "title": "OpsFeast additive raw replay context 0.1.0",
+  "properties": {
+    "source_observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "execution_access_mode": {
+      "enum": [
+        "read",
+        "write",
+        "unknown"
+      ]
+    },
+    "retention_snapshot": {
+      "$ref": "retention-snapshot.schema.json"
+    },
+    "producer_instance_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+}

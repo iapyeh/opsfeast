@@ -62,6 +62,8 @@ def declared_version(path):
 def validate(directory, metadata):
     from recipe_identity import validate as validate_identity
     validate_identity(metadata, directory)
+    if metadata.get('access_mode', 'read') not in ('read', 'write', 'unknown'):
+        raise ConfigError('access_mode must be read, write or unknown')
     if not isinstance(metadata.get('output'), dict):
         raise ConfigError('output contract must be a mapping')
     if (metadata.get('descriptor_version') != '0.2.0' or metadata.get('id') != 'inventory-system'

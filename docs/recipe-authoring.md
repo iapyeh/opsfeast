@@ -1,5 +1,11 @@
 # Recipe authoring guide
 
+Develop retention against saved raw with [vault ingest and explicit read-only deletion](retention-replay.md). New general runs capture a definition/template snapshot before execution; --recipe-dir explicitly tests revised definitions without importing recipe code. Declare access_mode accurately before collection: changing a descriptor later cannot make old write/unknown results deletable. Source UUID and raw digest have separate roles.
+
+## Host-centered retention and state pages
+
+For namespace-enabled vaults, follow [the recipe retention and Markdown contract](host-vault.md#recipe-retention-and-markdown): declare access_mode read/write/unknown and opt into the typed host-values adapter for safe business fields with explicit units. An optional reviewed Markdown template shapes the host's latest recipe page. No arbitrary adapter/plugin is executed by retention. Update public tests, the capability catalog and recipe skill with each service change.
+
 For DevOps users and their AI agents creating specialized recipes for their own operations. OpsFeast product developers have the complementary responsibility to provide complete, broad and stable tools/modules that reduce this user-side development burden; see [the two roles](vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed code for repeatable work and reserve AI for new needs, judgment, changes and exceptions. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). The [Python-session execution contract](recipe-execution.md) supports general Python recipes through run_recipe.py; inventory keeps its own contract. The broader layout/documentation recommendations below are separate from the validated execution fields. An authoring CLI and arbitrary backend loader are not implemented.
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
@@ -119,4 +125,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

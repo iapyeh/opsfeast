@@ -5,6 +5,12 @@ description: Interpret and recover OpsFeast retained observations, prepare selec
 
 # OpsFeast result data
 
+Read [offline retention replay and deletion](../../docs/retention-replay.md). Prefer `vault ingest --profile NAME --all --dry-run --json`, then actual ingest; explicit files precede options. General new raw replays its saved snapshot; old general raw requires reviewed --recipe-dir. `vault delete-observation ID` permits only read observations; write/unknown, operation events and linked verification evidence are protected. It preserves raw/human files and rebuilds views. Use the returned source ID, keep raw digest separate, and do not infer execution mode from a revised descriptor.
+
+## Host-vault 0.1.0
+
+Read [the canonical host-vault guide](../../docs/host-vault.md) before selecting namespace, migrating storage, interpreting logical identity or authoring retained outputs. Namespace + configured host ID defines a logical host across OS/hardware replacement; native keys remain evidence. Reuse vault migrate/rebuild/groups/inspect and checkout-level host_vault interfaces. Annual per-host journals are authoritative; records is cumulative and overview recent. General recipes may declare typed host-values retention/Markdown and access_mode; write/unknown runner operations persist long-lived intent/result events. Direct Core calls require explicit journaling. Unmigrated profiles retain the legacy behavior below. Future mapping/package schemas exist; new transfer tools are deferred.
+
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
 
 Human `recipes results list` displays the actual inventory collection user instead of identity quality; missing or uncertain evidence displays unknown. Never infer the collector from SSH login or a selected intermediate account. TTY lists omit the long identity-warnings column. Select `--json` or detail/show for preserved identity quality and full warnings; the index adds nullable collection_user without rewriting saved data. Read [collector evidence and human output](../../docs/cli.md#saved-result-collection-user).
@@ -17,7 +23,7 @@ Start with the [central skill index](../README.md). Keep newly authored Feast-sp
 
 Read the repository AGENTS.md, [CLI reference](../../docs/cli.md#retained-observations-and-exchange) and [canonical workflow and capability contract](../../docs/result-data.md). Use the [recipe skill](../opsfeast-recipes/SKILL.md) for authorized execution. This skill and its linked guides/schemas must be distributed together; automatic skill loading is not required.
 
-General Python-session recipe results are raw JSON with explicit no_retention_adapter; this skill's inventory recovery/exchange contracts do not ingest them. See [general results](../../docs/recipe-execution.md#results-failure-states-and-storage).
+Unmigrated general recipes remain raw-only. In a vault, general raw with a retention snapshot supports vault ingest; old general raw needs an explicit descriptor override. The legacy observation_store inventory recovery/exchange format does not ingest general results. See [general results](../../docs/recipe-execution.md#results-failure-states-and-storage).
 
 ## Prefer existing OpsFeast capabilities
 
@@ -115,4 +121,4 @@ Missing/unzoned instants do not acquire an invented timezone. Read [the canonica
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
 comparing display strings, interpreting DST or authoring another human report.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

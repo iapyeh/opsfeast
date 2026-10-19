@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$comment": "Last modified: 2026-10-19",
+  "title": "OpsFeast host vault record 0.1.0",
+  "required": [
+    "contract_version",
+    "record_id",
+    "kind",
+    "namespace",
+    "host_id",
+    "origin",
+    "recipe_id",
+    "recipe_reference",
+    "observed_at",
+    "data",
+    "mappings"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "observation",
+        "operation"
+      ]
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+    },
+    "host_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "host_id",
+        "instance_id",
+        "source_id",
+        "record_id"
+      ],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+        },
+        "host_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "instance_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "record_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "recipe_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recipe_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+    },
+    "data": {
+      "type": "object"
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "mapped_at",
+          "basis"
+        ],
+        "properties": {
+          "from": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "namespace",
+              "host_id"
+            ],
+            "properties": {
+              "namespace": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+              },
+              "host_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "to": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "namespace",
+              "host_id"
+            ],
+            "properties": {
+              "namespace": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+              },
+              "host_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "mapped_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "basis": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "retention_provenance": {
+      "$ref": "retention-provenance.schema.json"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "operation"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "$ref": "operation-event.schema.json"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "retained-observation.schema.json"
+              },
+              {
+                "$ref": "host-values.schema.json"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

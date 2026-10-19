@@ -1,5 +1,9 @@
 # Tests
 
+## Host-vault verification
+
+`test_host_vault.py` uses temporary synthetic Feasts to verify namespace migration and replay, unchanged legacy bytes and IDs, annual archives, cumulative/recent copies, logical identity through native machine-ID changes, partial state, projection repair, group indexes and human-note preservation, safe/case-distinct filenames and symlinks, concurrent writers/conflicts, scalar retention/templates, mappings/manifests and runner audit failures before connection/after execution. No real host is contacted. See [the contract and limitations](../docs/host-vault.md).
+
 This directory will contain public, reproducible verification for recipes, data contracts, and operational workflows.
 
 Verification should cover result parsing, failure status, supported platforms, and repeated updates that preserve human notes. Tests and fixtures must use synthetic data rather than private host details or credentials.
@@ -207,4 +211,10 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-_Last modified: 2026-10-17_
+Delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and 3.14.4 each passed 625 tests, including headless Textual checks and 17 vault-specific tests. Older interpreters reused the selected maintenance environment's Python dependencies; this does not establish native SSHScript readiness on those interpreters. Wheel/sdist builds, temporary no-dependency pip installation, installed-wheel migration/retention/Markdown/group smoke checks, Python 3.11 grammar, schema syntax/references, skill frontmatter and changed-document checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
+
+`test_retention_replay.py` adds temporary synthetic checks for fixed UUIDs, snapshot-only replay after recipe removal, explicit override conflicts/delete/replay, protected write/unknown and operation-linked verification, stale Markdown cleanup/fallback, projection repair, read-only dry runs, malformed snapshots, mixed batches and runner provenance capture. No recipe code or host is executed by replay.
+
+Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
+
+_Last modified: 2026-10-19_

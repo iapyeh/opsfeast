@@ -5,6 +5,12 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 # OpsFeast recipes
 
+For retention author iteration use [replay and explicit deletion](../../docs/retention-replay.md), not remote recipe reruns. Declare access_mode before execution; runner saves source UUID, mode and definition/template snapshot. An explicit --recipe-dir can test updated safe scalar definitions with the original raw. Write/unknown records cannot be cleared, even after changing the descriptor to read. Keep retained business fields free of secrets.
+
+## Host-vault 0.1.0
+
+Read [the canonical host-vault guide](../../docs/host-vault.md) before selecting namespace, migrating storage, interpreting logical identity or authoring retained outputs. Namespace + configured host ID defines a logical host across OS/hardware replacement; native keys remain evidence. Reuse vault migrate/rebuild/groups/inspect and checkout-level host_vault interfaces. Annual per-host journals are authoritative; records is cumulative and overview recent. General recipes may declare typed host-values retention/Markdown and access_mode; write/unknown runner operations persist long-lived intent/result events. Direct Core calls require explicit journaling. Unmigrated profiles retain the legacy behavior below. Future mapping/package schemas exist; new transfer tools are deferred.
+
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
 
 Human `recipes results list` displays the actual inventory collection user instead of identity quality; missing or uncertain evidence displays unknown. Never infer the collector from SSH login or a selected intermediate account. TTY lists omit the long identity-warnings column. Select `--json` or detail/show for preserved identity quality and full warnings; the index adds nullable collection_user without rewriting saved data. Read [collector evidence and human output](../../docs/cli.md#saved-result-collection-user).
@@ -118,7 +124,6 @@ The Recipes tab uses a docked source/directory Tree and Info/Executions tabs for
 
 
 The Hosts sidebar also supports Enter → run recipe with an explicit path for exactly one selected host and captured Feast root. Use Actions for variable overrides or offline report inputs. See [host action dialogs](../../docs/terminal-ui.md#host-action-menu-progress-and-result-dialog) for scope, progress, result states and cleanup limits. This is a UI adapter over the existing runner, not a new recipe contract.
-
 
 Run `python -B tools/opsfeast.py` without arguments for a version/download Home, masked Hosts, persistent profile switching and bundled Help. Hosts follows the default profile; explicit recipe environments are preserved. Explicit commands remain CLI. Bare `python -B tools/opsfeast.py recipes` opens the recipes workbench; explicit subcommands stay CLI. The workbench starts with checkout-only discovery and provides action forms for catalog, run, results/artifacts, jobs and bundles. Writes/execution require an in-app argument review; opening alone performs no operation. Use the [Textual display guide](../../docs/terminal-ui.md) when a human requests interactive progress/results. Supported catalog/show/results/run commands and run_recipe.py accept `--tui`; Textual 8.2.8 is an optional dependency, terminal stdin/stdout are required, and execution starts immediately using the existing command scope. Check the selected interpreter before authorized installation. Agents/scripts should retain ordinary JSON interfaces. Read final status, retention, warnings and exit code separately; UI completion alone does not prove remote cleanup. This is a CLI presentation capability, not a recipe service or public event API.
 
@@ -304,4 +309,4 @@ Missing/unzoned instants do not acquire an invented timezone. Read [the canonica
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
 comparing display strings, interpreting DST or authoring another human report.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

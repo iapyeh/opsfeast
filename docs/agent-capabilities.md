@@ -1,5 +1,11 @@
 # Reuse OpsFeast tools and Python modules
 
+For raw recovery and author iteration, prefer [offline replay and explicit deletion](retention-replay.md): CLI `vault ingest` (files or --all, optional --recipe-dir/--dry-run) and `vault delete-observation ID`. Reuse `retention_replay.ingest`, `snapshot`, `validate_snapshot` and `host_vault.delete_observation` rather than writing scanners/deletion SQL. New raw has fixed source UUID, execution mode and general-retention snapshots. Read-only deletion refreshes generated views; write/unknown journals and their evidence cannot be deleted through this API.
+
+## Host vault and durable operation history
+
+Use [host-vault 0.1.0](host-vault.md) for profile-root Markdown viewing, namespace + host ID identity, annual authoritative journals, rebuildable cumulative records and recent fleet observations. CLI: `opsfeast.py vault migrate/rebuild/groups/inspect`; explicit namespace required for migration. Reuse checkout-level `host_vault.settings`, `records`, `rebuild`, `refresh_groups`, `retain_general`, `operation_intent` and `operation_result`; canonical signatures/examples and failure behavior are in that guide. General recipes declare access_mode and optional typed host-values retention with a Markdown template. Audit covers runner-managed write/unknown recipes after vault activation; arbitrary Core/shell calls require explicit journaling. Legacy profiles remain supported. Schemas include immutable origin, stable IDs, future mappings and package manifests; no new transfer/merge tool exists.
+
 This guide is for **DevOps users and their agents** operating OpsFeast or authoring specialized recipes. OpsFeast product developers have the complementary mission to reduce user-side development by providing complete, broad and stable tools/modules; see [the two roles](vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed programs for repeated work so AI can focus on new needs, judgment, changes and exceptions.
 
 OpsFeast accumulates reusable operational knowledge and executable capabilities. Before writing a parser, connection wrapper, discovery scanner, result store, exporter or recurring script, look for an existing tool, recipe or module here. Start with the [skill index](../skills/README.md), select the relevant skill, then use the [CLI reference](cli.md) and the task's canonical guide. This reference describes the current checkout; it does not make every internal Python function a stable public SDK.
@@ -205,4 +211,4 @@ See [the canonical time policy and verification limits](cli.md#human-time-displa
 including unknown timezone handling and portable report formatting. Shared display
 helpers remain internal, not a new Core API or remote service.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19_

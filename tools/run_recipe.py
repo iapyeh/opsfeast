@@ -218,6 +218,18 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
                    'variable_names': sorted(info['effective_vars']), 'selection_source': 'cli'},
         'retention': {'status': 'skipped', 'reason_code': 'no_retention_adapter'},
     }
+    from retention_replay import snapshot
+    report['source_observation_id'] = str(uuid4())
+    from opsfeast.identity import read_identity
+    report['producer_instance_id'] = read_identity(REPOSITORY_ROOT)['id']
+    report['execution_access_mode'] = metadata.get('access_mode', 'unknown')
+    report['retention_snapshot'] = snapshot(metadata, directory)
+    from host_vault import operation_intent, operation_result
+    intent = operation_intent(config.root, host, metadata, report['recipe']['descriptor_sha256'], info['effective_vars'],
+                              reference=info['reference'], implementation_digest=report['recipe']['implementation_sha256'],
+                              source_observation_id=report['source_observation_id'])
+    if intent is not None:
+        report['operation_intent_id'] = intent['record_id']
     stage = 'connection'
     try:
         progress('preparing recipe connection')
@@ -263,6 +275,19 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     path = output_dir / f'recipe-run-{uuid4()}.json'
     progress('saving recipe result')
     save_report(path, report)
+    try:
+        operation_result(config.root, intent, report)
+    except Exception as exc:
+        report['operation_recording'] = {'status': 'failed', 'error_type': type(exc).__name__}
+        report['execution_status'] = report['status']
+        report.update(status='failed', reason_code='operation_recording_failed',
+                      message='Operation outcome could not be recorded; saved intent remains unresolved.')
+    from host_vault import retain_general
+    try:
+        report['retention'] = retain_general(config.root, report, metadata, directory, saved_snapshot=report['retention_snapshot'])
+    except Exception as exc:
+        report['retention'] = {'status': 'failed', 'reason_code': 'retention_failed', 'error_type': type(exc).__name__}
+    save_report(path, report)
     return report, path
 
 
@@ -298,6 +323,10 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
                     'message': 'No verified collection account; inventory was skipped.', 'access_check': access,
                     'detected_kernel': None, 'supported_platforms': [], 'recipe': {'id': 'inventory-system'}}, None
     report = collector['new_report'](host, 'local' if config.hosts[host]['connection'].get('local') else 'ssh')
+    report['source_observation_id'] = str(uuid4())
+    from opsfeast.identity import read_identity
+    report['producer_instance_id'] = read_identity(REPOSITORY_ROOT)['id']
+    report['execution_access_mode'] = config.execution_recipe['metadata'].get('access_mode', 'read')
     if access_result is not None:
         report['access_check'] = access_result
     report['runtime'] = runtime or {'verification': 'mock'}
@@ -322,6 +351,12 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
     report['recipe']['selection_source'] = 'cli' if recipe is not None else 'hosts'
     report['hops'] = []
     report['host_metadata'] = {name: config.hosts[host][name] for name in ('label', 'description') if name in config.hosts[host]}
+    from host_vault import operation_intent, operation_result
+    intent = operation_intent(config.root, host, dict(metadata, access_mode=report['execution_access_mode']),
+                              report['recipe']['descriptor_sha256'], context.vars, reference=info['reference'],
+                              bundle_digest=digest, source_observation_id=report['source_observation_id'])
+    if intent is not None:
+        report['operation_intent_id'] = intent['record_id']
     local = None
     stage = 'connection_settings'
     dispatch_status = None
@@ -467,6 +502,13 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
     output_dir.mkdir(exist_ok=True)
     path = output_dir / _inventory_result_filename(report['started_at'])
     save_report(path, report)
+    try:
+        operation_result(config.root, intent, report)
+    except Exception as exc:
+        report['execution_status'] = report['status']
+        report['operation_recording'] = {'status': 'failed', 'error_type': type(exc).__name__}
+        report.update(status='failed', reason_code='operation_recording_failed',
+                      message='Operation outcome could not be recorded; saved intent remains unresolved.')
     progress('retaining structured observations')
     try:
         report['retention'] = retain(config.root, report)

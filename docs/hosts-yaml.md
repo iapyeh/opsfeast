@@ -1,5 +1,9 @@
 # 管理 hosts.yaml 與主機設定
 
+## Vault management identity
+
+For namespace-enabled profiles, the logical host identity is the namespace in `feast.yaml` plus this configuration's host ID. Keeping that pair preserves history across IP changes, VM relocation, hardware replacement and OS reinstall. Native identity probes and identity_key remain legacy inventory evidence and do not split/reassign host history. Read [host-vault configuration and migration](host-vault.md); changing namespace or host ID requires explicit identity migration, not editing history.
+
 User agents must reread this guide after every OpsFeast release update, even if unchanged or previously read, to learn the installed release's current host schema and semantics before resuming work. See the [mandatory release schema reading rule](skill-updates.md#required-schema-reread-after-a-release-update). Reading completion is not verified.
 
 這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
