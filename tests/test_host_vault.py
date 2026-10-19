@@ -4,6 +4,7 @@ import contextlib
 import io
 from concurrent.futures import ThreadPoolExecutor
 import json
+import shlex
 from pathlib import Path
 import shutil
 import sqlite3
@@ -32,7 +33,7 @@ class VaultTests(unittest.TestCase):
         return vault.migrate(self.root, 'example-production')
 
     def host(self):
-        return self.root / 'hosts' / vault.component('node')
+        return self.root / 'vault' / 'hosts' / vault.component('node')
 
     def test_settings_definition_and_namespace_change_guard(self):
         self.enable()
@@ -45,6 +46,46 @@ class VaultTests(unittest.TestCase):
                 vault.validate_settings({'namespace': name})
         with self.assertRaises(ConfigError):
             vault.validate_settings({'namespace': 'valid', 'overview_months': True})
+
+    def test_migrate_defaults_to_saved_namespace_then_supplied_profile_name(self):
+        self.assertEqual(vault.migrate(self.root, profile='initial')['status'], 'success')
+        self.assertEqual(vault.settings(self.root)['namespace'], 'initial')
+        vault.migrate(self.root, profile='renamed')
+        self.assertEqual(vault.settings(self.root)['namespace'], 'initial')
+
+    def test_init_then_first_inventory_automatically_retains_without_migrate(self):
+        import test_inventory_system as inventory
+        from opsfeast import initialize
+        fixture = inventory.RunnerTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        initialize(fixture.root, quiet=True, profile='first-inventory')
+        # Keep execution synthetic while exercising the runner's operational retention path.
+        import run_recipe
+        from contextlib import nullcontext
+        with patch('inventory_actor.collection_actor', return_value=nullcontext(fixture.session)):
+            report, path = run_recipe.run(fixture.root, 'example', session_class=fixture.session_class,
+                                          runtime={'verification': 'synthetic-test'}, access_checked=True)
+        self.assertEqual(report['status'], 'success', report)
+        self.assertEqual(report['retention']['status'], 'stored')
+        self.assertEqual(path.parent, fixture.root.resolve() / 'observations')
+        found = vault.records(fixture.root)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]['namespace'], 'first-inventory')
+        self.assertTrue((fixture.root / 'vault/HOSTS.md').exists())
+        initialize(fixture.root, quiet=True, profile='renamed')
+        self.assertEqual(vault.records(fixture.root), found)
+
+    def test_core_profile_init_namespace_override_and_saved_default(self):
+        from opsfeast import Instance
+        installation = self.root / 'installation'
+        installation.mkdir()
+        instance = Instance.open(installation)
+        profile = instance.init_profile('Team.Production', namespace='production')
+        self.assertEqual(vault.settings(profile.root)['namespace'], 'production')
+        self.assertTrue((profile.root / 'vault/HOSTS.md').exists())
+        instance.init_profile('Team.Production')
+        self.assertEqual(vault.settings(profile.root)['namespace'], 'production')
 
     def test_migrate_preserves_legacy_and_record_ids_and_replays(self):
         receipt = legacy.retain(self.root, raw())
@@ -69,6 +110,47 @@ class VaultTests(unittest.TestCase):
         with vault.database(self.host() / 'records/observations.sqlite3') as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM records').fetchone()[0], 1)
 
+    def test_human_index_groups_states_and_executable_rebuild_guidance(self):
+        (self.root / 'hosts.yaml').write_text('hosts:\n  node:\n    connection: {local: true}\n    group: [production, database]\n  empty:\n    connection: {local: true}\n')
+        self.enable()
+        report = raw()
+        report.update(status='partial', finished_at='2026-10-13T00:00:10.123456+00:00')
+        report['observations']['hostname'].update(value=None, status='unavailable', error={'code': 'missing'})
+        legacy.retain(self.root, report)
+        page = (self.root / 'vault' / 'HOSTS.md').read_text()
+        self.assertTrue(page.startswith(vault.NOTICE + 'To regenerate this view'))
+        command = page.split('```sh\n', 1)[1].split('\n```', 1)[0]
+        self.assertEqual(shlex.split(command), ['cd', str(Path(vault.PACKAGE_FILE).resolve().parents[1]), '&&',
+                                               'python3', '-B', '-m', 'opsfeast', 'vault', 'rebuild',
+                                               '--root', str(self.root), '--json'])
+        self.assertIn('| Last observation | Status |', page)
+        self.assertIn('| production,database |', page)
+        self.assertIn('| partial |', page)
+        self.assertIn('| never | no observations |', page)
+        self.assertIn(vault.format_time(report['finished_at']), page)
+        self.assertNotIn('.123456', page)
+        self.assertIn('To regenerate this view', (self.root / 'vault/overview/README.md').read_text())
+        # The view must not change archive precision or classification.
+        self.assertEqual(vault.records(self.root)[0]['observed_at'], report['finished_at'])
+
+    def test_all_generated_vault_times_use_local_seconds_without_mutating_records(self):
+        self.enable()
+        report = raw()
+        report['finished_at'] = '2026-10-13T00:00:10.123456+00:00'
+        report['observations']['hostname']['observed_at'] = '2026-10-13T00:00:01.654321+00:00'
+        legacy.retain(self.root, report)
+        intent = vault.operation_intent(self.root, 'node', {'id': 'update', 'version': '1', 'access_mode': 'write'}, 'a' * 64, [])
+        before = copy.deepcopy(vault.records(self.root))
+        vault.rebuild(self.root)
+        vault.refresh_groups(self.root)
+        for path in self.root.rglob('*.md'):
+            with self.subTest(path=path.relative_to(self.root)):
+                page = path.read_text()
+                self.assertRegex(page, r'_Last modified: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}_\n$')
+                self.assertNotRegex(page, r'\d{2}:\d{2}:\d{2}\.\d+')
+        self.assertEqual(vault.records(self.root), before)
+        self.assertIn(intent['observed_at'], json.dumps(before))
+
     def test_native_identity_changes_do_not_split_logical_host(self):
         self.enable()
         first = raw()
@@ -79,6 +161,21 @@ class VaultTests(unittest.TestCase):
         b = legacy.retain(self.root, first)
         self.assertEqual(a['host_key'], b['host_key'])
         self.assertEqual(len(vault.records(self.root)), 2)
+
+    def test_vault_is_separate_from_profile_inputs_and_human_root_files(self):
+        (self.root / 'README.md').write_text('Private profile notes')
+        (self.root / 'hosts').mkdir()
+        (self.root / 'hosts/config.yaml').write_text('Private host configuration')
+        (self.root / 'observations').mkdir()
+        (self.root / 'observations/raw.json').write_text('Private raw data')
+        self.enable()
+        legacy.retain(self.root, raw())
+        vault.refresh_groups(self.root)
+        self.assertTrue((self.root / 'vault/HOSTS.md').exists())
+        for name in ('observations', 'hosts.yaml', 'feast.yaml', 'hosts/config.yaml'):
+            self.assertFalse((self.root / 'vault' / name).exists())
+        self.assertEqual((self.root / 'README.md').read_text(), 'Private profile notes')
+        self.assertFalse((self.root / 'HOSTS.md').exists())
 
     def test_view_failure_preserves_archive_and_rebuild_repairs(self):
         self.enable()
@@ -108,15 +205,15 @@ class VaultTests(unittest.TestCase):
         self.enable()
         with patch.object(vault, 'cutoff', return_value='2099-01-01T00:00:00.000000+00:00'):
             legacy.retain(self.root, raw())
-        with vault.database(self.root / 'overview/observations.sqlite3') as connection:
+        with vault.database(self.root / 'vault/overview/observations.sqlite3') as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM records').fetchone()[0], 0)
-        self.assertIn('node', (self.root / 'HOSTS.md').read_text())
+        self.assertIn('node', (self.root / 'vault' / 'HOSTS.md').read_text())
         self.assertEqual(len(vault.records(self.root)), 1)
 
     def test_group_refresh_preserves_notes_and_removes_only_managed_links(self):
         self.enable()
         vault.refresh_groups(self.root)
-        folder = self.root / 'groups' / vault.component('production')
+        folder = self.root / 'vault' / 'groups' / vault.component('production')
         link = folder / (vault.component('node') + '.md')
         self.assertIn('../../hosts/', link.read_text())
         (folder / 'notes.md').write_text('human notes')
@@ -130,7 +227,7 @@ class VaultTests(unittest.TestCase):
         for name in ('../x', 'CON', 'a/b', '中文'):
             self.assertNotIn('/', vault.component(name))
         self.enable()
-        (self.root / 'hosts' / vault.component('node')).mkdir(exist_ok=True)
+        (self.root / 'vault' / 'hosts' / vault.component('node')).mkdir(exist_ok=True)
         (self.host() / '2026').symlink_to(self.root, target_is_directory=True)
         with self.assertRaises(ConfigError):
             legacy.retain(self.root, raw())

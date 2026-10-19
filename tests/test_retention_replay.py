@@ -164,7 +164,7 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(list((self.host() / '2026/reports').glob('*.md')), [])
         self.assertEqual((self.host() / 'notes.md').read_text(), 'Human notes')
         self.assertTrue(a.exists() and b.exists())
-        for path in (self.host() / 'records/observations.sqlite3', self.root / 'overview/observations.sqlite3'):
+        for path in (self.host() / 'records/observations.sqlite3', self.root / 'vault/overview/observations.sqlite3'):
             with vault.database(path) as connection:
                 self.assertEqual(connection.execute('SELECT count(*) FROM records').fetchone()[0], 0)
 

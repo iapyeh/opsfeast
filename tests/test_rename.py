@@ -52,7 +52,11 @@ class RenameTests(unittest.TestCase):
         self.assertEqual(self.cli('init'), 0)
         self.assertEqual(opsfeast.resolve_root(), root)
         for name, content in before.items():
-            self.assertEqual((root / name).read_bytes(), content)
+            if name == 'my-ops.yaml':
+                self.assertTrue((root / name).read_bytes().startswith(content))
+                self.assertEqual(opsfeast.read_yaml(root / name)['namespace'], 'main')
+            else:
+                self.assertEqual((root / name).read_bytes(), content)
         self.assertFalse((root / 'feast.yaml').exists())
         self.assertFalse((self.checkout / 'feasts/main').exists())
         self.assertFalse((self.checkout / '.opsfeast.yaml').exists())
@@ -140,9 +144,7 @@ class RenameTests(unittest.TestCase):
         tools = self.checkout / 'tools'
         tools.mkdir()
         source = Path(__file__).resolve().parents[1] / 'tools'
-        shutil.copyfile(source / 'opsfeast.py', tools / 'opsfeast.py')
-        shutil.copyfile(source / 'console_output.py', tools / 'console_output.py')
-        shutil.copyfile(source / 'display_time.py', tools / 'display_time.py')
+        shutil.copytree(source, tools, dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(source.parent / 'opsfeast', self.checkout / 'opsfeast', ignore=shutil.ignore_patterns('__pycache__'))
         for args in (['init'], ['profiles'], ['init']):
             result = subprocess.run([sys.executable, '-B', str(tools / 'opsfeast.py'), *args],

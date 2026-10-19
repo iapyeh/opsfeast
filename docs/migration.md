@@ -4,6 +4,12 @@ After namespace migration, run `vault ingest --profile NAME --all --dry-run --js
 
 ## Host-vault migration
 
+The vault now occupies `<profile-root>/vault/`, separate from raw/configuration.
+New profile init creates the vault and saves namespace automatically; a separate
+migration step is unnecessary. The former co-located layout is incompatible and is
+not automatically read or relocated. Existing files remain untouched; use a new test
+profile and replay raw data as needed. No layout migration command is supplied.
+
 Use the [host-vault migration procedure](host-vault.md#enable-or-migrate) to explicitly choose a namespace and copy legacy retained observations to per-host UTC-year archives. Stable observation/source IDs and old payloads remain intact; the old database is preserved. Records/overview/Markdown are rebuildable; a failed migration can be replayed. Host management identity becomes namespace + host ID, independently of native OS/hardware evidence. No automatic private-data migration, namespace relabeling, package import/export or cleanup occurs.
 
 The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local checkout does not need to move. Private management directories, profile names, targets, credentials, human notes, observations and execution history retain their existing locations and contents.
@@ -207,4 +213,4 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:41:37_

@@ -11,6 +11,7 @@ import math
 import os
 from pathlib import Path
 import re
+import sqlite3
 import sys
 import tempfile
 import traceback
@@ -1013,12 +1014,14 @@ hosts:
 '''
 
 
-def initialize(root, *, quiet=False):
+def initialize(root, *, quiet=False, profile=None, namespace=None):
+    from host_vault import choose_namespace, enable_configuration, locked, rebuild_unlocked, refresh_groups
+    namespace = choose_namespace(root, namespace, profile)
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve(strict=True)
     # Preflight existing entries before writing anything inside the root.
     definition = definition_path(root)
-    for name in ('hosts', 'observations', 'records', 'runs', 'hosts.yaml', INSTANCE_DEFINITION, LEGACY_INSTANCE_DEFINITION):
+    for name in ('hosts', 'observations', 'records', 'runs', 'vault', 'hosts.yaml', INSTANCE_DEFINITION, LEGACY_INSTANCE_DEFINITION):
         item = root / name
         if item.is_symlink():
             raise ConfigError(f'init refuses scaffold symlink: {item}')
@@ -1040,6 +1043,12 @@ def initialize(root, *, quiet=False):
     if not definition.exists():
         with definition.open('x', encoding='utf-8') as handle:
             yaml.safe_dump(INSTANCE_SCHEMA, handle, sort_keys=False)
+    with locked(root):
+        runtime = Validator(root)
+        runtime.load(root / 'hosts.yaml')
+        enable_configuration(root, namespace)
+        rebuild_unlocked(root)
+    refresh_groups(root)
     return root
 
 
@@ -1340,8 +1349,10 @@ def main(argv=None):
     detach.add_argument('profile', help='exact registered profile name; main cannot be detached')
     for command in ('init', 'check', 'dump', 'test-connection'):
         command_parser = commands.add_parser(command)
-        if command in ('check', 'test-connection'):
+        if command in ('init', 'check', 'test-connection'):
             command_parser.add_argument('--json', action='store_true')
+        if command == 'init':
+            command_parser.add_argument('--namespace', help='vault namespace; defaults to the saved value or profile name on first initialization')
         if command == 'dump':
             command_parser.add_argument('setting', help='dot-separated setting path, such as hosts.host-01')
         if command == 'test-connection':
@@ -1499,17 +1510,24 @@ def main(argv=None):
                 raise ConfigError('selected setting cannot be represented as JSON') from None
             print(output)
             return 0
-        root = initialize(args.root) if args.command == 'init' else args.root
+        root = initialize(args.root, quiet=args.json, profile=name, namespace=args.namespace) if args.command == 'init' else args.root
         result = Validator(root).check()
         if args.command == 'init':
             register_profile(root, name, registry)
             from .identity import initialize_identity
             initialize_identity(REPOSITORY_ROOT)
-            print(f'Registered profile: {name}  {root}')
+            if not args.json:
+                from host_vault import settings
+                print(f'Registered profile: {name}  {root}')
+                print(f"Vault: {root / 'vault'}  namespace: {settings(root)['namespace']}")
         if getattr(args, 'json', False):
-            print_report({'report_version': '0.1.0', 'status': 'success', 'yaml_files': len(result.loaded),
+            report = {'report_version': '0.1.0', 'status': 'success', 'yaml_files': len(result.loaded),
                           'hosts': [{'host': h, 'selected_recipes': len(items), 'skipped': result.recipe_skips.get(h, [])}
-                                    for h, items in result.selected.items()], 'notes': result.notes}, json_output=True)
+                                    for h, items in result.selected.items()], 'notes': result.notes}
+            if args.command == 'init':
+                from host_vault import settings
+                report.update(profile=name, root=str(root), namespace=settings(root)['namespace'], vault_directory=str(root / 'vault'))
+            print_report(report, json_output=True)
             return 0
         if human_output() and args.command == 'check':
             from console_output import configuration_summary
@@ -1529,7 +1547,7 @@ def main(argv=None):
             print(f'NOTE: {note}')
         print('No SSH connection or recipe execution performed; platform, authentication and full recipe contracts are not validated.')
         return 0
-    except (ConfigError, OSError, RuntimeError, RecursionError) as exc:
+    except (ConfigError, OSError, RuntimeError, RecursionError, sqlite3.Error) as exc:
         if getattr(args, 'traceback', False):
             diagnostic_traceback(exc)
         print(f'ERROR: {exc}', file=sys.stderr)

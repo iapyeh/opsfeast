@@ -2,6 +2,30 @@
 
 ## Host-vault verification
 
+Vault tests cover dedicated vault/ output and input separation, automatic CLI/Core
+profile initialization, default/explicit/saved namespaces, invalid defaults rejected
+before filesystem writes, namespace continuity through profile rename, first inventory
+run automatically retained without migration, reinit preserving archived values, and
+storage failure reported without registering a partial profile (retry succeeds).
+The former development layout has no compatibility-copy implementation or tests.
+
+Automatic-init verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each
+passed 649 tests. Wheel/sdist build, temporary no-dependency wheel installation, 56
+installed vault/profile tests and installed CLI JSON initialization outside the checkout passed.
+First-inventory integration uses a synthetic session and mocked collection-actor scope;
+no real SSH/su/sudo or private profile changes occurred. Older interpreter tests reused
+pure-Python dependencies and do not establish native execution dependency readiness.
+
+Human-view regressions cover executable shell-quoted rebuild guidance, comma-separated
+groups, partial/empty observation status, second-resolution local times throughout
+generated Markdown and unchanged precise archive payloads.
+
+Vault human-view verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4
+each passed 641 tests. Wheel/sdist builds, temporary no-dependency wheel installation,
+19 installed vault tests and execution of the generated rebuild command outside the
+checkout passed. Older interpreters reused pure-Python dependencies; these synthetic
+checks do not establish native SSH/su/sudo readiness or change real Feast data.
+
 `test_host_vault.py` uses temporary synthetic Feasts to verify namespace migration and replay, unchanged legacy bytes and IDs, annual archives, cumulative/recent copies, logical identity through native machine-ID changes, partial state, projection repair, group indexes and human-note preservation, safe/case-distinct filenames and symlinks, concurrent writers/conflicts, scalar retention/templates, mappings/manifests and runner audit failures before connection/after execution. No real host is contacted. See [the contract and limitations](../docs/host-vault.md).
 
 This directory will contain public, reproducible verification for recipes, data contracts, and operational workflows.
@@ -217,4 +241,4 @@ Delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and 3.14.4 each pass
 
 Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:44:08_

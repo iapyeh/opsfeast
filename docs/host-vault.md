@@ -2,8 +2,8 @@
 
 Host-vault contract **0.1.0** provides local, host-centered annual history,
 rebuildable cumulative records, recent fleet observations, and plain Markdown views.
-The selected profile root itself is the vault; `feasts/main` is the usual main root,
-not a required location. Open it in Obsidian or any Markdown reader. No Obsidian
+The vault is `<profile-root>/vault/`; `feasts/main/vault` is the usual main vault,
+not a required profile location. Open only the `vault/` directory in Obsidian or any Markdown reader. No Obsidian
 plugin, server, model, connection or running TUI is required for reading.
 
 See [offline raw replay, stable source IDs and explicit read-only deletion](retention-replay.md) for recovery and author iteration. Write/unknown observations and operation journals are protected.
@@ -36,22 +36,54 @@ explicit identity migration; it is not implemented by changing configuration.
 
 ## Enable or migrate
 
-Initialize a new profile through the normal setup workflow first. New and existing
-profiles explicitly select their namespace with the same local migration command:
+New profiles initialize their vault as part of normal profile setup:
 
 ```sh
-python -B tools/opsfeast.py vault migrate --profile main \
-  --namespace example-production --overview-months 3 --json
-python -B tools/opsfeast.py vault rebuild --profile main --json
-python -B tools/opsfeast.py vault groups --profile main --json
-python -B tools/opsfeast.py vault inspect --profile main --json
+python -B tools/opsfeast.py init inventory --json
+# Optional explicit identity, including when the profile name is not namespace-safe:
+python -B tools/opsfeast.py init ./production --profile Team.Production --namespace production --json
+python -B tools/opsfeast.py vault inspect --profile inventory --json
 ```
 
-Each command also accepts `--root /absolute/feast` instead of `--profile`. JSON is
-the output in terminals and pipes; `--json` is accepted explicitly. Success exits 0,
-configuration/storage failures exit 1 with a sanitized error type, argparse errors
-exit 2. Commands do no remote work. `inspect` is read-only and returns settings and
-archived records. `migrate` requires an existing Feast definition and hosts.yaml.
+Initialization saves namespace and overview_months in feast.yaml, creates vault/
+and its host/group indexes, and performs no collection, connection or recipe execution.
+The first operational inventory run saves raw observations separately and automatically
+retains successful/partial observations and refreshes vault views. Collection and
+retention outcomes remain independent; retain failures can be replayed from raw.
+
+Namespace selection is explicit --namespace, then the saved Feast namespace, then
+the profile registration name on first initialization. The saved namespace is fixed:
+a different override is rejected and profile renaming does not change it. Names that
+contain uppercase, dots, spaces, Unicode or otherwise violate namespace syntax require
+an explicit valid --namespace before initialization writes files. Names are not globally
+unique: choose an explicit namespace when independent profiles share the same name.
+
+Repeated init preserves hosts.yaml, definition comments, human notes and archived data;
+it refreshes generated views and group indexes without reimporting legacy records.
+Initialization is not a multi-file transaction: if storage/configuration validation
+fails, scaffold files may remain; fix the error and retry with the same namespace.
+
+For a deliberately attached root without namespace, or explicit recovery of the older
+retained inventory database, vault migrate remains available. Its --namespace can be
+omitted: it reuses the saved namespace or defaults to the registered profile name
+(the directory name for an unregistered --root). Existing namespace cannot be changed.
+
+```sh
+python -B tools/opsfeast.py vault migrate --profile inventory --json
+python -B tools/opsfeast.py vault rebuild --profile inventory --json
+python -B tools/opsfeast.py vault groups --profile inventory --json
+```
+
+All vault commands also accept --root /absolute/feast instead of --profile. Root means
+the profile root, never its vault/ child. Vault output is JSON in terminals and pipes;
+success exits 0, storage/configuration failures 1, argparse errors 2. Rebuild/inspect
+receipts include vault_directory. Inspect is read-only. Migrate requires an existing
+Feast definition and hosts.yaml. No host operations occur.
+
+**Development layout change:** earlier files directly under the profile root are
+not read or relocated by the new layout. No compatibility layer or layout migration
+command is provided. Keep old histories and human notes separately; use a new test
+profile and replay selected raw files when needed. Existing files are not deleted.
 
 Migration validates legacy inventory payloads, preserves observation IDs, source
 UUIDs and raw business data, wraps them with namespace identity and writes annual
@@ -70,28 +102,35 @@ legacy retention behavior until explicitly migrated.
 <profile-root>/
   feast.yaml
   hosts.yaml
-  HOSTS.md
+  observations/                  # raw execution results
+  runs/                          # execution records
+  records/                       # preserved legacy retention, if present
+  hosts/                         # optional configuration includes
   .vault-source.json
   .vault.lock
-  hosts/
-    <encoded-host-id>/
-      README.md
-      records/
-        observations.sqlite3
-        README.md
-        <encoded-recipe-reference>.md
-      2026/
-        observations.sqlite3
-        reports/<record-digest>.md
-        operations/<record-digest>.md
-  groups/
-    .generated.json
-    <encoded-group-id>/
-      README.md
-      <encoded-host-id>.md
-  overview/
-    observations.sqlite3
+  vault/                         # open this directory as the Obsidian vault
+    HOSTS.md
     README.md
+    .vault-views.json
+    hosts/
+      <encoded-host-id>/
+        README.md
+        records/
+          observations.sqlite3
+          README.md
+          <encoded-recipe-reference>.md
+        2026/
+          observations.sqlite3
+          reports/<record-digest>.md
+          operations/<record-digest>.md
+    groups/
+      .generated.json
+      <encoded-group-id>/
+        README.md
+        <encoded-host-id>.md
+    overview/
+      observations.sqlite3
+      README.md
 ```
 
 IDs use reversible UTF-8 percent encoding. Ordinary lowercase IDs such as web-01
@@ -117,12 +156,25 @@ never removes annual history or cumulative records. The host list is the union o
 configured hosts and archived hosts, so old, disabled and never-observed hosts remain
 visible. The initial viewer does not infer online status or a health score.
 
-Generated Markdown has an overwrite notice and modification date. Editing generated
+`HOSTS.md` and `overview/README.md` include a shell-quoted `vault rebuild --root ... --json`
+command immediately after the overwrite notice. The command uses the current tool
+checkout and profile paths; regenerate it after relocating either directory. Groups
+in the host table are comma-separated. `Status` describes the latest observation,
+including partial and no-observation states; it is not an online/health assessment.
+
+Generated Markdown displays timestamps in OS-local time to whole seconds, including
+generation, observation and operation times and `Last modified: YYYY-MM-DD HH:MM:SS`.
+JSON blocks in these Markdown views are human-readable copies; use SQLite/JSON exports
+for authoritative precise source timestamps. Recipe-authored free-form Markdown keeps
+its template content. Raw files and SQLite payloads preserve original precision.
+
+Generated Markdown has an overwrite notice and modification timestamp. Editing generated
 files is unsupported; rebuild overwrites them. The initial host README is a human
 landing page and is preserved on later rebuilds. User files elsewhere are preserved.
 Do not put private credentials in human notes or declared retained fields if the
-vault may be shared. Existing hosts.yaml/raw files may contain private data: the
-entire profile is not automatically a sanitized sharing package.
+vault may be shared. Configuration, raw observations and execution records remain
+outside `vault/`. Retained data and human notes can still contain private information;
+the vault is not automatically a sanitized sharing package.
 
 Group refresh is explicitly requested; it reads current hosts.yaml membership and
 creates relative Markdown links, never symlinks. Its manifest tracks generated
@@ -194,7 +246,7 @@ semantic reconciliation service.
 The optional recipe-relative template is reviewed recipe content. `{{field_name}}`
 substitutions escape field text; templates may contain ordinary Markdown and must
 not embed secrets or unsafe active content. It runs no template code. The standard
-page always includes provenance, original times/statuses, fields and inventory;
+page always includes provenance, observation times/statuses, fields and inventory;
 recipe Markdown adds a domain-specific view. Regeneration uses archived content,
 not recipe execution or loading a new template. Retention failure preserves raw
 results and returns failed retention/nonzero execution, with archive replay/rebuild
@@ -278,4 +330,4 @@ Delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and 3.14.4 each pass
 
 Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:41:37_

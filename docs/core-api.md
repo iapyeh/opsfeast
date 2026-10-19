@@ -12,7 +12,7 @@ OpsFeast bundles a public Python package for user agents, standalone programs an
 
 An **instance** is the entire OpsFeast installation/checkout. Its ignored `.opsfeast-instance.json` contains schema_version `0.1.0`, UUID `id`, required nonblank single-line `name`, optional string `description`, and the absolute `installation_path` used for copy detection. A **profile** selects one management root, usually `feasts/NAME/`, possibly an externally attached directory. `feasts/` is a container, not an instance. Existing `feast.yaml` definitions and profile registries retain their current formats.
 
-First successful CLI `init` creates the installation UUID; subsequent init and profile changes preserve it. `Instance.initialize()` initializes identity only; `Instance.init_profile()` explicitly scaffolds and registers a profile and initializes identity. Reads never initialize storage. Metadata writes use a POSIX advisory lock, a private temporary file and atomic replacement. Cooperating Core metadata writers serialize; this is not a multi-file transaction or protection from unrelated editors.
+First successful CLI `init` creates the installation UUID; subsequent init and profile changes preserve it. `Instance.initialize()` initializes identity only; `Instance.init_profile(name="main", root=None, namespace=None)` explicitly scaffolds and registers a profile, enables its vault and initializes installation identity. Namespace defaults to its saved Feast value or the first profile name; namespace-unsafe names require a valid override, and a saved namespace cannot be changed through reinit. It creates initial Markdown/group views without connections or collection. Reads never initialize storage. Metadata writes use a POSIX advisory lock, a private temporary file and atomic replacement. Cooperating Core metadata writers serialize; this is not a multi-file transaction or protection from unrelated editors.
 
 | Identity situation | Behavior |
 | --- | --- |
@@ -69,7 +69,8 @@ Both inspection methods are read-only: no init, repair, migration, connection, p
 ```python
 instance.initialize(name="Operations", description="Production controller")
 instance.update_metadata(name="Primary operations")
-profile = instance.init_profile("main")
+profile = instance.init_profile("main")  # namespace main, vault/ initialized
+# For a distinct identity: instance.init_profile("Team.Prod", namespace="production")
 instance.profiles.attach("/srv/feasts/inventory", name="inventory")
 instance.profiles.use("inventory")
 instance.profiles.detach("inventory")
@@ -287,4 +288,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19 10:41:37_

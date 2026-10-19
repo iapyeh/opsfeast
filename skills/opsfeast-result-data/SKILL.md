@@ -9,6 +9,19 @@ Read [offline retention replay and deletion](../../docs/retention-replay.md). Pr
 
 ## Host-vault 0.1.0
 
+Use `<profile-root>/vault/` for retained journals and human views; raw/configuration
+stay in the profile root. CLI/module root arguments still select the profile root.
+New `opsfeast.py init NAME [--namespace VALUE] [--json]` initializes the vault.
+Namespace defaults to its saved value or first profile name; invalid default names
+require an explicit namespace. The first operational inventory run retains automatically.
+Reinit/rename preserves saved namespace and archives. Core `Instance.init_profile`
+accepts namespace=. No compatibility/relocation tool is provided for the former
+profile-root layout; explain that incompatibility and preserve existing files.
+
+Generated HOSTS.md/overview pages include the local rebuild command after their
+overwrite notice. Human vault timestamps use OS-local seconds; raw/SQLite retain
+precision. Groups are comma-separated; Status preserves partial/no-observation states.
+
 Read [the canonical host-vault guide](../../docs/host-vault.md) before selecting namespace, migrating storage, interpreting logical identity or authoring retained outputs. Namespace + configured host ID defines a logical host across OS/hardware replacement; native keys remain evidence. Reuse vault migrate/rebuild/groups/inspect and checkout-level host_vault interfaces. Annual per-host journals are authoritative; records is cumulative and overview recent. General recipes may declare typed host-values retention/Markdown and access_mode; write/unknown runner operations persist long-lived intent/result events. Direct Core calls require explicit journaling. Unmigrated profiles retain the legacy behavior below. Future mapping/package schemas exist; new transfer tools are deferred.
 
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
@@ -121,4 +134,4 @@ Missing/unzoned instants do not acquire an invented timezone. Read [the canonica
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
 comparing display strings, interpreting DST or authoring another human report.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:42:27_

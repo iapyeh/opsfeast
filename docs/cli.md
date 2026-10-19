@@ -4,7 +4,15 @@ For offline conversion/recovery use `vault ingest --profile NAME --all [--dry-ru
 
 ## Host vault commands
 
-Read [the host-vault reference](host-vault.md) before selecting a namespace or migrating retained data. `python -B tools/opsfeast.py vault migrate --profile main --namespace example-production --overview-months 3 --json` enables annual host archives without deleting legacy storage. `vault rebuild`, `vault groups` and `vault inspect` accept `--profile NAME` or `--root ROOT`, and `--json`. They perform local work only; groups refresh is explicit. Inspect is read-only. Results are JSON; success exits 0, sanitized configuration/storage failures 1, argparse errors 2. Legacy export reads inventory payloads from full vault archives after migration, not the recent overview.
+Vault data and Markdown live in `<profile-root>/vault/`. All `--root` arguments still
+select the profile root. `init NAME [--namespace VALUE] [--json]` creates the namespace-enabled vault together
+with the profile; ordinary users do not need a separate migrate step. The saved
+namespace takes precedence over the profile name, and an explicit different override
+is rejected. Namespace-unsafe profile names require --namespace. The first operational
+inventory run retains automatically. No relocation tool is supplied for the former
+profile-root vault layout; see [initialization and incompatibility](host-vault.md#enable-or-migrate).
+
+Read [the host-vault reference](host-vault.md) before selecting a namespace or migrating retained data. `python -B tools/opsfeast.py vault migrate --profile main --json` explicitly enables an attached root or recovers the legacy retained database; --namespace defaults to the saved value or profile name. `vault rebuild`, `vault groups` and `vault inspect` accept `--profile NAME` or `--root ROOT`, and `--json`. They perform local work only; groups refresh is explicit. Inspect is read-only. Results are JSON; success exits 0, sanitized configuration/storage failures 1, argparse errors 2. Legacy export reads inventory payloads from full vault archives after migration, not the recent overview.
 
 For task-to-tool discovery and Python composition, consult [the existing capability map](agent-capabilities.md). Prefer suitable implemented interfaces before writing replacement configuration, execution, storage or export code.
 
@@ -118,7 +126,7 @@ Run `python -B tools/opsfeast.py COMMAND --help` for that command's parser help.
 
 | Command syntax after tools/opsfeast.py | Purpose and behavior |
 | --- | --- |
-| `init [NAME_OR_PATH] [--profile NAME]` | Create a management scaffold, validate it, then register it. Default: feasts/main, profile main. Preserve existing configuration. |
+| `init [NAME_OR_PATH] [--profile NAME] [--namespace VALUE] [--json]` | Create a management scaffold and namespace-enabled vault, validate, then register. Default: feasts/main, namespace main; preserve existing configuration/namespace/history. JSON includes profile, root, namespace and vault_directory. |
 | `attach ROOT [--profile NAME]` | Validate/register an existing directory without creating or changing its scaffold. |
 | `profiles` | List registrations, basic directory status and selected default. Missing entries remain registered; no registrations is a normal result. |
 | `detach NAME` | Remove one registration while preserving its directory/data. Main is protected; removing the current default validates and switches to main in one registry write. |
@@ -728,4 +736,4 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:42:27_

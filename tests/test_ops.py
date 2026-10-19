@@ -48,7 +48,7 @@ class OpsTests(unittest.TestCase):
         with patch.object(ops, 'REPOSITORY_ROOT', Path(self.temp.name)), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(ops.main(['init']), 0)
-            self.assertEqual(ops.read_yaml(self.root / 'main/feast.yaml'), ops.INSTANCE_SCHEMA)
+            self.assertEqual(ops.read_yaml(self.root / 'main/feast.yaml'), dict(ops.INSTANCE_SCHEMA, namespace='main', overview_months=3))
             self.assertEqual(ops.read_yaml(Path(self.temp.name) / '.opsfeast.yaml')['profiles']['main']['root'], 'feasts/main')
             # Locator resolution never depends on the invoking shell directory.
             with contextlib.chdir('/'):
@@ -111,7 +111,7 @@ class OpsTests(unittest.TestCase):
         outside = Path(self.temp.name) / 'definition.yaml'
         outside.write_text('schema_version: 1\nkind: opsfeast\n')
         definition.symlink_to(outside)
-        with self.assertRaisesRegex(ops.ConfigError, 'scaffold symlink'):
+        with self.assertRaisesRegex(ops.ConfigError, 'symlink'):
             ops.initialize(self.root)
 
     def test_cross_file_reference_and_relative_recipe(self):

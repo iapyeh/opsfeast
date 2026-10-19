@@ -7,6 +7,12 @@ a separate operation and never happens implicitly during replay.
 
 ## Convert existing observations
 
+New `opsfeast.py init NAME [--namespace VALUE] --json` profiles already have an enabled
+vault. Skip the migrate command below for those profiles; first inventory retention
+is automatic. Migrate is for explicitly enabling a previously attached root or
+recovering its older retained database. Namespace may be omitted to reuse its saved
+value or default to the registered profile name.
+
 Run from the actual OpsFeast checkout with the selected Python environment. Replace
 the example profile and namespace with the intended management scope:
 
@@ -23,8 +29,8 @@ it does not scan raw JSON. `ingest --all` scans only the selected root's direct
 `observations/*.json` files. An absent/empty directory is a successful empty batch.
 No recursive search, host connection, package installation or recipe execution
 occurs. Existing raw bytes and legacy SQLite are preserved. Normal replay updates
-records, overview and Markdown automatically. Open `<profile-root>/HOSTS.md` or
-open the profile root as an Obsidian vault. Refresh groups explicitly after
+records, overview and Markdown automatically. Open `<profile-root>/vault/HOSTS.md` or
+open `<profile-root>/vault/` as an Obsidian vault. Refresh groups explicitly after
 hosts.yaml changes. Use `vault rebuild` to repair views; rerunning `migrate` can
 copy deliberately deleted records back from the preserved legacy database.
 
@@ -34,7 +40,7 @@ Files may also be selected explicitly, **before options**:
 python -B tools/opsfeast.py vault ingest /path/a.json /path/b.json --profile main --json
 ```
 
-`--root /absolute/feast` replaces `--profile`. Success returns JSON and exit 0;
+`--root /absolute/feast` replaces `--profile`; it selects the profile root, never its vault/ child. Success returns JSON and exit 0;
 per-file failures return failed entries and exit 1 while other files continue.
 Use actual ingest receipts for durable record IDs: an empty-vault dry run does not
 allocate inventory source metadata.
@@ -146,4 +152,4 @@ General-purpose package import/export and transport remain deferred.
 
 Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:41:37_

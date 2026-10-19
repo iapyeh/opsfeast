@@ -4,7 +4,19 @@ For raw recovery and author iteration, prefer [offline replay and explicit delet
 
 ## Host vault and durable operation history
 
-Use [host-vault 0.1.0](host-vault.md) for profile-root Markdown viewing, namespace + host ID identity, annual authoritative journals, rebuildable cumulative records and recent fleet observations. CLI: `opsfeast.py vault migrate/rebuild/groups/inspect`; explicit namespace required for migration. Reuse checkout-level `host_vault.settings`, `records`, `rebuild`, `refresh_groups`, `retain_general`, `operation_intent` and `operation_result`; canonical signatures/examples and failure behavior are in that guide. General recipes declare access_mode and optional typed host-values retention with a Markdown template. Audit covers runner-managed write/unknown recipes after vault activation; arbitrary Core/shell calls require explicit journaling. Legacy profiles remain supported. Schemas include immutable origin, stable IDs, future mappings and package manifests; no new transfer/merge tool exists.
+Prefer `opsfeast.py init NAME --json` or `init NAME --namespace VALUE --json` for new
+profiles, and `Instance.init_profile(name, namespace=...)` in Core programs. Both create
+vault/ and initial indexes with no connections. The first inventory run retains
+without a separate migrate. Reuse saved namespace after profile rename. Init JSON
+includes namespace and vault_directory. Old profile-root layouts have no relocation
+adapter; explain the development incompatibility rather than creating a migration.
+
+Use the rebuild command shown after the warning in generated `HOSTS.md` and
+`overview/README.md` to refresh human views. Vault Markdown uses OS-local whole-second
+timestamps and comma-separated groups; observation status can be partial or absent.
+Read SQLite/JSON for precise original timestamps. See [view ownership](host-vault.md#directory-and-ownership).
+
+Use [host-vault 0.1.0](host-vault.md) for Markdown viewing under `<profile-root>/vault/`, namespace + host ID identity, annual authoritative journals, rebuildable cumulative records and recent fleet observations. CLI: `opsfeast.py vault migrate/rebuild/groups/inspect`; profile init enables it automatically; namespace defaults to the saved value or first profile name. Explicit namespace overrides are available for init/migrate, but cannot rename existing namespace. Reuse checkout-level `host_vault.settings`, `records`, `rebuild`, `refresh_groups`, `retain_general`, `operation_intent` and `operation_result`; canonical signatures/examples and failure behavior are in that guide. General recipes declare access_mode and optional typed host-values retention with a Markdown template. Audit covers runner-managed write/unknown recipes after vault activation; arbitrary Core/shell calls require explicit journaling. Legacy profiles remain supported. Schemas include immutable origin, stable IDs, future mappings and package manifests; no new transfer/merge tool exists.
 
 This guide is for **DevOps users and their agents** operating OpsFeast or authoring specialized recipes. OpsFeast product developers have the complementary mission to reduce user-side development by providing complete, broad and stable tools/modules; see [the two roles](vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed programs for repeated work so AI can focus on new needs, judgment, changes and exceptions.
 
@@ -211,4 +223,4 @@ See [the canonical time policy and verification limits](cli.md#human-time-displa
 including unknown timezone handling and portable report formatting. Shared display
 helpers remain internal, not a new Core API or remote service.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 10:41:37_

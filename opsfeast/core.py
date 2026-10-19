@@ -161,7 +161,7 @@ class Instance:
     def update_metadata(self, *, name=None, description=None):
         return update_identity(self.root, name=name, description=description)
 
-    def init_profile(self, name='main', *, root=None):
+    def init_profile(self, name='main', *, root=None, namespace=None):
         name = profile_name(name)
         registry = load_profiles(self.root)
         if root is None and name in registry['profiles']:
@@ -173,7 +173,7 @@ class Instance:
             raise ConfigError('profile name already refers to another root')
         if any(n != name and profile_root(item['root'], self.root) == target for n, item in registry['profiles'].items()):
             raise ConfigError('management root is already registered')
-        initialize(target, quiet=True)
+        initialize(target, quiet=True, profile=name, namespace=namespace)
         profile = self.profiles.attach(target, name=name)
         self.initialize()
         return profile

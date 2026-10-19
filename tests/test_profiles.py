@@ -1,6 +1,8 @@
 """Synthetic profile lifecycle and interaction tests; no SSH or real user data."""
 import contextlib
 import io
+import json
+import sqlite3
 from pathlib import Path
 import sys
 import tempfile
@@ -69,7 +71,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_names_with_unicode_spaces_and_invalid_path_components(self):
         for name in ('盤點資料', 'team inventory', '.hidden'):
-            self.assertEqual(self.cli('init', name)[0], 0)
+            self.assertEqual(self.cli('init', name, '--namespace', 'test-namespace')[0], 0)
             self.assertEqual(ops.resolve_root(profile=name), self.checkout / 'feasts' / name)
         before = self.pointer.read_bytes()
         for name in ('.', '..', ' trailing ', 'bad\nname'):
@@ -96,17 +98,66 @@ class ProfileTests(unittest.TestCase):
         self.assertIn('--profile NAME', errors)
         self.assertFalse(root.exists())
         self.assertEqual(self.pointer.read_bytes(), before)
-        self.assertEqual(self.cli('init', str(root), '--profile', 'other.inventory')[0], 0)
+        self.assertEqual(self.cli('init', str(root), '--profile', 'other.inventory', '--namespace', 'other-inventory')[0], 0)
         self.assertEqual(ops.load_profiles()['default_profile'], 'inventory')
 
     def test_interactive_collision_requires_user_choice(self):
         self.cli('init', 'inventory')
         root = self.root / 'other/inventory'
-        code, output, errors = self.cli('init', str(root), interactive=True,
+        code, output, errors = self.cli('init', str(root), '--namespace', 'other-inventory', interactive=True,
                                         answers=['inventory', 'bad/name', 'other.inventory'])
         self.assertEqual(code, 0, errors)
         self.assertIn('Invalid profile name', output)
         self.assertEqual(ops.resolve_root(profile='other.inventory'), root)
+
+    def test_init_json_automatically_enables_vault_with_profile_namespace(self):
+        with patch.object(ops, 'load_session_class', side_effect=AssertionError('init must not connect')):
+            code, output, errors = self.cli('init', 'inventory', '--json')
+        self.assertEqual(code, 0, errors)
+        receipt = json.loads(output)
+        root = self.checkout / 'feasts/inventory'
+        self.assertEqual(receipt['namespace'], 'inventory')
+        self.assertEqual(receipt['vault_directory'], str(root / 'vault'))
+        self.assertEqual(ops.read_yaml(root / 'feast.yaml')['namespace'], 'inventory')
+        self.assertTrue((root / 'vault/HOSTS.md').is_file())
+        self.assertTrue((root / 'vault/groups/README.md').is_file())
+        self.assertEqual(list((root / 'observations').iterdir()), [])
+        self.assertFalse((root / 'HOSTS.md').exists())
+
+    def test_invalid_default_namespace_requires_override_before_creating_files(self):
+        code, _, errors = self.cli('init', 'Team.Inventory')
+        self.assertEqual(code, 1)
+        self.assertIn('--namespace', errors)
+        self.assertFalse((self.checkout / 'feasts/Team.Inventory').exists())
+        self.assertFalse(self.pointer.exists())
+        code, output, errors = self.cli('init', 'Team.Inventory', '--namespace', 'team-inventory', '--json')
+        self.assertEqual(code, 0, errors)
+        self.assertEqual(json.loads(output)['namespace'], 'team-inventory')
+
+    def test_saved_namespace_survives_profile_rename_and_reinit(self):
+        self.assertEqual(self.cli('init', 'inventory', '--namespace', 'production')[0], 0)
+        registry = ops.load_profiles()
+        root = ops.resolve_root()
+        registry['profiles']['renamed'] = registry['profiles'].pop('inventory')
+        registry['default_profile'] = 'renamed'
+        ops.save_profiles(registry)
+        code, output, errors = self.cli('init', 'renamed', '--json')
+        self.assertEqual(code, 0, errors)
+        self.assertEqual(json.loads(output)['namespace'], 'production')
+        original = (root / 'feast.yaml').read_bytes()
+        self.assertEqual(self.cli('init', 'renamed', '--namespace', 'different')[0], 1)
+        self.assertEqual((root / 'feast.yaml').read_bytes(), original)
+
+    def test_init_storage_failure_is_reported_without_registering_partial_profile(self):
+        with patch('host_vault.rebuild_unlocked', side_effect=sqlite3.OperationalError('synthetic storage failure')):
+            code, _, errors = self.cli('init', 'broken')
+        self.assertEqual(code, 1)
+        self.assertIn('synthetic storage failure', errors)
+        self.assertNotIn('Traceback', errors)
+        self.assertFalse(self.pointer.exists())
+        root = self.checkout / 'feasts/broken'
+        self.assertEqual(ops.read_yaml(root / 'feast.yaml')['namespace'], 'broken')
+        self.assertEqual(self.cli('init', 'broken')[0], 0)
 
     def test_cancelled_collision_leaves_registry_and_directory_unchanged(self):
         self.cli('init', 'inventory')

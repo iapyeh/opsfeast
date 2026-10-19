@@ -103,6 +103,8 @@ python -B tools/opsfeast.py check
 
 預設建立 `feasts/main/` 並登記 `main` profile；第一個成功登記的 profile 成為預設，後續登記不切換。`init inventory` 建立 `feasts/inventory/`，`init /path/to/feast` 則使用指定路徑。兩個工具可省略目錄或用 `--profile NAME` 選擇本次環境；`use NAME` 切換預設。既有資料用 `attach /existing/directory` 登記，不改寫原目錄。詳見 [管理環境指南](profiles.md)。重複初始化保留既有主機設定；定義檔與定位規則見 [主機設定指南](hosts-yaml.md)。
 
+New init also creates vault/ and saves namespace (default: profile name); use --namespace for an explicit valid value and --json for structured output. The first operational inventory run retains automatically; no separate vault migration is needed.
+
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
 ## Recipe next steps
@@ -152,4 +154,4 @@ See [host diagnostics](host-diagnostics.md) for platform initialization/cache se
 
 Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, retention receipt and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-19 10:57:41_
