@@ -271,7 +271,7 @@ hosts:
                   'host_id': 'h', 'status': 'partial', 'completed_at': 'synthetic-time',
                   'collection_user': 'root', 'identity_quality': 'fallback', 'identity_warnings': ['synthetic warning']}]}
         item = dict(catalog['recipes'][0], description='Synthetic description', contract='0.1', inputs={},
-                    dependencies={}, verification={}, availability_evidence='static only', private_extra='must not expand text output')
+                    dependencies={}, verification={}, consumers=[], availability_evidence='static only', private_extra='must not expand text output')
         with patch.object(recipe_cli, 'resolve_root', return_value=self.root), \
                 patch.object(recipe_cli, 'catalog', return_value=catalog), patch.object(recipe_cli, 'results', return_value=result), \
                 patch.object(recipe_cli, 'choose', return_value=item), patch.object(recipe_cli.recipe_jobs, 'listing', return_value=['001']):

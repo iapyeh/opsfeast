@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast retention consumer 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "description",
+    "entrypoint",
+    "subscriptions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,62}$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "entrypoint": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+\\.py$"
+    },
+    "subscriptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event",
+          "selector"
+        ],
+        "properties": {
+          "event": {
+            "enum": [
+              "retention.observation.created",
+              "retention.observation.deleted",
+              "retention.operation.created"
+            ]
+          },
+          "selector": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "recipe_reference": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "contract": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            },
+            "dependentRequired": {
+              "contract": [
+                "version"
+              ],
+              "version": [
+                "contract"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-19 14:52:29"
+}

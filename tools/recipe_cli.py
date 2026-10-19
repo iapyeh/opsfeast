@@ -206,12 +206,13 @@ def main(argv=None):
             if args.json: output(item)
             elif human_output():
                 print_report({key: item[key] for key in ('reference', 'title', 'version', 'description', 'kind',
-                              'contract', 'runnable', 'inputs', 'dependencies', 'verification', 'errors', 'availability_evidence')})
+                              'contract', 'runnable', 'inputs', 'dependencies', 'verification', 'errors', 'availability_evidence', 'consumers')})
             else:
                 print(f"{item['reference']} — {item['title']} ({item['version']})")
                 print(item['description'])
                 print(f"Kind: {item['kind']}; contract: {item['contract']}; runnable compatibility: {item['runnable']}")
                 print('Inputs: ' + json.dumps(item['inputs'], ensure_ascii=False, indent=2))
+                print('Consumers: ' + json.dumps(item['consumers'], ensure_ascii=False, indent=2))
                 print('Dependencies: ' + json.dumps(item['dependencies'], ensure_ascii=False, indent=2))
                 print('Verification: ' + json.dumps(item['verification'], ensure_ascii=False, indent=2))
                 if item['errors']: print('Errors: ' + '; '.join(item['errors']))

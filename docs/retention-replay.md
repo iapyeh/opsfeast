@@ -1,5 +1,7 @@
 # Offline retention replay and protected deletion
 
+After an actual successful write, replay dispatches enabled [retention consumers](retention-consumers.md), including registered local programs. Its dry-run never dispatches. Identical replay creates no new event but can retry pending deliveries. `content_update.consumers` records each attempt independently; use `consumers inspect/dispatch` for delivery recovery. Previously retained records without events require application rebuilds rather than replay-based event backfill.
+
 Replay is the data-only recovery/development path from saved recipe raw results into [retention storage](retention.md). It never connects, imports recipe execution code or refreshes collection. Default vault publication is a subsequent content application, with its own result; it can be disabled with `vault.auto_refresh: false`.
 
 ## Convert existing observations
@@ -44,4 +46,4 @@ Checkout modules: `retention_replay.snapshot(metadata, directory)`, `validate_sn
 
 Schemas: [raw replay context](../schemas/raw-retention-context.schema.json), [data-only snapshot](../schemas/retention-snapshot.schema.json), [provenance](../schemas/retention-provenance.schema.json), [record envelope](../schemas/host-vault-record.schema.json), [scalar fields](../schemas/host-values.schema.json), [operation events](../schemas/operation-event.schema.json). Synthetic tests verify replay and failure/protection behavior; they establish no native SSH/su/sudo or remote termination guarantees.
 
-_Last modified: 2026-10-19 11:57:21_
+_Last modified: 2026-10-19 14:55:28_

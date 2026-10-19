@@ -1,5 +1,7 @@
 # Core Python API 0.1.0
 
+For automatic derived content, use [retention consumers](retention-consumers.md). Their `execute(context)` receives the shared read-only retention facade. Core retention reading remains unchanged; registration/discovery/dispatch are checkout module and CLI interfaces. Standalone journal batches call `retention_store.refresh_content(root)` after completion; it now dispatches consumers and returns their individual attempts.
+
 ## Host vault integration
 
 Core `profile.retention.query(hosts=None, recipe=None, since=None, until=None, status=None, kind=None)` and `.show(record_id)` provide read-only access to declared retention, independent of vault. Profile inspection paths include retention and vault. See [contracts and examples](retention.md); query returns complete validated envelopes, source times and quality states without creating data or connecting.
@@ -286,4 +288,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 14:55:28_

@@ -140,6 +140,11 @@ def execute(recipe):
             self.assertIn('_opsfeast_data/recipes/inventory/system/retention.py', names)
             self.assertIn('_opsfeast_data/recipes/inventory/system/retention.schema.json', names)
             self.assertIn('_opsfeast_data/tools/vault_content.py', names)
+            self.assertIn('_opsfeast_data/tools/retention_consumers.py', names)
+            self.assertIn('_opsfeast_data/consumers/vault/consumer.yaml', names)
+            self.assertIn('_opsfeast_data/consumers/vault/main.py', names)
+            self.assertIn('_opsfeast_data/schemas/retention-consumer.schema.json', names)
+            self.assertIn('_opsfeast_data/schemas/retention-event.schema.json', names)
             self.assertIn('_opsfeast_data/schemas/retention-selection.schema.json', names)
             self.assertIn('_opsfeast_data/recipes/report/retention/main.py', names)
             self.assertIn('_opsfeast_data/tests/test_core_delivery.py', names)
@@ -188,6 +193,22 @@ record = profile.retention.show(receipt['record_id'])
 assert record['retention_definition']['contract'] == 'inventory-observations'
 assert record['data']['inventory']['hardware']['memory_total_bytes'] is not None
 assert inspect_one(REPOSITORY_RECIPES/'inventory/system', [])['retention']['schema_path'].endswith('retention.schema.json')
+from retention_consumers import catalog, dispatch, inspect_deliveries
+assert catalog(profile.root)['consumers'][0]['source'] == 'builtin:vault'
+assert choose(profile.root, 'inventory/system')['consumers'][0]['id'] == 'vault'
+assert len(inspect_deliveries(profile.root)['events']) == 2
+local = profile.root/'consumers/counter'
+local.mkdir(parents=True)
+(local/'consumer.yaml').write_text(json.dumps({'schema_version':'0.1.0','id':'counter',
+    'description':'Synthetic installed consumer','entrypoint':'main.py',
+    'subscriptions':[{'event':'retention.observation.created','selector':{}}]}))
+(local/'main.py').write_text("def execute(context):\\n    (context.root/'counter.txt').write_text(str(len(context.retention.query()['records'])))\\n    return {'status':'success'}\\n")
+with (profile.root/'feast.yaml').open('a') as stream:
+    stream.write('consumers: {counter: {source: \"local:consumers/counter\", enabled: true}}\\n')
+assert dispatch(profile.root, 'counter')['status'] == 'success'
+assert (profile.root/'counter.txt').read_text() == '2'
+assert len(inspect_deliveries(profile.root, 'counter')['events'][0]['deliveries']) == 1
+assert dispatch(profile.root, 'counter')['consumers'] == []
 '''
         environment = dict(os.environ)
         environment.pop('PYTHONPATH', None)

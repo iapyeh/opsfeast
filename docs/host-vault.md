@@ -1,5 +1,7 @@
 # Bundled host vault content application
 
+Automatic publication is performed by the [bundled Vault consumer](../consumers/vault/README.md), registered as `builtin:vault` through the [consumer contract](retention-consumers.md). Its subscriptions are discoverable with `consumers list --recipe inventory/system`. Failures are tracked per event/consumer and retried with `consumers dispatch vault`; explicit `vault rebuild` regenerates current content independently of delivery acknowledgements.
+
 Vault is the bundled application over [recipe retention](retention.md). The platform manages its structure, identity/path rules and output ownership. The bundled content author renders retained observations and operation evidence. User AI agents may create other content authors or use retention for web pages, graphs and reports without using vault.
 
 ## Identity and configuration
@@ -49,7 +51,7 @@ Vault stores no databases. Use the [retention query and schemas](retention.md#di
 
 ## Recipe retention and Markdown
 
-Recipe creators own the data declaration and extraction. Content authors own Markdown and other presentation. `retention.markdown_template` is removed. `vault_content.build(root, runtime)` is the bundled content author: it selects public retention records and returns Markdown bodies, a host index and host IDs; it performs no writes or connections. `host_vault` publishes those bodies under the bundled author's manifest. User AI agents can query multiple recipe references independently and use [offline content reports](retention.md#content-authors-and-offline-reports).
+Recipe creators own the data declaration and extraction. Content authors own Markdown and other presentation. `retention.markdown_template` is removed. `consumers/vault/main.py` is the event entrypoint. The shared renderer `vault_content.build(root, runtime)` is the bundled content author: it selects public retention records and returns Markdown bodies, a host index and host IDs; it performs no writes or connections. `host_vault` publishes those bodies under the bundled author's manifest. User AI agents can query multiple recipe references independently and use [offline content reports](retention.md#content-authors-and-offline-reports).
 
 The host list includes configured and archived hosts. Latest-state pages select the newest whole observation per source-qualified reference, with record ID breaking equal-time ties. Partial remains partial; no old-value backfill occurs. The host index reports latest observation status or no observations, not online status or health. Every observation page preserves record ID, origin, source time/status, environment identity evidence and typed values. Inventory details remain available as escaped JSON. Groups are relative Markdown links, never symlinks. Host-index and overview group cells accept scalar or list membership: group: backup and group: [backup] both display backup; multiple groups are comma-separated. Rendering does not rewrite hosts.yaml. The host-index and overview tables always have six columns, including matching header/delimiter/data rows.
 
@@ -67,4 +69,4 @@ Use `host_vault.rebuild(root)`, `refresh_groups(root)`, `publish(root, owner, en
 
 Synthetic tests cover independent storage/content, offline reads/reports, source-qualified selection, partial data, publication conflicts, replacement of edited generated files, stale-output cleanup, replay and protected operation evidence. Vault publication is local; it provides no hosting, transport, automatic private-data migration, Obsidian UI automation, whole-vault atomic snapshot or cryptographic evidence guarantee.
 
-_Last modified: 2026-10-19 12:31:26_
+_Last modified: 2026-10-19 14:55:28_

@@ -1,5 +1,7 @@
 # Tests
 
+`test_retention_consumers.py` verifies static discovery and reverse recipe relations, explicit activation, source/contract/version selectors, deduplication, disabled backlog, independent failures/retries, transaction rollback, projection failure recovery, interrupted running attempts, deletion/reinsertion, concurrent dispatch and operation events. The installed-wheel test also verifies packaged consumer resources and a registered local consumer outside checkout source. All fixtures are synthetic and local; no private Feast is modified or host contacted.
+
 ## Host-vault verification
 
 Vault tests cover dedicated vault/ output and input separation, automatic CLI/Core
@@ -251,4 +253,6 @@ Retention/content delivery verification (2026-10-19): Python 3.11.15, 3.13.13 an
 
 Inventory-owned retention follow-up verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 678 public tests, including 13 new inventory-contract regressions and installed-wheel structured inventory retention assertions. Older interpreters reused the selected maintenance environment's Python dependencies. Wheel/sdist builds, temporary no-dependency pip installation and installed inventory normalization/query/replay/content smoke passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, documentation links/footers and diff whitespace checks passed. This is synthetic/local-package evidence; no native host collection, private-data modification, commit, push or release occurred.
 
-_Last modified: 2026-10-19 12:31:26_
+Retention-consumer delivery verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 703 public tests, including 24 new consumer tests, headless TUI checks and isolated installed-wheel registration/dispatch. The older interpreters reused the maintenance environment's Python dependencies; this does not establish native execution-library readiness. Wheel/sdist builds, temporary no-dependency/no-index pip installation and all 24 installed consumer tests outside the checkout passed. Python 3.11 grammar, 13 schema files and local references, three changed skill frontmatters, 527 changed-document links, document footers and diff whitespace checks passed. Human/agent documentation, capability routing, data/receipt incompatibility guidance and public reproducible tests are included. Tests used temporary synthetic profiles; no real host operations, private-data migration, commit, push or release occurred.
+
+_Last modified: 2026-10-19 15:01:22_

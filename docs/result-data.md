@@ -1,5 +1,7 @@
 # Result retention, identity and exchange
 
+For programs reacting to new or deleted retained data, use [retention consumers](retention-consumers.md). Discover recipe relations through recipes show/consumers list, explicitly register reviewed local programs and inspect per-consumer delivery evidence. Export and offline query remain independent of execution/dispatch.
+
 For current namespace-enabled profiles, start with [retention discovery, storage, queries and content applications](retention.md). Authoritative archives live under retention/, independently of the bundled vault. Inventory adapter payloads described below remain nested in record envelopes and support existing inventory exchange. General host-values 0.2.0 and operation journals use the same management envelopes; cross-recipe reads use retention list/export or profile.retention.query.
 
 Inventory/system 0.3.1 owns the explicit inventory-observations 0.1.0 [declaration, schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract). Platform selection uses contract/version, not a recipe-ID declaration fallback. Current inventory snapshots bind normalizer/schema digests; old raw requires explicit reviewed definitions for replay.
@@ -113,4 +115,4 @@ The draft retained/exchange 0.1.0 contract now permits these optional fields and
 
 MAC addresses may be useful network-interface evidence but are not automatically used as fallback keys. They identify an interface, can remain unchanged across OS reinstall, and may be cloned, changed or randomized. Multiple interfaces also require an explicit selection rule. MAC collection is not implemented by this change. A manually assigned MAC-based identity_key remains a user assertion and needs an installation-specific component/rotation policy. Reference: [Apple private Wi-Fi addresses](https://support.apple.com/en-ie/102509), [NetworkManager address configuration](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/settings-802-11-wireless.html).
 
-_Last modified: 2026-10-19 11:59:00_
+_Last modified: 2026-10-19 14:55:28_

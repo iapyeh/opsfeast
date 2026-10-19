@@ -1,5 +1,7 @@
 # OpsFeast
 
+Retention handlers/converters now use [consumers 0.1.0](docs/retention-consumers.md). Discover inventory dependencies with `recipes show inventory/system` or `consumers list --recipe inventory/system`; reviewed local consumers declare subscriptions and register in feast.yaml. Shared writes commit durable events, with separate per-consumer outcomes and retry. See the [consumer catalog](consumers/README.md); Vault is the default consumer.
+
 Inventory/system 0.3.1 now owns its [retention declaration, structured schema and normalizer](recipes/inventory/system/README.md#recipe-owned-retention-contract). Discovery reports those definitions directly; the platform selects registered contract/version support and preserves separate data/content outcomes.
 
 
@@ -281,4 +283,4 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-19 11:59:00_
+_Last modified: 2026-10-19 14:55:28_

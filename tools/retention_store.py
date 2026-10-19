@@ -34,6 +34,8 @@ def validate_settings(data):
     vault = data.get('vault', {})
     if not isinstance(vault, dict) or set(vault) - {'auto_refresh'} or type(vault.get('auto_refresh', True)) is not bool:
         raise ConfigError('vault.auto_refresh must be boolean')
+    from retention_consumers import registrations
+    registrations(data)
     return {'namespace': data['namespace'], 'overview_months': months, 'vault': {'auto_refresh': vault.get('auto_refresh', True)}}
 
 def settings(root):
@@ -132,6 +134,10 @@ def database(path, write=False):
             connection.execute('CREATE TABLE IF NOT EXISTS records (record_id TEXT PRIMARY KEY, kind TEXT NOT NULL, namespace TEXT NOT NULL, host_id TEXT NOT NULL, recipe_id TEXT NOT NULL, observed_at TEXT NOT NULL, payload TEXT NOT NULL)')
             connection.execute('CREATE INDEX IF NOT EXISTS record_selection ON records(kind, recipe_id, observed_at)')
             connection.execute('PRAGMA user_version=1')
+            if version == 0:
+                # Leave a valid empty archive if the first data/event transaction rolls back.
+                connection.commit()
+                connection.execute('BEGIN IMMEDIATE')
         yield connection
         if write:
             connection.commit()
@@ -295,6 +301,9 @@ def save(root, record, dry_run=False, *, refresh=True):
                 if candidate == existing or legacy_upgrade:
                     record = candidate
             added = insert(connection, record)
+            if added:
+                from retention_consumers import enqueue
+                enqueue(connection, record, 'created')
         rebuild_unlocked(root)
     content = refresh_content(root) if refresh else {'status': 'skipped', 'reason_code': 'deferred'}
     return {'content_update': content, 'status': 'stored' if added else 'already_stored', 'record_id': record['record_id'],
@@ -540,6 +549,8 @@ def delete_observation(root, source, dry_run=False):
         for record in targets:
             with database(archive_path(root, record), True) as connection:
                 connection.execute('DELETE FROM records WHERE record_id=?', (record['record_id'],))
+                from retention_consumers import enqueue
+                enqueue(connection, record, 'deleted')
         rebuild_unlocked(root, extra_hosts={r['host_id'] for r in targets})
     content = refresh_content(root)
     return {'content_update': content, 'status': 'deleted' if targets else 'not_found', 'records': [r['record_id'] for r in targets]}
@@ -562,7 +573,8 @@ def initialize(root, namespace=None, months=None, *, profile=None):
     with locked(root):
         enable_configuration(root, namespace, months)
         result = rebuild_unlocked(root)
-    result['content_update'] = refresh_content(root)
+    from retention_consumers import bootstrap
+    result['content_update'] = bootstrap(root)
     return result
 
 
@@ -601,15 +613,13 @@ def rebuild(root):
 
 
 def refresh_content(root):
-    if not settings(root)['vault']['auto_refresh']:
-        return {'status': 'skipped', 'reason_code': 'auto_refresh_disabled'}
+    """Dispatch registered consumers after committed data writes."""
     try:
-        from host_vault import rebuild
-        result = rebuild(root)
-        return result
+        from retention_consumers import dispatch
+        return dispatch(root)
     except Exception as exc:
-        return {'status': 'failed', 'reason_code': 'content_update_failed', 'error_type': type(exc).__name__,
-                'recovery': 'opsfeast.py vault rebuild --root ' + shlex.quote(str(root)) + ' --json'}
+        return {'status': 'failed', 'reason_code': 'consumer_dispatch_failed', 'error_type': type(exc).__name__,
+                'recovery': 'opsfeast.py consumers dispatch --root ' + shlex.quote(str(root)) + ' --json'}
 
 
 def query(root, *, hosts=None, recipe=None, since=None, until=None, status=None, kind=None):

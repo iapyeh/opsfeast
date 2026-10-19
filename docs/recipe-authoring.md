@@ -1,5 +1,7 @@
 # Recipe authoring guide
 
+For retained-data handlers and converters, use [retention consumers](retention-consumers.md). Declare consumer subscriptions separately from the producing recipe, reuse the read-only retention reader and existing output/artifact interfaces, and enable reviewed local programs explicitly. Multi-recipe content belongs in a consumer or offline report, with preserved source/status/quality context. No runner edits or recipe-side subscriber list is needed.
+
 Develop retention against saved raw with [retention ingest and explicit read-only deletion](retention-replay.md). New general runs capture a data-definition snapshot before execution; --recipe-dir explicitly tests revised definitions without importing recipe code. Declare access_mode accurately before collection: changing a descriptor later cannot make old write/unknown results deletable. Source UUID and raw digest have separate roles.
 
 ## Host-centered retention and state pages
@@ -116,4 +118,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-19 11:57:21_
+_Last modified: 2026-10-19 14:55:28_

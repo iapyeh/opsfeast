@@ -1,5 +1,11 @@
 # Reuse OpsFeast tools and Python modules
 
+## Retention consumers
+
+Use [consumer contract 0.1.0](retention-consumers.md) before authoring another retention handler/converter. Programs live in checkout `consumers/NAME` or `<profile-root>/consumers/NAME`, declare subscriptions in consumer.yaml and require explicit Feast registration except the default `builtin:vault`. Reuse `execute(context)` with `context.retention.query/show` and reviewed output publishers. `consumers list/show --recipe REFERENCE` and `recipes show` expose reverse dependencies without imports. `consumers inspect` reads durable attempts; `consumers dispatch [ID]` retries pending/running/failed events. All use --profile/--root and --json. Enabled code executes locally with controller privileges; no sandbox or timeout is provided.
+
+Checkout `retention_consumers.catalog/related/inspect_deliveries/dispatch` are documented module interfaces, not Core SDK methods. Shared retention writes commit events in the annual transaction; dispatch runs after writes and records each consumer independently in content_update.consumers. Creation dedup, deletion tombstones, disabled backlog and at-least-once idempotency requirements apply. Prior eventless history needs explicit application rebuilds. See the [bundled Vault implementation](../consumers/vault/README.md) for installed requirements, output ownership and extension points. Synthetic tests and installed-wheel checks do not prove native connections or external delivery.
+
 ## Recipe retention and content applications
 
 Start with [retention](retention.md) for discovery, data meaning and read interfaces. `recipes list/show` and `inspect-recipe` expose retention metadata. General creators declare host-values 0.2.0 with dataset/field descriptions and units; inventory/system 0.3.1 declares inventory-observations 0.1.0 with creator-owned schema/normalizer. Discovery never synthesizes that declaration from recipe ID. `profile.retention.query/show`, checkout `retention_store.query/show/Reader` and `opsfeast.py retention list/show/export/inspect` read complete authoritative records without writing or connecting. Exact recipe-reference filters distinguish sources sharing an ID.
@@ -217,4 +223,4 @@ See [the canonical time policy and verification limits](cli.md#human-time-displa
 including unknown timezone handling and portable report formatting. Shared display
 helpers remain internal, not a new Core API or remote service.
 
-_Last modified: 2026-10-19 12:31:26_
+_Last modified: 2026-10-19 14:55:28_

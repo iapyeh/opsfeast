@@ -1,5 +1,7 @@
 # 初次使用 OpsFeast
 
+Automatic retention updates now use [registered consumers](retention-consumers.md), with the bundled Vault enabled by default. Setup initializes its landing content and does not execute user consumer programs. Additional local consumers require separate review and explicit feast.yaml activation. Inspect dependencies through recipes show or consumers list; inspect/retry queued work through consumers inspect/dispatch.
+
 Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
 
 本指南供系統管理者及不同 AI agent 使用，不要求特定產品或 skill loader。以下路徑以 repository 根目錄為基準；執行示例前先切換至該目錄。
@@ -154,4 +156,4 @@ See [host diagnostics](host-diagnostics.md) for platform initialization/cache se
 
 Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, separate retention/content_update receipts and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 14:55:28_

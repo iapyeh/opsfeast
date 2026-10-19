@@ -65,7 +65,7 @@ class RetentionContentTests(unittest.TestCase):
         before = (self.root/'vault/HOSTS.md').read_bytes()
         _, receipt = self.retain()
         self.assertEqual(receipt['status'], 'stored')
-        self.assertEqual(receipt['content_update']['reason_code'], 'auto_refresh_disabled')
+        self.assertEqual(receipt['content_update']['consumers'], [])
         self.assertEqual((self.root/'vault/HOSTS.md').read_bytes(), before)
         vault.rebuild(self.root)
         self.assertIn('success', (self.root/'vault/HOSTS.md').read_text())

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast retention change event 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_id",
+    "namespace",
+    "host_id",
+    "recipe_reference",
+    "contract_version",
+    "event_id",
+    "event",
+    "emitted_at",
+    "observed_at",
+    "contract",
+    "version"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "namespace": {
+      "type": "string",
+      "minLength": 1
+    },
+    "host_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recipe_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event": {
+      "enum": [
+        "retention.observation.created",
+        "retention.observation.deleted",
+        "retention.operation.created"
+      ]
+    },
+    "emitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "contract": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "$comment": "Last modified: 2026-10-19 14:52:29"
+}

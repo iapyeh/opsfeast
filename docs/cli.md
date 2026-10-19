@@ -1,5 +1,18 @@
 # Ops command-line reference
 
+## Retention consumer discovery and delivery
+
+```sh
+python -B tools/opsfeast.py consumers list --recipe inventory/system --profile main --json
+python -B tools/opsfeast.py consumers show vault --profile main --json
+python -B tools/opsfeast.py consumers inspect --profile main --json
+python -B tools/opsfeast.py consumers dispatch vault --profile main --json
+```
+
+`list`/`show ID` perform static discovery; `--recipe REFERENCE` resolves a catalog recipe and filters exact reference plus declared contract/version. `recipes show` includes the same relation. `inspect [ID]` reads event/delivery history; `dispatch [ID]` runs enabled reviewed consumers for pending/running/failed pairs. All accept mutually exclusive `--root PATH`/`--profile NAME` and explicit `--json`, and always return JSON. Exit 0 means successful command, 1 validation/storage/delivery failure, 2 parsing error. inspect success does not imply successful individual deliveries. IDs precede options; show requires ID, and only list/show accept --recipe. Dispatch can execute registered local code and update its reviewed outputs, while list/show/inspect do not execute it.
+
+See [consumer contract 0.1.0](retention-consumers.md) for placement, exact descriptor/registration syntax, supported Python/data versions, backlog/retry, at-least-once output requirements and failure limits. The existing `content_update` receipt now aggregates per-consumer attempts; consumers reading its old single-Vault fields must update. No pending match produces success with an empty attempt list. `vault.auto_refresh: false` only disables the Vault consumer. Prior annual records without events are not automatically backfilled; use explicit application rebuilds for historical output.
+
 ## Retention and vault commands
 
 Use [retention contracts and examples](retention.md) before selecting data, and [offline replay](retention-replay.md) for recovery. Recipe discovery/show/inspect exposes `retention` declarations and retrieval instructions. Read commands do not create storage or connect.
@@ -17,7 +30,7 @@ Use [retention contracts and examples](retention.md) before selecting data, and 
 
 All accept mutually exclusive `--root PROFILE_ROOT` / `--profile NAME` and `--json`; output is JSON in terminals and pipes. Files/IDs precede options. List/export sort oldest first by UTC source time then record ID; empty selections succeed. Export writes stdout only and authorizes no transmission. Exit 0 means success, 1 data/content/storage failure, 2 parsing error.
 
-`init NAME [--namespace VALUE] --json` establishes independent `retention/` and `vault/` directories. Namespace defaults to saved value or first profile name and cannot be changed through reinit. `vault.auto_refresh` in feast.yaml defaults to true. Set Boolean false to save data without content publication; explicit vault rebuild remains available. Saved results and execution summaries distinguish recipe status, `retention` and `content_update`. Content failure preserves collected data/status and returns nonzero; retry `vault rebuild`. Receipts do not affect raw identity/digest. Old SQLite-in-vault layouts and template snapshots are incompatible; see [required user action](retention.md#development-incompatibility). `vault migrate/ingest/delete-observation` have been removed; use init or the retention commands above.
+`init NAME [--namespace VALUE] --json` establishes independent `retention/` and `vault/` directories. Namespace defaults to saved value or first profile name and cannot be changed through reinit. `vault.auto_refresh` in feast.yaml defaults to true. Set Boolean false to save data without automatic Vault publication; other consumers remain independently enabled; explicit vault rebuild remains available. Saved results and execution summaries distinguish recipe status, `retention` and `content_update`. Consumer failure preserves collected data/status and returns nonzero; retry `consumers dispatch [ID]`. Explicit `vault rebuild` regenerates Vault content without acknowledging events. Receipts do not affect raw identity/digest. Old SQLite-in-vault layouts and template snapshots are incompatible; see [required user action](retention.md#development-incompatibility). `vault migrate/ingest/delete-observation` have been removed; use init or the retention commands above.
 
 Inventory discovery exposes the recipe-owned structured retention declaration, schema path/digest and registered normalizer source/digest. Current inventory raw snapshots bind those digests; old inventory raw without them requires `retention ingest FILE --recipe-dir REVIEWED_RECIPE --dry-run --profile NAME --json` before authorized actual replay. Candidate collection/normalizer code is never imported. See [inventory retention 0.1.0](../recipes/inventory/system/README.md#recipe-owned-retention-contract).
 
@@ -743,4 +756,4 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-_Last modified: 2026-10-19 11:57:21_
+_Last modified: 2026-10-19 14:55:28_

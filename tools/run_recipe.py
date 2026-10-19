@@ -532,7 +532,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
 
 
 def finalize_content(root, report):
-    """Publish after data/audit writes; content errors never rewrite execution status."""
+    """Dispatch retention consumers after data/audit writes; preserve execution status."""
     receipt = report.get('retention', {})
     content = receipt.pop('content_update', None)
     if content is None:

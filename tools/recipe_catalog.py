@@ -94,4 +94,8 @@ def choose(root, selector):
         raise ConfigError('recipe selector is ambiguous; use an explicit source/path reference')
     if not candidates:
         raise ConfigError('recipe not found in active catalog; check sources and use an explicit reference')
-    return candidates[0]
+    item = dict(candidates[0], consumers=[])
+    if root is not None:
+        from retention_consumers import related
+        item['consumers'] = related(root, item['reference'], (item.get('retention') or {}).get('declaration'))
+    return item

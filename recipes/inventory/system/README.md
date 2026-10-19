@@ -1,5 +1,7 @@
 # inventory-system
 
+Downstream handlers/converters declare their own [consumer subscriptions](../../../docs/retention-consumers.md). Discover associated programs with `opsfeast.py recipes show inventory/system --profile NAME --json` or `consumers list --recipe inventory/system`. The bundled reference is inventory/system and its retention contract/version is inventory-observations 0.1.0. Registered external clones retain their exact source-qualified references. This recipe does not maintain a subscriber list or invoke consumers; the shared retention transaction creates events and the dispatcher notifies enabled consumers.
+
 Recipe version 0.3.1 provides Linux, FreeBSD, macOS and ESXi implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD/ESXi have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
@@ -159,4 +161,4 @@ Host identity_key, label and description are now supported. An explicit identity
 
 Inventory-owned retention follow-up verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 678 public tests, including 13 new inventory-contract regressions and installed-wheel structured inventory retention assertions. Older interpreters reused the selected maintenance environment's Python dependencies. Wheel/sdist builds, temporary no-dependency pip installation and installed inventory normalization/query/replay/content smoke passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, documentation links/footers and diff whitespace checks passed. This is synthetic/local-package evidence; no native host collection, private-data modification, commit, push or release occurred.
 
-_Last modified: 2026-10-19 12:00:48_
+_Last modified: 2026-10-19 14:55:28_

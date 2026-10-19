@@ -1,5 +1,9 @@
 # SSHScript Ops to OpsFeast
 
+## Consumer delivery receipt change
+
+Retention-to-content updates now use [registered consumers 0.1.0](retention-consumers.md). Existing raw/retained schemas and human notes are preserved. The `content_update` payload changes from a single Vault result to an aggregate with a `consumers` attempt list; callers must update field access. Vault remains enabled by default and retains vault.auto_refresh control. Additional consumers require explicit registration. New writes/deletions commit durable events; prior eventless records are not backfilled, including deduplicated replay. Use explicit application rebuilds for historical output, and `consumers dispatch [ID]` for journal-backed retries. No automatic data migration or historical recipe rerun is performed.
+
 ## Retention/content development incompatibility
 
 Authoritative data now lives under retention/, while vault/ contains content and human notes. Old SQLite-in-vault layouts are rejected; there is no automatic relocation, fallback reader or new migration tool. Preserve the old profile and notes, initialize a separate profile with the same namespace and use `retention ingest` on explicitly selected raw. Existing raw receipts preserve source identity. No old data is automatically removed.
@@ -211,4 +215,4 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-_Last modified: 2026-10-19 11:57:21_
+_Last modified: 2026-10-19 14:55:28_

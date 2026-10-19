@@ -78,13 +78,13 @@ def instance_definition(root):
     if path.is_symlink():
         raise ConfigError(f'refuses scaffold symlink: {path}')
     expected = LEGACY_INSTANCE_SCHEMA if path.name == LEGACY_INSTANCE_DEFINITION else INSTANCE_SCHEMA
-    data = mapping(read_yaml(path), str(path), (*expected, 'namespace', 'overview_months', 'vault'))
+    data = mapping(read_yaml(path), str(path), (*expected, 'namespace', 'overview_months', 'vault', 'consumers'))
     if type(data.get('schema_version')) is not int or any(data.get(k) != v for k, v in expected.items()):
         raise ConfigError(f'{path}: unsupported management directory definition')
     if 'namespace' in data:
         from retention_store import validate_settings
         validate_settings(data)
-    elif 'overview_months' in data or 'vault' in data:
+    elif any(k in data for k in ('overview_months', 'vault', 'consumers')):
         raise ConfigError('overview_months requires a namespace')
 
 
@@ -1015,7 +1015,7 @@ hosts:
 
 
 def initialize(root, *, quiet=False, profile=None, namespace=None):
-    from retention_store import choose_namespace, enable_configuration, locked, rebuild_unlocked, reject_old_layout, refresh_content
+    from retention_store import choose_namespace, enable_configuration, locked, rebuild_unlocked, reject_old_layout
     reject_old_layout(root)
     namespace = choose_namespace(root, namespace, profile)
     root.mkdir(parents=True, exist_ok=True)
@@ -1049,7 +1049,8 @@ def initialize(root, *, quiet=False, profile=None, namespace=None):
         runtime.load(root / 'hosts.yaml')
         enable_configuration(root, namespace)
         rebuild_unlocked(root)
-    content = refresh_content(root)
+    from retention_consumers import bootstrap
+    content = bootstrap(root)
     if content['status'] == 'failed':
         raise ConfigError('profile initialized but vault content update failed; run vault rebuild --root ' + str(root))
     return root
@@ -1323,6 +1324,9 @@ def main(argv=None):
     if argv[:1] == ['retention']:
         from retention_store import main as retention_main
         return retention_main(argv[1:])
+    if argv[:1] == ['consumers']:
+        from retention_consumers import main as consumer_main
+        return consumer_main(argv[1:])
     if argv[:1] == ['vault']:
         from host_vault import main as vault_main
         return vault_main(argv[1:])
@@ -1331,6 +1335,7 @@ def main(argv=None):
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
+    commands.add_parser('consumers', help='discover retention consumers, inspect deliveries and dispatch pending events')
     commands.add_parser('vault', help='rebuild/inspect bundled vault content and group indexes; use vault --help')
     profiles_parser = commands.add_parser('profiles', help='list all registered profiles')
     profiles_parser.add_argument('--json', action='store_true')

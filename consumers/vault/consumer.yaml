@@ -1,0 +1,12 @@
+schema_version: "0.1.0"
+id: vault
+description: Publish retained observations and operation evidence as owned Vault Markdown.
+entrypoint: main.py
+subscriptions:
+  - event: retention.observation.created
+    selector: {}
+  - event: retention.observation.deleted
+    selector: {}
+  - event: retention.operation.created
+    selector: {}
+# Last modified: 2026-10-19 14:55:28
