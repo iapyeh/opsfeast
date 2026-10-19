@@ -1,22 +1,14 @@
 # Reuse OpsFeast tools and Python modules
 
-For raw recovery and author iteration, prefer [offline replay and explicit deletion](retention-replay.md): CLI `vault ingest` (files or --all, optional --recipe-dir/--dry-run) and `vault delete-observation ID`. Reuse `retention_replay.ingest`, `snapshot`, `validate_snapshot` and `host_vault.delete_observation` rather than writing scanners/deletion SQL. New raw has fixed source UUID, execution mode and general-retention snapshots. Read-only deletion refreshes generated views; write/unknown journals and their evidence cannot be deleted through this API.
+## Recipe retention and content applications
 
-## Host vault and durable operation history
+Start with [retention](retention.md) for discovery, data meaning and read interfaces. `recipes list/show` and `inspect-recipe` expose retention metadata. General creators declare host-values 0.2.0 with dataset/field descriptions and units; inventory/system 0.3.1 declares inventory-observations 0.1.0 with creator-owned schema/normalizer. Discovery never synthesizes that declaration from recipe ID. `profile.retention.query/show`, checkout `retention_store.query/show/Reader` and `opsfeast.py retention list/show/export/inspect` read complete authoritative records without writing or connecting. Exact recipe-reference filters distinguish sources sharing an ID.
 
-Prefer `opsfeast.py init NAME --json` or `init NAME --namespace VALUE --json` for new
-profiles, and `Instance.init_profile(name, namespace=...)` in Core programs. Both create
-vault/ and initial indexes with no connections. The first inventory run retains
-without a separate migrate. Reuse saved namespace after profile rename. Init JSON
-includes namespace and vault_directory. Old profile-root layouts have no relocation
-adapter; explain the development incompatibility rather than creating a migration.
+Replay through `retention ingest` / `retention_replay.ingest`; explicit deletion uses `retention delete-observation` / `retention_store.delete_observation`. Data rebuild uses `retention rebuild`. Reuse snapshot/provenance and protection logic; do not write deletion SQL or scanners. Current snapshots are data-only 0.2.0; old templates require explicit reviewed overrides. Write/unknown operation evidence remains protected.
 
-Use the rebuild command shown after the warning in generated `HOSTS.md` and
-`overview/README.md` to refresh human views. Vault Markdown uses OS-local whole-second
-timestamps and comma-separated groups; observation status can be partial or absent.
-Read SQLite/JSON for precise original timestamps. See [view ownership](host-vault.md#directory-and-ownership).
+`Instance.init_profile(name, namespace=...)` creates independent retention/vault areas. `host_vault.rebuild/refresh_groups/publish` manage content only; `vault_content` is the bundled author using public retention queries. `vault.auto_refresh` defaults true and can be disabled. Markdown uses local seconds, while data preserves original precision/statuses. Check separate retention/content receipts. Old SQLite-in-vault layouts are rejected and never moved automatically.
 
-Use [host-vault 0.1.0](host-vault.md) for Markdown viewing under `<profile-root>/vault/`, namespace + host ID identity, annual authoritative journals, rebuildable cumulative records and recent fleet observations. CLI: `opsfeast.py vault migrate/rebuild/groups/inspect`; profile init enables it automatically; namespace defaults to the saved value or first profile name. Explicit namespace overrides are available for init/migrate, but cannot rename existing namespace. Reuse checkout-level `host_vault.settings`, `records`, `rebuild`, `refresh_groups`, `retain_general`, `operation_intent` and `operation_result`; canonical signatures/examples and failure behavior are in that guide. General recipes declare access_mode and optional typed host-values retention with a Markdown template. Audit covers runner-managed write/unknown recipes after vault activation; arbitrary Core/shell calls require explicit journaling. Legacy profiles remain supported. Schemas include immutable origin, stable IDs, future mappings and package manifests; no new transfer/merge tool exists.
+Offline `python-report` receives `context.retention.query/show` and keeps validated artifacts/results/jobs. [report/retention](../recipes/report/retention/README.md) produces Markdown and HTML from one or many retained recipe datasets with no raw dependency, connections, network/models or hosting. Use the same data for custom graph/web content. Reports record selected record IDs, source times and digests in retention_sources. [Vault ownership](host-vault.md#directory-and-ownership) protects unmanaged human files and separate authors. Regeneration overwrites manifest-owned generated outputs even after editing or editor formatting; obsolete owned outputs are removed.
 
 This guide is for **DevOps users and their agents** operating OpsFeast or authoring specialized recipes. OpsFeast product developers have the complementary mission to reduce user-side development by providing complete, broad and stable tools/modules; see [the two roles](vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed programs for repeated work so AI can focus on new needs, judgment, changes and exceptions.
 
@@ -25,6 +17,8 @@ OpsFeast accumulates reusable operational knowledge and executable capabilities.
 Inventory raw files now use UTC start-second prefixes with UUIDs; old files remain valid. Reuse recipes results list/show or recipe_reports results/show_result, which read both naming formats and sort by stored timestamps, instead of writing a filename-specific scanner. See [raw result names](cli.md#saved-results-and-stdout).
 
 Console presentation uses the checkout-level [console_output helpers](../tools/console_output.py): TTY tables, explicit --json precedence and preserved non-TTY/raw-data contracts. See [the command-specific policy](cli.md#terminal-tables-and-json) before choosing agent invocations. Rendering does not authorize operations, and is not a versioned Core API.
+
+Registered data semantics live in the owning recipe: [inventory retention](../recipes/inventory/system/README.md#recipe-owned-retention-contract) supplies retention.py and retention.schema.json. Checkout `retention_contracts.validate_declaration/normalize/validate_payload` select supported contract/version implementations; static discovery only reads metadata/schema/digests. Inventory raw snapshots bind both normalizer and schema; missing/drifting snapshots need explicit reviewed --recipe-dir. Candidate normalizer imports are unsupported. Users reuse runner/replay/query interfaces rather than writing storage or adapter-selection code.
 
 ## Decide what to reuse
 
@@ -223,4 +217,4 @@ See [the canonical time policy and verification limits](cli.md#human-time-displa
 including unknown timezone handling and portable report formatting. Shared display
 helpers remain internal, not a new Core API or remote service.
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 12:31:26_

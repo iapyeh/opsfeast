@@ -1,155 +1,47 @@
-# Replay and explicitly delete observation retention
+# Offline retention replay and protected deletion
 
-Use this workflow to convert saved raw observations to a [host vault](host-vault.md),
-recover failed retention, or develop a scalar adapter/template without reconnecting
-to a host. Replay never executes a recipe or imports its Python files. Deletion is
-a separate operation and never happens implicitly during replay.
+Replay is the data-only recovery/development path from saved recipe raw results into [retention storage](retention.md). It never connects, imports recipe execution code or refreshes collection. Default vault publication is a subsequent content application, with its own result; it can be disabled with `vault.auto_refresh: false`.
 
 ## Convert existing observations
 
-New `opsfeast.py init NAME [--namespace VALUE] --json` profiles already have an enabled
-vault. Skip the migrate command below for those profiles; first inventory retention
-is automatic. Migrate is for explicitly enabling a previously attached root or
-recovering its older retained database. Namespace may be omitted to reuse its saved
-value or default to the registered profile name.
-
-Run from the actual OpsFeast checkout with the selected Python environment. Replace
-the example profile and namespace with the intended management scope:
-
 ```sh
-python -B tools/opsfeast.py profiles --json
-python -B tools/opsfeast.py vault migrate --profile main --namespace example-production --json
-python -B tools/opsfeast.py vault ingest --profile main --all --dry-run --json
-python -B tools/opsfeast.py vault ingest --profile main --all --json
-python -B tools/opsfeast.py vault groups --profile main --json
+python -B tools/opsfeast.py retention ingest --profile main --all --dry-run --json
+python -B tools/opsfeast.py retention ingest --profile main --all --json
+python -B tools/opsfeast.py retention ingest /path/to/raw.json --profile main --json
 ```
 
-`migrate` enables the namespace and copies any legacy retained SQLite records;
-it does not scan raw JSON. `ingest --all` scans only the selected root's direct
-`observations/*.json` files. An absent/empty directory is a successful empty batch.
-No recursive search, host connection, package installation or recipe execution
-occurs. Existing raw bytes and legacy SQLite are preserved. Normal replay updates
-records, overview and Markdown automatically. Open `<profile-root>/vault/HOSTS.md` or
-open `<profile-root>/vault/` as an Obsidian vault. Refresh groups explicitly after
-hosts.yaml changes. Use `vault rebuild` to repair views; rerunning `migrate` can
-copy deliberately deleted records back from the preserved legacy database.
-
-Files may also be selected explicitly, **before options**:
-
-```sh
-python -B tools/opsfeast.py vault ingest /path/a.json /path/b.json --profile main --json
-```
-
-`--root /absolute/feast` replaces `--profile`; it selects the profile root, never its vault/ child. Success returns JSON and exit 0;
-per-file failures return failed entries and exit 1 while other files continue.
-Use actual ingest receipts for durable record IDs: an empty-vault dry run does not
-allocate inventory source metadata.
-Failed/skipped/unsupported/mock raw results produce skipped entries and no retained
-observations. Offline report outputs are not host observations. Duplicate JSON
-keys, non-finite values, unsafe symlinks and unknown contracts fail explicitly.
-Do not treat skipped entries as successfully collected observations.
+Files precede options. Choose explicit files or `--all` over the selected profile's `observations/*.json`. `--dry-run` validates without writing raw, archives, source identity, locks or content. Actual replay preserves raw files. Eligible operational success/partial results are stored; failed/skipped/unsupported/mock and non-host report results are skipped. Invalid inputs fail individually while other files continue. Results include per-file stored/already_stored/validated/skipped/failed and separate content receipts. Any data or content failure makes the batch status failed and exits 1; argument errors exit 2. Empty `--all` selection succeeds.
 
 ## Original definitions and development overrides
 
-New general runner results save `retention_snapshot` before connection or recipe
-execution. It contains only recipe ID/version, access mode, the scalar retention
-declaration, literal Markdown template text and a canonical SHA-256 digest. It does
-not contain input values, account configuration, arbitrary descriptor metadata or
-Python source. Default replay verifies and uses this snapshot, even if the original
-recipe directory is gone. Inventory uses the bundled versioned extraction adapter;
-its retention definition is product code, not an executable snapshot.
-
-Legacy general raw files have no snapshot. Supply a descriptor explicitly, or use
-an override when intentionally trying revised retention definitions:
+Inventory and general raw records include a data-only retention snapshot **0.2.0** created before execution. It contains the recipe identity/version, reviewed scalar declaration, access mode and canonical SHA-256 digest. It includes no Markdown template. Replay uses the saved declaration even if the recipe is removed or changed. Structured inventory snapshots also bind the registered creator-owned normalizer and canonical schema digests. Replay invokes that shipped pure data normalizer; it never imports candidate collection/normalizer code.
 
 ```sh
-python -B tools/opsfeast.py vault ingest /path/raw.json --profile main \
-  --recipe-dir /path/reviewed-recipe --dry-run --json
-python -B tools/opsfeast.py vault ingest /path/raw.json --profile main \
-  --recipe-dir /path/reviewed-recipe --json
+python -B tools/opsfeast.py retention ingest /path/to/general-raw.json --profile main \
+  --recipe-dir /path/to/reviewed/current-recipe --dry-run --json
 ```
 
-The override reads recipe.yaml and its optional contained template; no entrypoint
-is loaded. Its recipe ID must match the raw result. Its version can differ for
-development; provenance records the retention definition version separately from
-the executed recipe version. Overrides never change the saved execution access
-classification and do not rewrite the original raw/snapshot. Markdown templates
-are reviewed content and may contain links; review before opening untrusted output.
-Use a separate test Feast and declare `access_mode: read` for read-only development.
+An explicit `--recipe-dir` selects a reviewed current descriptor and matching registered schema without importing candidate code. Its contract/version selects the shipped normalizer, not a candidate Python path. Use it for old inventory/general raw without a current snapshot or a mismatched registered normalizer/schema digest or to test revised extraction definitions. Old template-bearing snapshots, missing inventory snapshots and mismatched structured digests are rejected unless explicitly overridden. This does not make protected history deletable. The selected recipe ID must match the executed recipe; changing current metadata never reclassifies historical execution mode. Never change old write/unknown evidence to read to permit deletion.
 
 ## Source identity, conflicts and compatibility
 
-New runner executions assign a canonical UUID `source_observation_id` once, before
-work. The ID stays fixed when raw content is corrected. New raw also records
-producer_instance_id; replay preserves it (or legacy Core instance evidence).
-Absent producer evidence remains the all-zero unknown UUID, never the identity of
-the installation replaying the file. `raw_sha256` independently
-identifies raw content (excluding the mutable retention receipt). New inventory
-retained IDs use source UUID plus SHA-256 of the fixed observation UUID; general
-record IDs use the observation UUID directly. Existing files/records keep their
-old IDs. Legacy files without UUIDs use their original content hash as the source
-alias; editing legacy raw changes that alias. Retention/template changes via an
-explicit override do not edit raw, so ordinary legacy development replay remains
-stable. No mass raw rewrite is required for migration.
+`source_observation_id` is the stable execution UUID; raw digest detects evidence changes independently. Both `retention` and `content_update` receipts are excluded from raw digest/identity. Producer identity comes from saved evidence, never the replaying installation; missing producer remains all-zero. Inventory replay retains the original source UUID from an existing raw retention receipt. Replay into a separately initialized profile does not alter source provenance or imply transport authorization.
 
-Vault envelopes optionally add `retention_provenance`: source ID, raw digest,
-recorded execution mode, snapshot digest and retention recipe version. Older
-envelopes remain readable. Replaying an identical old business record can add
-missing conservative provenance; it never silently changes its business values.
-Identical source/content deduplicates. Different content for an existing ID, or
-moving an existing ID across host/year, fails rather than overwriting history.
-An author may explicitly delete eligible old retention and replay revised output.
-This is not a raw-authentication or anti-tampering mechanism.
+Identical IDs/content deduplicate; changed content or a host/year change for an existing ID fails. Fix a read-only extraction by explicitly deleting its prior retained observation and replaying a reviewed declaration. Preserve protected evidence. Old SQLite-in-vault storage is rejected: preserve it and its human notes, initialize a separate profile with the same namespace, then replay selected raw. No automatic relocation, fallback reader, relabeling or deletion is provided.
 
 ## Explicit deletion and write protection
 
-Use a `source_observation_id` returned by ingest, or an exact archived record ID:
-
 ```sh
-python -B tools/opsfeast.py vault delete-observation SOURCE_ID --profile main --dry-run --json
-python -B tools/opsfeast.py vault delete-observation SOURCE_ID --profile main --json
+python -B tools/opsfeast.py retention delete-observation SOURCE_OR_RECORD_ID --profile main --dry-run --json
+python -B tools/opsfeast.py retention delete-observation SOURCE_OR_RECORD_ID --profile main --json
 ```
 
-There is no force override. Only observations classified **read** can be deleted.
-Write/unknown observations, operation intents/results, and observations linked to
-such operations (including read observations referenced as verification evidence)
-are rejected before archive deletion. Classification comes from
-the original execution and stored records, never the currently edited descriptor.
-Legacy inventory is the known built-in read path; legacy general observations
-without execution evidence are unknown even if today's descriptor says read.
-
-Deletion removes matching read records from annual SQLite, rebuilds cumulative and
-overview SQLite, removes managed historical/state Markdown for those observations,
-and falls back to the previous observation for the same recipe reference. If none
-remains, its generated latest-state page disappears. Raw files, the legacy database,
-human notes and all operation history are preserved. A repeated deletion returns
-not_found. Execution by direct SQLite editing can bypass these tool protections;
-the journal is not cryptographically immutable. Read observations referenced by existing operation journals are protected as audit
-evidence; the operation itself is never deleted or rewritten.
-
-Archive writes/deletes commit before projections. Multi-archive changes are not one
-global transaction. A projection failure can leave stale derived files: rerun
-`vault rebuild`, which uses the managed-view manifest to remove stale generated
-pages as well as rebuild SQLite. Unknown/manual files are not removed. No automatic
-raw expiry or silent retention replacement is introduced.
+Deletion removes matching read observations only, rebuilds data projections and attempts enabled content refresh. Raw files and human notes are preserved. Unknown IDs return not_found. Operation events, write/unknown observations, their linked source observations and verification evidence are protected. Missing historical general execution classification is unknown, even if a current descriptor says read. Data deletion cannot be undone by content rebuild; preserved raw is the recovery source. If projection repair is needed use `retention rebuild`; if only content failed use `vault rebuild`.
 
 ## Modules and schemas
 
-Checkout-level `retention_replay.ingest(root, files=(), *, all_files=False,
-recipe_directory=None, dry_run=False)` and `host_vault.delete_observation(root,
-source, dry_run=False)` implement these CLI workflows. The flags after files are
-keyword-only for ingest. `snapshot(metadata, directory)`, `validate_snapshot`,
-`source_identity` and `execution_mode` are reusable pure validation helpers.
-The optional `saved_snapshot`/`dry_run` arguments of `retain_general` support the
-same extraction path; prefer the complete CLI for batch recovery.
+Checkout modules: `retention_replay.snapshot(metadata, directory)`, `validate_snapshot(value)`, `select_snapshot(report, directory=None)`, `ingest(root, files=(), *, all_files=False, recipe_directory=None, dry_run=False)`; `retention_store.delete_observation(root, source, dry_run=False)` and `retain_general(..., saved_snapshot=None, dry_run=False)`. Reuse these instead of direct SQL deletion/scanners. Reads and dry-run never initialize state.
 
-Read [raw context](../schemas/raw-retention-context.schema.json),
-[snapshot](../schemas/retention-snapshot.schema.json) and
-[retention provenance](../schemas/retention-provenance.schema.json) together with
-the existing vault record and operation schemas. These additive draft contracts
-require updated strict readers; old product versions may reject the new fields.
-General-purpose package import/export and transport remain deferred.
+Schemas: [raw replay context](../schemas/raw-retention-context.schema.json), [data-only snapshot](../schemas/retention-snapshot.schema.json), [provenance](../schemas/retention-provenance.schema.json), [record envelope](../schemas/host-vault-record.schema.json), [scalar fields](../schemas/host-values.schema.json), [operation events](../schemas/operation-event.schema.json). Synthetic tests verify replay and failure/protection behavior; they establish no native SSH/su/sudo or remote termination guarantees.
 
-Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
-
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:57:21_

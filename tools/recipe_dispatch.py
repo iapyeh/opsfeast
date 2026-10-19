@@ -62,7 +62,7 @@ def declared_version(path):
 def validate(directory, metadata):
     from recipe_identity import validate as validate_identity
     validate_identity(metadata, directory)
-    if metadata.get('access_mode', 'read') not in ('read', 'write', 'unknown'):
+    if metadata.get('access_mode') not in ('read', 'write', 'unknown'):
         raise ConfigError('access_mode must be read, write or unknown')
     if not isinstance(metadata.get('output'), dict):
         raise ConfigError('output contract must be a mapping')
@@ -71,10 +71,12 @@ def validate(directory, metadata):
         raise ConfigError('runner requires inventory-system descriptor 0.2.0 and output schema 0.2.0')
     if not isinstance(metadata.get('version'), str) or not metadata['version']:
         raise ConfigError('recipe version must be a nonempty string')
-    for key, expected in (('retained_contract_version', '0.1.0'), ('exchange_version', '0.1.0'),
-                          ('retention_adapter', 'inventory-system-v1')):
-        if key in metadata['output'] and metadata['output'][key] != expected:
-            raise ConfigError('unsupported inventory retained/exchange contract')
+    from retention_contracts import validate_declaration, INVENTORY_CONTRACT
+    declaration = validate_declaration(metadata, directory)
+    if declaration is None or (declaration['contract'], declaration['version']) != INVENTORY_CONTRACT:
+        raise ConfigError('inventory collection requires its declared structured retention contract')
+    if any(key in metadata['output'] for key in ('retained_contract_version', 'exchange_version', 'retention_adapter')):
+        raise ConfigError('declare inventory retention under retention, independently of raw output')
     if 'inventory_contract_version' in metadata['output']:
         helper = directory / 'details.py'
         if metadata['output']['inventory_contract_version'] != '0.1.0' or not helper.resolve().is_relative_to(directory.resolve()) or not helper.is_file() or declared_version(helper) != '0.1.0':

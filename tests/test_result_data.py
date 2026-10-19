@@ -29,6 +29,11 @@ def raw(host='node'):
     report.update(started_at='2026-10-13T00:00:00+00:00', finished_at='2026-10-13T00:00:10+00:00', status='success')
     for field in store.FIELDS:
         report['observations'][field].update(value='example', status='success', observed_at='2026-10-13T00:00:01+00:00', error=None)
+    from retention_replay import snapshot
+    from opsfeast import read_yaml
+    descriptor = read_yaml(runner.BUNDLE / 'recipe.yaml')
+    report['execution_access_mode'] = descriptor['access_mode']
+    report['retention_snapshot'] = snapshot(dict(descriptor, version=report['recipe']['version']), runner.BUNDLE)
     return report
 
 

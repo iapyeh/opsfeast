@@ -224,7 +224,7 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     report['producer_instance_id'] = read_identity(REPOSITORY_ROOT)['id']
     report['execution_access_mode'] = metadata.get('access_mode', 'unknown')
     report['retention_snapshot'] = snapshot(metadata, directory)
-    from host_vault import operation_intent, operation_result
+    from retention_store import operation_intent, operation_result
     intent = operation_intent(config.root, host, metadata, report['recipe']['descriptor_sha256'], info['effective_vars'],
                               reference=info['reference'], implementation_digest=report['recipe']['implementation_sha256'],
                               source_observation_id=report['source_observation_id'])
@@ -282,11 +282,12 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
         report['execution_status'] = report['status']
         report.update(status='failed', reason_code='operation_recording_failed',
                       message='Operation outcome could not be recorded; saved intent remains unresolved.')
-    from host_vault import retain_general
+    from retention_store import retain_general
     try:
         report['retention'] = retain_general(config.root, report, metadata, directory, saved_snapshot=report['retention_snapshot'])
     except Exception as exc:
         report['retention'] = {'status': 'failed', 'reason_code': 'retention_failed', 'error_type': type(exc).__name__}
+    finalize_content(config.root, report)
     save_report(path, report)
     return report, path
 
@@ -334,6 +335,8 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
         report['evidence_kind'] = 'mock'
     metadata = read_yaml(directory / 'recipe.yaml')
     report['schema_version'] = metadata['output']['schema_version']
+    from retention_replay import snapshot
+    report['retention_snapshot'] = snapshot(metadata, directory)
     report['recipe'].update(version=metadata['version'], recipe_version=metadata['version'], bundle_sha256=digest)
     report['recipe']['descriptor_sha256'] = hashlib.sha256((directory / 'recipe.yaml').read_bytes()).hexdigest()
     report['supported_platforms'] = sorted({e['match'].get('os_name') for e in metadata['implementations'] if e['match'].get('os_name')})
@@ -351,7 +354,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
     report['recipe']['selection_source'] = 'cli' if recipe is not None else 'hosts'
     report['hops'] = []
     report['host_metadata'] = {name: config.hosts[host][name] for name in ('label', 'description') if name in config.hosts[host]}
-    from host_vault import operation_intent, operation_result
+    from retention_store import operation_intent, operation_result
     intent = operation_intent(config.root, host, dict(metadata, access_mode=report['execution_access_mode']),
                               report['recipe']['descriptor_sha256'], context.vars, reference=info['reference'],
                               bundle_digest=digest, source_observation_id=report['source_observation_id'])
@@ -517,6 +520,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
         report['retention'] = {'status': 'failed', 'error_type': type(exc).__name__,
                                'reason_code': 'retention_failed'}
         progress_line(f'WARNING: {json.dumps(host)}: structured retention failed ({type(exc).__name__}); retry observation_store.py ingest using result_path.')
+    finalize_content(config.root, report)
     # Save the receipt too; extraction excludes it from observation identity.
     try:
         save_report(path, report)
@@ -525,6 +529,16 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
                                'error_type': type(exc).__name__}
         progress_line(f'WARNING: {json.dumps(host)}: receipt saving failed; raw result remains at result_path. Retry local ingest; duplicate observations will not be added.')
     return report, path
+
+
+def finalize_content(root, report):
+    """Publish after data/audit writes; content errors never rewrite execution status."""
+    receipt = report.get('retention', {})
+    content = receipt.pop('content_update', None)
+    if content is None:
+        from retention_store import settings, refresh_content
+        content = refresh_content(root) if settings(root) is not None else {'status': 'skipped', 'reason_code': 'retention_not_initialized'}
+    report['content_update'] = content
 
 
 def select_hosts(root, selectors, all_hosts=False, exclude=None, excluded=None):
@@ -703,7 +717,7 @@ def main(argv=None):
                     raise
                 progress(f"completed: {item['status']} ({item['reason_code']})")
                 emit('result', host=host, status=item['status'], reason_code=item['reason_code'],
-                     result_path=str(path) if path is not None else None, retention=item.get('retention'))
+                     result_path=str(path) if path is not None else None, retention=item.get('retention'), content_update=item.get('content_update'))
                 return item, path
         if args.all_hosts or len(hosts) > 1:
             def execute_summary(target):
@@ -711,7 +725,7 @@ def main(argv=None):
                 try:
                     item, path = execute(host, index)
                     summary = dict(host=host, status=item['status'], reason_code=item['reason_code'], result_path=str(path) if path is not None else None,
-                                   retention=item.get('retention'), identity_quality=item.get('identity', {}).get('quality'), access=item.get('access'))
+                                   retention=item.get('retention'), content_update=item.get('content_update'), identity_quality=item.get('identity', {}).get('quality'), access=item.get('access'))
                     if 'data' in item:
                         summary['data'] = item['data']
                     return summary
@@ -731,18 +745,18 @@ def main(argv=None):
             if excluded:
                 summary['excluded_hosts'] = excluded
             print_report(summary, json_output=args.json, kind='execution', icons=icons, recipe=recipe, host=hosts[0] if len(hosts) == 1 else None, ensure_ascii=True)
-            return 0 if all(r['status'] == 'success' and not (r.get('access') or {}).get('degraded') and (r.get('retention') or {}).get('status') != 'failed' for r in reports) else 1
+            return 0 if all(r['status'] == 'success' and not (r.get('access') or {}).get('degraded') and (r.get('retention') or {}).get('status') != 'failed' and (r.get('content_update') or {}).get('status') != 'failed' for r in reports) else 1
         report, path = execute(hosts[0], 1)
         summary = {key: report[key] for key in (
             'status', 'reason_code', 'message', 'detected_kernel', 'supported_platforms')}
         summary.update(recipe_id=report['recipe']['id'], result_path=str(path) if path is not None else None)
-        summary.update(retention=report.get('retention'), identity_quality=report.get('identity', {}).get('quality'), access=report.get('access'), access_checks=checks)
+        summary.update(retention=report.get('retention'), content_update=report.get('content_update'), identity_quality=report.get('identity', {}).get('quality'), access=report.get('access'), access_checks=checks)
         if 'data' in report:
             summary['data'] = report['data']
         if excluded:
             summary['excluded_hosts'] = excluded
         print_report(summary, json_output=args.json, kind='execution', icons=icons, recipe=recipe, host=hosts[0] if len(hosts) == 1 else None, ensure_ascii=True)
-        return 0 if report['status'] == 'success' and not report.get('access', {}).get('degraded') and (report.get('retention') or {}).get('status') != 'failed' else 1
+        return 0 if report['status'] == 'success' and not report.get('access', {}).get('degraded') and (report.get('retention') or {}).get('status') != 'failed' and (report.get('content_update') or {}).get('status') != 'failed' else 1
     except (ConfigError, OSError, ImportError, ConsoleDependencyError) as exc:
         # Do not print third-party exception text or potentially sensitive config values.
         if excluded:

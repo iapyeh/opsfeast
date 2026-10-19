@@ -1,21 +1,12 @@
 # Recipe authoring guide
 
-Develop retention against saved raw with [vault ingest and explicit read-only deletion](retention-replay.md). New general runs capture a definition/template snapshot before execution; --recipe-dir explicitly tests revised definitions without importing recipe code. Declare access_mode accurately before collection: changing a descriptor later cannot make old write/unknown results deletable. Source UUID and raw digest have separate roles.
+Develop retention against saved raw with [retention ingest and explicit read-only deletion](retention-replay.md). New general runs capture a data-definition snapshot before execution; --recipe-dir explicitly tests revised definitions without importing recipe code. Declare access_mode accurately before collection: changing a descriptor later cannot make old write/unknown results deletable. Source UUID and raw digest have separate roles.
 
 ## Host-centered retention and state pages
 
-For namespace-enabled vaults, follow [the recipe retention and Markdown contract](host-vault.md#recipe-retention-and-markdown): declare access_mode read/write/unknown and opt into the typed host-values adapter for safe business fields with explicit units. An optional reviewed Markdown template shapes the host's latest recipe page. No arbitrary adapter/plugin is executed by retention. Update public tests, the capability catalog and recipe skill with each service change.
+Recipe creators define and produce retention; they do not embed vault presentation in it. Declare [host-values 0.2.0](retention.md#recipe-owned-data-declarations) for safe scalar fields with explicit units and meaningful dataset/field descriptions. Declare access_mode accurately; runner snapshots contain data declarations only. Inventory/system 0.3.1 owns its [inventory-observations declaration, schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract); all inventory descriptors must declare access_mode and retention, independently of raw output. New structured contracts need reviewed registry support, not arbitrary candidate-code loading. Keep credentials out of both field values and descriptions.
 
-For DevOps users and their AI agents creating specialized recipes for their own operations. OpsFeast product developers have the complementary responsibility to provide complete, broad and stable tools/modules that reduce this user-side development burden; see [the two roles](vision.md#distinguish-product-developers-from-devops-users). Both roles use reviewed code for repeatable work and reserve AI for new needs, judgment, changes and exceptions. Start with the [user guide](recipes.md) and [recipes skill](../skills/opsfeast-recipes/SKILL.md). The [Python-session execution contract](recipe-execution.md) supports general Python recipes through run_recipe.py; inventory keeps its own contract. The broader layout/documentation recommendations below are separate from the validated execution fields. An authoring CLI and arbitrary backend loader are not implemented.
-
-Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
-
-For authorized root-only Python-recipe work, reuse
-[Recipe.root()](core-api.md#automatic-root-console): it provides a callable verified
-root console with the shared two-candidate policy and scoped cleanup. Do not regenerate
-account-selection/credential loops. RootUnavailableError is safe acquisition failure;
-identity or cleanup failure must stop the scope. No generic recipe escalates merely
-because it receives a Recipe.
+Content authors use `context.retention.query/show` in offline python-report programs to combine multiple recipe/host/time selections. The [bundled example](../recipes/report/retention/README.md) writes Markdown and HTML, preserving full evidence and source times. Vault uses the same public data interface; `markdown_template` is removed from recipe retention. Update public tests, schemas, discovery metadata, capability catalogs and relevant skills with usable contract changes.
 
 ## Reuse product capabilities before authoring new machinery
 
@@ -125,4 +116,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 11:57:21_

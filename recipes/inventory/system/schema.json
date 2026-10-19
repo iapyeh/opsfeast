@@ -566,6 +566,23 @@
     },
     "access_check": {
       "type": "object"
+    },
+    "retention_snapshot": {
+      "$ref": "../../../schemas/retention-snapshot.schema.json"
+    },
+    "content_update": {
+      "$ref": "../../../schemas/raw-retention-context.schema.json#/properties/content_update"
+    },
+    "source_observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "execution_access_mode": {
+      "enum": [
+        "read",
+        "write",
+        "unknown"
+      ]
     }
   },
   "$defs": {
@@ -618,7 +635,6 @@
       }
     }
   },
-  "$comment": "Additive inventory-values 0.1.0 extension; legacy records remain valid. Last modified: 2026-10-14",
   "dependentRequired": {
     "inventory_contract_version": [
       "inventory"
@@ -626,5 +642,6 @@
     "inventory": [
       "inventory_contract_version"
     ]
-  }
+  },
+  "$comment": "Last modified: 2026-10-19 11:57:21"
 }

@@ -250,6 +250,12 @@ class Profile:
         value.sessions = Sessions(value)
         return value
 
+    @property
+    def retention(self):
+        """Read-only retained-data selection, independent of vault content."""
+        from retention_store import Reader
+        return Reader(self.root)
+
     def reload(self):
         self.hosts.reload()
         return self
@@ -258,7 +264,7 @@ class Profile:
         current = Hosts(self.root)
         paths = {name: str(self.root / relative) for name, relative in
                  {'hosts': 'hosts.yaml', 'results': 'observations', 'records': 'records',
-                  'runs': 'runs', 'reports': 'reports', 'jobs': 'jobs'}.items()}
+                  'runs': 'runs', 'reports': 'reports', 'jobs': 'jobs', 'retention': 'retention', 'vault': 'vault'}.items()}
         return {'api_version': API_VERSION, 'instance': self.instance.identity, 'profile': self.name,
                 'root': str(self.root), 'status': 'success', 'hosts': current.list(),
                 'groups': current.groups(), 'paths': paths,

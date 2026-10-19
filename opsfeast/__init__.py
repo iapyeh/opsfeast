@@ -78,13 +78,13 @@ def instance_definition(root):
     if path.is_symlink():
         raise ConfigError(f'refuses scaffold symlink: {path}')
     expected = LEGACY_INSTANCE_SCHEMA if path.name == LEGACY_INSTANCE_DEFINITION else INSTANCE_SCHEMA
-    data = mapping(read_yaml(path), str(path), (*expected, 'namespace', 'overview_months'))
+    data = mapping(read_yaml(path), str(path), (*expected, 'namespace', 'overview_months', 'vault'))
     if type(data.get('schema_version')) is not int or any(data.get(k) != v for k, v in expected.items()):
         raise ConfigError(f'{path}: unsupported management directory definition')
     if 'namespace' in data:
-        from host_vault import validate_settings
+        from retention_store import validate_settings
         validate_settings(data)
-    elif 'overview_months' in data:
+    elif 'overview_months' in data or 'vault' in data:
         raise ConfigError('overview_months requires a namespace')
 
 
@@ -1015,13 +1015,14 @@ hosts:
 
 
 def initialize(root, *, quiet=False, profile=None, namespace=None):
-    from host_vault import choose_namespace, enable_configuration, locked, rebuild_unlocked, refresh_groups
+    from retention_store import choose_namespace, enable_configuration, locked, rebuild_unlocked, reject_old_layout, refresh_content
+    reject_old_layout(root)
     namespace = choose_namespace(root, namespace, profile)
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve(strict=True)
     # Preflight existing entries before writing anything inside the root.
     definition = definition_path(root)
-    for name in ('hosts', 'observations', 'records', 'runs', 'vault', 'hosts.yaml', INSTANCE_DEFINITION, LEGACY_INSTANCE_DEFINITION):
+    for name in ('hosts', 'observations', 'records', 'runs', 'retention', 'vault', 'hosts.yaml', INSTANCE_DEFINITION, LEGACY_INSTANCE_DEFINITION):
         item = root / name
         if item.is_symlink():
             raise ConfigError(f'init refuses scaffold symlink: {item}')
@@ -1048,7 +1049,9 @@ def initialize(root, *, quiet=False, profile=None, namespace=None):
         runtime.load(root / 'hosts.yaml')
         enable_configuration(root, namespace)
         rebuild_unlocked(root)
-    refresh_groups(root)
+    content = refresh_content(root)
+    if content['status'] == 'failed':
+        raise ConfigError('profile initialized but vault content update failed; run vault rebuild --root ' + str(root))
     return root
 
 
@@ -1317,6 +1320,9 @@ def main(argv=None):
     if argv[:1] == ['recipes']:
         from recipe_cli import main as recipe_main
         return recipe_main(argv[1:])
+    if argv[:1] == ['retention']:
+        from retention_store import main as retention_main
+        return retention_main(argv[1:])
     if argv[:1] == ['vault']:
         from host_vault import main as vault_main
         return vault_main(argv[1:])
@@ -1324,7 +1330,8 @@ def main(argv=None):
     parser.epilog = 'Add --tui to supported inspection, check, diagnostic or recipes commands for an optional Textual display.'
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
-    commands.add_parser('vault', help='namespace migration, history/view rebuild, Markdown groups and inspection; use vault --help')
+    commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
+    commands.add_parser('vault', help='rebuild/inspect bundled vault content and group indexes; use vault --help')
     profiles_parser = commands.add_parser('profiles', help='list all registered profiles')
     profiles_parser.add_argument('--json', action='store_true')
     instance_parser = commands.add_parser('instance', help='inspect or explicitly initialize/update installation identity')
@@ -1517,7 +1524,7 @@ def main(argv=None):
             from .identity import initialize_identity
             initialize_identity(REPOSITORY_ROOT)
             if not args.json:
-                from host_vault import settings
+                from retention_store import settings
                 print(f'Registered profile: {name}  {root}')
                 print(f"Vault: {root / 'vault'}  namespace: {settings(root)['namespace']}")
         if getattr(args, 'json', False):
@@ -1525,7 +1532,7 @@ def main(argv=None):
                           'hosts': [{'host': h, 'selected_recipes': len(items), 'skipped': result.recipe_skips.get(h, [])}
                                     for h, items in result.selected.items()], 'notes': result.notes}
             if args.command == 'init':
-                from host_vault import settings
+                from retention_store import settings
                 report.update(profile=name, root=str(root), namespace=settings(root)['namespace'], vault_directory=str(root / 'vault'))
             print_report(report, json_output=True)
             return 0

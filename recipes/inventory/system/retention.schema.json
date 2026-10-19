@@ -1,0 +1,1157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "inventory/system retained observations 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "observation_id",
+    "source_id",
+    "host_id",
+    "host_key",
+    "identity_method",
+    "identity_quality",
+    "identity_evidence",
+    "identity_warning",
+    "recipe_id",
+    "recipe_version",
+    "raw_schema_version",
+    "started_at",
+    "observed_at",
+    "evidence_kind",
+    "status",
+    "observations"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0",
+      "description": "Contract version."
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f-]{36}:[0-9a-f]{64}$",
+      "description": "Observation id."
+    },
+    "source_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Source id."
+    },
+    "host_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Host id."
+    },
+    "host_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Native or source-scoped environment evidence; logical management identity is namespace + host_id"
+    },
+    "identity_method": {
+      "enum": [
+        "source-host-id",
+        "linux-machine-id-hmac-sha256-v1",
+        "configured-identity-key-v1"
+      ],
+      "description": "Identity method."
+    },
+    "identity_quality": {
+      "enum": [
+        "fallback",
+        "machine-derived",
+        "user-assigned"
+      ],
+      "description": "Identity quality."
+    },
+    "identity_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "scope",
+          "value",
+          "observed_at"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "system-serial",
+              "enclosure-serial",
+              "hardware-uuid"
+            ]
+          },
+          "scope": {
+            "const": "device"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+          }
+        }
+      },
+      "description": "Identity evidence."
+    },
+    "identity_warning": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Mandatory interpretation context; never omit fallback/identity uncertainty"
+    },
+    "recipe_id": {
+      "const": "inventory-system",
+      "description": "Recipe id."
+    },
+    "recipe_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Recipe version."
+    },
+    "raw_schema_version": {
+      "const": "0.2.0",
+      "description": "Raw schema version."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$",
+      "description": "Started at."
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$",
+      "description": "Observed at."
+    },
+    "evidence_kind": {
+      "enum": [
+        "local",
+        "ssh"
+      ],
+      "description": "Evidence kind."
+    },
+    "status": {
+      "enum": [
+        "success",
+        "partial"
+      ],
+      "description": "Status."
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hostname",
+        "platform",
+        "system_name",
+        "system_version",
+        "kernel_name",
+        "kernel_release",
+        "architecture"
+      ],
+      "properties": {
+        "hostname": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Observed hostname; not proof of global identity",
+          "unit": ""
+        },
+        "platform": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Observed OS platform description",
+          "unit": ""
+        },
+        "system_name": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Operating system product name",
+          "unit": ""
+        },
+        "system_version": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Operating system product version",
+          "unit": ""
+        },
+        "kernel_name": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Observed kernel name",
+          "unit": ""
+        },
+        "kernel_release": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Observed kernel release",
+          "unit": ""
+        },
+        "architecture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "status",
+            "observed_at"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "enum": [
+                "success",
+                "unavailable",
+                "unsupported",
+                "permission_denied",
+                "timeout",
+                "command_failed",
+                "parsing_failed",
+                "not_attempted"
+              ]
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "observed_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{6}\\+00:00$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Observed machine architecture",
+          "unit": ""
+        }
+      },
+      "description": "Observations."
+    },
+    "identity_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identity key."
+    },
+    "label": {
+      "type": "string",
+      "description": "Label."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description."
+    },
+    "inventory_contract_version": {
+      "const": "0.1.0",
+      "description": "Inventory contract version."
+    },
+    "inventory": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Inventory values 0.1.0",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "system",
+        "hardware",
+        "storage",
+        "network",
+        "software",
+        "services"
+      ],
+      "properties": {
+        "system": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hostname",
+            "platform",
+            "system_name",
+            "system_version",
+            "kernel_name",
+            "kernel_release",
+            "architecture",
+            "uptime_seconds",
+            "timezone",
+            "virtualization"
+          ],
+          "properties": {
+            "hostname": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Observed hostname; not proof of global identity",
+              "unit": ""
+            },
+            "platform": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Observed OS platform description",
+              "unit": ""
+            },
+            "system_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Operating system product name",
+              "unit": ""
+            },
+            "system_version": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Operating system product version",
+              "unit": ""
+            },
+            "kernel_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Observed kernel name",
+              "unit": ""
+            },
+            "kernel_release": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Observed kernel release",
+              "unit": ""
+            },
+            "architecture": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Observed machine architecture",
+              "unit": ""
+            },
+            "uptime_seconds": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Seconds since the OS boot according to the bounded platform query",
+              "unit": "seconds"
+            },
+            "timezone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Reported OS timezone label; unavailable when not exposed",
+              "unit": ""
+            },
+            "virtualization": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Observed virtualization hint; not physical topology verification",
+              "unit": ""
+            }
+          },
+          "description": "Observed system facts; collection scope and partial/unknown states apply."
+        },
+        "hardware": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cpu_model",
+            "logical_cpus",
+            "memory_total_bytes",
+            "vendor",
+            "model",
+            "serial",
+            "uuid"
+          ],
+          "properties": {
+            "cpu_model": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "CPU model text exposed to the collection actor",
+              "unit": ""
+            },
+            "logical_cpus": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Number of logical processors visible to the collection actor",
+              "unit": "count"
+            },
+            "memory_total_bytes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Total memory reported by the OS, in bytes",
+              "unit": "bytes"
+            },
+            "vendor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Hardware or virtual platform vendor text",
+              "unit": ""
+            },
+            "model": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Hardware or virtual platform model text",
+              "unit": ""
+            },
+            "serial": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Reported hardware serial; may be unavailable or duplicated and is not OS-installation identity",
+              "unit": ""
+            },
+            "uuid": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 262144,
+              "description": "Reported hardware/virtual platform UUID; may survive OS reinstall and is not management identity",
+              "unit": ""
+            }
+          },
+          "description": "Observed hardware facts; collection scope and partial/unknown states apply."
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filesystems",
+            "block_devices"
+          ],
+          "properties": {
+            "filesystems": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded mounted-filesystem rows; missing visibility stays null and an observed empty list stays empty",
+              "unit": ""
+            },
+            "block_devices": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded block-device rows exposed by platform tools; not guaranteed complete storage topology",
+              "unit": ""
+            }
+          },
+          "description": "Observed storage facts; collection scope and partial/unknown states apply."
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "interfaces",
+            "routes",
+            "dns_servers",
+            "listening_endpoints"
+          ],
+          "properties": {
+            "interfaces": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded interface rows visible in the collection scope",
+              "unit": ""
+            },
+            "routes": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded routing rows; not proof of remote reachability",
+              "unit": ""
+            },
+            "dns_servers": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded configured resolver rows; not a DNS resolution test",
+              "unit": ""
+            },
+            "listening_endpoints": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded local listening-endpoint rows; visibility depends on actor privileges",
+              "unit": ""
+            }
+          },
+          "description": "Observed network facts; collection scope and partial/unknown states apply."
+        },
+        "software": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "packages"
+          ],
+          "properties": {
+            "packages": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded installed-package rows; absence of rows is not a security compliance result",
+              "unit": ""
+            }
+          },
+          "description": "Observed software facts; collection scope and partial/unknown states apply."
+        },
+        "services": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "services"
+          ],
+          "properties": {
+            "services": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 2000,
+              "items": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "description": "Platform-specific scalar row columns; interpretations and units follow the inventory access/data guide. Do not merge unlike columns or infer missing rows."
+              },
+              "description": "Bounded observed service rows; not an overall health assessment",
+              "unit": ""
+            }
+          },
+          "description": "Observed services facts; collection scope and partial/unknown states apply."
+        }
+      },
+      "$comment": "Missing values are null; CSV uses empty cells. Last modified: 2026-10-14",
+      "description": "Nullable system, hardware, storage, network, software and services facts; see the linked field schema"
+    },
+    "collection_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "effective_uid"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "root",
+            "user",
+            "fallback_user",
+            "unverified"
+          ]
+        },
+        "effective_uid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "description": "Verified collection actor scope; root does not imply complete visibility"
+    }
+  },
+  "dependentRequired": {
+    "inventory_contract_version": [
+      "inventory",
+      "collection_scope"
+    ],
+    "inventory": [
+      "inventory_contract_version",
+      "collection_scope"
+    ],
+    "collection_scope": [
+      "inventory_contract_version",
+      "inventory"
+    ]
+  },
+  "description": "Allowlisted system inventory observations and native identity evidence. Partial/unknown fields and collection scope must be preserved; this dataset is not online status or overall health.",
+  "$comment": "Last modified: 2026-10-19 11:57:21"
+}

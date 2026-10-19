@@ -248,6 +248,8 @@ def execution(report, icons=None, host=None, recipe=None):
             reason = row.get('reason_code') or row.get('error')
             if reason:
                 outcome += f' ({reason})'
+        if (row.get('content_update') or {}).get('status') == 'failed':
+            outcome = f'❌ FAIL (content_update_failed; collection={outcome})'
         if (row.get('retention') or {}).get('status') == 'failed':
             outcome = f'❌ FAIL (retention_failed; collection={outcome})'
         elif access.get('degraded'):

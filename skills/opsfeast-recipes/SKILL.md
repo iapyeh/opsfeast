@@ -5,20 +5,19 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 # OpsFeast recipes
 
-For retention author iteration use [replay and explicit deletion](../../docs/retention-replay.md), not remote recipe reruns. Declare access_mode before execution; runner saves source UUID, mode and definition/template snapshot. An explicit --recipe-dir can test updated safe scalar definitions with the original raw. Write/unknown records cannot be cleared, even after changing the descriptor to read. Keep retained business fields free of secrets.
+For retention author iteration use [replay and explicit deletion](../../docs/retention-replay.md), not remote recipe reruns. Declare access_mode before execution; runner saves source UUID, mode and data-definition snapshot. An explicit --recipe-dir can test updated safe scalar definitions with the original raw. Write/unknown records cannot be cleared, even after changing the descriptor to read. Keep retained business fields free of secrets.
 
-## Host-vault 0.1.0
+## Recipe retention and content applications
 
-Use `<profile-root>/vault/` for retained journals and human views; raw/configuration
-stay in the profile root. CLI/module root arguments still select the profile root.
-New `opsfeast.py init NAME [--namespace VALUE] [--json]` initializes the vault.
-Namespace defaults to its saved value or first profile name; invalid default names
-require an explicit namespace. The first operational inventory run retains automatically.
-Reinit/rename preserves saved namespace and archives. Core `Instance.init_profile`
-accepts namespace=. No compatibility/relocation tool is provided for the former
-profile-root layout; explain that incompatibility and preserve existing files.
+Read [retention contracts](../../docs/retention.md), [offline replay/protection](../../docs/retention-replay.md) and [vault ownership](../../docs/host-vault.md). Recipe creators define/produce retention; OpsFeast manages recipes/execution and data discovery/storage. User AI agents combine retention into Markdown, graphs or web content. Vault is the bundled content application, not the data contract.
 
-Read [the canonical host-vault guide](../../docs/host-vault.md) before selecting namespace, migrating storage, interpreting logical identity or authoring retained outputs. Namespace + configured host ID defines a logical host across OS/hardware replacement; native keys remain evidence. Reuse vault migrate/rebuild/groups/inspect and checkout-level host_vault interfaces. Annual per-host journals are authoritative; records is cumulative and overview recent. General recipes may declare typed host-values retention/Markdown and access_mode; write/unknown runner operations persist long-lived intent/result events. Direct Core calls require explicit journaling. Unmigrated profiles retain the legacy behavior below. Future mapping/package schemas exist; new transfer tools are deferred.
+1. Discover declared datasets with recipes list/show or inspect-recipe --json. Read field meanings, units, versions, limits and source-qualified references before selecting data; metadata is not execution evidence.
+2. Query with `retention list/show/export --profile NAME --json`, Core `profile.retention.query/show`, or checkout `retention_store.query/show`. Annual authoritative SQLite lives in retention/; reads never initialize or connect. Preserve source times, origins, identity warnings, partial/unknown states and zero/false values.
+3. Authors declare host-values 0.2.0 with dataset/field descriptions; inventory/system 0.3.1 owns inventory-observations 0.1.0, its schema and registered normalizer. Discovery reads the explicit declaration; it never guesses from recipe ID. Retention snapshots 0.2.0 contain data definitions only. No markdown_template or rendered Markdown is retained.
+   Read [inventory-owned data semantics](../../recipes/inventory/system/README.md#recipe-owned-retention-contract) before authoring or interpreting inventory: explicit access_mode/retention declaration, recipe-local schema, normalizer/schema digests, supported versions and partial/identity limits. Registered contract/version selects shipped pure normalization; candidate main.py/retention.py is never loaded by replay. A new structured contract requires reviewed product registration and tests, not descriptor executable paths. Reuse runner/replay/query; include retention.schema.json in portable clone bundles. Current envelopes preserve retention_definition and source provenance.
+4. Reuse offline python-report's `context.retention.query/show` and artifact/result/job support for content. [report/retention](../../recipes/report/retention/README.md) generates Markdown and HTML and combines multiple recipe references without raw access or connections. Custom renderers declare dependencies and verification; no hosting or transmission is implied.
+5. Use retention ingest/delete-observation/rebuild for data and vault rebuild/groups/inspect for content. Replay does not execute recipe code. Write/unknown operations and linked evidence remain protected. Direct Core calls need explicit retention_store.operation_intent/operation_result journaling.
+6. Init establishes namespace plus independent retention/vault areas. vault.auto_refresh defaults true and may be disabled. Check recipe status, retention and content_update separately; content failure preserves stored data and is repaired with vault rebuild. Old vault SQLite layouts are rejected and preserved; use a separate profile and explicitly replay raw. Old inventory raw without snapshots, old template snapshots and structured normalizer/schema digest mismatches need a reviewed current --recipe-dir; never reclassify historical execution.
 
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
 
@@ -154,7 +153,7 @@ Use `python -B tools/run_recipe.py check/port --host HOST --var port=8888` for t
 
 Author execute(session, *, context, timeout), with literal VERSION matching recipe.yaml, accepted inputs.variables and exactly status/reason_code/message/data returned. Reuse the borrowed Session and context.vars rather than implementing another hosts.yaml CLI or closing/reconnecting the Session. Apply finite budgets and clean up recipe-owned resources. The general contract has one entrypoint and no automatic platform discovery/dispatch; target dependency checks belong to the reviewed recipe. Other tools may run through reviewed code, but this is not an independent backend loader.
 
-Interpret the operation's data separately from execution status. Port-refused is a completed check with reachable false; timeout/network failure is unknown. Report raw result_path, execution/cleanup errors and verification limits. Generic results are saved with explicit no_retention_adapter and no identity/sudo probes; inventory result storage/export does not accept them. See [public contract tests](../../tests/test_general_recipes.py) for synthetic evidence; real SSH remains unverified. New result adapters/backends need versioned contracts, tests and linked guidance, not inferred support.
+Interpret the operation's data separately from execution status. Port-refused is a completed check with reachable false; timeout/network failure is unknown. Report raw result_path, execution/cleanup errors and verification limits. Generic results without a declared retention contract are saved with no_retention_adapter; generic scalar retention does not run inventory identity/sudo probes; inventory result storage/export does not accept them. See [public contract tests](../../tests/test_general_recipes.py) for synthetic evidence; real SSH remains unverified. New result adapters/backends need versioned contracts, tests and linked guidance, not inferred support.
 
 ## Execute or extend system inventory
 
@@ -318,4 +317,4 @@ Missing/unzoned instants do not acquire an invented timezone. Read [the canonica
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
 comparing display strings, interpreting DST or authoring another human report.
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:57:21_

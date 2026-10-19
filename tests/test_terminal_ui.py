@@ -107,7 +107,7 @@ class TransportTests(unittest.TestCase):
 class AppTests(unittest.IsolatedAsyncioTestCase):
     async def test_child_streams_and_exit_code(self):
         from textual.widgets import DataTable, Static
-        code = "import sys,json; print(json.dumps({'hosts':[{'host':'h','status':'partial','reason_code':'missing','retention':{'status':'failed'}}]})); print('safe failure',file=sys.stderr); sys.exit(1)"
+        code = "import sys,json; print(json.dumps({'hosts':[{'host':'h','status':'partial','reason_code':'missing','retention':{'status':'stored'},'content_update':{'status':'failed'}}]})); print('safe failure',file=sys.stderr); sys.exit(1)"
         app = ui.make_app_class()([sys.executable, '-B', '-c', code])
         async with app.run_test(size=(100, 30)) as pilot:
             for _ in range(100):
@@ -118,6 +118,9 @@ class AppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.exit_status, 1)
             self.assertEqual(app.items['h']['status'], 'partial')
             self.assertEqual(app.query_one(DataTable).row_count, 1)
+            cells = app.query_one(DataTable).get_row_at(0)
+            self.assertEqual(cells[4].plain, 'stored')
+            self.assertEqual(cells[5].plain, 'failed')
             self.assertIn('exit 1', str(app.query_one('#summary', Static).content))
             await pilot.press('q')
         self.assertEqual(app.return_value, 1)

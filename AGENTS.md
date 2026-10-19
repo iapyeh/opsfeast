@@ -112,8 +112,12 @@ Do not commit while any applicable documentation, skill or test work remains unf
 
 Preserve unrelated files, stage an explicit allowlist and inspect the staged diff before commits. Commit, push, merge and release only within the user's authorized scope; a task-specific grant does not authorize unrelated work or publication.
 
+## Retention and content applications
+
+Recipe creators define and produce retention; OpsFeast manages recipes/execution and discoverable data contracts. Content authors and user AI agents consume one or many retained datasets. Start with [retention interfaces](docs/retention.md), use profile.retention.query/show or retention list/export, and treat vault as the bundled content application. Authoritative SQLite lives under retention/. Use retention ingest/delete-observation/rebuild for data and vault rebuild/groups/inspect for content. Do not embed presentation templates in recipe retention. Preserve separate retention/content receipts and protected operation evidence.
+
 ## Retained result data
 
 For raw recovery, retained observation interpretation, export, validation or combination, read the [result-data skill](skills/opsfeast-result-data/SKILL.md), [workflow/contracts](docs/result-data.md) and [CLI reference](docs/cli.md#retained-observations-and-exchange). Runner automatically attempts raw → retained for operational inventory reports; always report retention separately from collection. Inventory 0.3.0 uses the whole-collection verified actor for identity probes; account sudo policy controls privilege, and legacy identity_sudo no longer bypasses that policy. Read [inventory access, partitioned results and CSV](docs/inventory-access.md); preserve the user's actual scope. Identity quality and fallback warnings are mandatory interpretation context. Sharing exports data but never authorizes transmission. Receiver analysis storage remains user-selected.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19 11:41:37_

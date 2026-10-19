@@ -5,9 +5,10 @@ id: check-identity
 access_mode: read
 retention:
   contract: host-values
-  version: 0.1.0
+  version: 0.2.0
+  description: Effective account observation from the supplied session; no host-wide privilege assessment.
   fields:
-    account: {type: string, unit: account-name}
+    account: {type: string, unit: account-name, description: Observed effective account name; not an authorization claim}
 version: 0.1.0
 title: Observe the connection account through Core Recipe
 description: Run id -un using the runner-provided scoped session; no privilege transition.
@@ -34,4 +35,4 @@ verification:
   synthetic: tested
   local: tested
   ssh: not-tested
-# Last modified: 2026-10-17
+# Last modified: 2026-10-19 11:41:37

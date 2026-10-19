@@ -2,11 +2,9 @@
 
 ## Host vault integration
 
-Use a selected Profile.root with the [checkout host-vault interfaces](host-vault.md#checkout-module-interfaces). These provide settings/history inspection, local rebuild/group refresh, typed retention and explicit operation intent/result recording. Runner-managed write/unknown recipes journal automatically only in namespace-enabled vaults; direct Core session calls are not automatically audited. General logging/notifications remain unavailable.
+Core `profile.retention.query(hosts=None, recipe=None, since=None, until=None, status=None, kind=None)` and `.show(record_id)` provide read-only access to declared retention, independent of vault. Profile inspection paths include retention and vault. See [contracts and examples](retention.md); query returns complete validated envelopes, source times and quality states without creating data or connecting.
 
-Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
-
-OpsFeast bundles a public Python package for user agents, standalone programs and recipes. Python 3.11+, PyYAML 6.0.3 and tabulate[widechars] 0.10.0 are package dependencies; connection and privilege operations additionally require matching SSHScript import/distribution 5.0.0. Configuration and inspection do not import SSHScript or contact hosts. Logging and notifications are deferred and have no callable Core service yet.
+Use checkout `retention_store.operation_intent/operation_result` for explicit standalone audit and `retention_store.rebuild` for data projections. Runner recipes journal write/unknown operations automatically in namespace-enabled profiles. Direct Core sessions are not automatically audited. Content publication uses `host_vault.rebuild/refresh_groups/publish`; default `vault.auto_refresh` can be disabled. Recipe status, retention and content receipts are separate. [Old-layout incompatibility](retention.md#development-incompatibility) requires preserving old data and explicit raw replay, not automatic relocation. General logging/notifications remain unavailable.
 
 ## Installation, instance and profile
 
@@ -212,7 +210,7 @@ def execute(recipe):
     }
 ```
 
-See the complete bundled [check/identity example](../recipes/check/identity/README.md). Runner validates static signature/version/inputs without importing recipes during discovery, creates one Recipe per host execution over its existing connection, invalidates the scope on return/error, and closes the connection. Outputs use the same strict result fields/statuses as python-session. Raw files additionally record installation identity, selected profile (or null for an unregistered root), run ID and privilege evidence. Cleanup failure overrides claimed success. Generic results retain explicit no_retention_adapter; no inventory identity/sudo preflight is added.
+See the complete bundled [check/identity example](../recipes/check/identity/README.md). Runner validates static signature/version/inputs without importing recipes during discovery, creates one Recipe per host execution over its existing connection, invalidates the scope on return/error, and closes the connection. Outputs use the same strict result fields/statuses as python-session. Raw files additionally record installation identity, selected profile (or null for an unregistered root), run ID and privilege evidence. Cleanup failure overrides claimed success. Generic results without a retention declaration retain explicit no_retention_adapter; no inventory identity/sudo preflight is added.
 
 Existing python-session 0.1.0 `execute(session, *, context, timeout)`, python-report and inventory contracts remain unchanged. Migrate deliberately by changing the declared contract and entrypoint together; no signature guessing or automatic conversion. New recipes receive Recipe; legacy context does not suddenly acquire root/config/service fields.
 
@@ -288,4 +286,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:41:37_

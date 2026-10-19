@@ -1,12 +1,15 @@
-# Inventory descriptor 0.2.0; shared output contract 0.2.0.
 descriptor_version: 0.2.0
-author: {name: Bundle, contacts: [Bundle]}
+author:
+  name: Bundle
+  contacts:
+  - Bundle
 license: MIT
 id: inventory-system
-version: 0.3.0
+version: 0.3.1
 status: implemented
 title: System inventory
-description: Collect bounded system, hardware, storage, network, software and services metadata.
+description: Collect bounded system, hardware, storage, network, software and services
+  metadata.
 kind: collection
 platforms:
   planned:
@@ -45,14 +48,17 @@ permissions:
   elevation: verified-root-by-default-unless-account-sudo-disabled
 side_effects:
   target: read-only-queries
-  controller: Save raw JSON under observations/ and retain operational observations in records/observations.sqlite3.
+  controller: Save raw JSON under observations/, retain declared data in retention/
+    annual archives, and optionally refresh bundled vault content with an independent
+    receipt.
 inputs:
   required:
   - management-root
   - host-id
   optional:
   - command-timeout-seconds
-  note: 'CLI: RECIPE --host HOST --timeout SECONDS; default 30 seconds per connection stage/command, not whole run.'
+  note: 'CLI: RECIPE --host HOST --timeout SECONDS; default 30 seconds per connection
+    stage/command, not whole run.'
   variables:
     identity_sudo:
       type: boolean
@@ -67,9 +73,6 @@ inputs:
 output:
   format: json
   schema_version: 0.2.0
-  retained_contract_version: 0.1.0
-  exchange_version: 0.1.0
-  retention_adapter: inventory-system-v1
   example: examples/result.synthetic.json
   inventory_contract_version: 0.1.0
   fields:
@@ -103,8 +106,8 @@ output:
 verification:
   synthetic_example: examples/result.synthetic.json
   parser_tests: tests/test_inventory_system.py and tests/test_host_runtime.py
-  local_execution: Historical recipe 0.2.0, 2026-10-11 macOS local host-init and inventory success; Linux/FreeBSD
-    not tested
+  local_execution: Historical recipe 0.2.0, 2026-10-11 macOS local host-init and inventory
+    success; Linux/FreeBSD not tested
   ssh_execution: not-tested
 implementations:
 - id: linux
@@ -143,4 +146,12 @@ implementations:
     synthetic: tested
     ssh: not-tested
     local: not-tested
-# Last modified: 2026-10-14
+access_mode: read
+retention:
+  contract: inventory-observations
+  version: 0.1.0
+  description: Allowlisted system inventory observations and native identity evidence.
+    Partial/unknown fields and collection scope must be preserved; this dataset is
+    not online status or overall health.
+  schema: retention.schema.json
+# Last modified: 2026-10-19 11:57:21

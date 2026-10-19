@@ -2,7 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "$comment": "Last modified: 2026-10-19",
   "title": "OpsFeast host vault record 0.1.0",
   "required": [
     "contract_version",
@@ -149,6 +148,10 @@
     },
     "retention_provenance": {
       "$ref": "retention-provenance.schema.json"
+    },
+    "retention_definition": {
+      "$ref": "retention-snapshot.schema.json#/properties/retention",
+      "type": "object"
     }
   },
   "allOf": [
@@ -182,5 +185,6 @@
         }
       }
     }
-  ]
+  ],
+  "$comment": "Last modified: 2026-10-19 11:57:21"
 }

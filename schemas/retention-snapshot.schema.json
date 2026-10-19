@@ -2,20 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "$comment": "Last modified: 2026-10-19",
-  "title": "OpsFeast replayable retention snapshot 0.1.0",
+  "title": "OpsFeast data-only retention snapshot 0.2.0",
   "required": [
     "contract_version",
     "recipe_id",
     "recipe_version",
     "access_mode",
     "retention",
-    "markdown_template_text",
     "sha256"
   ],
   "properties": {
     "contract_version": {
-      "const": "0.1.0"
+      "const": "0.2.0"
     },
     "recipe_id": {
       "type": "string",
@@ -43,14 +41,15 @@
           "required": [
             "contract",
             "version",
-            "fields"
+            "fields",
+            "description"
           ],
           "properties": {
             "contract": {
               "const": "host-values"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.2.0"
             },
             "fields": {
               "type": "object",
@@ -63,7 +62,8 @@
                 "additionalProperties": false,
                 "required": [
                   "type",
-                  "unit"
+                  "unit",
+                  "description"
                 ],
                 "properties": {
                   "type": {
@@ -76,26 +76,100 @@
                   },
                   "unit": {
                     "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
                   }
                 }
               }
             },
-            "markdown_template": {
-              "type": "string"
+            "description": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contract",
+            "version",
+            "description",
+            "schema"
+          ],
+          "properties": {
+            "contract": {
+              "const": "inventory-observations"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "schema": {
+              "const": "retention.schema.json"
             }
           }
         }
       ]
     },
-    "markdown_template_text": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "sha256": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "normalizer_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "retention": {
+            "type": "object",
+            "properties": {
+              "contract": {
+                "const": "inventory-observations"
+              }
+            },
+            "required": [
+              "contract"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "normalizer_sha256",
+          "schema_sha256"
+        ]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "normalizer_sha256"
+              ]
+            },
+            {
+              "required": [
+                "schema_sha256"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$comment": "Last modified: 2026-10-19 11:57:21"
 }

@@ -5,12 +5,13 @@ id: check-port
 access_mode: read
 retention:
   contract: host-values
-  version: 0.1.0
+  version: 0.2.0
+  description: Bounded TCP reachability observations; failure does not identify its cause.
   fields:
-    address: {type: string, unit: ip-address}
-    port: {type: integer, unit: tcp-port}
-    reachable: {type: boolean, unit: ""}
-    state: {type: string, unit: ""}
+    address: {type: string, unit: ip-address, description: Address tested; no assertion of DNS identity}
+    port: {type: integer, unit: tcp-port, description: TCP destination port}
+    reachable: {type: boolean, unit: "", description: Whether the bounded connection attempt succeeded}
+    state: {type: string, unit: "", description: Connection outcome; not overall service health}
 version: 0.1.0
 title: Check a TCP port from the selected host
 description: Connect once to an explicit IP address and port from the selected host; TCP success does not prove application health.
@@ -40,4 +41,4 @@ verification:
   synthetic: tested
   local: not-tested
   ssh: not-tested
-# Last modified: 2026-10-17
+# Last modified: 2026-10-19 11:41:37

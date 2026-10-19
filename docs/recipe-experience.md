@@ -4,6 +4,8 @@
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
 
+For retention-backed content use [the data/content guide](retention.md#content-authors-and-offline-reports) and bundled report/retention. ReportContext now supplies retention.query/show alongside vars, inputs and artifact_dir. Reports record retention_sources with selections, source IDs/times and digests. Read-only queries need no raw files or host selection; renderer dependencies and authorization still apply.
+
 ## Interactive recipes workbench
 
 Run `python -B tools/opsfeast.py recipes` without a subcommand to open the Textual workbench. Explicit subcommands remain CLI. The workbench offers the shared catalog, execution, results/artifacts, saved jobs and bundle operations, starts with read-only checkout discovery, and reviews execution/write arguments before confirmation. Read [terminal display](terminal-ui.md#recipes-workbench-entrypoint) for optional dependencies, form formats, environment selection, exit codes and limits.
@@ -160,4 +162,4 @@ offsets. Bundled report/summary 0.1.2 applies this policy to HTML only, preservi
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-19 11:41:37_

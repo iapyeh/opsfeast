@@ -7,7 +7,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FILE = '.opsfeast-author.yaml'
-BUNDLED = ('check/identity', 'check/port', 'inventory/system', 'report/summary')
+BUNDLED = ('check/identity', 'check/port', 'inventory/system', 'report/summary', 'report/retention')
 UNKNOWN = {'author': {'name': 'Unknown', 'contacts': ['Unknown']}, 'license': 'Unknown'}
 
 

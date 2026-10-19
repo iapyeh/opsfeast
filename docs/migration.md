@@ -1,16 +1,14 @@
 # SSHScript Ops to OpsFeast
 
-After namespace migration, run `vault ingest --profile NAME --all --dry-run --json`, then omit --dry-run to process saved raw. This never reconnects. Existing general raw without snapshots needs an explicit reviewed --recipe-dir; missing execution classification remains unknown and protected. See [compatibility and source identity](retention-replay.md#source-identity-conflicts-and-compatibility).
+## Retention/content development incompatibility
 
-## Host-vault migration
+Authoritative data now lives under retention/, while vault/ contains content and human notes. Old SQLite-in-vault layouts are rejected; there is no automatic relocation, fallback reader or new migration tool. Preserve the old profile and notes, initialize a separate profile with the same namespace and use `retention ingest` on explicitly selected raw. Existing raw receipts preserve source identity. No old data is automatically removed.
 
-The vault now occupies `<profile-root>/vault/`, separate from raw/configuration.
-New profile init creates the vault and saves namespace automatically; a separate
-migration step is unnecessary. The former co-located layout is incompatible and is
-not automatically read or relocated. Existing files remain untouched; use a new test
-profile and replay raw data as needed. No layout migration command is supplied.
+General host-values declarations are now 0.2.0 and require dataset/field descriptions. Data-only snapshots are 0.2.0; `markdown_template`, snapshot template text and retained rendered Markdown are removed. Old general snapshots require a reviewed current --recipe-dir override for offline replay; original write/unknown classification remains protected. Move content logic into an offline report using context.retention. See [exact contracts and recovery](retention.md#development-incompatibility).
 
-Use the [host-vault migration procedure](host-vault.md#enable-or-migrate) to explicitly choose a namespace and copy legacy retained observations to per-host UTC-year archives. Stable observation/source IDs and old payloads remain intact; the old database is preserved. Records/overview/Markdown are rebuildable; a failed migration can be replayed. Host management identity becomes namespace + host ID, independently of native OS/hardware evidence. No automatic private-data migration, namespace relabeling, package import/export or cleanup occurs.
+Storage imports move from host_vault to retention_store; Core programs prefer profile.retention.query/show. Use `retention ingest/delete-observation/rebuild` for data and `vault rebuild/groups/inspect` for content. Default automatic vault refresh remains, configurable through vault.auto_refresh; retention and content receipts are separate. No web hosting, publication or scheduler is added.
+
+Inventory/system recipe 0.3.1 now owns explicit inventory-observations 0.1.0 retention, its local retention.schema.json and the registered retention.py normalizer. Raw output no longer accepts retention_adapter/retained_contract_version/exchange_version keys. Copied descriptors need the new declaration, matching schema and explicit access_mode. Old inventory raw requires a current snapshot or explicit reviewed --recipe-dir; changed installed normalizer/schema digests require reviewed extraction selection. Preserve original execution classification and existing records; conflicting definitions are never silently rewritten. No migration, candidate-code loading or automatic deletion is introduced.
 
 The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local checkout does not need to move. Private management directories, profile names, targets, credentials, human notes, observations and execution history retain their existing locations and contents.
 
@@ -213,4 +211,4 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:57:21_

@@ -1,26 +1,16 @@
 # OpsFeast
 
-Saved raw observations can now be replayed with `opsfeast.py vault ingest --all`; explicit read-only observation deletion and protected write/unknown journals are documented in [retention replay](docs/retention-replay.md).
+Inventory/system 0.3.1 now owns its [retention declaration, structured schema and normalizer](recipes/inventory/system/README.md#recipe-owned-retention-contract). Discovery reports those definitions directly; the platform selects registered contract/version support and preserves separate data/content outcomes.
 
-## Host-centered vault
 
-The dedicated `<profile-root>/vault/` directory serves as a Markdown/Obsidian vault; raw observations and configuration stay outside it. Read [host-vault setup, migration and contracts](docs/host-vault.md) for namespace + host ID identity, annual per-host SQLite archives, cumulative records, rolling fleet observations, recipe-defined Markdown and durable write/unknown operation journals. Profile initialization enables the vault automatically: `python -B tools/opsfeast.py init main --json` defaults namespace to main, or pass --namespace explicitly. The first operational inventory run updates the vault without a separate migration step. New package import/export tools remain deferred; future record/mapping/manifest structures are defined.
+## Recipe → Retention → Content
 
-**Agent-Driven IT Operations. Human-Authorized.**
+Recipe creators define and produce retained data. OpsFeast manages recipe discovery/execution, validates and stores declared retention, and tells user AI agents where to get it. Content authors can combine retained data from multiple recipes into Markdown, graphs or web artifacts. Vault is the currently bundled content application.
 
-OpsFeast helps AI agents manage IT systems through reusable, verifiable and shareable recipes. People define goals, targets and authorization; agents handle planning and routine work within that scope and request human input for exceptions or decisions beyond it.
+Start with [retention discovery, query, data declarations and content authoring](docs/retention.md). `opsfeast.py retention list/show/export` and Core `profile.retention.query/show` read independent `<profile-root>/retention/` data. `vault/` contains Markdown and human notes, with no SQLite. Default automatic content refresh can be disabled through `vault.auto_refresh: false`; retention and content receipts are separate.
 
-An **OpsFeast instance** is the entire installation/checkout, with one installation UUID and active profile. A **Feast management environment** is the profile-selected root containing configuration, selected recipes, execution records and results. **OpsBuffet** is the planned exchange platform for discovering, acquiring and sharing recipes, with separately operated public and enterprise instances. See [the ecosystem and naming guide](docs/ecosystem.md) for roles, repository responsibilities and implementation limits.
+Use [offline replay/deletion](docs/retention-replay.md) and [vault publication/ownership](docs/host-vault.md) for recovery. The former SQLite-in-vault layout and template-bearing snapshots are incompatible; preserve old data and follow the documented separate-profile/raw-replay procedure. No automatic relocation is provided.
 
-OpsFeast welcomes recipes built with different execution tools. When SSHScript fits the task and the authorized environment, prefer it for command execution and session orchestration. The project also serves as a practical showcase of SSHScript through reusable recipes and verifiable examples. User-selected tools and operational constraints take precedence; see the [tool selection workflow](docs/recipe-authoring.md#choose-execution-tools).
-
-SSHScript is the currently supported execution foundation for the host diagnostics and recipe execution. Other tools require explicit dependencies and verifiable contracts; the open ecosystem direction does not implement additional runner backends.
-
-Previously named **SSHScript Ops** (`sshscript-ops`), this repository now uses **OpsFeast** (`opsfeast`). The CLI is `tools/opsfeast.py`; the former `tools/ops.py` entrypoint and `import ops` are removed. Existing management directories and registrations remain usable without being moved or rewritten. See [the migration guide](docs/migration.md).
-
-Use the bundled [Core Python API](docs/core-api.md) for installation identity, profiles, hosts, scoped Recipe sessions and root/su/sudo, and read-only inspection. Start with the [Core skill](skills/opsfeast-core/SKILL.md); logging and notification services remain deferred. For authorized root-only commands, [Recipe.root()](docs/core-api.md#automatic-root-console) provides a callable console using the shared account policy and raises on failure.
-
-Read the **[command-line reference](docs/cli.md)** for every opsfeast.py command and run_recipe.py option, execution behavior, output, saved data and exit codes. It is the shared tool manual for administrators and AI agents. Terminal summaries use tabulate; agents should explicitly select --json where supported. See [the output policy](docs/cli.md#terminal-tables-and-json). Agents should start with [For AI agents](#for-ai-agents) below for the learning order and complete skill sources.
 
 ## Why OpsFeast matters in the AI era
 
@@ -287,8 +277,8 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 
 ## Retained observations and sharing
 
-Inventory execution automatically saves operational success/partial observations in each Feast records/observations.sqlite3 after saving raw JSON. Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes use the verified whole-collection actor; account sudo: false disables that account's sudo, while the ordered second candidate can still provide root. Legacy identity_sudo is compatibility-only. Old raw files are not automatically backfilled.
+Inventory execution automatically saves operational success/partial observations in each Feast retention/ annual archives after saving raw JSON in namespace-enabled profiles (legacy profiles use records/observations.sqlite3). Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes use the verified whole-collection actor; account sudo: false disables that account's sudo, while the ordered second candidate can still provide root. Legacy identity_sudo is compatibility-only. Old raw files are not automatically backfilled.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:59:00_

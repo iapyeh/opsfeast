@@ -1,6 +1,6 @@
 # inventory-system
 
-Recipe version 0.3.0 provides Linux, FreeBSD, macOS and ESXi implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD/ESXi have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
+Recipe version 0.3.1 provides Linux, FreeBSD, macOS and ESXi implementations under one recipe ID, using descriptor 0.2.0 and a shared result schema 0.2.0 in [schema.json](schema.json). Platform selection is automatic; users select the recipe directory, not a Python file. Linux/FreeBSD/ESXi have synthetic verification only. macOS has synthetic and local read-only verification. Real SSH and native FreeBSD/Linux collection remain unverified.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../../../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
 
@@ -50,7 +50,7 @@ The CLI uses matching host recipe vars and bypasses unrelated selectors while va
 
 ## Recipe variables
 
-Bundled recipe 0.3.0 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
+Bundled recipe 0.3.1 (descriptor/result schema 0.2.0) supports inputs.variables.command_timeout_seconds: a finite number greater than zero. Defaults come from the recipe declarations, then source vars, then the first matching host selector vars; first-level replacement and deep-copy isolation are used. This variable changes collection command budgets, while --timeout still controls connection/discovery. Each collector accepts a context keyword exposing host_id and vars; pass it explicitly to helpers. Legacy collectors without context work only when no effective vars are supplied. See the [input contract](../../../docs/recipe-sources.md#variables-and-implementation-context) for declared types, validation, defaults and secret-handling limits.
 
 Source/host-disabled skips happen before runtime/connection and have result_path null. They are not fabricated inventory files and return nonzero. Completed results record source provenance and variable names without values. Prior macOS local evidence belongs to recipe 0.2.0; the current input/context changes have synthetic coverage, without new native SSH evidence.
 
@@ -112,14 +112,51 @@ Synthetic tests cover parsers, three platform collectors, specialization/ambigui
 
 SSHScript source: bundled public documentation contract 5.0.0 and SOURCE.json bundle SHA-256 `e065bec4e7bd48791563412c5ca3bdaac5f46c5e09456ba5d24665a01ba79b4b`; public [API guide](https://iapyeh.github.io/sshscript/v3a/recommended-api/). FreeBSD userland semantics follow the [FreeBSD manual](https://man.freebsd.org/cgi/man.cgi?query=freebsd-version&sektion=1), consulted 2026-10-11. No private SSHScript source was used.
 
+## Recipe-owned retention contract
+
+This recipe defines and produces `inventory-observations` **0.1.0**. Its [retention.schema.json](retention.schema.json) owns the retained payload, field meanings, units, nullable nested inventory sections and interpretation limits. Its [retention.py](retention.py) owns allowlisted normalization and semantic validation. The platform manages execution, registered-contract selection, record envelopes, storage, replay, queries and optional content updates. Vault and web/report content are downstream consumers; no Markdown or renderer belongs to this retention contract.
+
+```yaml
+access_mode: read
+retention:
+  contract: inventory-observations
+  version: 0.1.0
+  description: Allowlisted inventory and native identity evidence; preserve partial/unknown states and collection scope, not overall health.
+  schema: retention.schema.json
+```
+
+`output` describes raw JSON only. The former output.retention_adapter, output.retained_contract_version and output.exchange_version keys are rejected. Descriptor/result schema remains 0.2.0; recipe version is 0.3.1; the nested retained inventory and legacy exchange payloads remain 0.1.0. Keep these independent versions distinct. Copied inventory descriptors now require explicit access_mode, the retention declaration and a matching local schema. There is no implicit declaration based on recipe ID.
+
+OpsFeast registers this shipped normalizer by `(contract, version)` in `retention_contracts`. Static inspection reads metadata/schema/digests without importing normalizer or collection code. The runner snapshots the declaration plus normalizer code and canonical schema digests after inventory access preflight and before the collection connection/selected implementation loading. Access preflight may already have connected and attempted authorized privilege checks; this change does not move that boundary. Only operational local/SSH success/partial evidence qualifies; raw inputs, commands, execution errors and undeclared private fields are not retained.
+
+Offline replay executes only the registered bundled pure data normalizer, never a candidate recipe's main.py, collector or retention.py. An external clone can reuse this contract/schema; changing a clone's normalizer does not replace the registered implementation. A new structured contract/version needs a reviewed product registration, reproducible tests and schema/skill documentation; arbitrary third-party normalizer loading is unsupported. Bundle digests remain provenance, not authentication or a Python sandbox. For portable user recipe bundles include retention.schema.json in the explicit file allowlist and declare the required OpsFeast registered contract; do not assume a copied Python file activates a new normalizer.
+
+```sh
+python -B tools/opsfeast.py recipes show inventory/system --checkout-only --json
+python -B tools/opsfeast.py retention list --profile main --recipe inventory/system --json
+python -B tools/opsfeast.py retention ingest /path/to/inventory-raw.json --profile main --dry-run --json
+# Old raw without a current snapshot requires an explicit reviewed definition:
+python -B tools/opsfeast.py retention ingest /path/to/old-inventory-raw.json --profile main \
+  --recipe-dir /path/to/opsfeast/recipes/inventory/system --dry-run --json
+```
+
+Use the actual source-qualified recipe reference from discovery/results (for example company:inventory/system), not necessarily the bundled short path. Discovery exposes declaration, schema_path, schema_sha256 and registered normalizer source/digest. Retained envelopes include retention_definition plus snapshot/version provenance, precise source times, origin and quality warnings. Core `profile.retention.query(recipe=REFERENCE)` and offline `context.retention.query(...)` retrieve complete data for vault, HTML or cross-recipe analysis without another collection.
+
+New inventory raw carries retention_snapshot 0.2.0 with normalizer_sha256 and schema_sha256. Missing snapshots or mismatched installed digests fail explicitly; select a reviewed --recipe-dir to authorize revised extraction, then preview with --dry-run. Original execution classification and producer identity remain evidence. Existing retained IDs with changed definition/content conflict rather than being silently rewritten: only explicitly deletable read observations can be removed and replayed; preserve protected write/unknown evidence. No automatic data migration or deletion occurs. Data/identity status, retention persistence and content_update are separate; a content failure does not undo saved data or change collection status.
+
+Public [contract tests](../../../tests/test_inventory_retention_contract.py) cover recipe-owned discovery/schema semantics, missing/invalid declarations, schema/path/digest conflicts, candidate-code nonexecution, replay/dedup, privacy and partial states, and new private storage packaging boundaries. [Installed-package tests](../../../tests/test_core_delivery.py) exercise the same data contract and content reader without checkout imports. This is synthetic evidence, not native collection verification.
+
 ## Retained data and identity
 
-After raw result saving, the runner automatically extracts operational success/partial observations into the local stage-2 store. It shares only allowlisted data through an explicit stage-3 export. Identity evidence is separate from the seven common observation fields. Hardware serial/UUID does not identify an OS installation; fallback and Linux machine-id limitations remain explicit. See [contracts, identity/sudo rules, recovery and sharing](../../../docs/result-data.md), [CLI interfaces](../../../docs/cli.md#retained-observations-and-exchange), [retained schema](../../../schemas/retained-observation.schema.json), [exchange schema](../../../schemas/observation-exchange.schema.json) and [synthetic exchange](examples/exchange.synthetic.json).
+After raw result saving, the runner uses this recipe's declared registered normalizer to produce operational success/partial retention under retention/ annual archives. It shares only allowlisted data through an explicit stage-3 export. Identity evidence is separate from the seven common observation fields. Hardware serial/UUID does not identify an OS installation; fallback and Linux machine-id limitations remain explicit. See [contracts, identity/sudo rules, recovery and sharing](../../../docs/result-data.md), [CLI interfaces](../../../docs/cli.md#retained-observations-and-exchange), [retained schema](../../../schemas/retained-observation.schema.json), [exchange schema](../../../schemas/observation-exchange.schema.json) and [synthetic exchange](examples/exchange.synthetic.json).
 
 ESXi implementation 0.1.0 uses uname for hostname/kernel/architecture, a constant VMware ESXi system name, and the full vmware -v line for system version. Optional hardware identity comes from esxcli hardware platform get. The shared access adapter can verify an ESXi root login without id using an existing system Python; see [identity prerequisites and limits](../../../docs/host-diagnostics.md#esxi-login-identity-without-id). Native su/sudo still requires the existing SSHScript authenticated-console prerequisites. Supported interfaces are documented ESXi shell/ESXCLI interfaces, but ESXi inventory execution has not been tested; only direct root access verification on ESXi 7.0 has real-host evidence. vCenter/vSphere API collection and guest-to-hypervisor topology are not implemented. VMware guests use their OS collector; virtual hardware identifiers must not be equated with the physical host.
 
-Result schema remains 0.2.0 with additive identity evidence 0.1.0 and retention receipt. Recipe/implementation version changes are independent. Existing raw reports may be explicitly backfilled within their originating Feast; no background migration occurs. A stage-2 failure makes runner exit nonzero while preserving collection evidence for replay. Current tests are synthetic; historical macOS collection verification does not verify the new identity/sudo/retention path.
+Result schema remains 0.2.0 with additive identity evidence 0.1.0 and retention receipt. Recipe/implementation version changes are independent. Existing raw reports require a saved current snapshot or explicit reviewed --recipe-dir for replay; no background migration occurs. A stage-2 failure makes runner exit nonzero while preserving collection evidence for replay. Current tests are synthetic; historical macOS collection verification does not verify the new identity/sudo/retention path.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../../../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../../../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-17_
+
+Inventory-owned retention follow-up verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 678 public tests, including 13 new inventory-contract regressions and installed-wheel structured inventory retention assertions. Older interpreters reused the selected maintenance environment's Python dependencies. Wheel/sdist builds, temporary no-dependency pip installation and installed inventory normalization/query/replay/content smoke passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, documentation links/footers and diff whitespace checks passed. This is synthetic/local-package evidence; no native host collection, private-data modification, commit, push or release occurred.
+
+_Last modified: 2026-10-19 12:00:48_

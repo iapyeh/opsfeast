@@ -1,25 +1,32 @@
 # Ops command-line reference
 
-For offline conversion/recovery use `vault ingest --profile NAME --all [--dry-run] --json`, or `vault ingest FILE... --profile NAME [--recipe-dir DIRECTORY] --json`. Explicit `vault delete-observation SOURCE_OR_RECORD_ID --profile NAME [--dry-run] --json` deletes read observations only; write/unknown data and operation-linked evidence are protected. Files/IDs precede options. See [replay, snapshots and deletion](retention-replay.md) for statuses, compatibility and examples.
+## Retention and vault commands
 
-## Host vault commands
+Use [retention contracts and examples](retention.md) before selecting data, and [offline replay](retention-replay.md) for recovery. Recipe discovery/show/inspect exposes `retention` declarations and retrieval instructions. Read commands do not create storage or connect.
 
-Vault data and Markdown live in `<profile-root>/vault/`. All `--root` arguments still
-select the profile root. `init NAME [--namespace VALUE] [--json]` creates the namespace-enabled vault together
-with the profile; ordinary users do not need a separate migrate step. The saved
-namespace takes precedence over the profile name, and an explicit different override
-is rejected. Namespace-unsafe profile names require --namespace. The first operational
-inventory run retains automatically. No relocation tool is supplied for the former
-profile-root vault layout; see [initialization and incompatibility](host-vault.md#enable-or-migrate).
+| Command | Behavior |
+| --- | --- |
+| `retention list` / `retention export` | Complete validated envelopes; repeated --host, exact source-qualified --recipe, inclusive --since/--until, --status and --kind filters |
+| `retention show RECORD_ID` | One full retained record; unknown ID fails |
+| `retention inspect` | Settings, data directory and authoritative records |
+| `retention ingest FILE...` / `retention ingest --all` | Offline raw replay; --dry-run and explicit reviewed --recipe-dir supported |
+| `retention delete-observation ID` | Explicit read-only deletion; --dry-run supported; write/unknown and linked evidence protected |
+| `retention rebuild` | Recreate cumulative/recent SQLite projections from annual archives |
+| `vault rebuild` | Recreate bundled Markdown content and group links without writing SQLite or executing recipes |
+| `vault groups` / `vault inspect` | Refresh group links / read content settings and location |
 
-Read [the host-vault reference](host-vault.md) before selecting a namespace or migrating retained data. `python -B tools/opsfeast.py vault migrate --profile main --json` explicitly enables an attached root or recovers the legacy retained database; --namespace defaults to the saved value or profile name. `vault rebuild`, `vault groups` and `vault inspect` accept `--profile NAME` or `--root ROOT`, and `--json`. They perform local work only; groups refresh is explicit. Inspect is read-only. Results are JSON; success exits 0, sanitized configuration/storage failures 1, argparse errors 2. Legacy export reads inventory payloads from full vault archives after migration, not the recent overview.
+All accept mutually exclusive `--root PROFILE_ROOT` / `--profile NAME` and `--json`; output is JSON in terminals and pipes. Files/IDs precede options. List/export sort oldest first by UTC source time then record ID; empty selections succeed. Export writes stdout only and authorizes no transmission. Exit 0 means success, 1 data/content/storage failure, 2 parsing error.
+
+`init NAME [--namespace VALUE] --json` establishes independent `retention/` and `vault/` directories. Namespace defaults to saved value or first profile name and cannot be changed through reinit. `vault.auto_refresh` in feast.yaml defaults to true. Set Boolean false to save data without content publication; explicit vault rebuild remains available. Saved results and execution summaries distinguish recipe status, `retention` and `content_update`. Content failure preserves collected data/status and returns nonzero; retry `vault rebuild`. Receipts do not affect raw identity/digest. Old SQLite-in-vault layouts and template snapshots are incompatible; see [required user action](retention.md#development-incompatibility). `vault migrate/ingest/delete-observation` have been removed; use init or the retention commands above.
+
+Inventory discovery exposes the recipe-owned structured retention declaration, schema path/digest and registered normalizer source/digest. Current inventory raw snapshots bind those digests; old inventory raw without them requires `retention ingest FILE --recipe-dir REVIEWED_RECIPE --dry-run --profile NAME --json` before authorized actual replay. Candidate collection/normalizer code is never imported. See [inventory retention 0.1.0](../recipes/inventory/system/README.md#recipe-owned-retention-contract).
 
 For task-to-tool discovery and Python composition, consult [the existing capability map](agent-capabilities.md). Prefer suitable implemented interfaces before writing replacement configuration, execution, storage or export code.
 
 OpsFeast provides two command-line entrypoints:
 
 - **`tools/opsfeast.py` prepares and diagnoses the host environment.** It provides recipes list/show/run, raw results/artifacts, offline reports, bundle candidates and saved jobs; inspects recipe metadata and platform coverage; manages profiles, validates host configuration, discovers platform facts, and tests configured login/su/sudo capabilities.
-- **`tools/run_recipe.py` executes inventory and compatible Python-session recipes.** Inventory automatically selects each host's platform implementation. General recipes use one execute entrypoint. Both accept typed invocation inputs and save versioned raw results; only inventory has structured retention. See [the general contract](recipe-execution.md).
+- **`tools/run_recipe.py` executes inventory and compatible Python-session recipes.** Inventory automatically selects each host's platform implementation. General recipes use one execute entrypoint. Both accept typed invocation inputs and save versioned raw results; inventory and declared host-values recipes have structured retention. See [the general contract](recipe-execution.md).
 
 Platform-specific entrypoints share one result contract. Administrators do not need to maintain a separate recipe selection for every OS. Routine probing, dispatch and collection run as Python code without an LLM in the execution path. Agents can use this reference to choose the right command and explain its actual outcome.
 
@@ -41,7 +48,7 @@ Human console output uses the shared `tools/console_output.py` presentation laye
 | recipes jobs list/show/save/run | Job list/details, save report or execution summary | --json; this presentation flag is not persisted in job invocation data |
 | check_environment.py / recipe_identity.py defaults / skill_bundle.py check or download | Field/value readiness, author or bundle reports | --json (place after the subcommand where applicable) |
 
-Exceptions preserve data interfaces: dump, recipes results show, artifact, pack/unpack and observation-store JSON/CSV/export/validation/combination remain structured even on a terminal. Check-access preserves its existing default table even for non-TTY stdout; use --json for its full report. Textual Home/workbench/--tui keep their DataTable interfaces and pipe-based child streams. Help, prompts, simple confirmations, stderr progress/errors/debug and raw saved files are not converted into tables.
+Exceptions preserve data interfaces: dump, recipes results show, artifact, pack/unpack and observation-store JSON/CSV/export/validation/combination remain structured even on a terminal. Check-access preserves its existing default table even for non-TTY stdout; use --json for its full report. Textual Home/workbench/--tui keep their DataTable interfaces and pipe-based child streams. Execution TUI rows display separate Retention and Content cells while preserving the recipe status and process exit code. Help, prompts, simple confirmations, stderr progress/errors/debug and raw saved files are not converted into tables.
 
 Human `recipes results list` replaces identity quality with the actual collection user (unknown when unsupported or unverified). TTY lists omit the long identity-warnings column; redirected list text and list HTML retain warnings. Identity quality and warnings remain available through --json and detail/show without changing saved evidence. See [the collection-user rules](#saved-result-collection-user).
 
@@ -404,7 +411,7 @@ Seven common observations cover hostname, platform, system name/version, kernel 
 
 With --json or non-TTY stdout, single-host output is a JSON summary containing status, reason_code, message, detected_kernel, supported_platforms, recipe_id and result_path. Using --all or resolving more than one unique host produces batch stdout: an object with a hosts array; each entry records host/status/reason/result_path, or a sanitized error type when no saved report is available. A selection resolving to one host retains the single-host summary unless --all is used. Nonempty exclusions add excluded_hosts with host_disabled/cli_excluded reasons. Explicit disabled hosts remain skipped results; disabled group/all members are omissions. If filtering removes every target, return 1 with empty hosts plus exclusion evidence and an error on stderr.
 
-See the [inventory guide](../recipes/inventory/system/README.md), [recipe descriptor](../recipes/inventory/system/recipe.yaml), [result schema](../recipes/inventory/system/schema.json) and [synthetic example](../recipes/inventory/system/examples/result.synthetic.json) for authoring and data consumers. Old copied descriptors must be migrated to 0.2.0. Reviewed custom inventory entrypoints and compatible Python-session recipes can execute; there is no arbitrary backend loader, extension-overlay installer or execution sandbox. General recipes return data in stdout summaries and save observations/recipe-run-<UUID>.json with skipped no_retention_adapter; read [general result semantics](recipe-execution.md#results-failure-states-and-storage).
+See the [inventory guide](../recipes/inventory/system/README.md), [recipe descriptor](../recipes/inventory/system/recipe.yaml), [result schema](../recipes/inventory/system/schema.json) and [synthetic example](../recipes/inventory/system/examples/result.synthetic.json) for authoring and data consumers. Copied inventory descriptors require descriptor 0.2.0, explicit access_mode, the inventory-observations retention declaration and matching retention.schema.json; removed output adapter/version keys are rejected. Reviewed custom inventory entrypoints and compatible Python-session recipes can execute; there is no arbitrary backend loader, extension-overlay installer or execution sandbox. General recipes return data in stdout summaries and save observations/recipe-run-<UUID>.json; declared host-values are retained, while undeclared datasets report no_retention_adapter; read [general result semantics](recipe-execution.md#results-failure-states-and-storage).
 
 ## Exit codes, output and side effects
 
@@ -422,7 +429,7 @@ Su/sudo JSON includes per-step `identity_verification` (expected/actual username
 | Actual diagnostic failure; recipe partial/unsupported/skipped/failed; configuration/save error | 1 |
 | Invalid CLI syntax/options rejected by argparse | 2 |
 
-Profiles/init/attach/detach/use/check retain confirmations and use terminal tables where described above. Check-access keeps its default per-test table; add --json for its complete report. Other diagnostics and recipe execution use tables on terminals and JSON with --json or non-TTY output. Recipe execution saves full reports; inventory additionally saves eligible retained observations. Python-session results include data and explicit skipped no_retention_adapter. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results and retained data. Standalone test-connection/su/sudo do not automatically save their reports. Use --json and redirect stdout if you need to retain a structured diagnostic report.
+Profiles/init/attach/detach/use/check retain confirmations and use terminal tables where described above. Check-access keeps its default per-test table; add --json for its complete report. Other diagnostics and recipe execution use tables on terminals and JSON with --json or non-TTY output. Recipe execution saves full reports; inventory additionally saves eligible retained observations. Python-session results include data, declared retention or skipped no_retention_adapter, and separate content_update. Diagnostic progress/errors go to stderr where supported; preflight errors may produce no JSON report. Init writes the scaffold/registry; attach/detach/use write the registry. Host-init writes facts; test-host and inventory can initialize facts; inventory writes new results and retained data. Standalone test-connection/su/sudo do not automatically save their reports. Use --json and redirect stdout if you need to retain a structured diagnostic report.
 
 Setup/checks do not authorize connections, proxy commands, account switches or recipes. Explicit diagnostics may create authentication/audit records and execute login-shell startup; configured proxies can execute locally. The built-in inventory performs read-only queries; inventory uses the bounded two-candidate su/sudo policy, then collects under the verified root or original login actor. Account sudo: false disables only that account's sudo and excludes it as a second candidate. Custom recipe code must be reviewed within its execution scope; path/version/digest checks do not authenticate a publisher or confine code. Channel closure is not proof of remote-process termination.
 
@@ -736,4 +743,4 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-_Last modified: 2026-10-19 10:42:27_
+_Last modified: 2026-10-19 11:57:21_

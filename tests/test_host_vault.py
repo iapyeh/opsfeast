@@ -16,6 +16,7 @@ from unittest.mock import Mock, patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import host_vault as vault
+import retention_store as store
 import observation_store as legacy
 from opsfeast import ConfigError, instance_definition
 from test_result_data import raw
@@ -30,7 +31,7 @@ class VaultTests(unittest.TestCase):
         (self.root / 'hosts.yaml').write_text('hosts:\n  node:\n    connection: {local: true}\n    group: [production]\n')
 
     def enable(self):
-        return vault.migrate(self.root, 'example-production')
+        return store.initialize(self.root, 'example-production')
 
     def host(self):
         return self.root / 'vault' / 'hosts' / vault.component('node')
@@ -38,20 +39,20 @@ class VaultTests(unittest.TestCase):
     def test_settings_definition_and_namespace_change_guard(self):
         self.enable()
         instance_definition(self.root)
-        self.assertEqual(vault.settings(self.root)['namespace'], 'example-production')
+        self.assertEqual(store.settings(self.root)['namespace'], 'example-production')
         with self.assertRaises(ConfigError):
-            vault.migrate(self.root, 'different')
+            store.initialize(self.root, 'different')
         for name in ('', '../escape', 'UPPER', 'a' * 64):
             with self.assertRaises(ConfigError):
-                vault.validate_settings({'namespace': name})
+                store.validate_settings({'namespace': name})
         with self.assertRaises(ConfigError):
-            vault.validate_settings({'namespace': 'valid', 'overview_months': True})
+            store.validate_settings({'namespace': 'valid', 'overview_months': True})
 
     def test_migrate_defaults_to_saved_namespace_then_supplied_profile_name(self):
-        self.assertEqual(vault.migrate(self.root, profile='initial')['status'], 'success')
-        self.assertEqual(vault.settings(self.root)['namespace'], 'initial')
-        vault.migrate(self.root, profile='renamed')
-        self.assertEqual(vault.settings(self.root)['namespace'], 'initial')
+        self.assertEqual(store.initialize(self.root, profile='initial')['status'], 'success')
+        self.assertEqual(store.settings(self.root)['namespace'], 'initial')
+        store.initialize(self.root, profile='renamed')
+        self.assertEqual(store.settings(self.root)['namespace'], 'initial')
 
     def test_init_then_first_inventory_automatically_retains_without_migrate(self):
         import test_inventory_system as inventory
@@ -69,12 +70,12 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(report['status'], 'success', report)
         self.assertEqual(report['retention']['status'], 'stored')
         self.assertEqual(path.parent, fixture.root.resolve() / 'observations')
-        found = vault.records(fixture.root)
+        found = store.records(fixture.root)
         self.assertEqual(len(found), 1)
         self.assertEqual(found[0]['namespace'], 'first-inventory')
         self.assertTrue((fixture.root / 'vault/HOSTS.md').exists())
         initialize(fixture.root, quiet=True, profile='renamed')
-        self.assertEqual(vault.records(fixture.root), found)
+        self.assertEqual(store.records(fixture.root), found)
 
     def test_core_profile_init_namespace_override_and_saved_default(self):
         from opsfeast import Instance
@@ -82,32 +83,33 @@ class VaultTests(unittest.TestCase):
         installation.mkdir()
         instance = Instance.open(installation)
         profile = instance.init_profile('Team.Production', namespace='production')
-        self.assertEqual(vault.settings(profile.root)['namespace'], 'production')
+        self.assertEqual(store.settings(profile.root)['namespace'], 'production')
         self.assertTrue((profile.root / 'vault/HOSTS.md').exists())
         instance.init_profile('Team.Production')
-        self.assertEqual(vault.settings(profile.root)['namespace'], 'production')
+        self.assertEqual(store.settings(profile.root)['namespace'], 'production')
 
     def test_migrate_preserves_legacy_and_record_ids_and_replays(self):
         receipt = legacy.retain(self.root, raw())
         original = (self.root / 'records/observations.sqlite3').read_bytes()
         result = self.enable()
-        self.assertEqual(result['migrated'], 1)
+        self.assertEqual(result['records'], 0)
+        legacy.retain(self.root, raw())
         self.assertEqual((self.root / 'records/observations.sqlite3').read_bytes(), original)
-        record = vault.records(self.root)[0]
-        self.assertEqual(record['record_id'], receipt['observation_id'])
+        record = store.records(self.root)[0]
+        self.assertNotEqual(record['record_id'], receipt['observation_id'])
         self.assertEqual(record['namespace'], 'example-production')
-        self.assertEqual(legacy.export(self.root)['records'][0]['observation_id'], receipt['observation_id'])
+        self.assertEqual(legacy.export(self.root)['records'][0]['observation_id'], record['record_id'])
         self.enable()
-        self.assertEqual(len(vault.records(self.root)), 1)
+        self.assertEqual(len(store.records(self.root)), 1)
 
     def test_archive_year_copies_and_replay(self):
         self.enable()
         first = legacy.retain(self.root, raw())
-        self.assertTrue((self.host() / '2026/observations.sqlite3').exists())
-        self.assertTrue((self.host() / 'records/observations.sqlite3').exists())
+        self.assertTrue((self.root / 'retention/hosts/node/2026/observations.sqlite3').exists())
+        self.assertTrue((self.root / 'retention/hosts/node/records/observations.sqlite3').exists())
         self.assertEqual(legacy.retain(self.root, raw())['status'], 'already_stored')
         self.assertEqual(first['host_key'], 'example-production/node')
-        with vault.database(self.host() / 'records/observations.sqlite3') as connection:
+        with store.database(self.root / 'retention/hosts/node/records/observations.sqlite3') as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM records').fetchone()[0], 1)
 
     def test_human_index_groups_states_and_executable_rebuild_guidance(self):
@@ -131,7 +133,30 @@ class VaultTests(unittest.TestCase):
         self.assertNotIn('.123456', page)
         self.assertIn('To regenerate this view', (self.root / 'vault/overview/README.md').read_text())
         # The view must not change archive precision or classification.
-        self.assertEqual(vault.records(self.root)[0]['observed_at'], report['finished_at'])
+        self.assertEqual(store.records(self.root)[0]['observed_at'], report['finished_at'])
+
+    def test_group_cells_handle_scalar_list_and_empty_memberships(self):
+        for membership, expected in (
+            ('group: backup', 'backup'),
+            ('group: [backup]', 'backup'),
+            ('group: [backup, production]', 'backup,production'),
+            ('group: 備份', '備份'),
+            ('group: []', ''),
+            ('', ''),
+        ):
+            with self.subTest(membership=membership):
+                config = 'hosts:\n  node:\n    connection: {local: true}\n'
+                if membership:
+                    config += '    ' + membership + '\n'
+                (self.root / 'hosts.yaml').write_text(config)
+                self.enable()
+                for name in ('HOSTS.md', 'overview/README.md'):
+                    page = (self.root / 'vault' / name).read_text()
+                    table = [line for line in page.splitlines() if line.startswith('|')]
+                    self.assertTrue(all(len(line.split('|')) == 8 for line in table), name)
+                    row = next(line for line in table if line.startswith('| [node]'))
+                    self.assertEqual(row.split('|')[3].strip(), expected)
+                self.assertEqual((self.root / 'hosts.yaml').read_text(), config)
 
     def test_all_generated_vault_times_use_local_seconds_without_mutating_records(self):
         self.enable()
@@ -139,8 +164,8 @@ class VaultTests(unittest.TestCase):
         report['finished_at'] = '2026-10-13T00:00:10.123456+00:00'
         report['observations']['hostname']['observed_at'] = '2026-10-13T00:00:01.654321+00:00'
         legacy.retain(self.root, report)
-        intent = vault.operation_intent(self.root, 'node', {'id': 'update', 'version': '1', 'access_mode': 'write'}, 'a' * 64, [])
-        before = copy.deepcopy(vault.records(self.root))
+        intent = store.operation_intent(self.root, 'node', {'id': 'update', 'version': '1', 'access_mode': 'write'}, 'a' * 64, [])
+        before = copy.deepcopy(store.records(self.root))
         vault.rebuild(self.root)
         vault.refresh_groups(self.root)
         for path in self.root.rglob('*.md'):
@@ -148,7 +173,7 @@ class VaultTests(unittest.TestCase):
                 page = path.read_text()
                 self.assertRegex(page, r'_Last modified: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}_\n$')
                 self.assertNotRegex(page, r'\d{2}:\d{2}:\d{2}\.\d+')
-        self.assertEqual(vault.records(self.root), before)
+        self.assertEqual(store.records(self.root), before)
         self.assertIn(intent['observed_at'], json.dumps(before))
 
     def test_native_identity_changes_do_not_split_logical_host(self):
@@ -160,7 +185,7 @@ class VaultTests(unittest.TestCase):
         first['identity']['os_instance_key'] = 'linux:' + 'b' * 64
         b = legacy.retain(self.root, first)
         self.assertEqual(a['host_key'], b['host_key'])
-        self.assertEqual(len(vault.records(self.root)), 2)
+        self.assertEqual(len(store.records(self.root)), 2)
 
     def test_vault_is_separate_from_profile_inputs_and_human_root_files(self):
         (self.root / 'README.md').write_text('Private profile notes')
@@ -179,10 +204,11 @@ class VaultTests(unittest.TestCase):
 
     def test_view_failure_preserves_archive_and_rebuild_repairs(self):
         self.enable()
-        with patch.object(vault, 'replace_copy', side_effect=OSError('synthetic')):
-            with self.assertRaises(OSError):
-                legacy.retain(self.root, raw())
-        self.assertEqual(len(vault.records(self.root)), 1)
+        with patch('vault_content.build', side_effect=OSError('synthetic')):
+            receipt = legacy.retain(self.root, raw())
+        self.assertEqual(receipt['status'], 'stored')
+        self.assertEqual(receipt['content_update']['status'], 'failed')
+        self.assertEqual(len(store.records(self.root)), 1)
         shutil.rmtree(self.host() / 'records')
         self.assertEqual(vault.rebuild(self.root)['records'], 1)
         self.assertTrue((self.host() / 'records/README.md').exists())
@@ -203,12 +229,12 @@ class VaultTests(unittest.TestCase):
 
     def test_overview_expiry_does_not_remove_old_host_or_history(self):
         self.enable()
-        with patch.object(vault, 'cutoff', return_value='2099-01-01T00:00:00.000000+00:00'):
+        with patch.object(store, 'cutoff', return_value='2099-01-01T00:00:00.000000+00:00'):
             legacy.retain(self.root, raw())
-        with vault.database(self.root / 'vault/overview/observations.sqlite3') as connection:
+        with store.database(self.root / 'retention/overview/observations.sqlite3') as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM records').fetchone()[0], 0)
         self.assertIn('node', (self.root / 'vault' / 'HOSTS.md').read_text())
-        self.assertEqual(len(vault.records(self.root)), 1)
+        self.assertEqual(len(store.records(self.root)), 1)
 
     def test_group_refresh_preserves_notes_and_removes_only_managed_links(self):
         self.enable()
@@ -228,44 +254,45 @@ class VaultTests(unittest.TestCase):
             self.assertNotIn('/', vault.component(name))
         self.enable()
         (self.root / 'vault' / 'hosts' / vault.component('node')).mkdir(exist_ok=True)
-        (self.host() / '2026').symlink_to(self.root, target_is_directory=True)
+        (self.root / 'retention/hosts/node').mkdir(parents=True, exist_ok=True)
+        (self.root / 'retention/hosts/node/2026').symlink_to(self.root, target_is_directory=True)
         with self.assertRaises(ConfigError):
             legacy.retain(self.root, raw())
 
     def test_write_unknown_audit_append_only_and_read_exclusion(self):
         self.enable()
         metadata = {'id': 'update-example', 'version': '1.0', 'access_mode': 'write'}
-        intent = vault.operation_intent(self.root, 'node', metadata, 'a' * 64, {'password': 'never-save'})
-        before = copy.deepcopy(vault.records(self.root)[0])
-        vault.operation_result(self.root, intent, {'status': 'failed', 'reason_code': 'connection_failed'})
-        found = vault.records(self.root)
+        intent = store.operation_intent(self.root, 'node', metadata, 'a' * 64, {'password': 'never-save'})
+        before = copy.deepcopy(store.records(self.root)[0])
+        store.operation_result(self.root, intent, {'status': 'failed', 'reason_code': 'connection_failed'})
+        found = store.records(self.root)
         self.assertEqual(len(found), 2)
         self.assertIn(before, found)
         self.assertNotIn('never-save', json.dumps(found))
         self.assertTrue(any(r['data'].get('intent_id') == intent['record_id'] for r in found))
         metadata['access_mode'] = 'read'
-        self.assertIsNone(vault.operation_intent(self.root, 'node', metadata, 'a' * 64, []))
+        self.assertIsNone(store.operation_intent(self.root, 'node', metadata, 'a' * 64, []))
         metadata.pop('access_mode')
-        self.assertIsNotNone(vault.operation_intent(self.root, 'node', metadata, 'a' * 64, []))
+        self.assertIsNotNone(store.operation_intent(self.root, 'node', metadata, 'a' * 64, []))
 
     def test_general_retention_typed_fields_template_and_no_raw_leak(self):
         self.enable()
         recipe = self.root / 'test-recipe'
         recipe.mkdir()
         (recipe / 'state.md').write_text('Reachable: {{reachable}}')
-        metadata = {'id': 'check-port', 'version': '1', 'retention': {'contract': 'host-values', 'version': '0.1.0',
-                    'fields': {'reachable': {'type': 'boolean', 'unit': ''}}, 'markdown_template': 'state.md'}}
+        metadata = {'id': 'check-port', 'version': '1', 'retention': {'contract': 'host-values', 'version': '0.2.0', 'description': 'Synthetic reachability; no health inference.',
+                    'fields': {'reachable': {'type': 'boolean', 'unit': '', 'description': 'TCP reachability'}}}}
         report = {'host_id': 'node', 'status': 'partial', 'completed_at': '2026-10-17T00:00:00Z',
                   'evidence_kind': 'ssh', 'data': {'reachable': False, 'password': 'never-save'},
                   'recipe': {'reference': 'company:check/port'}}
-        vault.retain_general(self.root, report, metadata, recipe)
-        record = vault.records(self.root)[0]
+        store.retain_general(self.root, report, metadata, recipe)
+        record = store.records(self.root)[0]
         self.assertFalse(record['data']['observations']['reachable']['value'])
         self.assertNotIn('never-save', json.dumps(record))
-        self.assertIn('Reachable: False', (self.host() / 'records' / (vault.component('company:check/port') + '.md')).read_text())
+        self.assertIn('reachable | False', (self.host() / 'records' / (vault.component('company:check/port') + '.md')).read_text())
         report['data']['reachable'] = 'false'
         with self.assertRaises(ConfigError):
-            vault.retain_general(self.root, report, metadata, recipe)
+            store.retain_general(self.root, report, metadata, recipe)
 
     def test_concurrent_writers_and_id_conflict(self):
         self.enable()
@@ -273,23 +300,23 @@ class VaultTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=3) as pool:
             results = list(pool.map(lambda _: legacy.retain(self.root, report), range(3)))
         self.assertEqual(sum(r['status'] == 'stored' for r in results), 1)
-        record = vault.records(self.root)[0]
+        record = store.records(self.root)[0]
         record['data']['recipe_version'] = 'different'
         with self.assertRaises(ConfigError):
-            vault.save(self.root, record)
+            store.save(self.root, record)
 
     def test_origin_and_mapping_validation(self):
         self.enable()
         legacy.retain(self.root, raw())
-        record = vault.records(self.root)[0]
+        record = store.records(self.root)[0]
         record['mappings'] = [{'from': {'namespace': 'example-production', 'host_id': 'node'},
                                'to': {'namespace': 'other', 'host_id': 'node'},
                                'mapped_at': '2026-10-17T00:00:00Z', 'basis': 'explicit user decision'}]
         record['namespace'] = 'other'
-        vault.validate_record(record)
+        store.validate_record(record)
         record['origin']['instance_id'] = 'invalid'
         with self.assertRaises(ConfigError):
-            vault.validate_record(record)
+            store.validate_record(record)
 
     def recipe(self):
         directory = self.root / 'recipes' / 'update'
@@ -306,7 +333,7 @@ class VaultTests(unittest.TestCase):
         self.enable()
         self.recipe()
         factory = Mock()
-        with patch.object(vault, 'save', side_effect=OSError('cannot persist')):
+        with patch.object(store, 'save', side_effect=OSError('cannot persist')):
             with self.assertRaises(OSError):
                 run_recipe.run(self.root, 'node', recipe=':update', session_class=factory)
         factory.assert_not_called()
@@ -318,8 +345,8 @@ class VaultTests(unittest.TestCase):
         factory = Mock(return_value=Mock())
         report, path = run_recipe.run(self.root, 'node', recipe=':update', session_class=factory)
         self.assertEqual(report['status'], 'success')
-        self.assertEqual(len(vault.records(self.root)), 2)
-        with patch.object(vault, 'operation_result', side_effect=OSError('cannot persist')):
+        self.assertEqual(len(store.records(self.root)), 2)
+        with patch.object(store, 'operation_result', side_effect=OSError('cannot persist')):
             report, path = run_recipe.run(self.root, 'node', recipe=':update', session_class=factory)
         self.assertEqual(report['status'], 'failed')
         self.assertEqual(report['execution_status'], 'success')
@@ -330,12 +357,12 @@ class VaultTests(unittest.TestCase):
                     'created_at': '2026-10-17T00:00:00Z', 'source': {'namespace': 'example', 'host_id': 'node'},
                     'source_instance_id': '00000000-0000-0000-0000-000000000000', 'mappings': [],
                     'files': [{'path': 'hosts/node/2026/observations.sqlite3', 'size_bytes': 0, 'sha256': 'a' * 64}]}
-        vault.validate_package_manifest(manifest)
+        store.validate_package_manifest(manifest)
         for name in ('../escape', '/absolute', 'a//b', 'C:/x', 'a\\b'):
             bad = copy.deepcopy(manifest)
             bad['files'][0]['path'] = name
             with self.assertRaises(ConfigError):
-                vault.validate_package_manifest(bad)
+                store.validate_package_manifest(bad)
 
     def test_vault_ingest_validates_entire_batch_before_archive_writes(self):
         self.enable()
@@ -348,7 +375,7 @@ class VaultTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             status = legacy.main(['ingest', str(valid), str(invalid), '--root', str(self.root)])
         self.assertEqual(status, 1)
-        self.assertEqual(vault.records(self.root), [])
+        self.assertEqual(store.records(self.root), [])
 
 
 if __name__ == '__main__':

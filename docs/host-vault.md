@@ -1,333 +1,70 @@
-# Host vault, retention and operation journals
+# Bundled host vault content application
 
-Host-vault contract **0.1.0** provides local, host-centered annual history,
-rebuildable cumulative records, recent fleet observations, and plain Markdown views.
-The vault is `<profile-root>/vault/`; `feasts/main/vault` is the usual main vault,
-not a required profile location. Open only the `vault/` directory in Obsidian or any Markdown reader. No Obsidian
-plugin, server, model, connection or running TUI is required for reading.
-
-See [offline raw replay, stable source IDs and explicit read-only deletion](retention-replay.md) for recovery and author iteration. Write/unknown observations and operation journals are protected.
+Vault is the bundled application over [recipe retention](retention.md). The platform manages its structure, identity/path rules and output ownership. The bundled content author renders retained observations and operation evidence. User AI agents may create other content authors or use retention for web pages, graphs and reports without using vault.
 
 ## Identity and configuration
 
-The logical management identity is the pair **(namespace, host_id)**. Hardware
-replacement, VM relocation and OS reinstall preserve history when the user retains
-that pair. Native machine IDs, serials and the older retained `host_key` are captured
-environment evidence, not rules for splitting or merging logical hosts.
-
-`feast.yaml` extends the existing profile definition:
-
-```yaml
-schema_version: 1
-kind: opsfeast
-namespace: example-production
-overview_months: 3
-```
-
-Namespace requires 1–63 lowercase letters/digits/hyphens/underscores, beginning with
-a letter or digit. It is user-selected; different independent Feasts should choose
-different namespaces. A replacement installation may explicitly reuse one. Profile
-names and filesystem paths can change without changing namespace. Instance UUIDs
-continue to identify the installation that produced an event; missing instance
-identity remains the documented all-zero placeholder. Namespaces are assertions,
-not authenticated publisher identities. Do not edit an existing namespace to relabel
-archives: rebuild detects the mismatch. Namespace/host renaming requires a future
-explicit identity migration; it is not implemented by changing configuration.
+Open `<profile-root>/vault/` in a Markdown reader or Obsidian. No plugin, model or connection is needed. Logical namespace/host identity and all authoritative SQLite data belong to [retention](retention.md#storage-and-execution-phases). Vault contains content and human notes only. `feast.yaml` accepts `vault: {auto_refresh: false}` to disable automatic publication; default is true.
 
 ## Enable or migrate
 
-New profiles initialize their vault as part of normal profile setup:
+`opsfeast.py init NAME --namespace production --json` initializes data storage and the bundled vault without connecting or collecting. Namespace defaults to the saved namespace or first profile name. Reinitialization preserves it. There is no `vault migrate` command: the earlier SQLite-in-vault layout is incompatible and not moved automatically. Preserve the old profile and initialize a separate one, then use [retention replay](retention-replay.md) for selected raw results. Never delete old data or notes to enable initialization.
 
 ```sh
-python -B tools/opsfeast.py init inventory --json
-# Optional explicit identity, including when the profile name is not namespace-safe:
-python -B tools/opsfeast.py init ./production --profile Team.Production --namespace production --json
-python -B tools/opsfeast.py vault inspect --profile inventory --json
+python -B tools/opsfeast.py vault rebuild --profile main --json
+python -B tools/opsfeast.py vault groups --profile main --json
+python -B tools/opsfeast.py vault inspect --profile main --json
 ```
 
-Initialization saves namespace and overview_months in feast.yaml, creates vault/
-and its host/group indexes, and performs no collection, connection or recipe execution.
-The first operational inventory run saves raw observations separately and automatically
-retains successful/partial observations and refreshes vault views. Collection and
-retention outcomes remain independent; retain failures can be replayed from raw.
-
-Namespace selection is explicit --namespace, then the saved Feast namespace, then
-the profile registration name on first initialization. The saved namespace is fixed:
-a different override is rejected and profile renaming does not change it. Names that
-contain uppercase, dots, spaces, Unicode or otherwise violate namespace syntax require
-an explicit valid --namespace before initialization writes files. Names are not globally
-unique: choose an explicit namespace when independent profiles share the same name.
-
-Repeated init preserves hosts.yaml, definition comments, human notes and archived data;
-it refreshes generated views and group indexes without reimporting legacy records.
-Initialization is not a multi-file transaction: if storage/configuration validation
-fails, scaffold files may remain; fix the error and retry with the same namespace.
-
-For a deliberately attached root without namespace, or explicit recovery of the older
-retained inventory database, vault migrate remains available. Its --namespace can be
-omitted: it reuses the saved namespace or defaults to the registered profile name
-(the directory name for an unregistered --root). Existing namespace cannot be changed.
-
-```sh
-python -B tools/opsfeast.py vault migrate --profile inventory --json
-python -B tools/opsfeast.py vault rebuild --profile inventory --json
-python -B tools/opsfeast.py vault groups --profile inventory --json
-```
-
-All vault commands also accept --root /absolute/feast instead of --profile. Root means
-the profile root, never its vault/ child. Vault output is JSON in terminals and pipes;
-success exits 0, storage/configuration failures 1, argparse errors 2. Rebuild/inspect
-receipts include vault_directory. Inspect is read-only. Migrate requires an existing
-Feast definition and hosts.yaml. No host operations occur.
-
-**Development layout change:** earlier files directly under the profile root are
-not read or relocated by the new layout. No compatibility layer or layout migration
-command is provided. Keep old histories and human notes separately; use a new test
-profile and replay selected raw files when needed. Existing files are not deleted.
-
-Migration validates legacy inventory payloads, preserves observation IDs, source
-UUIDs and raw business data, wraps them with namespace identity and writes annual
-archives. Legacy retained payloads never attested an installation UUID: their origin
-instance is explicitly all-zero. The original `records/observations.sqlite3` is not
-modified or deleted. An interrupted migration can be rerun with the same namespace.
-There is no cross-database transaction; already committed archive records remain
-valid after a projection/migration failure. Repair with the same migrate command or
-rebuild as appropriate. The old database is a historical backup after migration;
-new observations are written only to the vault. Profiles without namespace keep
-legacy retention behavior until explicitly migrated.
+All commands also accept `--root PROFILE_ROOT` instead of `--profile`. Rebuild refreshes local content and group links; groups only refreshes membership links. Inspect is read-only. Output is JSON, exit 0 success, 1 failure, 2 parsing error. `retention rebuild` rebuilds SQLite projections independently; `vault rebuild` never writes SQLite or executes recipes.
 
 ## Directory and ownership
 
 ```text
-<profile-root>/
-  feast.yaml
-  hosts.yaml
-  observations/                  # raw execution results
-  runs/                          # execution records
-  records/                       # preserved legacy retention, if present
-  hosts/                         # optional configuration includes
-  .vault-source.json
-  .vault.lock
-  vault/                         # open this directory as the Obsidian vault
-    HOSTS.md
-    README.md
-    .vault-views.json
-    hosts/
-      <encoded-host-id>/
-        README.md
-        records/
-          observations.sqlite3
-          README.md
-          <encoded-recipe-reference>.md
-        2026/
-          observations.sqlite3
-          reports/<record-digest>.md
-          operations/<record-digest>.md
-    groups/
-      .generated.json
-      <encoded-group-id>/
-        README.md
-        <encoded-host-id>.md
-    overview/
-      observations.sqlite3
-      README.md
+vault/
+  README.md                        # preserved human landing page
+  HOSTS.md                         # platform index
+  .content-structure.json
+  .content-bundled-retention.json
+  .content-groups.json
+  hosts/<encoded-host-id>/
+    README.md                      # preserved human host notes
+    records/README.md
+    records/<encoded-reference>.md
+    <UTC-year>/reports/<record-digest>.md
+    <UTC-year>/operations/<record-digest>.md
+  overview/README.md
+  groups/README.md
+  groups/<encoded-group-id>/README.md
+  groups/<encoded-group-id>/<encoded-host-id>.md
 ```
 
-IDs use reversible UTF-8 percent encoding. Ordinary lowercase IDs such as web-01
-remain unchanged. Digits, hyphens and underscores remain visible; reserved device
-names, uppercase characters and punctuation are encoded to avoid traversal and
-case-insensitive collisions.
-Markdown URL targets encode these filesystem components once more as URLs.
-host IDs themselves are unchanged in records. Namespace is stored in the Feast
-definition and each record; one vault contains one namespace.
+Separate manifests track platform structure, bundled content and groups. Each maps relative Markdown paths to SHA-256 digests of the latest generated bytes. Manifest ownership authorizes replacement: regeneration overwrites owned outputs even after manual edits or editor formatting, without confirmation or a required backup. The generated notice states this policy; removing the notice does not remove ownership. Digests record generated content and do not block replacement. Stale outputs belonging to that owner are removed even if edited. Unmanaged files and other authors' outputs still cause an explicit collision, including unmanaged files carrying a generated notice. Human landing pages and notes outside the manifests remain intact. Publication can leave different generations across files; interrupted writes may require inspection before retrying.
 
-Annual databases are authoritative. Years use UTC observation completion time;
-operation result events stay in the intent year even when completion crosses a year.
-`records` accumulates all years and does not expire. It can be deleted and rebuilt
-from archive SQLite files. Its latest-state pages select the newest whole observation
-per source-qualified recipe reference, breaking equal times by record ID. A partial
-latest snapshot stays partial: older values are never silently filled in. Source
-timestamps/statuses and generation time are distinct. Annual Markdown is also a
-reproducible view of each archived record.
-
-`overview` contains observation records within the configured rolling calendar-month
-window, default three months (1–1200 supported). Rebuild prunes only this copy; it
-never removes annual history or cumulative records. The host list is the union of
-configured hosts and archived hosts, so old, disabled and never-observed hosts remain
-visible. The initial viewer does not infer online status or a health score.
-
-`HOSTS.md` and `overview/README.md` include a shell-quoted `vault rebuild --root ... --json`
-command immediately after the overwrite notice. The command uses the current tool
-checkout and profile paths; regenerate it after relocating either directory. Groups
-in the host table are comma-separated. `Status` describes the latest observation,
-including partial and no-observation states; it is not an online/health assessment.
-
-Generated Markdown displays timestamps in OS-local time to whole seconds, including
-generation, observation and operation times and `Last modified: YYYY-MM-DD HH:MM:SS`.
-JSON blocks in these Markdown views are human-readable copies; use SQLite/JSON exports
-for authoritative precise source timestamps. Recipe-authored free-form Markdown keeps
-its template content. Raw files and SQLite payloads preserve original precision.
-
-Generated Markdown has an overwrite notice and modification timestamp. Editing generated
-files is unsupported; rebuild overwrites them. The initial host README is a human
-landing page and is preserved on later rebuilds. User files elsewhere are preserved.
-Do not put private credentials in human notes or declared retained fields if the
-vault may be shared. Configuration, raw observations and execution records remain
-outside `vault/`. Retained data and human notes can still contain private information;
-the vault is not automatically a sanitized sharing package.
-
-Group refresh is explicitly requested; it reads current hosts.yaml membership and
-creates relative Markdown links, never symlinks. Its manifest tracks generated
-files. Removed memberships remove only managed files still carrying the generated
-notice; human files and host histories remain. A collision with an unmanaged output
-fails. Group refresh does not collect data or refresh host state.
+Checkout authors can use `host_vault.publish(root, owner, entries)` while holding `host_vault.locked(root)`. `owner` is a stable lowercase letter followed by lowercase letters/digits/hyphens/underscores. `entries` maps safe relative `.md` paths to Markdown bodies. The platform adds a generated notice and local-second modification footer. Assets can remain validated report artifacts linked from Markdown; arbitrary binary vault publication is not part of this interface. Ownership manifests are coordination metadata, not a security sandbox against arbitrary Python/filesystem writes.
 
 ## Record and SQLite contracts
 
-[Vault record schema](../schemas/host-vault-record.schema.json) wraps the existing
-inventory contract or general host-values data. Each envelope carries a stable
-`record_id`, kind, current namespace/host ID, recipe ID/source-qualified reference,
-UTC time, immutable origin, business data and a mappings list. Optional retention_provenance carries source identity, raw digest, execution mode and snapshot/version. Origin retains its
-original namespace/host ID, instance UUID, source UUID and record ID. Native identity
-evidence remains inside the inventory payload; legacy exchange consumers continue
-to see the original retained 0.1.0 payload.
-
-Each SQLite has `PRAGMA user_version=1` and:
-
-```sql
-CREATE TABLE records (
-  record_id TEXT PRIMARY KEY,
-  kind TEXT NOT NULL,
-  namespace TEXT NOT NULL,
-  host_id TEXT NOT NULL,
-  recipe_id TEXT NOT NULL,
-  observed_at TEXT NOT NULL,
-  payload TEXT NOT NULL
-);
-CREATE INDEX record_selection ON records(kind, recipe_id, observed_at);
-```
-
-`payload` is the canonical full envelope. Identical IDs/content deduplicate; different
-content for an existing ID fails. Changing management identity in a future import
-must preserve origin/record ID and append a mapping with from/to namespace/host,
-mapped_at and basis. [Package manifest schema](../schemas/host-vault-package.schema.json)
-defines future package members, byte lengths and SHA-256 digests. The checkout-level `validate_package_manifest(value)` validates this structure and path syntax without reading or extracting any files. Mapping/package
-structures are defined now; **new import, export, package construction, mapping,
-transport and merging workflows are deferred**. Namespace changes do not retrieve
-historical data. The existing inventory export/validate/combine interface remains
-compatible and exports underlying inventory payloads from archives, not the recent
-overview; general observations and operations are not included in that legacy format.
+Vault stores no databases. Use the [retention query and schemas](retention.md#discover-and-read-data); never derive data access from generated page paths. The retained envelopes remain authoritative and preserve precise source timestamps and quality warnings.
 
 ## Recipe retention and Markdown
 
-Inventory uses the existing trusted extraction adapter automatically. Other
-python-session/python-recipe descriptors may opt into a constrained scalar adapter:
+Recipe creators own the data declaration and extraction. Content authors own Markdown and other presentation. `retention.markdown_template` is removed. `vault_content.build(root, runtime)` is the bundled content author: it selects public retention records and returns Markdown bodies, a host index and host IDs; it performs no writes or connections. `host_vault` publishes those bodies under the bundled author's manifest. User AI agents can query multiple recipe references independently and use [offline content reports](retention.md#content-authors-and-offline-reports).
 
-```yaml
-access_mode: read
-retention:
-  contract: host-values
-  version: 0.1.0
-  fields:
-    reachable: {type: boolean, unit: ""}
-    port: {type: integer, unit: "tcp-port"}
-  markdown_template: state.md
-```
+The host list includes configured and archived hosts. Latest-state pages select the newest whole observation per source-qualified reference, with record ID breaking equal-time ties. Partial remains partial; no old-value backfill occurs. The host index reports latest observation status or no observations, not online status or health. Every observation page preserves record ID, origin, source time/status, environment identity evidence and typed values. Inventory details remain available as escaped JSON. Groups are relative Markdown links, never symlinks. Host-index and overview group cells accept scalar or list membership: group: backup and group: [backup] both display backup; multiple groups are comma-separated. Rendering does not rewrite hosts.yaml. The host-index and overview tables always have six columns, including matching header/delimiter/data rows.
 
-The adapter reads only declared top-level keys of result.data. Types are string,
-number, integer or boolean; an explicit unit is required (empty means unitless).
-Missing/null remains unavailable, false/zero remain values, and wrong types fail
-retention. Only local/SSH success/partial results are retained. Mock, failed, skipped
-and unsupported outcomes are excluded. Undeclared data, commands, input values and
-raw errors are not retained. Authors must declare only safe business fields and
-agree on field meanings/units across compatible recipes; this is not an automatic
-semantic reconciliation service.
-
-The optional recipe-relative template is reviewed recipe content. `{{field_name}}`
-substitutions escape field text; templates may contain ordinary Markdown and must
-not embed secrets or unsafe active content. It runs no template code. The standard
-page always includes provenance, observation times/statuses, fields and inventory;
-recipe Markdown adds a domain-specific view. Regeneration uses archived content,
-not recipe execution or loading a new template. Retention failure preserves raw
-results and returns failed retention/nonzero execution, with archive replay/rebuild
-where applicable. General results do not use the legacy inventory ingest adapter; vault ingest uses
-saved snapshots or an explicitly selected descriptor/template without loading code.
-
-The scalar payload is defined by [host-values 0.1.0](../schemas/host-values.schema.json).
+Generated pages distinguish observation/generation times and display controller-local seconds. Original precision remains in retention JSON/SQLite. Host/group IDs use reversible UTF-8 percent encoding and Markdown URLs encode filesystem components as URL targets. One profile has one namespace. Do not place credentials in retained fields or notes merely because content is stored locally.
 
 ## Long-lived operation journal
 
-The [operation-event schema](../schemas/operation-event.schema.json) defines intent and result data.
-
-Declare `access_mode: read`, `write` or `unknown`; omission means unknown. General
-runner recipes in namespace-enabled vaults persist write/unknown intent before any
-connection or recipe code is loaded. Persistence failure prevents execution. Read
-recipes skip the operation journal. Inventory defaults to the legacy read collection
-path; an explicit write/unknown inventory declaration is honored and journals before
-collection, after access preflight. Its bundle digest is recorded separately from
-a general recipe entrypoint digest.
-Descriptor declarations are reviewed assertions, not a sandbox or command classifier.
-
-Intent includes stable ID, logical target, recipe/version, source reference, descriptor
-and implementation hashes, purpose, controller OS username, variable names and an
-explicit indication that caller invocation is not a verified authorization receipt.
-Variable values/credentials are omitted. These records establish provenance, not
-cryptographic authentication or tamper resistance. Result is an independent append-only
-event referring to intent; successful execution never means verified changed state.
-Results default to not_observed, with an optional observation-ID evidence link for
-reviewed callers. A crash leaves an unresolved intent. Retries/rollback are new
-invocations and new intents; no failure is overwritten. Final audit-write failure
-preserves raw result, marks runner failed and leaves the intent unresolved. No
-automatic operation deletion or raw/debug cleanup is implemented.
-
-Runner coverage includes general runner recipes and explicit write/unknown inventory
-declarations. Direct Core/session commands,
-diagnostics and arbitrary external processes are not automatically journaled. A
-standalone authorized write program must use the explicit journal functions below;
-do not claim all shell activity is audited.
+Write/unknown operation evidence belongs to retention. Vault renders intent/outcome links and preserves unresolved/unknown verification states. A successful operation result is not proof of a verified change. Content failure does not erase the journal. See [data/audit interfaces](retention.md#operation-journals-and-module-boundaries).
 
 ## Checkout module interfaces
 
-These are checkout-level interfaces available through the bundled tools path, not
-new Core API promises. Use selected profile.root or the CLI root resolver, never
-freeze credentials or construct private paths from an agent's earlier observations.
-
-```python
-from host_vault import settings, records, rebuild, refresh_groups
-configuration = settings(profile.root)  # None for a legacy Feast
-history = records(profile.root)         # validates authoritative envelopes
-rebuild(profile.root)                   # local views only
-refresh_groups(profile.root)            # explicit membership refresh
-```
-
-For general recovery prefer `vault ingest FILE --profile NAME --json`, using a saved snapshot by default. An explicit --recipe-dir tests revised definitions without executing recipe code. `retain_general` also accepts saved_snapshot and dry_run keyword arguments; see [replay interfaces](retention-replay.md#modules-and-schemas). For standalone writes use
-`operation_intent(root, host, metadata, descriptor_digest, variable_names,
-reference=..., implementation_digest=..., source_observation_id=...,
-bundle_digest=...)` before work, and
-`operation_result(root, intent, report, observation_ids=())` after cleanup. Do not
-swallow intent failures. Persisting a failed result does not establish safe remote
-termination/restoration. `envelope`/`validate_record` expose the versioned envelope
-construction/validation rules; no arbitrary adapter code is loaded.
+Use `host_vault.rebuild(root)`, `refresh_groups(root)`, `publish(root, owner, entries)` and the vault CLI for content work. Use `profile.retention`, `retention_store.query/show`, `retention rebuild/ingest` and explicit journaling for data work. Storage functions are no longer exposed from `host_vault`.
 
 ## Consistency and verification limits
 
-POSIX cooperating writers serialize through `.vault.lock`. SQLite uses a 30-second
-lock timeout and transactions. Annual commit precedes view writes; view failure
-does not undo history. Markdown uses atomic replacement. Readers can see different
-projection generations across files during rebuild; there is no whole-vault atomic
-snapshot. Rebuild currently scans history, favoring correctness and simplicity over
-large-fleet optimization. Live cloud-synchronized/network SQLite and concurrent
-noncooperating editors are unsupported. Stop writers or use consistent SQLite backup
-procedures before copying. Symlink paths/SQLite sidecars are rejected.
+Synthetic tests cover independent storage/content, offline reads/reports, source-qualified selection, partial data, publication conflicts, replacement of edited generated files, stale-output cleanup, replay and protected operation evidence. Vault publication is local; it provides no hosting, transport, automatic private-data migration, Obsidian UI automation, whole-vault atomic snapshot or cryptographic evidence guarantee.
 
-Synthetic tests cover migration/replay, native identity change, old-data preservation,
-partial snapshots, projection failure/repair, expiry, groups/human files, path safety,
-concurrent writers, scalar/template extraction, audit intent/results and mappings.
-No real host writes, transport, Obsidian application automation, automatic cleanup,
-import/export implementation or cryptographic audit guarantee is claimed.
-
-Delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and 3.14.4 each passed 625 tests, including headless Textual checks and 17 vault-specific tests. Older interpreters reused the selected maintenance environment's Python dependencies; this does not establish native SSHScript readiness on those interpreters. Wheel/sdist builds, temporary no-dependency pip installation, installed-wheel migration/retention/Markdown/group smoke checks, Python 3.11 grammar, schema syntax/references, skill frontmatter and changed-document checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
-
-Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
-
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 12:31:26_

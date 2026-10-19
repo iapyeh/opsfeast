@@ -149,7 +149,7 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual((root / 'feast.yaml').read_bytes(), original)
 
     def test_init_storage_failure_is_reported_without_registering_partial_profile(self):
-        with patch('host_vault.rebuild_unlocked', side_effect=sqlite3.OperationalError('synthetic storage failure')):
+        with patch('retention_store.rebuild_unlocked', side_effect=sqlite3.OperationalError('synthetic storage failure')):
             code, _, errors = self.cli('init', 'broken')
         self.assertEqual(code, 1)
         self.assertIn('synthetic storage failure', errors)

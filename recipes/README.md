@@ -1,8 +1,13 @@
 # Recipe catalog
 
+[Inventory/system 0.3.1](inventory/system/README.md#recipe-owned-retention-contract) declares inventory-observations 0.1.0 independently of raw output. The recipe owns its schema and normalization; registered-contract selection and storage remain platform services.
+
+
 This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent to create a recipe, share content or acquire someone else's work, start with the [user guide](../docs/recipes.md).
 
 The bundled [check/identity](check/identity/README.md) demonstrates python-recipe 0.1.0 with the Core Recipe scoped session. It observes the login account without su/sudo; local and synthetic evidence do not prove remote applicability.
+
+The bundled [report/retention](report/retention/README.md) reads declared retention through the offline report reader and produces Markdown/HTML, including cross-recipe selections. Operation recipe creators own their retention declarations; content is a downstream application.
 
 ## Available recipes
 
@@ -35,4 +40,4 @@ The first result contract and synthetic example live with inventory-system. Inve
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-19 11:59:00_

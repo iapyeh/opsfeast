@@ -8,15 +8,16 @@ from uuid import UUID
 from opsfeast import ConfigError, read_yaml
 
 VERSION = '0.1.0'
+SNAPSHOT_VERSION = '0.2.0'
 
 
 def digest(value):
-    from host_vault import canonical
+    from retention_store import canonical
     return hashlib.sha256(canonical(value).encode()).hexdigest()
 
 
 def raw_digest(report):
-    return digest({k: v for k, v in report.items() if k != 'retention'})
+    return digest({k: v for k, v in report.items() if k not in ('retention', 'content_update')})
 
 
 def source_identity(report, fallback=None):
@@ -52,25 +53,26 @@ def producer_identity(report):
 
 
 def snapshot(metadata, directory):
-    from host_vault import validate_retention
+    from retention_store import validate_retention
     declaration = validate_retention(metadata, directory)
     mode = metadata.get('access_mode', 'unknown')
     if mode not in ('read', 'write', 'unknown'):
         raise ConfigError('access_mode must be read, write or unknown')
-    template = None
-    if declaration and 'markdown_template' in declaration:
-        template = (Path(directory) / declaration['markdown_template']).read_text(encoding='utf-8')
-    value = {'contract_version': VERSION, 'recipe_id': metadata['id'], 'recipe_version': metadata['version'],
-             'access_mode': mode, 'retention': copy.deepcopy(declaration), 'markdown_template_text': template}
+    value = {'contract_version': SNAPSHOT_VERSION, 'recipe_id': metadata['id'], 'recipe_version': metadata['version'],
+             'access_mode': mode, 'retention': copy.deepcopy(declaration)}
+    if declaration and declaration['contract'] != 'host-values':
+        from retention_contracts import normalizer_digest, schema_digest
+        value['normalizer_sha256'] = normalizer_digest(declaration)
+        value['schema_sha256'] = schema_digest(declaration)
     value['sha256'] = digest(value)
     return validate_snapshot(value)
 
 
 def validate_snapshot(value):
-    from host_vault import validate_retention
-    keys = {'contract_version', 'recipe_id', 'recipe_version', 'access_mode', 'retention', 'markdown_template_text', 'sha256'}
-    if not isinstance(value, dict) or set(value) != keys or value['contract_version'] != VERSION:
-        raise ConfigError('invalid retention snapshot fields/version')
+    from retention_store import validate_retention
+    keys = {'contract_version', 'recipe_id', 'recipe_version', 'access_mode', 'retention', 'sha256'}
+    if not isinstance(value, dict) or not keys.issubset(value) or set(value) - keys - {'normalizer_sha256', 'schema_sha256'} or value['contract_version'] != SNAPSHOT_VERSION:
+        raise ConfigError('incompatible retention snapshot; select a reviewed data-only definition with --recipe-dir')
     if value['access_mode'] not in ('read', 'write', 'unknown'):
         raise ConfigError('invalid snapshot access mode')
     if any(not isinstance(value[k], str) or not value[k] for k in ('recipe_id', 'recipe_version')):
@@ -78,12 +80,14 @@ def validate_snapshot(value):
     if value['sha256'] != digest({k: v for k, v in value.items() if k != 'sha256'}):
         raise ConfigError('retention snapshot digest mismatch')
     declaration = validate_retention({'retention': value['retention']})
-    template = value['markdown_template_text']
-    if declaration and 'markdown_template' in declaration:
-        if not isinstance(template, str):
-            raise ConfigError('snapshot is missing Markdown template text')
-    elif template is not None:
-        raise ConfigError('unexpected snapshot template')
+    if declaration and declaration['contract'] != 'host-values':
+        from retention_contracts import normalizer_digest, schema_digest
+        if value.get('schema_sha256') != schema_digest(declaration):
+            raise ConfigError('saved retention schema differs from the installed registered contract; select an explicit reviewed --recipe-dir')
+        if value.get('normalizer_sha256') != normalizer_digest(declaration):
+            raise ConfigError('saved retention normalizer differs from the installed registered contract; select an explicit reviewed --recipe-dir')
+    elif {'normalizer_sha256', 'schema_sha256'} & set(value):
+        raise ConfigError('unexpected structured normalizer digest')
     return value
 
 
@@ -110,17 +114,17 @@ def select_snapshot(report, directory=None):
         if report.get('execution_access_mode', value['access_mode']) != value['access_mode']:
             raise ConfigError('saved snapshot differs from recorded execution mode')
     else:
-        raise ConfigError('general raw has no snapshot; supply --recipe-dir explicitly')
+        raise ConfigError('raw has no retention snapshot; supply --recipe-dir explicitly')
     if value['recipe_id'] != recipe.get('id'):
         raise ConfigError('retention descriptor recipe ID differs from raw result')
     return value
 
 
 def ingest(root, files=(), *, all_files=False, recipe_directory=None, dry_run=False):
-    from host_vault import checked, settings, retain, retain_general
+    from retention_store import checked, settings, retain, retain_general
     from recipe_inputs import json_object
     if settings(root) is None:
-        raise ConfigError('vault ingest requires namespace; run vault migrate first')
+        raise ConfigError('retention ingest requires namespace; initialize the profile first')
     if all_files and files:
         raise ConfigError('choose files or --all, not both')
     if all_files:
@@ -143,18 +147,17 @@ def ingest(root, files=(), *, all_files=False, recipe_directory=None, dry_run=Fa
                 result = {'status': 'skipped', 'reason_code': 'result_not_retained'}
             elif not report.get('host_id') or 'report_contract' in report:
                 result = {'status': 'skipped', 'reason_code': 'not_host_observation'}
-            elif report.get('recipe', {}).get('id') == 'inventory-system':
-                if recipe_directory:
-                    raise ConfigError('--recipe-dir is only for general host-values retention')
-                result = retain(root, report, dry_run=dry_run)
             else:
-                if not isinstance(report.get('data'), dict):
-                    raise ConfigError('general raw data must be an object')
                 selected = select_snapshot(report, recipe_directory)
-                result = retain_general(root, report, None, None, saved_snapshot=selected, dry_run=dry_run)
+                if selected['retention'] and selected['retention']['contract'] == 'host-values':
+                    if not isinstance(report.get('data'), dict):
+                        raise ConfigError('general raw data must be an object')
+                    result = retain_general(root, report, None, None, saved_snapshot=selected, dry_run=dry_run)
+                else:
+                    result = retain(root, report, dry_run=dry_run, saved_snapshot=selected)
             results.append(dict(result, file=str(path)))
         except (ConfigError, OSError, ValueError, TypeError, KeyError, sqlite3.Error) as exc:
             results.append({'file': str(path), 'status': 'failed', 'error_type': type(exc).__name__,
                             'message': str(exc) if isinstance(exc, ConfigError) else 'raw replay failed'})
-    return {'status': 'failed' if any(item['status'] == 'failed' for item in results) else 'success',
+    return {'status': 'failed' if any(item['status'] == 'failed' or item.get('content_update', {}).get('status') == 'failed' for item in results) else 'success',
             'dry_run': dry_run, 'files': results}

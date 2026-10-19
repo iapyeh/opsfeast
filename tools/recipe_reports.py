@@ -63,6 +63,7 @@ class ReportContext:
     vars: dict
     inputs: list
     artifact_dir: Path
+    retention: object = None
 
 
 def validate_artifacts(directory, declarations):
@@ -103,6 +104,8 @@ def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
         document = parse_json_object(content)
         documents.append(document)
         sources.append({'name': path.name, 'sha256': hashlib.sha256(content).hexdigest()})
+    from retention_store import Reader
+    reader = Reader(config.root)
     run_id = uuid4().hex
     destination = safe_directory(config.root, 'reports/' + run_id, create=True)
     artifacts = safe_directory(config.root, 'reports/' + run_id + '/artifacts', create=True)
@@ -125,7 +128,7 @@ def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
         if selected.get('VERSION') != metadata['version'] or not callable(selected.get('execute')):
             raise ConfigError('report runtime VERSION or execute differs from contract')
         stage = 'execution'
-        result = selected['execute'](context=ReportContext(effective, documents, artifacts), timeout=timeout)
+        result = selected['execute'](context=ReportContext(effective, documents, artifacts, reader), timeout=timeout)
         stage = 'result_validation'
         if not isinstance(result, dict) or set(result) != {'status', 'reason_code', 'message', 'data', 'artifacts'}:
             raise ConfigError('report result requires common result fields plus artifacts')
@@ -135,6 +138,7 @@ def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
     except (Exception, SystemExit) as exc:
         report['reason_code'] = 'invalid_result' if stage == 'result_validation' else 'execution_failed'
         report['execution_errors'].append({'stage': stage, 'type': type(exc).__name__})
+    report['retention_sources'] = reader.sources
     report['completed_at'] = now()
     safe_directory(config.root, destination.relative_to(config.root))
     safe_directory(config.root, artifacts.relative_to(config.root))
@@ -215,7 +219,7 @@ def results(root, recipe=None, host=None, status=None):
                    'identity_quality': raw.get('identity', {}).get('quality') if isinstance(raw.get('identity'), dict) else None,
                    'collection_user': collection_user(raw),
                    'identity_warnings': raw.get('identity', {}).get('warnings', []) if isinstance(raw.get('identity'), dict) else [],
-                   'retention': raw.get('retention'), 'kind': 'report' if 'report_contract' in raw else 'operation'}
+                   'content_update': raw.get('content_update'), 'retention': raw.get('retention'), 'kind': 'report' if 'report_contract' in raw else 'operation'}
             if recipe and row['recipe_id'] != recipe or host and row['host_id'] != host or status and row['status'] != status:
                 continue
             records.append(row)

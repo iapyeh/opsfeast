@@ -135,6 +135,13 @@ def execute(recipe):
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)
             self.assertIn('_opsfeast_data/tools/root_access.py', names)
+            self.assertIn('_opsfeast_data/tools/retention_store.py', names)
+            self.assertIn('_opsfeast_data/tools/retention_contracts.py', names)
+            self.assertIn('_opsfeast_data/recipes/inventory/system/retention.py', names)
+            self.assertIn('_opsfeast_data/recipes/inventory/system/retention.schema.json', names)
+            self.assertIn('_opsfeast_data/tools/vault_content.py', names)
+            self.assertIn('_opsfeast_data/schemas/retention-selection.schema.json', names)
+            self.assertIn('_opsfeast_data/recipes/report/retention/main.py', names)
             self.assertIn('_opsfeast_data/tests/test_core_delivery.py', names)
             self.assertIn('_opsfeast_data/recipes/check/port/LICENSE', names)
             self.assertFalse(any('AGENTS.local' in name or '__pycache__' in name or '.opsfeast-instance' in name for name in names))
@@ -154,6 +161,33 @@ instance = Instance.open(root)
 assert instance.inspect()['identity']['identity_status'] == 'placeholder'
 from opsfeast import REPOSITORY_RECIPES
 assert inspect_one(REPOSITORY_RECIPES / 'check/port', [])['status'] == 'success'
+from retention_store import retain_general
+from recipe_catalog import choose
+from recipe_reports import run_report
+from uuid import uuid4
+profile = instance.init_profile('smoke')
+metadata = {'id':'synthetic-check','version':'1','access_mode':'read','retention':{
+    'contract':'host-values','version':'0.2.0','description':'Synthetic count only.',
+    'fields':{'count':{'type':'integer','unit':'items','description':'Observed count'}}}}
+raw = {'host_id':'node','status':'partial','evidence_kind':'local','completed_at':'2026-10-19T00:00:00Z',
+       'recipe':{'id':'synthetic-check','version':'1','reference':'alpha:check/count'},
+       'data':{'count':0},'execution_access_mode':'read','source_observation_id':str(uuid4())}
+receipt = retain_general(profile.root, raw, metadata, profile.root)
+assert receipt['status'] == 'stored' and receipt['content_update']['status'] == 'success'
+assert profile.retention.query()['records'][0]['data']['observations']['count']['value'] == 0
+assert not list((profile.root/'vault').rglob('*.sqlite3'))
+report, path = run_report(profile.root, choose(profile.root, 'report/retention'), [])
+assert report['status'] == 'success' and len(report['artifacts']) == 2
+assert report['retention_sources'][0]['records']
+import json
+from retention_store import retain
+inventory_raw = json.loads((REPOSITORY_RECIPES/'inventory/system/examples/result.partitioned.synthetic.json').read_text())
+receipt = retain(profile.root, inventory_raw)
+assert receipt['status'] == 'stored', receipt
+record = profile.retention.show(receipt['record_id'])
+assert record['retention_definition']['contract'] == 'inventory-observations'
+assert record['data']['inventory']['hardware']['memory_total_bytes'] is not None
+assert inspect_one(REPOSITORY_RECIPES/'inventory/system', [])['retention']['schema_path'].endswith('retention.schema.json')
 '''
         environment = dict(os.environ)
         environment.pop('PYTHONPATH', None)

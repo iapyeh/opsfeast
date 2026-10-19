@@ -1,8 +1,8 @@
 # Feasts and profiles
 
-## Profile roots as host vaults
+## Profile roots, retention and vault content
 
-A profile's optional host vault is the dedicated `vault/` child of its management root, including external attached roots. Init enables it automatically; see [namespace and vault initialization](host-vault.md). Renaming a profile or moving its root does not change namespace. Retained/viewer data lives under vault/hosts, vault/groups and vault/overview; raw observations, configuration and execution records remain outside vault/. Profile selection chooses both locations; CLI --root always means the profile root. Retained data and notes may be private, so a vault is not automatically a sanitized sharing artifact.
+A profile's optional host vault is the dedicated `vault/` child of its management root, including external attached roots. Init enables it automatically; see [namespace and vault initialization](host-vault.md). Renaming a profile or moving its root does not change namespace. Authoritative retained data lives under retention/; generated content lives under vault/hosts, vault/groups and vault/overview; raw observations, configuration and execution records remain outside vault/. Profile selection chooses both locations; CLI --root always means the profile root. Retained data and notes may be private, so a vault is not automatically a sanitized sharing artifact.
 
 Console summaries use tables when stdout is a terminal; add `--json` to supported inspection/diagnostic/check/profile commands for structured output. Non-TTY formats, execution scope and stored data remain unchanged. See [the command-specific console policy](cli.md#terminal-tables-and-json).
 
@@ -22,7 +22,7 @@ Use the [CLI reference](cli.md) for exact interfaces and the [migration guide](m
 Named init reuses the registered root for that name, including a legacy my-ops/ or external root. No-argument init reuses the registered main root. If main is absent, it creates feasts/main; an existing default selection is preserved. default is the selection role, not the fixed name of a new Feast. Schema-1 locators still expose a profile named default.
 
 A new instance receives feast.yaml with schema_version: 1, kind: opsfeast, namespace
-and overview_months (default 3), plus vault/ with initial host/group indexes. Namespace
+and overview_months (default 3), plus independent retention/ storage and vault/ host/group indexes. Namespace
 defaults to the profile registration name; use `init NAME --namespace VALUE` when
 that name does not satisfy namespace syntax or a different identity is intended.
 The saved namespace is preserved on subsequent init and profile renaming; a different
@@ -94,4 +94,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:41:37_

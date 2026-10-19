@@ -58,6 +58,7 @@ def catalog(root=None, query=None, kind=None):
                     'description': meta.get('description', ''), 'kind': recipe_kind,
                     'contract': contract, 'status': inspected['status'], 'errors': list(inspected['errors']),
                     'runnable': inspected['status'] == 'success' and contract in ('valid-python-session', 'valid-python-report', 'valid-python-recipe', 'valid-inventory-system'),
+                    'retention': inspected.get('retention'),
                     'inputs': meta.get('inputs', {}), 'dependencies': meta.get('dependencies', {}),
                     'verification': meta.get('verification', {}), 'descriptor': meta,
                     'availability_evidence': 'static-only; dependencies, data and host applicability are not verified'}

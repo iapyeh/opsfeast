@@ -1,5 +1,8 @@
 # Inventory access checks and partitioned results
 
+Inventory/system 0.3.1 owns its [structured retention declaration, schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract). This architecture change preserves the access, actor, data-state and identity rules below; it adds data-definition snapshots and registered schema/normalizer digests without new host probes.
+
+
 Inventory-system recipe 0.3.0 adds an access gate and inventory-values contract 0.1.0. Read this guide before execution: selecting inventory includes bounded account selection with possible su/sudo by default. These are real connections and authentication attempts, even in dryrun. Login-shell startup, configured proxies and authentication/audit records can have side effects. No installation, target configuration changes, environment-variable capture, process arguments or arbitrary file crawling is performed.
 
 ## Configure the actual connection account
@@ -317,4 +320,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19 11:59:00_

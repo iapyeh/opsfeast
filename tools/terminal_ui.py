@@ -120,7 +120,7 @@ def make_app_class():
             yield Footer()
 
         def on_mount(self):
-            self.query_one('#table', DataTable).add_columns('Host / test / recipe', 'Status', 'Stage / reason', 'Elapsed', 'Retention', 'Result path')
+            self.query_one('#table', DataTable).add_columns('Host / test / recipe', 'Status', 'Stage / reason', 'Elapsed', 'Retention', 'Content', 'Result path')
             self.set_interval(1, self.refresh_elapsed)
             self.run_worker(self.collect(), exit_on_error=False)
 
@@ -132,12 +132,14 @@ def make_app_class():
             self.started.setdefault(key, time.monotonic())
             retention = item.get('retention') or {}
             retention_status = retention.get('status', '—') if isinstance(retention, dict) else 'unknown'
+            content = item.get('content_update') or {}
+            content_status = content.get('status', '—') if isinstance(content, dict) else 'unknown'
             status = reported_status(item)
             style = {'success': 'green', 'failed': 'red', 'partial': 'yellow', 'skipped': 'yellow', 'unsupported': 'yellow'}.get(status, '')
             elapsed = item.setdefault('_elapsed', None)
             elapsed = elapsed if elapsed is not None else time.monotonic() - self.started[key]
             cells = (Text(key), Text(status, style=style), Text(str(item.get('reason_code', item.get('stage', '')))),
-                     Text(f'{elapsed:.0f}s'), Text(str(retention_status)), Text(str(item.get('result_path') or '—')))
+                     Text(f'{elapsed:.0f}s'), Text(str(retention_status)), Text(str(content_status)), Text(str(item.get('result_path') or '—')))
             if key in table.rows:
                 for column, cell in zip(table.columns, cells):
                     table.update_cell(key, column, cell)

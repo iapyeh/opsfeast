@@ -5,20 +5,19 @@ description: Use the bundled OpsFeast Python API for installation identity, prof
 
 # Operate and compose OpsFeast Core
 
-The checkout [replay/deletion interfaces](../../docs/retention-replay.md#modules-and-schemas) are available alongside the Core API. `operation_intent` may link source_observation_id; linked write/unknown evidence is protected. Default offline general replay uses a saved declaration/template snapshot and never executes a Core/session operation.
+The checkout [replay/deletion interfaces](../../docs/retention-replay.md#modules-and-schemas) are available alongside the Core API. `operation_intent` may link source_observation_id; linked write/unknown evidence is protected. Default offline general replay uses a saved data-declaration snapshot and never executes a Core/session operation.
 
-## Host-vault 0.1.0
+## Recipe retention and content applications
 
-Use `<profile-root>/vault/` for retained journals and human views; raw/configuration
-stay in the profile root. CLI/module root arguments still select the profile root.
-New `opsfeast.py init NAME [--namespace VALUE] [--json]` initializes the vault.
-Namespace defaults to its saved value or first profile name; invalid default names
-require an explicit namespace. The first operational inventory run retains automatically.
-Reinit/rename preserves saved namespace and archives. Core `Instance.init_profile`
-accepts namespace=. No compatibility/relocation tool is provided for the former
-profile-root layout; explain that incompatibility and preserve existing files.
+Read [retention contracts](../../docs/retention.md), [offline replay/protection](../../docs/retention-replay.md) and [vault ownership](../../docs/host-vault.md). Recipe creators define/produce retention; OpsFeast manages recipes/execution and data discovery/storage. User AI agents combine retention into Markdown, graphs or web content. Vault is the bundled content application, not the data contract.
 
-Read [the canonical host-vault guide](../../docs/host-vault.md) before selecting namespace, migrating storage, interpreting logical identity or authoring retained outputs. Namespace + configured host ID defines a logical host across OS/hardware replacement; native keys remain evidence. Reuse vault migrate/rebuild/groups/inspect and checkout-level host_vault interfaces. Annual per-host journals are authoritative; records is cumulative and overview recent. General recipes may declare typed host-values retention/Markdown and access_mode; write/unknown runner operations persist long-lived intent/result events. Direct Core calls require explicit journaling. Unmigrated profiles retain the legacy behavior below. Future mapping/package schemas exist; new transfer tools are deferred.
+1. Discover declared datasets with recipes list/show or inspect-recipe --json. Read field meanings, units, versions, limits and source-qualified references before selecting data; metadata is not execution evidence.
+2. Query with `retention list/show/export --profile NAME --json`, Core `profile.retention.query/show`, or checkout `retention_store.query/show`. Annual authoritative SQLite lives in retention/; reads never initialize or connect. Preserve source times, origins, identity warnings, partial/unknown states and zero/false values.
+3. Authors declare host-values 0.2.0 with dataset/field descriptions; inventory/system 0.3.1 owns inventory-observations 0.1.0, its schema and registered normalizer. Discovery reads the explicit declaration; it never guesses from recipe ID. Retention snapshots 0.2.0 contain data definitions only. No markdown_template or rendered Markdown is retained.
+   Read [inventory-owned data semantics](../../recipes/inventory/system/README.md#recipe-owned-retention-contract) before authoring or interpreting inventory: explicit access_mode/retention declaration, recipe-local schema, normalizer/schema digests, supported versions and partial/identity limits. Registered contract/version selects shipped pure normalization; candidate main.py/retention.py is never loaded by replay. A new structured contract requires reviewed product registration and tests, not descriptor executable paths. Reuse runner/replay/query; include retention.schema.json in portable clone bundles. Current envelopes preserve retention_definition and source provenance.
+4. Reuse offline python-report's `context.retention.query/show` and artifact/result/job support for content. [report/retention](../../recipes/report/retention/README.md) generates Markdown and HTML and combines multiple recipe references without raw access or connections. Custom renderers declare dependencies and verification; no hosting or transmission is implied.
+5. Use retention ingest/delete-observation/rebuild for data and vault rebuild/groups/inspect for content. Replay does not execute recipe code. Write/unknown operations and linked evidence remain protected. Direct Core calls need explicit retention_store.operation_intent/operation_result journaling.
+6. Init establishes namespace plus independent retention/vault areas. vault.auto_refresh defaults true and may be disabled. Check recipe status, retention and content_update separately; content failure preserves stored data and is repaired with vault rebuild. Old vault SQLite layouts are rejected and preserved; use a separate profile and explicitly replay raw. Old inventory raw without snapshots, old template snapshots and structured normalizer/schema digest mismatches need a reviewed current --recipe-dir; never reclassify historical execution.
 
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
 
@@ -142,4 +141,4 @@ returns the full evidence within an authorized host scope. Human tables explain 
 root shell and show sudo already_root. Native evidence covers the two tested two-hop
 paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
-_Last modified: 2026-10-19 10:41:37_
+_Last modified: 2026-10-19 11:57:21_

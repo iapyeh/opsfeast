@@ -36,6 +36,8 @@ def inspect_one(directory, requested):
         from recipe_identity import validate as validate_identity
         validate_identity(metadata, directory)
         report['descriptor'] = metadata
+        from retention_store import describe
+        report['retention'] = describe(metadata, directory)
         platforms = metadata.get('platforms', {})
         if not isinstance(platforms, dict):
             raise ConfigError('platforms must be a mapping')
@@ -132,6 +134,8 @@ def format_details(report):
         lines.append(f"  Directory: {recipe['directory']}")
         lines.append(f"  Inspection: {recipe['status']}; runner contract: {recipe['runner_contract']}")
         lines.append(f"  Description: {meta.get('description', 'not declared')}")
+        if recipe.get('retention'):
+            lines.append('  Retention: ' + json.dumps(recipe['retention'], ensure_ascii=False))
         platforms = meta.get('platforms', {})
         if isinstance(platforms, dict):
             for key in ('planned', 'implemented', 'tested'):
@@ -144,7 +148,7 @@ def format_details(report):
         if recipe['coverage']:
             for key, values in recipe['coverage'].items():
                 lines.append(f"  {key}: {values}")
-        for key in ('runner', 'dependencies', 'permissions', 'side_effects', 'inputs', 'output', 'verification'):
+        for key in ('retention', 'runner', 'dependencies', 'permissions', 'side_effects', 'inputs', 'output', 'verification'):
             lines.append(f'  {key}:')
             lines.extend('    ' + line for line in json.dumps(meta.get(key, 'not declared'), indent=2, ensure_ascii=False).splitlines())
         for error in recipe['errors']:
@@ -161,6 +165,8 @@ def format_report(report, details=False):
     for recipe in report['recipes']:
         meta = recipe['descriptor'] or {}
         lines.append(f"{meta.get('id', '<unknown>')} {meta.get('version', '?')} — {meta.get('title', '')}")
+        if recipe.get('retention'):
+            lines.append('  Retention: ' + json.dumps(recipe['retention'], ensure_ascii=False))
         platforms = meta.get('platforms', {})
         platforms = platforms if isinstance(platforms, dict) else {}
         implemented = platforms.get('implemented', [])

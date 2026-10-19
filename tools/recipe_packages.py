@@ -14,7 +14,7 @@ VERSION = '0.1.0'
 MAX_BYTES = 25 * 1024 * 1024
 MAX_FILES = 2000
 PRIVATE_NAMES = {'hosts.yaml', 'feast.yaml', 'my-ops.yaml', 'AGENTS.local.md', 'AGENTS.override.md'}
-PRIVATE_DIRS = {'observations', 'reports', 'records', 'runs', 'jobs', '.git', '.venv', '__pycache__'}
+PRIVATE_DIRS = {'observations', 'reports', 'records', 'retention', 'vault', 'runs', 'jobs', '.git', '.venv', '__pycache__'}
 
 
 def payload_name(name):

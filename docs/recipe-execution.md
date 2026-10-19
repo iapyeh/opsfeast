@@ -2,9 +2,9 @@
 
 New raw adds source_observation_id and execution_access_mode; general results also capture retention_snapshot before connection/code execution. These are additive [replay context fields](../schemas/raw-retention-context.schema.json). [Offline replay](retention-replay.md) uses the original snapshot by default, preserving execution classification independently of an author override.
 
-## Vault retention and operation journals
+## Retention and operation journals
 
-[Namespace-enabled vaults](host-vault.md) add opt-in typed host-values retention to general recipes. Write/unknown general recipes persist intent before connections/code and append outcome after cleanup. Missing access_mode means unknown; read skips the operation journal. Retention/audit failure yields explicit failure, and no automatic raw cleanup occurs. Profiles without namespace retain the legacy raw-only general-recipe behavior described below.
+[Namespace-enabled profiles](retention.md) add opt-in typed host-values 0.2.0 retention with dataset/field descriptions and explicit units to general recipes. Write/unknown general recipes persist intent before connections/code and append outcome after cleanup. Missing access_mode means unknown; read skips the operation journal. Retention/audit failure yields explicit failure; content update has a separate receipt and never changes recipe status, and no automatic raw cleanup occurs. Profiles without namespace retain the legacy raw-only general-recipe behavior described below.
 
 Use `tools/run_recipe.py` to execute one explicitly selected recipe on explicitly selected hosts. It supports the existing inventory-system descriptor/result 0.2.0 and the Python-session contract 0.1.0 described here. The shared [recipes list/show/run surface](recipe-experience.md) adds discovery and delegates operation execution to this implementation; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
 
@@ -100,9 +100,9 @@ The runner adds `run_contract: 0.1.0`, recipe-owned schema_version, host_id, sta
 
 Completed attempts are atomically saved at `<management-root>/observations/recipe-run-<UUID>.json`; with --json or non-TTY stdout, output provides result_path, status/reason/message and data for a single host, or ordered per-host summaries including data for batches. Terminal completion shows only host, collection identity and result; use the [saved-result viewing workflow](cli.md#inspect-one-hosts-saved-execution) for details. Output/save errors return nonzero. Arbitrary recipe code can still write or print beyond these conventions: this is not an output sandbox.
 
-General results carry `retention: {status: skipped, reason_code: no_retention_adapter}`. They do not run host identity/sudo probes and are not inserted into inventory SQLite/exchange storage; inventory retains its current raw → retained flow. Recipes requiring new retention adapters must define reviewed versioned data contracts before support is added. Use ordinary JSON tools to inspect general raw results; observation_store inventory ingest does not accept them.
+General recipes without a retention declaration carry `retention: {status: skipped, reason_code: no_retention_adapter}`. Declared host-values use the [retention interface](retention.md), independent of inventory storage/exchange. General retention does not run inventory identity/sudo probes or enter the inventory exchange payload; inventory retains its current raw → retained flow. Recipes requiring new retention adapters must define reviewed versioned data contracts before support is added. Use ordinary JSON tools to inspect general raw results; observation_store inventory ingest does not accept them.
 
-Exit 0 requires every attempted host's status to be success (and no inventory retention failure). Partial/failed/skipped/unsupported returns 1; usage errors return 2. No automatic retry or fallback implementation runs after failure.
+Exit 0 requires every attempted host's status to be success, with no retention/content failure or degraded access. Partial/failed/skipped/unsupported returns 1; usage errors return 2. No automatic retry or fallback implementation runs after failure.
 
 ## Verification and extension
 
@@ -114,4 +114,4 @@ Terminal presentation does not change recipe return values or saved reports. See
 [compact execution summaries](cli.md#compact-execution-summaries) for unknown actors,
 retention/fallback outcomes and existing offline host-specific inspection.
 
-_Last modified: 2026-10-19_
+_Last modified: 2026-10-19 11:41:37_

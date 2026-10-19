@@ -26,7 +26,11 @@ each passed 641 tests. Wheel/sdist builds, temporary no-dependency wheel install
 checkout passed. Older interpreters reused pure-Python dependencies; these synthetic
 checks do not establish native SSH/su/sudo readiness or change real Feast data.
 
-`test_host_vault.py` uses temporary synthetic Feasts to verify namespace migration and replay, unchanged legacy bytes and IDs, annual archives, cumulative/recent copies, logical identity through native machine-ID changes, partial state, projection repair, group indexes and human-note preservation, safe/case-distinct filenames and symlinks, concurrent writers/conflicts, scalar retention/templates, mappings/manifests and runner audit failures before connection/after execution. No real host is contacted. See [the contract and limitations](../docs/host-vault.md).
+`test_host_vault.py` uses temporary synthetic profiles to verify independent annual/cumulative/recent retention data, namespace identity, replay, preserved legacy files, partial state, data/content failure repair, group indexes, human notes, safe paths, concurrent writers and protected operation journals. `test_retention_replay.py` covers data-only snapshots, explicit overrides, source identity, dedup/conflicts and protected deletion. No host is contacted. See [retention contracts](../docs/retention.md) and [vault content](../docs/host-vault.md).
+
+`test_retention_content.py` verifies read-only CLI/Core queries, source-qualified filters, zero/null/partial values, disabled content refresh, independent failure receipts/exit codes, old-layout refusal without changes, author ownership, replacement of edited generated files and protection of unmanaged files, stale-output cleanup, vault rebuild without database writes and offline multi-recipe Markdown/HTML. `test_terminal_ui.py` verifies separate Retention and Content cells. `test_core_delivery.py` verifies the new modules/schema/example are packaged and runs an isolated installed-wheel retention/content smoke check.
+
+`test_inventory_retention_contract.py` verifies explicit recipe declarations (no ID fallback), static nonexecution, nested field semantics/units, schema/path/digest failures, registered-only replay, old raw requiring reviewed definitions, preserved source/partial/privacy states, changed-definition conflicts and protected private storage bundle boundaries. Installed-wheel smoke also exercises inventory structured retention through its saved declaration.
 
 This directory will contain public, reproducible verification for recipes, data contracts, and operational workflows.
 
@@ -241,4 +245,10 @@ Delivery verification (2026-10-17): Python 3.11.15, 3.13.13 and 3.14.4 each pass
 
 Verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed 639 tests, including 14 new replay/deletion regressions. The older interpreters reused the maintenance environment's Python dependencies, which does not prove native SSHScript readiness. Wheel/sdist builds, temporary no-dependency installation, installed-wheel snapshot replay/dedup/write protection and legacy migration/provenance-upgrade/deletion smoke checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter and Markdown link/date checks passed. No real host connection/write, automatic private-data migration, commit, push or release was performed.
 
-_Last modified: 2026-10-19 10:44:08_
+
+Retention/content delivery verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 665 public tests, including headless TUI checks, 16 independent retention/content tests and isolated installed-wheel data/content assertions. Older interpreters reused the maintenance environment's Python dependencies; this does not establish native execution-library readiness. Wheel/sdist builds, temporary no-dependency pip installation and installed-wheel scalar query, replay/dedup, Markdown/HTML, vault and linked-operation protection smoke passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, document links/footers and diff whitespace checks passed. No native host operation, private-data relocation, commit, push or release was performed.
+
+
+Inventory-owned retention follow-up verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 678 public tests, including 13 new inventory-contract regressions and installed-wheel structured inventory retention assertions. Older interpreters reused the selected maintenance environment's Python dependencies. Wheel/sdist builds, temporary no-dependency pip installation and installed inventory normalization/query/replay/content smoke passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, documentation links/footers and diff whitespace checks passed. This is synthetic/local-package evidence; no native host collection, private-data modification, commit, push or release occurred.
+
+_Last modified: 2026-10-19 12:31:26_

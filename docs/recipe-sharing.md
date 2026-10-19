@@ -1,5 +1,8 @@
 # Share and package recipes
 
+For inventory-observations 0.1.0 clones, include the recipe-local retention.schema.json in the explicit bundle allowlist and declare the required registered OpsFeast contract. A bundled normalizer file is not an automatically activated plugin: replay uses the installed reviewed contract implementation. New structured contracts need product registration, tests and guidance. Private retention/ and vault/ data are excluded from recipe bundles alongside observations/records/reports. See [creator-owned inventory retention](../recipes/inventory/system/README.md#recipe-owned-retention-contract).
+
+
 Share one recipe or several from a repository or archive. Complete the [authoring deliverables](recipe-authoring.md) first. This guide includes human/agent review procedures. The [recipes pack/unpack commands](recipe-experience.md#portable-recipe-bundles) implement explicit-file single-recipe bundles and verified candidates; publication, signing, dependency review and installation remain separate workflows.
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
@@ -61,4 +64,4 @@ Recipe READMEs link to the [recipes skill](../skills/opsfeast-recipes/SKILL.md),
 
 Report the actual package inventory, versions, digests, signature status, verification limits and delivery path. Report URLs/commits only after publication has actually occurred. Updates use new versions and describe changes; checking for updates and applying them are separate authorization scopes.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-19 11:59:00_

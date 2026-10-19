@@ -180,5 +180,21 @@
         "status": "unavailable"
       }
     ]
+  },
+  "execution_access_mode": "read",
+  "retention_snapshot": {
+    "contract_version": "0.2.0",
+    "recipe_id": "inventory-system",
+    "recipe_version": "0.3.0",
+    "access_mode": "read",
+    "retention": {
+      "contract": "inventory-observations",
+      "version": "0.1.0",
+      "description": "Allowlisted system inventory observations and native identity evidence. Partial/unknown fields and collection scope must be preserved; this dataset is not online status or overall health.",
+      "schema": "retention.schema.json"
+    },
+    "normalizer_sha256": "575f3c425cb253034ac6d31c383b9759c0d7b150309244400f3369644429e11f",
+    "schema_sha256": "c82f892a5ae65f66445b563b2b6edb74b414d6574d8f06e55b34f627a741bf5a",
+    "sha256": "9f852b06476ee5750450b679fcc950d9b4c4e599fee963094a94ac05382c02da"
   }
 }

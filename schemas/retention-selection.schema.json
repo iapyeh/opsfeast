@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast retention selection 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "kind",
+    "status",
+    "namespace",
+    "records"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "kind": {
+      "const": "opsfeast-retention"
+    },
+    "status": {
+      "const": "success"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "host-vault-record.schema.json"
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-19 11:44:32"
+}
