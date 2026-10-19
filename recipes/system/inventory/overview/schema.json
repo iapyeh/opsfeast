@@ -583,6 +583,9 @@
         "write",
         "unknown"
       ]
+    },
+    "collection_evidence": {
+      "$ref": "../../../../schemas/collection-evidence.schema.json"
     }
   },
   "$defs": {
@@ -643,5 +646,5 @@
       "inventory_contract_version"
     ]
   },
-  "$comment": "Last modified: 2026-10-19 15:20:06"
+  "$comment": "Last modified: 2026-10-19 16:59:26"
 }

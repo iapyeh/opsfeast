@@ -30,6 +30,10 @@ recipes run explains host operations versus offline reports, raw result saving, 
 
 Bundled recipes now use [classified paths](recipe-taxonomy.md): system/network/check/port, system/account/check/identity, system/inventory/overview, feast/report/execution-summary and feast/report/retention-summary. Recipe selectors accept complete paths of variable depth; old bundle paths have no aliases. Update configuration/scripts/jobs/exact consumer subscriptions deliberately. Data query --recipe filters can still select historical reference strings without resolving an executable recipe.
 
+Vault host pages live under hosts/PRIMARY_GROUP/HOST/, using first membership or _ungrouped. Full rebuild updates host pages and group links after membership changes; human notes remain at their old locations for deliberate relocation. Observation pages show the host first and one final metadata section. Vault page names use consumer titles plus source/record discriminators; historical observation pages use compact UTC seconds plus label (YYYYMMDDHHMMSS-title.md), without UUIDs. Rebuild replaces old owned paths and generated links; manual links need updates. Optional collection_evidence supplies the actual actor and query commands/reasons to new pages; it is visible through retention show/export, while older records explicitly lack it. Rebuild never recollects missing inventory. See [collection evidence](retention.md#local-collection-evidence).
+
+Vault observation readability is owned by the [bundled content renderer](host-vault.md#recipe-retention-and-markdown). Use vault rebuild --profile NAME --json within authorized publication scope to refresh existing yearly/latest Markdown into tables with readable inventory and source details. It performs no collection or retention rewrite; owned outputs are replaced and human notes are preserved.
+
 ## Retention consumer discovery and delivery
 
 ```sh
@@ -790,4 +794,10 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-_Last modified: 2026-10-19 16:05:57_
+Current records use records/current-<title>.md, contain data and a Latest report link, and omit Collection metadata. Both current and historical observation pages start with a Contents index; only historical reports end with Collection metadata, including identity/coverage warnings and queries. The redundant Field observations table is removed. Missing sections say No data was collected; observed empty collections remain No entries reported. Read structured retention records for original field states and timestamps. Rebuild regenerates owned pages without collecting again or rewriting retention; old manual links require deliberate updates. Current title collisions across sources fail publication without overwriting evidence.
+
+Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
+
+Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
+
+_Last modified: 2026-10-19 20:06:02_

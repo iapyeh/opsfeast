@@ -12,6 +12,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import host_vault as vault
+import vault_content as content
 import retention_store as store
 import observation_store as legacy
 import retention_replay as replay
@@ -117,9 +118,12 @@ class ReplayTests(unittest.TestCase):
 
     def test_write_unknown_and_legacy_general_cannot_be_deleted(self):
         self.enable()
-        for mode, legacy in (('write', False), ('unknown', False), ('read', True)):
+        for second, (mode, legacy) in enumerate((('write', False), ('unknown', False), ('read', True))):
             with self.subTest(mode=mode, legacy=legacy):
                 directory, metadata, report, file = self.sample(mode, legacy)
+                # These are separate lifecycle cases, not same-second publication collisions.
+                report['completed_at'] = f'2026-10-19T00:00:{second:02d}Z'
+                file.write_text(json.dumps(report))
                 result = replay.ingest(self.root, [file], recipe_directory=directory if legacy else None)
                 self.assertEqual(result['status'], 'success')
                 identifier = result['files'][0]['source_observation_id']
@@ -159,10 +163,10 @@ class ReplayTests(unittest.TestCase):
         last['data']['count'] = 8
         b.write_text(json.dumps(last))
         replay.ingest(self.root, [a, b])
-        page = self.host() / 'records' / (vault.component('sample/check') + '.md')
-        self.assertIn('count | 8', page.read_text())
+        page = self.host() / 'records' / content.latest_filename(store.query(self.root)['records'][0])
+        self.assertIn('Count | 8', page.read_text())
         store.delete_observation(self.root, last['source_observation_id'])
-        self.assertIn('count | 7', page.read_text())
+        self.assertIn('Count | 7', page.read_text())
         (self.host() / 'notes.md').write_text('Human notes')
         store.delete_observation(self.root, first['source_observation_id'])
         self.assertFalse(page.exists())
@@ -177,7 +181,7 @@ class ReplayTests(unittest.TestCase):
         self.enable()
         _, _, report, file = self.sample()
         replay.ingest(self.root, [file])
-        page = self.host() / 'records' / (vault.component('sample/check') + '.md')
+        page = self.host() / 'records' / content.latest_filename(store.query(self.root)['records'][0])
         original = store.rebuild_unlocked
         count = 0
         def fail_second(*args, **kwargs):

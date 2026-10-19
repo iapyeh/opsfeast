@@ -444,6 +444,8 @@ def run(root, host, timeout=30, session_class=None, runtime=None, recipe=None, c
                         details['collect'](actor, report, facts['facts']['os_name'],
                             context.vars.get('command_timeout_seconds', timeout),
                             budget=context.vars.get('collection_budget_seconds', 90))
+                        from collection_evidence import capture
+                        report['collection_evidence'] = capture(report)
                     stage = 'host_identity'
                     progress('collecting host identity evidence')
                     report['identity'] = probe_identity(actor, config, host, facts['facts'],

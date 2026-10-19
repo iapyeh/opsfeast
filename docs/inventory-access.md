@@ -1,6 +1,6 @@
 # Inventory access checks and partitioned results
 
-system/inventory/overview 0.3.1 owns its [structured retention declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). This architecture change preserves the access, actor, data-state and identity rules below; it adds data-definition snapshots and registered schema/normalizer digests without new host probes.
+system/inventory/overview 0.3.2 owns its [structured retention declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). This architecture change preserves the access, actor, data-state and identity rules below; it adds data-definition snapshots and registered schema/normalizer digests without new host probes.
 
 
 Inventory-system recipe 0.3.0 adds an access gate and inventory-values contract 0.1.0. Read this guide before execution: selecting inventory includes bounded account selection with possible su/sudo by default. These are real connections and authentication attempts, even in dryrun. Login-shell startup, configured proxies and authentication/audit records can have side effects. No installation, target configuration changes, environment-variable capture, process arguments or arbitrary file crawling is performed.
@@ -118,8 +118,9 @@ ordered `attempts` (user/status/reason_code/steps). Steps retain operation, targ
 credential-source name/presence, identity verification, entry failure category and
 restoration evidence, never password values or third-party exception text.
 `actual_identity` identifies the final collection actor; `login_identity` and
-`shell_identity` preserve login/shell distinctions. No retained/exchange schema changes
-are needed: collection_scope continues to store only mode and effective_uid.
+`shell_identity` preserve login/shell distinctions. The normalized retained/exchange data.collection_scope continues to store only mode
+and effective_uid. New local raw/envelope collection_evidence 0.1.0 separately records
+the actual actor and query sources; see [local evidence](retention.md#local-collection-evidence).
 
 Preflight success means a safe collection actor is available, possibly fallback_user;
 it does not promise root. During actual collection successful routes are re-entered
@@ -199,11 +200,18 @@ Dryrun and force are mutually exclusive and apply only to enabled inventory-syst
 Raw result 0.2.0 and retained/exchange 0.1.0 keep their seven-field compatibility interface. The new independently versioned extension has:
 
 - `inventory_contract_version: "0.1.0"` and `inventory`: six fixed sections with typed values only. Missing results are JSON null, regardless of the reason. Zero and empty lists remain meaningful values. Nothing substitutes an error message for a value.
+- Optional local envelope/raw collection_evidence 0.1.0 (recipe 0.3.2+): actual collection username/UID/mode and bounded query metadata, excluding outputs and credentials. Core/retention queries expose it; the legacy normalized exchange remains unchanged. Historical missing evidence remains missing.
 - Raw-only `collection_process`: scope, times, limits and per-query source commands, states/reasons. Existing observations/sources/execution_errors remain the compatibility execution evidence; consumers wanting pure results read inventory.
 - Raw-only `access` and `access_check`: actual account/effective UID, expected sudo policy, credential-source names, verified restoration and degraded mode. Never passwords.
 - Retained/exchanged `collection_scope`: only mode and effective_uid, necessary to interpret visibility. Process diagnostics, command sources, stdout/stderr and credential sources are excluded from the retained extension.
 
 Old records without the extension remain valid. Older strict consumers must update before accepting new extension-bearing records. SQLite stores the extension in the existing JSON payload; its seven-column compatibility view is unchanged. Query `json_extract(payload, '$.inventory.hardware.memory_total_bytes')` for a new scalar. Export/combination preserve the new extension and independent histories; a repeat with another account is a new observation, never an overwrite or an automatic merge of nonempty fields. Identity quality/warnings and original observation times remain mandatory context.
+
+## Query completion and missing extended values
+
+The extended collector normalizes PTY CRLF before parsing its producer completion marker, after checking the raw byte limit. SSHScript console results can contain CRLF even when direct execution uses LF. Missing markers, nonzero producer exit, parsing, truncation, time limits and unsupported probes remain distinct states/reasons. Root privilege does not install tools, guarantee parser compatibility, remove query bounds or implement missing probes. Code 127 is command_not_found; code 126 is command_not_executable, not proof of a permission-policy denial. Raw-only exception type is retained without exception text.
+
+Base status still summarizes the seven observation fields; inspect collection_process or the optional collection_evidence for extended coverage. All extended fields can be null even when base status is success. Vault now reports those query outcomes separately instead of equating a missing value with an absent resource.
 
 ## Inventory-values 0.1.0 field catalog
 
@@ -320,4 +328,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-19 17:04:30_

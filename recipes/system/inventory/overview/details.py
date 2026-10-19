@@ -180,16 +180,21 @@ def collect(session, report, platform, timeout, *, budget=90):
             result = session.exec_command(['/bin/sh', '-c', script], check=False, command_timeout=min(timeout, remaining))
             output = result.stdout
             if result.exitcode != 0:
-                raise RuntimeError('probe shell failed')
+                item.update(status='failed', reason_code='probe_shell_failed', exitcode=result.exitcode)
+                return
             if len(output.encode()) > MAX_OUTPUT or getattr(result, 'stdout_truncated', False):
                 item.update(status='truncated', reason_code='output_limit')
                 return
+            # Persistent PTY consoles use CRLF; preserve byte limits before normalization.
+            output = output.replace('\r\n', '\n')
             match = re.search(r'\n__OPSFEAST_EXIT_(\d+)\n?$', output)
             if match is None:
-                raise ValueError('missing producer completion marker')
+                item.update(status='failed', reason_code='producer_marker_missing')
+                return
             item['exitcode'] = int(match[1])
             if item['exitcode'] != 0:
-                item['status'] = 'unavailable'
+                item.update(status='unavailable', reason_code='command_not_found' if item['exitcode'] == 127
+                            else 'command_not_executable' if item['exitcode'] == 126 else 'command_failed')
                 return
             value = parser(output[:match.start()])
             if isinstance(value, list) and len(value) > MAX_ITEMS:
@@ -198,7 +203,8 @@ def collect(session, report, platform, timeout, *, budget=90):
             data[section][field] = value
             item['status'] = 'success'
         except Exception as exc:
-            item.update(status='failed', error_type=type(exc).__name__)
+            item.update(status='failed', error_type=type(exc).__name__,
+                        reason_code='parse_failed' if isinstance(exc, (ValueError, KeyError, TypeError)) else 'probe_execution_failed')
     probe('storage', 'filesystems', 'LC_ALL=C df -Pk', filesystems)
     probe('system', 'timezone', 'date +%Z')
     if platform == 'linux':

@@ -1,5 +1,7 @@
 # Schemas
 
+[collection-evidence.schema.json](collection-evidence.schema.json) defines optional local raw/retained-envelope collection provenance 0.1.0: verified actor and bounded query metadata without outputs or credentials. It is referenced by host-vault-record and inventory raw schemas, independent of the unchanged normalized inventory/exchange payload. See [local evidence semantics](../docs/retention.md#local-collection-evidence).
+
 Replay adds [raw-retention-context.schema.json](raw-retention-context.schema.json), [retention-snapshot.schema.json](retention-snapshot.schema.json) and optional [retention-provenance.schema.json](retention-provenance.schema.json) in retention envelopes. Operation events can link a source observation UUID. Read [runtime validation and compatibility](../docs/retention-replay.md); SHA-256 equality and cross-record deletion protection are enforced by code beyond JSON Schema.
 
 [retention-selection.schema.json](retention-selection.schema.json) defines complete query/export results. Raw replay context also defines the independent content_update receipt.
@@ -26,4 +28,4 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [Inventory-values 0.1.0](inventory-values.schema.json) defines nullable system/hardware/storage/network/software/services sections. Raw and retained schemas accept this optional extension with inventory_contract_version; retained records also require collection_scope. Older records remain valid, while strict consumers must update before accepting extended records. See [access, data semantics, CSV and migration](../docs/inventory-access.md). CSV is an inspection format with empty missing cells, not the JSON exchange contract.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-19 17:03:32_

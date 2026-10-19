@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast local collection evidence 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "actor",
+    "probes"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "username",
+        "effective_uid",
+        "mode"
+      ],
+      "properties": {
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "effective_uid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "mode": {
+          "enum": [
+            "root",
+            "user",
+            "fallback_user",
+            "unverified"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "root"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "effective_uid": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "probes": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "section",
+          "field",
+          "status",
+          "command",
+          "reason_code",
+          "exitcode",
+          "error_type",
+          "observed_at"
+        ],
+        "properties": {
+          "section": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "status": {
+            "enum": [
+              "success",
+              "failed",
+              "unavailable",
+              "truncated",
+              "not_attempted",
+              "not_supported",
+              "unsupported",
+              "permission_denied",
+              "timeout",
+              "command_failed",
+              "parsing_failed"
+            ]
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8192
+          },
+          "reason_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8192
+          },
+          "exitcode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "error_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8192
+          },
+          "observed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-19 16:59:26"
+}

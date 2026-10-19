@@ -5,7 +5,7 @@ author:
   - Bundle
 license: MIT
 id: inventory-system
-version: 0.3.1
+version: 0.3.2
 status: implemented
 title: System inventory
 description: Collect bounded system, hardware, storage, network, software and services
@@ -154,4 +154,4 @@ retention:
     Partial/unknown fields and collection scope must be preserved; this dataset is
     not online status or overall health.
   schema: retention.schema.json
-# Last modified: 2026-10-19 15:20:06
+# Last modified: 2026-10-19 16:59:26

@@ -146,6 +146,8 @@ class AccessTests(unittest.TestCase):
                                           runtime={'verification': 'synthetic'}, force=True)
             self.assertEqual(report['status'], 'success')
             self.assertEqual(report['access']['mode'], mode)
+            self.assertEqual(report['collection_evidence']['actor']['mode'], mode)
+            self.assertEqual(report['collection_evidence']['actor']['username'], report['access']['actual_identity']['username'])
             self.assertTrue(report['access']['restoration_verified'])
             commands = self.cls.instances[-1].calls
             detail_calls = [(argv, elevated) for argv, elevated in commands if argv[:2] == ['/bin/sh', '-c'] and '__OPSFEAST_EXIT_' in argv[2]]

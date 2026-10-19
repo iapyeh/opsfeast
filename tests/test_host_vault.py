@@ -16,6 +16,7 @@ from unittest.mock import Mock, patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import host_vault as vault
+import vault_content as content
 import retention_store as store
 import observation_store as legacy
 from opsfeast import ConfigError, instance_definition
@@ -34,7 +35,10 @@ class VaultTests(unittest.TestCase):
         return store.initialize(self.root, 'example-production')
 
     def host(self):
-        return self.root / 'vault' / 'hosts' / vault.component('node')
+        from opsfeast import Validator
+        runtime = Validator(self.root)
+        runtime.load(self.root/'hosts.yaml')
+        return self.root/'vault'/content.host_location(runtime, 'node')
 
     def test_settings_definition_and_namespace_change_guard(self):
         self.enable()
@@ -222,9 +226,12 @@ class VaultTests(unittest.TestCase):
         report['status'] = 'partial'
         report['observations']['hostname'].update(value=None, status='unavailable', error={'code': 'missing'})
         legacy.retain(self.root, report)
-        markdown = (self.host() / 'records' / (vault.component('inventory-system') + '.md')).read_text()
-        self.assertIn('partial', markdown)
-        self.assertIn('hostname | None | unavailable', markdown)
+        markdown = (self.host() / 'records' / content.latest_filename(store.query(self.root)['records'][0])).read_text()
+        self.assertNotIn('Collection metadata', markdown)
+        latest = max(store.query(self.root)['records'], key=lambda item: item['observed_at'])
+        history = self.host() / latest['observed_at'][:4] / 'reports' / content.history_filename(latest)
+        self.assertIn('partial', history.read_text())
+        self.assertIn('Hostname | Not available | unavailable', markdown)
         self.assertIn(vault.NOTICE, markdown)
 
     def test_overview_expiry_does_not_remove_old_host_or_history(self):
@@ -289,7 +296,7 @@ class VaultTests(unittest.TestCase):
         record = store.records(self.root)[0]
         self.assertFalse(record['data']['observations']['reachable']['value'])
         self.assertNotIn('never-save', json.dumps(record))
-        self.assertIn('reachable | False', (self.host() / 'records' / (vault.component('company:system/network/check/port') + '.md')).read_text())
+        self.assertIn('Reachable | No | success', (self.host() / 'records' / content.latest_filename(store.query(self.root)['records'][0])).read_text())
         report['data']['reachable'] = 'false'
         with self.assertRaises(ConfigError):
             store.retain_general(self.root, report, metadata, recipe)

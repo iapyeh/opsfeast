@@ -30,6 +30,16 @@ record = profile.retention.show(selection['records'][0]['record_id'])  # only fo
 
 Checkout composition also supports `from retention_store import query, show, Reader` after adding the trusted checkout's `tools/` directory to the Python import path. `query(root, *, hosts=None, recipe=None, since=None, until=None, status=None, kind=None)` and `show(root, record_id)` have the same semantics as the CLI. Prefer `profile.retention` in Core programs. No connection, recipe execution or publication is implied by a read.
 
+## Local collection evidence
+
+Inventory recipe 0.3.2 adds an optional envelope-level collection_evidence object, defined in [collection-evidence.schema.json](../schemas/collection-evidence.schema.json). It is local collection provenance 0.1.0, independent of data.inventory / inventory-observations 0.1.0 and the unchanged normalizer/schema digest bindings. The runner explicitly captures the verified actor and bounded probe metadata into new raw reports, and retention preserves that opt-in object. Old raw reports do not have it and are not backfilled. Replaying an identical new report deduplicates normally; changing an existing record's evidence remains a content conflict, not an enrichment/migration path.
+
+The actor contains username (nullable), effective_uid (nullable) and mode. Each probe has section, field, status, command, reason_code, exitcode, error_type and observed_at, with nullable evidence where unrecorded. Capture projects only those fields; it excludes stdout/stderr, access passwords and credential-source/attempt details. Built-in source commands are fixed reviewed read queries. Authors must keep secrets out of commands and this explicit retained evidence; arbitrary query text is not automatically redacted. Validation is structural evidence, not proof that a remote host executed the report.
+
+Core profile.retention.query/show and retention list/show/export return the optional metadata with the envelope. The legacy observation exchange exports normalized data only, so this evidence is not added to its contract. Use record.get('collection_evidence') and preserve missing/unknown state. The existing data.collection_scope remains mode/effective_uid only. No change to SQLite physical layout, retained business fields or existing snapshot extraction is required.
+
+Checkout modules may reuse collection_evidence.capture(report) and validate(value), after reviewing signatures and supported schema. capture is a producer opt-in projection; never call it to guess evidence from a retained record or read arbitrary raw files in a content consumer. The bundled runner invokes it after detail collection and before saving. Content authors read it through public retention readers; Vault displays account/query evidence without host operations.
+
 ## Recipe-owned data declarations
 
 Inventory declares its recipe-owned `inventory-observations` 0.1.0 contract, [schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). The platform does not infer a declaration from its recipe ID. General operation recipes may declare scalar `host-values` **0.2.0**:
@@ -53,7 +63,7 @@ Retention does not execute custom adapter code or templates. `markdown_template`
 
 ### Registered structured retention
 
-system/inventory/overview 0.3.1 declares `retention: {contract: inventory-observations, version: 0.1.0, description: ..., schema: retention.schema.json}` and explicit access_mode. Its raw `output` no longer selects an adapter. The recipe-owned schema includes nested field meanings/units and limitations; shared retained/exchange schemas reference that source. Discovery reports the declared metadata, schema_path/schema_sha256 and registered normalizer source/digest without loading collection code.
+system/inventory/overview 0.3.2 declares `retention: {contract: inventory-observations, version: 0.1.0, description: ..., schema: retention.schema.json}` and explicit access_mode. Its raw `output` no longer selects an adapter. The recipe-owned schema includes nested field meanings/units and limitations; shared retained/exchange schemas reference that source. Discovery reports the declared metadata, schema_path/schema_sha256 and registered normalizer source/digest without loading collection code.
 
 The platform registry (`retention_contracts`) maps supported contract/version pairs to shipped creator-owned normalizers, independent of recipe ID. It validates declarations and exact schema content (top-level comments excluded), then invokes registered semantic validation/normalization. It never loads arbitrary normalizers from candidate paths. Contributing a new structured contract requires product registration, schema, reviewed code, tests and guidance; descriptor paths are not executable plugin permissions. A clone reusing inventory-observations uses the installed registered normalizer; ship its matching retention.schema.json and declare the required OpsFeast contract support.
 
@@ -123,4 +133,4 @@ Existing SQLite under `vault/` is rejected before new storage use; no automatic 
 
 Retention/content delivery verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 679 public tests, including headless TUI, inventory-owned contracts, scalar/list group rendering, replacement of edited generated outputs, protected human notes and isolated installed-wheel data/content assertions. Older interpreters reused the maintenance environment's Python dependencies; this does not establish native execution-library readiness. Wheel/sdist builds, temporary no-dependency installation and installed-wheel scalar/structured queries, replay/dedup, offline Markdown/HTML, vault and protected operation evidence checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, document links/footers and diff whitespace checks passed. Verification used synthetic/local data and performed no host connections or collection, private-data relocation, push or release.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-19 17:03:32_

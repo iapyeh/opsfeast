@@ -1,5 +1,13 @@
 # SSHScript Ops to OpsFeast
 
+## Readable Vault page paths and optional evidence
+
+Vault host content now lives under hosts/PRIMARY_GROUP/HOST/, selecting first membership or the distinct _ungrouped bucket. Full rebuild regenerates owned pages and all generated links at current locations. Unmanaged notes and old host README files remain unchanged at their original paths; move/link those deliberately. Authoritative retention layout and identity remain group-independent. Observation report names use YYYYMMDDHHMMSS-title.md without identifiers; equal-second/equal-title collisions fail publication without deleting retained history. Header-only host identification and one final metadata section replace the success banner and separate account block.
+
+The Vault consumer now chooses titles and replaces encoded-reference/full-digest Markdown names with title slugs and whole-second UTC observation names plus titles (latest/operation pages retain discriminators). An authorized vault rebuild updates managed pages/indexes and removes stale owned paths; update manual links yourself. Human notes remain unmanaged. No data migration, alias or automatic host rerun is added. See [naming and ownership](host-vault.md#directory-and-ownership).
+
+Inventory recipe 0.3.2 fixes CRLF producer-marker parsing and records optional local collection_evidence 0.1.0. Existing snapshots keep their registered normalizer/schema digests. Old retained observations remain unchanged; rebuild cannot fill their missing account/query metadata or inventory values. A new authorized collection creates separate history. Strict local envelope readers should accept the new schema property before consuming new reports; the legacy normalized exchange excludes it.
+
 ## Classified bundled recipe paths
 
 The five bundled recipe directories now follow [domain/subdomains/action/name](recipe-taxonomy.md#bundled-path-relocation). Existing IDs/versions and data contracts remain unchanged, including byte-identical inventory retention normalizer/schema. Update bundle path selectors, saved invocations/jobs and exact consumer/report selections using the mapping. Old bundle directories are removed without aliases. Profile/external recipe trees, raw files, retained records and queued events are not rewritten. Historical references remain queryable as their original exact strings. No automated relocation or user-data migration tool is supplied.
@@ -219,4 +227,10 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-_Last modified: 2026-10-19 15:24:36_
+Current records use records/current-<title>.md, contain data and a Latest report link, and omit Collection metadata. Both current and historical observation pages start with a Contents index; only historical reports end with Collection metadata, including identity/coverage warnings and queries. The redundant Field observations table is removed. Missing sections say No data was collected; observed empty collections remain No entries reported. Read structured retention records for original field states and timestamps. Rebuild regenerates owned pages without collecting again or rewriting retention; old manual links require deliberate updates. Current title collisions across sources fail publication without overwriting evidence.
+
+Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
+
+Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
+
+_Last modified: 2026-10-19 20:06:02_

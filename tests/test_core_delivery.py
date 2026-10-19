@@ -135,6 +135,8 @@ def execute(recipe):
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)
             self.assertIn('_opsfeast_data/tools/cli_help.py', names)
+            self.assertIn('_opsfeast_data/tools/collection_evidence.py', names)
+            self.assertIn('_opsfeast_data/schemas/collection-evidence.schema.json', names)
             self.assertIn('_opsfeast_data/tools/root_access.py', names)
             self.assertIn('_opsfeast_data/tools/retention_store.py', names)
             self.assertIn('_opsfeast_data/tools/retention_contracts.py', names)

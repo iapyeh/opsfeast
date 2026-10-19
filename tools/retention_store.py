@@ -150,8 +150,11 @@ def database(path, write=False):
 
 def validate_record(record):
     required = {'contract_version', 'record_id', 'kind', 'namespace', 'host_id', 'origin', 'recipe_id', 'recipe_reference', 'observed_at', 'data', 'mappings'}
-    if not isinstance(record, dict) or not required.issubset(record) or set(record) - required - {'retention_provenance', 'retention_definition'} or record['contract_version'] != VERSION:
+    if not isinstance(record, dict) or not required.issubset(record) or set(record) - required - {'retention_provenance', 'retention_definition', 'collection_evidence'} or record['contract_version'] != VERSION:
         raise ConfigError('invalid vault record contract')
+    if 'collection_evidence' in record:
+        from collection_evidence import validate
+        validate(record['collection_evidence'])
     if 'retention_provenance' in record:
         evidence = record['retention_provenance']
         keys = {'contract_version', 'source_observation_id', 'raw_sha256', 'execution_access_mode', 'snapshot_sha256', 'retention_recipe_version'}
@@ -387,6 +390,9 @@ def retain(root, raw, dry_run=False, *, saved_snapshot=None):
         return {'status': 'skipped', 'reason_code': reason}
     envelope_record = envelope(root, 'observation', raw['host_id'], record['recipe_id'], record['observed_at'], record,
                                record['observation_id'], record['source_id'], raw.get('recipe', {}).get('reference'))
+    if 'collection_evidence' in raw:
+        from collection_evidence import validate
+        envelope_record['collection_evidence'] = validate(raw['collection_evidence'])
     envelope_record['retention_definition'] = declaration
     envelope_record['retention_provenance'] = provenance(raw, raw_digest(raw), selected)
     envelope_record['origin']['instance_id'] = producer_identity(raw)

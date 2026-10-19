@@ -227,7 +227,7 @@ class RetentionContentTests(unittest.TestCase):
         self.assertIn('alpha:check/value', html)
         self.assertIn('beta:check/value', html)
         self.assertIn('partial', html)
-        self.assertTrue((self.root/'vault/hosts/node/records').is_dir())
+        self.assertTrue((self.root/'vault/hosts/production/node/records').is_dir())
         self.assertEqual(before, {p: p.read_bytes() for p in before})
 
     def test_runner_content_failure_preserves_status_and_returns_nonzero(self):

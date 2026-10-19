@@ -152,6 +152,9 @@
     "retention_definition": {
       "$ref": "retention-snapshot.schema.json#/properties/retention",
       "type": "object"
+    },
+    "collection_evidence": {
+      "$ref": "collection-evidence.schema.json"
     }
   },
   "allOf": [
@@ -186,5 +189,5 @@
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-19 11:57:21"
+  "$comment": "Last modified: 2026-10-19 16:59:26"
 }
