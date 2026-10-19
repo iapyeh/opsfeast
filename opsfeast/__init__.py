@@ -476,7 +476,7 @@ class Validator:
             pattern = relative
         elif text == 'recipes' or text.startswith('recipes/'):
             if cli:
-                raise ConfigError('omit the recipes/ prefix from --recipe; use inventory/system')
+                raise ConfigError('omit the recipes/ prefix from --recipe; use system/inventory/overview')
             pattern = text[len('recipes'):].lstrip('/') or '.'
         elif path.is_absolute() and path.is_relative_to(REPOSITORY_RECIPES):
             pattern = text
@@ -987,14 +987,14 @@ hosts:
   #       user: root
   #       password: example-password
   #   recipes:  # Optional; select recipe directories from the checkout.
-  #     - inventory/system
-  #     # - recipe: community:inventory/system
+  #     - system/inventory/overview
+  #     # - recipe: community:system/inventory/overview
   #     #   vars: {command_timeout_seconds: 15}
   #     # Use ./recipes/... for custom recipes inside this management directory.
   #     # Or select recipe directories with either of these entries:
-  #     # - directory: recipes/inventory
+  #     # - directory: recipes/system/inventory
   #     #   recursive: false  # Optional; only valid with directory.
-  #     # - glob: recipes/inventory/*
+  #     # - glob: recipes/system/inventory/*
   # See docs/hosts-yaml.md in the OpsFeast repository for details.
   localhost:
     connection:
@@ -1309,6 +1309,9 @@ def positive_timeout(value):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if any(flag in argv for flag in ('-h', '--help')):
+        # Help belongs to the requested command, even when the UI flag comes first.
+        argv = [argument for argument in argv if argument != '--tui']
     if not argv:
         from landing_ui import launch as launch_home
         return launch_home()
@@ -1330,37 +1333,79 @@ def main(argv=None):
     if argv[:1] == ['vault']:
         from host_vault import main as vault_main
         return vault_main(argv[1:])
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.epilog = 'Add --tui to supported inspection, check, diagnostic or recipes commands for an optional Textual display.'
-    commands = parser.add_subparsers(dest='command', required=True)
+    from cli_help import COMMAND_GROUPS, TaskHelpFormatter
+    parser = argparse.ArgumentParser(prog='opsfeast.py', formatter_class=TaskHelpFormatter, description=(
+        'Manage Feast profiles and configuration, discover and execute reviewed recipes, '
+        'and inspect retained data, consumer deliveries and Vault content. '
+        'Run without arguments to open the optional interactive Home; '
+        'use a subcommand with --help to read its purpose and effects.'))
+    parser.epilog = (
+        'After cloning and preparing dependencies, use init for a new Feast or attach for an existing one, '
+        'then edit its hosts.yaml. Groups guide discovery; commands can be reused at any stage. '
+        'Reports, consumers and Vault can use saved data without a new collection. '
+        'Use COMMAND --help for details, or --tui on supported commands for an optional Textual display.')
+    commands = parser.add_subparsers(dest='command', required=True, metavar='COMMAND', title='Commands by task')
+    commands.help_groups = COMMAND_GROUPS
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
     commands.add_parser('consumers', help='discover retention consumers, inspect deliveries and dispatch pending events')
     commands.add_parser('vault', help='rebuild/inspect bundled vault content and group indexes; use vault --help')
-    profiles_parser = commands.add_parser('profiles', help='list all registered profiles')
+    profiles_parser = commands.add_parser('profiles', help='list all registered profiles',
+        description=('List registered Feast management directories and identify the selected default. '
+                     'This reads the profile registry without connecting to hosts or changing the selection.'))
     profiles_parser.add_argument('--json', action='store_true')
-    instance_parser = commands.add_parser('instance', help='inspect or explicitly initialize/update installation identity')
+    instance_parser = commands.add_parser('instance', help='inspect or explicitly initialize/update installation identity',
+        description=('Inspect or maintain the UUID, name and description of this OpsFeast installation. '
+                     'inspect is read-only; init, set, renew and relocate write identity metadata. '
+                     'renew assigns a new UUID, while relocate acknowledges the installation path without moving files.'))
     instance_parser.add_argument('action', choices=('inspect', 'init', 'set', 'renew', 'relocate'))
     instance_parser.add_argument('--installation', type=Path, default=REPOSITORY_ROOT)
     instance_parser.add_argument('--name')
     instance_parser.add_argument('--description')
     instance_parser.add_argument('--json', action='store_true')
 
-    inspection = commands.add_parser('inspect-recipe', help='inspect recipe metadata, platform coverage and entrypoints without executing code')
+    inspection = commands.add_parser('inspect-recipe', help='inspect recipe metadata, platform coverage and entrypoints without executing code',
+        description=('Inspect one recipe directory or recursively discover the bundle. Show declared platform '
+                     'coverage, entrypoint validity and retention definitions without executing recipe code '
+                     'or connecting to hosts. Declarations are not evidence of successful execution.'),
+        epilog='Example: opsfeast.py inspect-recipe system/inventory/overview --json')
     inspection.add_argument('recipe', nargs='?', help='checkout short path or explicit directory; omitted: discover checkout recipes')
     inspection.add_argument('--platform', action='append', default=[], help='requested os_name to compare with declared implemented platforms; repeat as needed')
     inspection_output = inspection.add_mutually_exclusive_group()
     inspection_output.add_argument('--json', action='store_true', help='emit complete descriptor and static inspection report as JSON')
     inspection_output.add_argument('--details', action='store_true', help='show the full human-readable report instead of a focused summary')
-    use = commands.add_parser('use', help='select the default profile')
+    use = commands.add_parser('use', help='select the default profile',
+        description=('Select the registered Feast used by later commands that omit --profile/--root. '
+                     'This changes the default in the profile registry; it does not move data or connect to hosts.'))
     use.add_argument('profile', nargs='?')
-    attach = commands.add_parser('attach', help='validate and register an existing management directory without modifying it')
+    attach = commands.add_parser('attach', help='validate and register an existing management directory without modifying it',
+        description=('Validate an existing Feast management directory and register it as a profile. '
+                     'This writes the installation profile registry and preserves the directory contents; '
+                     'it does not initialize another copy or connect to hosts.'))
     attach.add_argument('root', type=Path)
     attach.add_argument('--profile', help='registration name (default: directory name)')
-    detach = commands.add_parser('detach', help='remove a profile registration and preserve its directory; main is protected')
+    detach = commands.add_parser('detach', help='remove a profile registration and preserve its directory; main is protected',
+        description=('Remove a profile from the registry for this installation while preserving all files in its management '
+                     'directory. main is protected; detaching the default switches to a valid registered main profile.'))
     detach.add_argument('profile', help='exact registered profile name; main cannot be detached')
     for command in ('init', 'check', 'dump', 'test-connection'):
-        command_parser = commands.add_parser(command)
+        summary, description = {
+            'init': ('initialize or reuse a Feast management directory',
+                     'Create or reuse a Feast management directory, establish its namespace/data storage and '
+                     'bundled Vault landing content, and register the profile while preserving existing settings. '
+                     'This performs local setup without connecting to hosts or executing user recipes/consumers.'),
+            'check': ('validate local configuration and recipe selections',
+                      'Validate hosts.yaml, includes, connection definitions and configured recipe selections. '
+                      'Print configuration errors without testing connectivity or executing recipes.'),
+            'dump': ('print a selected value from resolved configuration',
+                     'Read the resolved Feast configuration and print the selected dot-separated setting. '
+                     'Values are not masked and can include credentials. This does not connect or execute recipes.'),
+            'test-connection': ('test configured login and simple remote commands',
+                                'Connect through each selected host connection plan and run hostname/date to test '
+                                'the session. Print login/command evidence; --host-init also refreshes saved platform '
+                                'facts. This makes real connections but does not run an operational recipe.'),
+        }[command]
+        command_parser = commands.add_parser(command, help=summary, description=description)
         if command in ('init', 'check', 'test-connection'):
             command_parser.add_argument('--json', action='store_true')
         if command == 'init':
@@ -1382,7 +1427,23 @@ def main(argv=None):
         command_parser.add_argument('root', type=str if command == 'init' else Path, nargs='?', help='init: name or path (default: feasts/main; existing named profiles are reused); other commands: optional management directory')
         command_parser.add_argument('--profile', help='init: registration name; other commands: profile for this invocation')
     for command in ('host-init', 'test-su', 'test-sudo', 'test-host'):
-        diagnostic = commands.add_parser(command)
+        summary, description = {
+            'host-init': ('refresh and save platform facts for one host',
+                          'Connect to one configured host, collect its platform facts and refresh their local cache. '
+                          'This explicitly refreshes facts even when cached values exist; no operational recipe runs.'),
+            'test-su': ('test independent or ordered su account transitions',
+                        'Connect to one host and test su to declared accounts, independently or through explicit '
+                        '--chain sequences. Print transition/identity and cleanup evidence without running a recipe.'),
+            'test-sudo': ('test sudo capabilities of selected account actors',
+                          'Connect to one host and test sudo as the connection account or selected declared '
+                          'actors toward --run-as. Other actors require su first. Print access/cleanup evidence '
+                          'without collecting inventory or running a recipe.'),
+            'test-host': ('diagnose login, platform facts and declared account access',
+                          'Connect to one host, reuse valid platform facts or save missing facts, then test the '
+                          'enabled sudo for the login account and independent su to other declared users. '
+                          'Print failed/skipped/cleanup evidence; no operational recipe runs.'),
+        }[command]
+        diagnostic = commands.add_parser(command, help=summary, description=description)
         diagnostic.add_argument('--json', action='store_true')
         diagnostic.add_argument('host', help='host ID from hosts.yaml')
         if command in ('test-su', 'test-sudo'):
@@ -1397,7 +1458,11 @@ def main(argv=None):
         diagnostic.add_argument('-v', '--verbose', action='store_true', help='show diagnostic progress on stderr')
         diagnostic.add_argument('--debug', action='store_true', help='show safe connection and credential-source details on stderr; implies verbose')
         diagnostic.add_argument('--traceback', action='store_true', help='show exception frames without source, locals or exception text')
-    access = commands.add_parser('check-access', help='test login and configured users via su/sudo without inventory')
+    access = commands.add_parser('check-access', help='test login and configured users via su/sudo without inventory',
+        description=('Connect to selected hosts and test the login account plus declared user access through '
+                     'independent su and enabled sudo attempts. Print per-account identity, failure and skipped '
+                     'evidence without collecting inventory or running operational recipes.'),
+        epilog='Example: opsfeast.py check-access --all --profile main --json')
     access.add_argument('--root', type=Path)
     access.add_argument('--profile')
     access.add_argument('--host', nargs='+', action='extend', default=[])

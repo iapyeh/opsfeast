@@ -33,7 +33,7 @@ Before writing a new user recipe, the agent reads the defaults with `python -B t
 
 ## Reserved Bundle attribution
 
-The product's built-in `check/port`, `inventory/system` and `report/summary` recipes declare exactly:
+The product's built-in `system/network/check/port`, `system/inventory/overview` and `feast/report/execution-summary` recipes declare exactly:
 
 ```yaml
 author: {name: Bundle, contacts: [Bundle]}
@@ -54,4 +54,4 @@ Packing a built-in recipe for inspection is possible, but its Bundle archive can
 
 Public tests cover keyboard/mouse editing, cancellation, atomic save failures, invalid-file/symlink preservation, defaults and copy preservation, case/whitespace reservation, author/contact types, all built-in identities/LICENSE files, required MIT packaging, rejected Bundle archives before extraction, ordinary candidate imports and manifest spoofing. Synthetic user-copy fixtures explicitly use synthetic authors rather than pretending to be Bundle. No real download, third-party execution or publication is performed.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-19 15:24:36_

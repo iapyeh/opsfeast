@@ -109,7 +109,7 @@ python -B tools/opsfeast.py check --profile main --tui
 python -B tools/opsfeast.py test-host host-01 --profile main --tui
 python -B tools/opsfeast.py test-su host-01 alice --tui
 python -B tools/opsfeast.py test-sudo host-01 --run-as root --tui
-python -B tools/run_recipe.py inventory/system --group web --threads 4 --tui
+python -B tools/run_recipe.py system/inventory/overview --group web --threads 4 --tui
 python -B tools/opsfeast.py recipes list --checkout-only --tui
 python -B tools/opsfeast.py recipes results list --profile main --tui
 ```
@@ -163,4 +163,4 @@ Original output and JSON exports retain the original timezone/precision. The his
 heading still names its offset(s). See [the shared time policy](cli.md#human-time-display-policy)
 for DST, invalid/unzoned timestamps, HTML generation and machine-data exceptions.
 
-_Last modified: 2026-10-16_
+_Last modified: 2026-10-19 15:24:36_

@@ -14,4 +14,4 @@ dependencies: {controller: [Python 3.11+, PyYAML 6.0.3]}
 permissions: {connections: false, sudo: false}
 side_effects: [Writes declared report artifacts in the new run directory]
 verification: {synthetic: tested, ssh: not-applicable}
-# Last modified: 2026-10-16
+# Last modified: 2026-10-19 15:20:06

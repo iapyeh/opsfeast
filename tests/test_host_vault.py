@@ -284,12 +284,12 @@ class VaultTests(unittest.TestCase):
                     'fields': {'reachable': {'type': 'boolean', 'unit': '', 'description': 'TCP reachability'}}}}
         report = {'host_id': 'node', 'status': 'partial', 'completed_at': '2026-10-17T00:00:00Z',
                   'evidence_kind': 'ssh', 'data': {'reachable': False, 'password': 'never-save'},
-                  'recipe': {'reference': 'company:check/port'}}
+                  'recipe': {'reference': 'company:system/network/check/port'}}
         store.retain_general(self.root, report, metadata, recipe)
         record = store.records(self.root)[0]
         self.assertFalse(record['data']['observations']['reachable']['value'])
         self.assertNotIn('never-save', json.dumps(record))
-        self.assertIn('reachable | False', (self.host() / 'records' / (vault.component('company:check/port') + '.md')).read_text())
+        self.assertIn('reachable | False', (self.host() / 'records' / (vault.component('company:system/network/check/port') + '.md')).read_text())
         report['data']['reachable'] = 'false'
         with self.assertRaises(ConfigError):
             store.retain_general(self.root, report, metadata, recipe)

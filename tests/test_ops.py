@@ -125,17 +125,17 @@ class OpsTests(unittest.TestCase):
 
     def test_checkout_recipes_work_from_included_yaml_without_copy(self):
         self.write('hosts.yaml', 'include: [hosts/web.yaml]\n')
-        self.write('hosts/web.yaml', 'hosts: {web: {connection: {local: true}, recipes: [{recipe: recipes/inventory/system}]}}')
-        self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'inventory/system'])
+        self.write('hosts/web.yaml', 'hosts: {web: {connection: {local: true}, recipes: [{recipe: recipes/system/inventory/overview}]}}')
+        self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
         self.assertFalse((self.root / 'recipes').exists())
 
     def test_checkout_glob_directory_and_dedup(self):
-        for selector in ('{directory: recipes/inventory}', '{directory: recipes, recursive: true}',
-                         '{glob: "recipes/**/system"}'):
+        for selector in ('{directory: recipes/system/inventory}', '{directory: recipes, recursive: true}',
+                         '{glob: "recipes/**/overview"}'):
             with self.subTest(selector=selector):
-                self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/inventory/system}}]}}}}')
-                expected = ([ops.REPOSITORY_RECIPES / 'check/identity', ops.REPOSITORY_RECIPES / 'check/port', ops.REPOSITORY_RECIPES / 'inventory/system', ops.REPOSITORY_RECIPES / 'report/retention', ops.REPOSITORY_RECIPES / 'report/summary']
-                            if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'inventory/system'])
+                self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/system/inventory/overview}}]}}}}')
+                expected = (sorted([ops.REPOSITORY_RECIPES / 'system/account/check/identity', ops.REPOSITORY_RECIPES / 'system/network/check/port', ops.REPOSITORY_RECIPES / 'system/inventory/overview', ops.REPOSITORY_RECIPES / 'feast/report/retention-summary', ops.REPOSITORY_RECIPES / 'feast/report/execution-summary'])
+                            if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
                 self.assertEqual(self.check().selected['web'], expected)
 
     def test_checkout_boundary_does_not_allow_include_or_recipe_escape(self):
@@ -144,14 +144,14 @@ class OpsTests(unittest.TestCase):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{{glob: "{recipe}"}}]}}}}')
                 with self.assertRaises(ops.ConfigError):
                     self.check()
-        self.write('hosts.yaml', f'include: [{ops.REPOSITORY_ROOT / "recipes/inventory/system/recipe.yaml"}]')
+        self.write('hosts.yaml', f'include: [{ops.REPOSITORY_ROOT / "recipes/system/inventory/overview/recipe.yaml"}]')
         with self.assertRaisesRegex(ops.ConfigError, 'outside management root'):
             self.check()
 
     def test_checkout_recipe_never_uses_same_named_instance_copy(self):
-        self.write('recipes/inventory/system/recipe.yaml', 'id: different\n')
-        self.write('hosts.yaml', 'hosts: {web: {connection: {local: true}, recipes: [{recipe: recipes/inventory/system}]}}')
-        self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'inventory/system'])
+        self.write('recipes/system/inventory/overview/recipe.yaml', 'id: different\n')
+        self.write('hosts.yaml', 'hosts: {web: {connection: {local: true}, recipes: [{recipe: recipes/system/inventory/overview}]}}')
+        self.assertEqual(self.check().selected['web'], [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
 
     def test_dump_merged_hosts_and_nested_values(self):
         self.write('hosts.yaml', 'include: [hosts/web.yaml]\nhosts: {localhost: {connection: {local: true}}}')

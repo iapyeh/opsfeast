@@ -35,7 +35,7 @@ def timezone(zone):
 class DisplayTimeTests(unittest.TestCase):
     def test_portable_report_html_uses_local_seconds_but_json_preserves_times(self):
         source = '2026-10-14T20:34:56.987654Z'
-        recipe = Path(__file__).resolve().parents[1] / 'recipes/report/summary/main.py'
+        recipe = Path(__file__).resolve().parents[1] / 'recipes/feast/report/execution-summary/main.py'
         execute = runpy.run_path(str(recipe))['execute']
         document = {'host_id': 'synthetic', 'status': 'success', 'recipe': {'id': 'synthetic'},
                     'started_at': source, 'completed_at': source, 'data': {'observed_at': source}}
@@ -86,7 +86,7 @@ class DisplayTimeTests(unittest.TestCase):
         source = '2026-10-14T20:34:56.987654Z'
         document = {'host_id': 'synthetic', 'status': 'success', 'started_at': source,
                     'completed_at': source, 'recipe': {'id': 'inventory-system',
-                    'source_name': 'repository', 'reference': 'inventory/system'}}
+                    'source_name': 'repository', 'reference': 'system/inventory/overview'}}
         with tempfile.TemporaryDirectory() as folder, timezone('Asia/Taipei'):
             root = Path(folder)
             path = root / 'observations' / 'synthetic.json'
@@ -102,7 +102,13 @@ class DisplayTimeTests(unittest.TestCase):
             for tty in (True, False):
                 for arguments in (['list'], ['detail'], ['detail', 'observations/synthetic.json']):
                     output = invoke(arguments, tty)
-                    self.assertIn('2026-10-15 04:34:56', output)
+                    if tty and arguments == ['list']:
+                        # The completed cell may wrap its date and time onto separate lines.
+                        cells = [line.split('│')[5].strip() for line in output.split('├', 1)[1].splitlines()
+                                 if line.startswith('│')]
+                        self.assertEqual(' '.join(filter(None, cells)), '2026-10-15 04:34:56')
+                    else:
+                        self.assertIn('2026-10-15 04:34:56', output)
                     self.assertNotIn('.987654', output)
                 self.assertEqual(json.loads(invoke(['show', 'observations/synthetic.json'], tty)), document)
                 for action in ('list', 'detail'):
@@ -116,7 +122,7 @@ class DisplayTimeTests(unittest.TestCase):
                 self.assertIn('2026-10-15 04:34:56', exported.read_text())
                 self.assertNotIn('.987654', exported.read_text())
             view = recipe_browser.execution_output(root, 'observations/synthetic.json',
-                {'source': 'repository', 'reference': 'inventory/system'})
+                {'source': 'repository', 'reference': 'system/inventory/overview'})
             self.assertIn('2026-10-15 04:34:56', view['details'])
             self.assertEqual(view['original'], original)
             self.assertEqual(path.read_text(), original)

@@ -290,8 +290,8 @@ def format_summary(report, icons=None):
               for state in ('success', 'failed', 'skipped')}
     total = (f"Hosts: {counts['success']} passed, {counts['failed']} failed, "
              f"{counts['skipped']} skipped, {len(report.get('excluded_hosts', []))} excluded")
-    return table_formatter()(rows, headers=['status', 'host', 'test', 'user', 'reason'], tablefmt='rounded_outline',
-                             disable_numparse=True, preserve_whitespace=True) + '\n' + total
+    from console_output import render_table
+    return render_table(['status', 'host', 'test', 'user', 'reason'], rows) + '\n' + total
 
 
 def progress_printer(total, icons=None):

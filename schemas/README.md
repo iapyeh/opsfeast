@@ -4,7 +4,7 @@ Replay adds [raw-retention-context.schema.json](raw-retention-context.schema.jso
 
 [retention-selection.schema.json](retention-selection.schema.json) defines complete query/export results. Raw replay context also defines the independent content_update receipt.
 
-Inventory/system 0.3.1 owns [retention.schema.json](../recipes/inventory/system/retention.schema.json), including nested meanings/units. The shared retained-observation and exchange/envelope schemas reference that creator-owned source. Structured snapshots bind normalizer_sha256 and schema_sha256; envelopes preserve retention_definition. See [registered contract workflow](../docs/retention.md#registered-structured-retention). Raw, recipe, retained and exchange versions remain independent.
+system/inventory/overview 0.3.1 owns [retention.schema.json](../recipes/system/inventory/overview/retention.schema.json), including nested meanings/units. The shared retained-observation and exchange/envelope schemas reference that creator-owned source. Structured snapshots bind normalizer_sha256 and schema_sha256; envelopes preserve retention_definition. See [registered contract workflow](../docs/retention.md#registered-structured-retention). Raw, recipe, retained and exchange versions remain independent.
 
 ## Retention contracts
 
@@ -20,10 +20,10 @@ After every release update, user agents must reread the current object/schema do
 
 The first milestone will establish the minimal inventory and result formats. They should retain host identity, collection time, source, tool version, status, and units where relevant.
 
-Observations, unknown values, and AI interpretations should remain distinguishable. The inventory-system result schema 0.2.0 is defined in [schema.json](../recipes/inventory/system/schema.json). [Retained inventory observation 0.1.0](retained-observation.schema.json) and [JSON exchange 0.1.0](observation-exchange.schema.json) are now implemented. Other record contracts remain planned.
+Observations, unknown values, and AI interpretations should remain distinguishable. The inventory-system result schema 0.2.0 is defined in [schema.json](../recipes/system/inventory/overview/schema.json). [Retained inventory observation 0.1.0](retained-observation.schema.json) and [JSON exchange 0.1.0](observation-exchange.schema.json) are now implemented. Other record contracts remain planned.
 
 See the [result-data workflow](../docs/result-data.md) for stage separation, SQLite storage, extraction, identity, replay, export and combination. JSON Schemas describe structure; the tool also checks semantic identity relations, ordering/state constraints and duplicate/conflicting IDs. A schema is not publisher authentication. Receiver analysis storage remains user-selected.
 
 [Inventory-values 0.1.0](inventory-values.schema.json) defines nullable system/hardware/storage/network/software/services sections. Raw and retained schemas accept this optional extension with inventory_contract_version; retained records also require collection_scope. Older records remain valid, while strict consumers must update before accepting extended records. See [access, data semantics, CSV and migration](../docs/inventory-access.md). CSV is an inspection format with empty missing cells, not the JSON exchange contract.
 
-_Last modified: 2026-10-19 11:57:21_
+_Last modified: 2026-10-19 15:24:36_

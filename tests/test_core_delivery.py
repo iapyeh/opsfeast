@@ -114,7 +114,7 @@ def execute(recipe):
 
     def test_bundled_identity_recipe_success_truncation_and_invalid_output(self):
         import runpy
-        execute = runpy.run_path(str(ROOT / 'recipes/check/identity/main.py'))['execute']
+        execute = runpy.run_path(str(ROOT / 'recipes/system/account/check/identity/main.py'))['execute']
         from types import SimpleNamespace
         for text, truncated, status in [('operator\n', False, 'success'), ('operator', True, 'failed'), ('one\ntwo', False, 'failed')]:
             result = SimpleNamespace(stdout=text, stdout_truncated=truncated, stderr_truncated=False)
@@ -134,11 +134,12 @@ def execute(recipe):
             self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)
+            self.assertIn('_opsfeast_data/tools/cli_help.py', names)
             self.assertIn('_opsfeast_data/tools/root_access.py', names)
             self.assertIn('_opsfeast_data/tools/retention_store.py', names)
             self.assertIn('_opsfeast_data/tools/retention_contracts.py', names)
-            self.assertIn('_opsfeast_data/recipes/inventory/system/retention.py', names)
-            self.assertIn('_opsfeast_data/recipes/inventory/system/retention.schema.json', names)
+            self.assertIn('_opsfeast_data/recipes/system/inventory/overview/retention.py', names)
+            self.assertIn('_opsfeast_data/recipes/system/inventory/overview/retention.schema.json', names)
             self.assertIn('_opsfeast_data/tools/vault_content.py', names)
             self.assertIn('_opsfeast_data/tools/retention_consumers.py', names)
             self.assertIn('_opsfeast_data/consumers/vault/consumer.yaml', names)
@@ -146,9 +147,14 @@ def execute(recipe):
             self.assertIn('_opsfeast_data/schemas/retention-consumer.schema.json', names)
             self.assertIn('_opsfeast_data/schemas/retention-event.schema.json', names)
             self.assertIn('_opsfeast_data/schemas/retention-selection.schema.json', names)
-            self.assertIn('_opsfeast_data/recipes/report/retention/main.py', names)
+            self.assertIn('_opsfeast_data/recipes/feast/report/retention-summary/main.py', names)
             self.assertIn('_opsfeast_data/tests/test_core_delivery.py', names)
-            self.assertIn('_opsfeast_data/recipes/check/port/LICENSE', names)
+            self.assertIn('_opsfeast_data/recipes/system/network/check/port/LICENSE', names)
+            for reference in ('system/network/check/port', 'system/account/check/identity', 'system/inventory/overview',
+                              'feast/report/execution-summary', 'feast/report/retention-summary'):
+                self.assertIn('_opsfeast_data/recipes/' + reference + '/recipe.yaml', names)
+            self.assertFalse(any(name.startswith(('_opsfeast_data/recipes/check/', '_opsfeast_data/recipes/inventory/',
+                                                  '_opsfeast_data/recipes/report/')) for name in names))
             self.assertFalse(any('AGENTS.local' in name or '__pycache__' in name or '.opsfeast-instance' in name for name in names))
             target = self.root / 'wheel-install'
             archive.extractall(target)
@@ -165,7 +171,7 @@ root = Path(sys.argv[2])
 instance = Instance.open(root)
 assert instance.inspect()['identity']['identity_status'] == 'placeholder'
 from opsfeast import REPOSITORY_RECIPES
-assert inspect_one(REPOSITORY_RECIPES / 'check/port', [])['status'] == 'success'
+assert inspect_one(REPOSITORY_RECIPES / 'system/network/check/port', [])['status'] == 'success'
 from retention_store import retain_general
 from recipe_catalog import choose
 from recipe_reports import run_report
@@ -181,21 +187,21 @@ receipt = retain_general(profile.root, raw, metadata, profile.root)
 assert receipt['status'] == 'stored' and receipt['content_update']['status'] == 'success'
 assert profile.retention.query()['records'][0]['data']['observations']['count']['value'] == 0
 assert not list((profile.root/'vault').rglob('*.sqlite3'))
-report, path = run_report(profile.root, choose(profile.root, 'report/retention'), [])
+report, path = run_report(profile.root, choose(profile.root, 'feast/report/retention-summary'), [])
 assert report['status'] == 'success' and len(report['artifacts']) == 2
 assert report['retention_sources'][0]['records']
 import json
 from retention_store import retain
-inventory_raw = json.loads((REPOSITORY_RECIPES/'inventory/system/examples/result.partitioned.synthetic.json').read_text())
+inventory_raw = json.loads((REPOSITORY_RECIPES/'system/inventory/overview/examples/result.partitioned.synthetic.json').read_text())
 receipt = retain(profile.root, inventory_raw)
 assert receipt['status'] == 'stored', receipt
 record = profile.retention.show(receipt['record_id'])
 assert record['retention_definition']['contract'] == 'inventory-observations'
 assert record['data']['inventory']['hardware']['memory_total_bytes'] is not None
-assert inspect_one(REPOSITORY_RECIPES/'inventory/system', [])['retention']['schema_path'].endswith('retention.schema.json')
+assert inspect_one(REPOSITORY_RECIPES/'system/inventory/overview', [])['retention']['schema_path'].endswith('retention.schema.json')
 from retention_consumers import catalog, dispatch, inspect_deliveries
 assert catalog(profile.root)['consumers'][0]['source'] == 'builtin:vault'
-assert choose(profile.root, 'inventory/system')['consumers'][0]['id'] == 'vault'
+assert choose(profile.root, 'system/inventory/overview')['consumers'][0]['id'] == 'vault'
 assert len(inspect_deliveries(profile.root)['events']) == 2
 local = profile.root/'consumers/counter'
 local.mkdir(parents=True)

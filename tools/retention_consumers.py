@@ -327,7 +327,21 @@ def dispatch(root, consumer=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser = argparse.ArgumentParser(
+        prog='opsfeast.py consumers',
+        description=('Discover programs that react to retained-data changes and inspect their\n'
+        'durable delivery results. Dispatch executes enabled reviewed local programs\n'
+        'for pending or failed events; their effects follow the selected consumer\n'
+        'implementation.'),
+        epilog=('Actions:\n'
+        '  list [ID]       Discover descriptors and registrations without importing programs.\n'
+        '  show ID         Inspect one consumer and its subscriptions without execution.\n'
+        '  inspect [ID]    Read event/delivery evidence, including individual failed attempts.\n'
+        '  dispatch [ID]   Execute pending/running/failed deliveries; successful pairs stay acked.\n'
+        '\n'
+        'Delivery is at least once: consumers must tolerate repeated attempts.\n'
+        'Example: opsfeast.py consumers list --recipe system/inventory/overview --profile main --json'),
+        formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
     parser.add_argument('action', choices=('list', 'show', 'inspect', 'dispatch'))
     parser.add_argument('consumer', nargs='?')
     selection = parser.add_mutually_exclusive_group()

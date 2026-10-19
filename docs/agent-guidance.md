@@ -52,7 +52,7 @@ The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/ops
 
 Use the [hosts skill](../skills/opsfeast-hosts/SKILL.md) for settings, platform initialization and requested host/account diagnostics. Use the [recipes skill](../skills/opsfeast-recipes/SKILL.md) for inventory execution, platform implementations and recipe sharing/review. Both link to executable interfaces and their limits; reading a skill does not execute it.
 
-The [host diagnostic guide](host-diagnostics.md) distinguishes fresh host-init from test-host cache reuse and explains independent versus chained su, sudo actors versus targets, credentials and skipped states. The [inventory guide](../recipes/inventory/system/README.md) owns descriptor/result schema 0.2.0 and platform selection. Record actual source/version/digest and verification evidence; do not equate a zero diagnostic exit code or matching metadata with complete host capability verification or safe custom code.
+The [host diagnostic guide](host-diagnostics.md) distinguishes fresh host-init from test-host cache reuse and explains independent versus chained su, sudo actors versus targets, credentials and skipped states. The [inventory guide](../recipes/system/inventory/overview/README.md) owns descriptor/result schema 0.2.0 and platform selection. Record actual source/version/digest and verification evidence; do not equate a zero diagnostic exit code or matching metadata with complete host capability verification or safe custom code.
 
 ## Private guidance
 
@@ -76,4 +76,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-_Last modified: 2026-10-14_
+_Last modified: 2026-10-19 15:24:36_

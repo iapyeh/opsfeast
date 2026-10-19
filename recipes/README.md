@@ -1,23 +1,29 @@
 # Recipe catalog
 
-[Inventory/system 0.3.1](inventory/system/README.md#recipe-owned-retention-contract) declares inventory-observations 0.1.0 independently of raw output. The recipe owns its schema and normalization; registered-contract selection and storage remain platform services.
+[system/inventory/overview 0.3.1](system/inventory/overview/README.md#recipe-owned-retention-contract) declares inventory-observations 0.1.0 independently of raw output. The recipe owns its schema and normalization; registered-contract selection and storage remain platform services.
 
 
 This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent to create a recipe, share content or acquire someone else's work, start with the [user guide](../docs/recipes.md).
 
-The bundled [check/identity](check/identity/README.md) demonstrates python-recipe 0.1.0 with the Core Recipe scoped session. It observes the login account without su/sudo; local and synthetic evidence do not prove remote applicability.
+The bundled [system/account/check/identity](system/account/check/identity/README.md) demonstrates python-recipe 0.1.0 with the Core Recipe scoped session. It observes the login account without su/sudo; local and synthetic evidence do not prove remote applicability.
 
-The bundled [report/retention](report/retention/README.md) reads declared retention through the offline report reader and produces Markdown/HTML, including cross-recipe selections. Operation recipe creators own their retention declarations; content is a downstream application.
+The bundled [feast/report/retention-summary](feast/report/retention-summary/README.md) reads declared retention through the offline report reader and produces Markdown/HTML, including cross-recipe selections. Operation recipe creators own their retention declarations; content is a downstream application.
+
+## Classification
+
+Use [domain/subdomains/action/name](../docs/recipe-taxonomy.md) for new recipes. Paths can have more than two levels. Bundle recipes live here; user-authored recipes normally live under the selected profile's recipes/ and use :references. Shared user repositories use registered source references. Classification-only moves retain IDs and historical evidence; see the guide's relocation table and required configuration/job/consumer updates.
 
 ## Available recipes
 
-| Recipe | Purpose | Implemented platform | Execution tools and showcase | Verification evidence | Usage |
+| Reference | Stable ID / version | Purpose | Runtime/platform | Verification evidence | Invocation |
 | --- | --- | --- | --- | --- | --- |
-| [inventory-system](inventory/system/README.md) 0.2.2 | Seven fields covering hostname, system name/version, kernel and architecture | Linux, FreeBSD, macOS, ESXi | SSHScript ==5.0.0 for local/SSH Session command collection; [implementation choice](inventory/system/README.md#implementation-choice) | Synthetic tests; macOS read-only initialization/inventory tested locally; real Linux/FreeBSD/ESXi/SSH collection unverified | run_recipe.py; see recipe README |
-| [check-port](check/port/README.md) 0.1.0 | One TCP IP/port check from the selected host | Linux, FreeBSD, macOS with target python3 | SSHScript 5.0.0 borrowed Session/argv/command budget; Python socket probe | Synthetic tests only; real target/SSH unverified | run_recipe.py check/port --host HOST --var port=8888 |
-| [report-summary](report/summary/README.md) 0.1.0 | Plain offline execution-result table/JSON | Controller Python; no host connection | Python stdlib rendering and HTML escaping; python-report 0.1.0 | Synthetic tests and isolated synthetic local report generation; no real data | opsfeast.py recipes run report/summary --input RESULT.json |
+| [system/inventory/overview](system/inventory/overview/README.md) | inventory-system / 0.3.1 | Common system facts plus hardware, storage, network, software and services sections | SSHScript 5.0.0; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | run_recipe.py system/inventory/overview --host HOST |
+| [system/network/check/port](system/network/check/port/README.md) | check-port / 0.1.0 | One bounded TCP connection from the selected host | SSHScript Session plus target Python socket; Linux, FreeBSD, macOS | Synthetic; no native target/SSH verification | run_recipe.py system/network/check/port --host HOST --var port=8888 |
+| [system/account/check/identity](system/account/check/identity/README.md) | check-identity / 0.1.0 | Observe the supplied session's effective account without escalation | Core Recipe and SSHScript; Linux, FreeBSD, macOS | Synthetic and earlier local Core evidence; remote applicability unverified | run_recipe.py system/account/check/identity --host HOST |
+| [feast/report/execution-summary](feast/report/execution-summary/README.md) | report-summary / 0.1.2 | Render selected saved execution results as HTML and JSON | Offline controller Python; python-report 0.1.0 | Synthetic and isolated local report generation | opsfeast.py recipes run feast/report/execution-summary --input RESULT.json |
+| [feast/report/retention-summary](feast/report/retention-summary/README.md) | report-retention / 0.1.0 | Combine retained observations as Markdown and HTML | Offline controller Python; python-report 0.1.0 | Synthetic and installed-wheel retention/report tests | opsfeast.py recipes run feast/report/retention-summary --profile NAME --json |
 
-The bundled port check and offline report are listed above; there is no third-party catalog yet. Other inventory types remain future directions. Update this catalog when adding recipes, including purpose, version, platforms, execution tools, actual showcased capabilities, evidence and usage. Author declarations are not substitutes for actual testing.
+This checkout ships these five recipes. Catalog discovery also includes enabled profile and registered external sources; publisher trust, dependencies and host applicability remain separate evidence. No live exchange or automatic third-party installer is implemented. Update this catalog with actual coverage and verification when adding recipes.
 
 ## Custom and third-party content
 
@@ -40,4 +46,4 @@ The first result contract and synthetic example live with inventory-system. Inve
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 
-_Last modified: 2026-10-19 11:59:00_
+_Last modified: 2026-10-19 15:24:36_

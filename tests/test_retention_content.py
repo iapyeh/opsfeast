@@ -214,7 +214,7 @@ class RetentionContentTests(unittest.TestCase):
         self.enable()
         self.retain()
         self.retain(reference='beta:check/value', status='partial', value=None)
-        item = choose(self.root, 'report/retention')
+        item = choose(self.root, 'feast/report/retention-summary')
         self.assertIsNone(item['retention']['declaration'])
         before = {p: p.read_bytes() for p in (self.root/'retention').rglob('*.sqlite3')}
         with patch('opsfeast.load_session_class', side_effect=AssertionError('no connections')):
@@ -254,7 +254,7 @@ class RetentionContentTests(unittest.TestCase):
 
     def test_empty_retention_report_and_invalid_selection(self):
         self.enable()
-        item = choose(self.root, 'report/retention')
+        item = choose(self.root, 'feast/report/retention-summary')
         report, _ = run_report(self.root, item, [])
         self.assertEqual(report['reason_code'], 'empty_selection')
         report, _ = run_report(self.root, item, [], values={'hosts': [7]})
@@ -265,7 +265,7 @@ class RetentionContentTests(unittest.TestCase):
         from opsfeast import Instance
         profile = Instance.open(self.root).profile(root=self.root)
         self.assertEqual(profile.retention.query()['records'], [])
-        item = choose(self.root, 'check/port')
+        item = choose(self.root, 'system/network/check/port')
         declaration = item['retention']['declaration']
         self.assertEqual(declaration['version'], '0.2.0')
         self.assertIn('description', declaration['fields']['reachable'])

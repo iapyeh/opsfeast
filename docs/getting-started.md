@@ -32,7 +32,7 @@ Read the [skills/ index](../skills/README.md) first, then the task-relevant skil
 
 ## 先了解可以做什麼
 
-目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及 recipe 執行工具。Inventory supports Linux, FreeBSD and macOS through platform dispatch; Linux/FreeBSD have synthetic coverage and macOS has local read-only validation. Real SSH validation remains pending. 工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/inventory/system/README.md)。
+目前提供管理目錄初始化、設定檢查、設定 JSON 查詢、指定主機連線測試，以及 recipe 執行工具。Inventory supports Linux, FreeBSD and macOS through platform dispatch; Linux/FreeBSD have synthetic coverage and macOS has local read-only validation. Real SSH validation remains pending. 工具不是通用部署或修復執行器。各工具範圍見 [主機設定指南](hosts-yaml.md) 與 [inventory-system 指南](../recipes/system/inventory/overview/README.md)。
 
 README 是共同入口；AGENTS.md 是隨 Git 提供的專案工作規則。若 agent 沒有自動載入 AGENTS.md，請直接讀取它。不要將其他電腦的私人 checkout、絕對路徑或環境設定當成本專案的必備環境。
 
@@ -111,7 +111,7 @@ For complete tool syntax, defaults, behavior, output and exit codes, see the [CL
 
 ## Recipe next steps
 
-Use [recipes list/show/run](recipe-experience.md) to explore bundled/Feast/external recipes, run reviewed operations, generate offline reports and reuse saved jobs. Fresh clones can inspect with recipes list --checkout-only. The same catalog JSON supports agent-selected presentation; basic HTML exports and report/summary provide plain default views.
+Use [recipes list/show/run](recipe-experience.md) to explore bundled/Feast/external recipes, run reviewed operations, generate offline reports and reuse saved jobs. Fresh clones can inspect with recipes list --checkout-only. The same catalog JSON supports agent-selected presentation; basic HTML exports and feast/report/execution-summary provide plain default views.
 
 When creating or adapting a recipe, follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools). OpsFeast keeps tool choice open and prefers SSHScript for suitable command execution and session orchestration, while respecting user-selected tools and operational constraints. Read the selected tools' relevant documentation; recipes using other tools need their own prerequisite checks and reviewed standalone execution instructions. The current host diagnostics and inventory runner continue to require SSHScript.
 
@@ -121,7 +121,7 @@ To select, create or share recipes, start with the [recipe user guide](recipes.m
 
 After the user identifies targets and authorizes the relevant diagnostics, use test-host for configured login/platform/account checks. For a narrower request, use host-init, test-connection, test-su or test-sudo. Direct host-init refreshes existing facts; test-host reuses successful matching data. See [host diagnostics](host-diagnostics.md) for exact CLI/credential rules. Setup authorization alone does not include these tests.
 
-For authorized inventory, select inventory/system once for mixed Linux/FreeBSD/macOS hosts. The runner obtains needed platform facts automatically and records which implementation/version was selected. Descriptor and result schema are 0.2.0; migrate old copied descriptors before execution. Custom implementation code requires review and appropriate execution scope. See the [inventory guide](../recipes/inventory/system/README.md).
+For authorized inventory, select system/inventory/overview once for mixed Linux/FreeBSD/macOS hosts. The runner obtains needed platform facts automatically and records which implementation/version was selected. Descriptor and result schema are 0.2.0; migrate old copied descriptors before execution. Custom implementation code requires review and appropriate execution scope. See the [inventory guide](../recipes/system/inventory/overview/README.md).
 
 ## First-host assistance and concrete handoff
 
@@ -156,4 +156,4 @@ See [host diagnostics](host-diagnostics.md) for platform initialization/cache se
 
 Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, separate retention/content_update receipts and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

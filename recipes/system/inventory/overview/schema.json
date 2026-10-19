@@ -568,10 +568,10 @@
       "type": "object"
     },
     "retention_snapshot": {
-      "$ref": "../../../schemas/retention-snapshot.schema.json"
+      "$ref": "../../../../schemas/retention-snapshot.schema.json"
     },
     "content_update": {
-      "$ref": "../../../schemas/raw-retention-context.schema.json#/properties/content_update"
+      "$ref": "../../../../schemas/raw-retention-context.schema.json#/properties/content_update"
     },
     "source_observation_id": {
       "type": "string",
@@ -643,5 +643,5 @@
       "inventory_contract_version"
     ]
   },
-  "$comment": "Last modified: 2026-10-19 11:57:21"
+  "$comment": "Last modified: 2026-10-19 15:20:06"
 }

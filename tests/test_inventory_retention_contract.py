@@ -21,7 +21,7 @@ from opsfeast import ConfigError, read_yaml
 import test_host_vault as fixtures
 from test_result_data import raw
 
-BUNDLE = ROOT / 'recipes/inventory/system'
+BUNDLE = ROOT / 'recipes/system/inventory/overview'
 
 
 class InventoryRetentionContractTests(unittest.TestCase):
@@ -74,7 +74,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
                 self.assertIn('unit', field)
         self.assertIn('not online status', schema['description'])
         shared = json.loads((ROOT/'schemas/retained-observation.schema.json').read_text())
-        self.assertEqual(shared['$ref'], '../recipes/inventory/system/retention.schema.json')
+        self.assertEqual(shared['$ref'], '../recipes/system/inventory/overview/retention.schema.json')
 
     def test_candidate_schema_missing_changed_or_escape_is_rejected(self):
         candidate = self.root/'candidate'

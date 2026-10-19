@@ -4,7 +4,7 @@ A recipe is reusable operational content: code, purpose, prerequisites, inputs, 
 
 ## Run supported inventory across platforms
 
-For a reviewed inventory-system bundle, select the recipe once; the runner initializes missing host facts and chooses a Linux, FreeBSD or macOS entrypoint per host. Use `python -B tools/run_recipe.py inventory/system --host host-01 host-02 host-03` from the checkout with the selected interpreter and authorized targets. Read [recipe sources, inputs and execution controls](recipe-sources.md) for source-qualified/profile references, shorthand host selections, source/host variables and enabled/exclude behavior. See the [inventory guide](../recipes/inventory/system/README.md) for descriptor/result schema 0.2.0, versions/digests, custom-code execution and migration from older descriptors. A valid descriptor is not proof of safe behavior.
+For a reviewed inventory-system bundle, select the recipe once; the runner initializes missing host facts and chooses a Linux, FreeBSD or macOS entrypoint per host. Use `python -B tools/run_recipe.py system/inventory/overview --host host-01 host-02 host-03` from the checkout with the selected interpreter and authorized targets. Read [recipe sources, inputs and execution controls](recipe-sources.md) for source-qualified/profile references, shorthand host selections, source/host variables and enabled/exclude behavior. See the [inventory guide](../recipes/system/inventory/overview/README.md) for descriptor/result schema 0.2.0, versions/digests, custom-code execution and migration from older descriptors. A valid descriptor is not proof of safe behavior.
 
 For initialization and account checks, use the [host diagnostic guide](host-diagnostics.md) and [hosts skill](../skills/opsfeast-hosts/SKILL.md). Direct host-init refreshes platform facts; test-host reuses valid facts and reports skipped tests. Diagnostics do not execute recipes. Unknown, unsupported, partial and failed results remain visible per host.
 
@@ -12,7 +12,7 @@ For initialization and account checks, use the [host diagnostic guide](host-diag
 
 Start with the [recipe catalog](../recipes/README.md), then read the selected recipe's README. The catalog distinguishes availability, supported platforms and actual verification evidence.
 
-Bundled recipes include inventory-system and check/port. run_recipe.py also executes reviewed general Python recipes implementing [Python-session 0.1.0](recipe-execution.md), with typed --var/--vars-file inputs. [Unified catalog, offline reports, result views, bundle candidates and saved jobs](recipe-experience.md) are implemented through opsfeast.py recipes. An automatic third-party installer, remote discovery service, lockfile, scheduler and automatic signature verification are not implemented. Selecting a directory does not establish contract compatibility, dependencies or execution authorization.
+Bundled recipes include inventory-system and system/network/check/port. run_recipe.py also executes reviewed general Python recipes implementing [Python-session 0.1.0](recipe-execution.md), with typed --var/--vars-file inputs. [Unified catalog, offline reports, result views, bundle candidates and saved jobs](recipe-experience.md) are implemented through opsfeast.py recipes. An automatic third-party installer, remote discovery service, lockfile, scheduler and automatic signature verification are not implemented. Selecting a directory does not establish contract compatibility, dependencies or execution authorization.
 
 ## Find recipes and saved results
 
@@ -21,10 +21,10 @@ Use `python -B tools/opsfeast.py recipes list --checkout-only` for bundled conte
 ## Run a parameterized recipe
 
 ```sh
-python -B tools/run_recipe.py check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/run_recipe.py system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
 ```
 
-The check originates on rms3 and defaults to TCP 127.0.0.1, requiring target python3. Read [its README](../recipes/check/port/README.md) for reachable false versus execution failure. Other Python-session recipes use the same runner, their declared input names and reviewed dependencies; follow [execution and authoring](recipe-execution.md). Do not invent a standalone main.py host CLI.
+The check originates on rms3 and defaults to TCP 127.0.0.1, requiring target python3. Read [its README](../recipes/system/network/check/port/README.md) for reachable false versus execution failure. Other Python-session recipes use the same runner, their declared input names and reviewed dependencies; follow [execution and authoring](recipe-execution.md). Do not invent a standalone main.py host CLI.
 
 ## Ask your AI agent to create a recipe
 
@@ -61,4 +61,4 @@ Have your agent acquire a candidate, verify its source and review its behavior b
 
 These guides describe human/agent workflows. Only explicitly documented existing tools are implemented features.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-19 15:24:36_

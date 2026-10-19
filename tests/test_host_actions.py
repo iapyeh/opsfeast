@@ -137,7 +137,7 @@ class DialogTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(field.value,'')
                 await pilot.press('enter')
                 run.assert_not_called()
-                field.value='inventory/system'
+                field.value='system/inventory/overview'
                 await pilot.press('enter')
                 await pilot.pause(0.02)
                 self.assertTrue(app.host_operation_busy)
@@ -149,7 +149,7 @@ class DialogTests(unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.15)
                 self.assertEqual(run.call_count,1)
                 command=run.call_args.args[0]
-                self.assertIn('--recipe=inventory/system',command)
+                self.assertIn('--recipe=system/inventory/overview',command)
                 self.assertIn('--root=/fixture/root',command)
                 self.assertIn('host-01',command)
                 self.assertEqual(app.screen.exit_code,1)

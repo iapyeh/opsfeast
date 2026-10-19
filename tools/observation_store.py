@@ -220,11 +220,22 @@ def combine(bundles):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser = argparse.ArgumentParser(
+        prog='observation_store.py',
+        description=('Recover retained inventory observations from saved raw results, export\n'
+        'selected data and validate or combine portable exchanges. These are local data\n'
+        'operations; exporting does not transmit data.'),
+        epilog=('Choose a subcommand with --help for its input/output and write behavior.\n'
+        'Example: observation_store.py validate exchange.json'),
+        formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
     sub = parser.add_subparsers(dest='command', required=True)
-    ingest = sub.add_parser('ingest', help='reprocess explicitly selected local raw results')
+    ingest = sub.add_parser('ingest', help='reprocess explicitly selected local raw results',
+        description='Reprocess selected saved raw inventory results into local retained storage. Operational success/partial evidence is validated before writing; namespace-enabled profiles can also dispatch enabled consumers. This does not reconnect or recollect.',
+        epilog='Example: observation_store.py ingest saved-raw.json --profile main')
     ingest.add_argument('files', nargs='+')
-    outgoing = sub.add_parser('export', help='print portable JSON; no transmission')
+    outgoing = sub.add_parser('export', help='print portable JSON; no transmission',
+        description='Read selected retained inventory observations and print JSON exchange or CSV to stdout. Original quality and failure/partial context remain evidence; no recipient receives data from this command.',
+        epilog='Example: observation_store.py export --profile main --format json')
     outgoing.add_argument('--format', choices=('json', 'csv'), default='json', help='CSV missing values are empty cells; JSON remains the exchange format')
     outgoing.add_argument('--recipe')
     outgoing.add_argument('--host', nargs='+')
@@ -234,9 +245,13 @@ def main(argv=None):
         choice = command.add_mutually_exclusive_group()
         choice.add_argument('--root')
         choice.add_argument('--profile')
-    check = sub.add_parser('validate', help='validate an exchange file without importing or executing it')
+    check = sub.add_parser('validate', help='validate an exchange file without importing or executing it',
+        description='Read a saved exchange file, validate its structure and observation evidence, and print validation results. This does not import records, execute code or change Feast storage.',
+        epilog='Example: observation_store.py validate exchange.json')
     check.add_argument('file')
-    merge = sub.add_parser('combine', help='merge structured exchange files, deduplicate observations, print JSON')
+    merge = sub.add_parser('combine', help='merge structured exchange files, deduplicate observations, print JSON',
+        description='Read multiple saved exchange files, validate and deduplicate observations, and print combined JSON with identity/quality context. This does not merge into a Feast or transmit data.',
+        epilog='Example: observation_store.py combine first.json second.json')
     merge.add_argument('files', nargs='+')
     args = parser.parse_args(argv)
     try:

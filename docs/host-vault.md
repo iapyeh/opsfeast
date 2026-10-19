@@ -1,6 +1,6 @@
 # Bundled host vault content application
 
-Automatic publication is performed by the [bundled Vault consumer](../consumers/vault/README.md), registered as `builtin:vault` through the [consumer contract](retention-consumers.md). Its subscriptions are discoverable with `consumers list --recipe inventory/system`. Failures are tracked per event/consumer and retried with `consumers dispatch vault`; explicit `vault rebuild` regenerates current content independently of delivery acknowledgements.
+Automatic publication is performed by the [bundled Vault consumer](../consumers/vault/README.md), registered as `builtin:vault` through the [consumer contract](retention-consumers.md). Its subscriptions are discoverable with `consumers list --recipe system/inventory/overview`. Failures are tracked per event/consumer and retried with `consumers dispatch vault`; explicit `vault rebuild` regenerates current content independently of delivery acknowledgements.
 
 Vault is the bundled application over [recipe retention](retention.md). The platform manages its structure, identity/path rules and output ownership. The bundled content author renders retained observations and operation evidence. User AI agents may create other content authors or use retention for web pages, graphs and reports without using vault.
 
@@ -69,4 +69,4 @@ Use `host_vault.rebuild(root)`, `refresh_groups(root)`, `publish(root, owner, en
 
 Synthetic tests cover independent storage/content, offline reads/reports, source-qualified selection, partial data, publication conflicts, replacement of edited generated files, stale-output cleanup, replay and protected operation evidence. Vault publication is local; it provides no hosting, transport, automatic private-data migration, Obsidian UI automation, whole-vault atomic snapshot or cryptographic evidence guarantee.
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

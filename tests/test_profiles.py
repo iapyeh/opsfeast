@@ -243,7 +243,17 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(self.snapshot(root), before)
         code, output, errors = self.cli('use', interactive=True, answers=['main'])
         self.assertEqual(code, 0, errors)
-        self.assertRegex(output, r'default\s+│ ' + __import__('re').escape(str(root)) + r'\s+│ available\s+│ true')
+        rows = [[part.strip() for part in line.split('│')[1:-1]]
+                for line in output.splitlines() if line.startswith('│')][1:]
+        start = next(index for index, row in enumerate(rows) if row[1] == 'default')
+        self.assertEqual(rows[start][3:], ['available', 'true'])
+        # Join continuation cells so a long path remains fully verified after wrapping.
+        pieces = []
+        for row in rows[start:]:
+            if pieces and row[0]:
+                break
+            pieces.append(row[2])
+        self.assertEqual(''.join(pieces), str(root))
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_attach_legacy_and_modern_directory_preserves_all_contents(self):
@@ -300,8 +310,8 @@ class ProfileTests(unittest.TestCase):
         with patch.object(run_recipe, 'run', return_value=(report, path)) as run, \
                 patch('access_check.check_many', return_value={'status': 'success', 'hosts': []}), \
                 contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(run_recipe.main(['inventory/system', '--host', 'localhost', '--profile', 'inventory']), 0)
-        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='inventory/system', force=False, access_checked=True, access_result=None)
+            self.assertEqual(run_recipe.main(['system/inventory/overview', '--host', 'localhost', '--profile', 'inventory']), 0)
+        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result=None)
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_profile_boundaries_and_result_directories(self):
@@ -320,7 +330,7 @@ class ProfileTests(unittest.TestCase):
             session = Mock()
             session.exec_command.return_value = SimpleNamespace(stdout='OpenBSD\n', stderr='', exitcode=0)
             report, path = run_recipe.run(ops.resolve_root(profile=profile), 'localhost',
-                                          recipe='inventory/system',
+                                          recipe='system/inventory/overview',
                                           session_class=Mock(return_value=session))
             self.assertEqual(report['status'], 'unsupported')
             self.assertEqual(path.parent, self.checkout / 'feasts' / profile / 'observations')

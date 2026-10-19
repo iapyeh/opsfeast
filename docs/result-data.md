@@ -4,7 +4,7 @@ For programs reacting to new or deleted retained data, use [retention consumers]
 
 For current namespace-enabled profiles, start with [retention discovery, storage, queries and content applications](retention.md). Authoritative archives live under retention/, independently of the bundled vault. Inventory adapter payloads described below remain nested in record envelopes and support existing inventory exchange. General host-values 0.2.0 and operation journals use the same management envelopes; cross-recipe reads use retention list/export or profile.retention.query.
 
-Inventory/system 0.3.1 owns the explicit inventory-observations 0.1.0 [declaration, schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract). Platform selection uses contract/version, not a recipe-ID declaration fallback. Current inventory snapshots bind normalizer/schema digests; old raw requires explicit reviewed definitions for replay.
+system/inventory/overview 0.3.1 owns the explicit inventory-observations 0.1.0 [declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). Platform selection uses contract/version, not a recipe-ID declaration fallback. Current inventory snapshots bind normalizer/schema digests; old raw requires explicit reviewed definitions for replay.
 
 ## Namespace-enabled host vaults
 
@@ -93,7 +93,7 @@ python -B tools/observation_store.py combine a-inventory.json b-inventory.json >
 python -B tools/observation_store.py validate company-inventory.json
 ```
 
-`--host` uses exact local host IDs and `--recipe` uses the recipe ID (`inventory-system`, not its directory selector `inventory/system`). No filters exports all retained records. Time bounds are inclusive and select the report completion time; field observation times remain separately available. Input timestamps require timezone and are normalized to UTC with six fractional digits. Empty selections are valid empty exchanges; they do not prove an empty company inventory. Output sorts by completion time, then observation ID. Export timestamps describe packaging, not collection.
+`--host` uses exact local host IDs and `--recipe` uses the recipe ID (`inventory-system`, not its directory selector `system/inventory/overview`). No filters exports all retained records. Time bounds are inclusive and select the report completion time; field observation times remain separately available. Input timestamps require timezone and are normalized to UTC with six fractional digits. Empty selections are valid empty exchanges; they do not prove an empty company inventory. Output sorts by completion time, then observation ID. Export timestamps describe packaging, not collection.
 
 Exchange carries contract/version metadata and retained records only. Strict validation rejects unknown keys/contracts, invalid states/timestamps, duplicate IDs and invalid identity keys. Combination validates all inputs, removes identical repeated observations and rejects same-ID/different-content conflicts. It retains distinct observations, even for matching host keys. No observation is overwritten, and no latest-state or conflict-resolution policy is guessed. Hardware conflicts for a matching machine-derived key must be reviewed before grouping records as one host. Equal-time differing observations remain separate.
 
@@ -115,4 +115,4 @@ The draft retained/exchange 0.1.0 contract now permits these optional fields and
 
 MAC addresses may be useful network-interface evidence but are not automatically used as fallback keys. They identify an interface, can remain unchanged across OS reinstall, and may be cloned, changed or randomized. Multiple interfaces also require an explicit selection rule. MAC collection is not implemented by this change. A manually assigned MAC-based identity_key remains a user assertion and needs an installation-specific component/rotation policy. Reference: [Apple private Wi-Fi addresses](https://support.apple.com/en-ie/102509), [NetworkManager address configuration](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/settings-802-11-wireless.html).
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

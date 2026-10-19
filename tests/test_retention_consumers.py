@@ -55,7 +55,7 @@ def execute(context):
 
     def test_discovery_is_static_unregistered_never_executes_and_show_relations(self):
         self.enable()
-        self.candidate({'recipe_reference': 'inventory/system', 'contract': 'inventory-observations', 'version': '0.1.0'},
+        self.candidate({'recipe_reference': 'system/inventory/overview', 'contract': 'inventory-observations', 'version': '0.1.0'},
                        code="raise RuntimeError('must not import during discovery')")
         before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         data = consumers.catalog(self.root)
@@ -63,9 +63,9 @@ def execute(context):
         self.assertFalse(counter['registered'])
         self.assertFalse(counter['enabled'])
         self.assertEqual({p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}, before)
-        item = choose(self.root, 'inventory/system')
+        item = choose(self.root, 'system/inventory/overview')
         self.assertEqual({i['id'] for i in item['consumers']}, {'vault', 'counter'})
-        self.assertEqual({i['id'] for i in choose(self.root, 'check/identity')['consumers']}, {'vault'})
+        self.assertEqual({i['id'] for i in choose(self.root, 'system/account/check/identity')['consumers']}, {'vault'})
         self.retain()
         self.assertFalse((self.root / 'received.json').exists())
 
@@ -204,14 +204,14 @@ def execute(context):
 
     def test_recipe_and_contract_must_match_same_subscription(self):
         self.enable()
-        directory = self.candidate({'recipe_reference': 'inventory/system', 'contract': 'host-values', 'version': '0.2.0'})
+        directory = self.candidate({'recipe_reference': 'system/inventory/overview', 'contract': 'host-values', 'version': '0.2.0'})
         import yaml
         path = directory / 'consumer.yaml'
         data = yaml.safe_load(path.read_text())
         data['subscriptions'].append({'event': 'retention.observation.created', 'selector': {
-            'recipe_reference': 'other:inventory/system', 'contract': 'inventory-observations', 'version': '0.1.0'}})
+            'recipe_reference': 'other:system/inventory/overview', 'contract': 'inventory-observations', 'version': '0.1.0'}})
         path.write_text(yaml.safe_dump(data))
-        self.assertEqual({i['id'] for i in choose(self.root, 'inventory/system')['consumers']}, {'vault'})
+        self.assertEqual({i['id'] for i in choose(self.root, 'system/inventory/overview')['consumers']}, {'vault'})
 
     def test_concurrent_dispatch_does_not_duplicate_success(self):
         self.enable()
@@ -243,7 +243,7 @@ def execute(context):
     def test_cli_list_show_inspect_dispatch_and_missing_consumer(self):
         self.enable()
         self.candidate()
-        for args in (['list', '--recipe', 'inventory/system'], ['show', 'vault'], ['inspect'], ['dispatch']):
+        for args in (['list', '--recipe', 'system/inventory/overview'], ['show', 'vault'], ['inspect'], ['dispatch']):
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 code = main(['consumers', *args, '--root', str(self.root), '--json'])

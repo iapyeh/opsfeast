@@ -685,7 +685,24 @@ def describe(metadata, directory=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser = argparse.ArgumentParser(
+        prog='opsfeast.py retention',
+        description=('Read and manage retained recipe observations and operation evidence in the\n'
+        'selected Feast. Queries read saved data; ingest replays saved raw results\n'
+        'locally, and successful writes can run enabled retention consumers. These\n'
+        'commands do not refresh host collection.'),
+        epilog=('Actions:\n'
+        '  list/export       Select saved records; export prints JSON without transmission.\n'
+        '  show RECORD_ID    Read one retained record with its original evidence.\n'
+        '  ingest FILE...    Validate and retain saved raw results; --dry-run makes no writes.\n'
+        '  delete-observation ID\n'
+        '                    Remove eligible read observations; protected operation evidence\n'
+        '                    is refused, raw files remain, and consumers receive deletions.\n'
+        '  rebuild           Rebuild data projections without collecting or publishing content.\n'
+        '  inspect           Read storage settings and retained records.\n'
+        '\n'
+        'Example: opsfeast.py retention list --profile main --json'),
+        formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
     parser.add_argument('action', choices=('list', 'show', 'export', 'ingest', 'delete-observation', 'rebuild', 'inspect'))
     parser.add_argument('files', nargs='*')
     choice = parser.add_mutually_exclusive_group()

@@ -34,7 +34,7 @@ class FormTests(unittest.TestCase):
             self.assertEqual(workbench.launch(), 1)
 
     def test_invocation_form_and_all_exclusions(self):
-        fields = {'recipe': 'check/port', 'all': 'true', 'exclude': '["one", "two"]',
+        fields = {'recipe': 'system/network/check/port', 'all': 'true', 'exclude': '["one", "two"]',
                   'variables': '{"port":8888,"label":"hello world"}', 'threads': '4'}
         args = workbench.arguments('run', 'profile', 'main', fields)
         self.assertIn('--all', args)
@@ -46,7 +46,7 @@ class FormTests(unittest.TestCase):
         self.assertNotIn('--tui', args)
 
     def test_all_forms_parse_through_shared_cli(self):
-        values = {'recipe':'report/summary', 'name':'example', 'result_id':'reports/example/result.json',
+        values = {'recipe':'feast/report/execution-summary', 'name':'example', 'result_id':'reports/example/result.json',
                   'archive':'/tmp/example.zip', 'destination':'/tmp/candidate', 'output':'/tmp/new.zip',
                   'files':'["recipe.yaml", "main.py"]', 'inputs':'["/tmp/input.json"]'}
         # Stop immediately after argparse; prove forms target the real CLI grammar.
@@ -116,7 +116,7 @@ class WorkbenchTests(unittest.IsolatedAsyncioTestCase):
         App = workbench.make_workbench_class()
         app = App()
         async def synthetic_collect():
-            app.finish(json.dumps({'recipes':[{'reference':'check/port','runnable':True}]}), 0)
+            app.finish(json.dumps({'recipes':[{'reference':'system/network/check/port','runnable':True}]}), 0)
         with patch.object(app, 'collect', side_effect=synthetic_collect):
             async with app.run_test(size=(100, 36)) as pilot:
                 await pilot.pause()
@@ -142,7 +142,7 @@ class WorkbenchTests(unittest.IsolatedAsyncioTestCase):
                 app.query_one('#action', Select).value = 'run'
                 app.query_one('#scope', Select).value = 'root'
                 app.query_one('#location', Input).value = '/tmp/synthetic-feast'
-                app.query_one('#field-recipe', Input).value = 'check/port'
+                app.query_one('#field-recipe', Input).value = 'system/network/check/port'
                 app.query_one('#field-hosts', Input).value = '["host-01"]'
                 await pilot.pause()
                 from textual.widgets import Button

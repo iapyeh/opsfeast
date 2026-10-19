@@ -2,7 +2,7 @@
 
 ## Declared retention and bundled content
 
-In a namespace-enabled profile this read recipe retains declared safe scalar result fields through host-values 0.2.0 with dataset/field semantics. The separate bundled vault author can render a per-host state page. Failed/mock results are excluded; missing values remain unavailable. Read [vault setup and output rules](../../../docs/host-vault.md). Profiles without namespace retain raw-only behavior. Read [retention query/content interfaces](../../../docs/retention.md); Markdown templates are not part of the recipe contract.
+In a namespace-enabled profile this read recipe retains declared safe scalar result fields through host-values 0.2.0 with dataset/field semantics. The separate bundled vault author can render a per-host state page. Failed/mock results are excluded; missing values remain unavailable. Read [vault setup and output rules](../../../../../docs/host-vault.md). Profiles without namespace retain raw-only behavior. Read [retention query/content interfaces](../../../../../docs/retention.md); Markdown templates are not part of the recipe contract.
 
 This recipe makes one TCP connection attempt **from the selected host** to an explicit IP address and port. By default it checks 127.0.0.1 on that host. It does not test accessibility from the controller, UDP, listener configuration or application/HTTP health. Selecting a different address expands the target network operation and must remain within the user's scope.
 
@@ -11,12 +11,12 @@ This recipe makes one TCP connection attempt **from the selected host** to an ex
 Use the selected Python interpreter from the OpsFeast checkout:
 
 ```sh
-python -B tools/run_recipe.py check/port --host rms3 --root ~/Download/testops --var port=8888
-python -B tools/run_recipe.py check/port --host rms3 --var port=443 --var address=::1
-python -B tools/run_recipe.py check/port --group web --vars-file /path/to/port-inputs.json
+python -B tools/run_recipe.py system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/run_recipe.py system/network/check/port --host rms3 --var port=443 --var address=::1
+python -B tools/run_recipe.py system/network/check/port --group web --vars-file /path/to/port-inputs.json
 ```
 
-An example JSON input file is `{"port":8888,"address":"127.0.0.1","connect_timeout_seconds":3}`. The Feast must already have the selected hosts configured. Reading/configuration checks do not authorize connection or execution. Use `run_recipe.py`; main.py defines execute and has no standalone --host/--port CLI. See the [execution contract](../../../docs/recipe-execution.md) and [recipe skill](../../../skills/opsfeast-recipes/SKILL.md).
+An example JSON input file is `{"port":8888,"address":"127.0.0.1","connect_timeout_seconds":3}`. The Feast must already have the selected hosts configured. Reading/configuration checks do not authorize connection or execution. Use `run_recipe.py`; main.py defines execute and has no standalone --host/--port CLI. See the [execution contract](../../../../../docs/recipe-execution.md) and [recipe skill](../../../../../skills/opsfeast-recipes/SKILL.md).
 
 ## Dependencies, inputs and operations
 
@@ -41,8 +41,8 @@ Schema 0.1.0 data includes probe_from (host ID), address, port, protocol tcp, st
 
 ## Implementation choice and verification
 
-SSHScript supplies local/SSH command execution through the runner's borrowed Session, argv handling, finite command budgets and retained CommandResult. Python's socket standard library handles the probe without depending on platform-specific nc flags. See [implementation](main.py), the bundled [public SSHScript skill](../../../skills/sshscript/SKILL.md) and its [API contract](../../../skills/sshscript/references/api-guide.md). Documentation contract and runtime requirement are 5.0.0; [SOURCE.json](../../../skills/sshscript/SOURCE.json) preserves provenance.
+SSHScript supplies local/SSH command execution through the runner's borrowed Session, argv handling, finite command budgets and retained CommandResult. Python's socket standard library handles the probe without depending on platform-specific nc flags. See [implementation](main.py), the bundled [public SSHScript skill](../../../../../skills/sshscript/SKILL.md) and its [API contract](../../../../../skills/sshscript/references/api-guide.md). Documentation contract and runtime requirement are 5.0.0; [SOURCE.json](../../../../../skills/sshscript/SOURCE.json) preserves provenance.
 
-[Public tests](../../../tests/test_general_recipes.py) cover open/refused/timeout/network error with synthetic sockets, invalid/truncated command output, runner inputs and failure states. No real target, SSH or local TCP probe has been performed. Review target prerequisites and the complete recipe before authorized use. No distribution license is currently declared by the repository.
+[Public tests](../../../../../tests/test_general_recipes.py) cover open/refused/timeout/network error with synthetic sockets, invalid/truncated command output, runner inputs and failure states. No real target, SSH or local TCP probe has been performed. Review target prerequisites and the complete recipe before authorized use. No distribution license is currently declared by the repository.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 15:24:36_

@@ -1,5 +1,9 @@
 # SSHScript Ops to OpsFeast
 
+## Classified bundled recipe paths
+
+The five bundled recipe directories now follow [domain/subdomains/action/name](recipe-taxonomy.md#bundled-path-relocation). Existing IDs/versions and data contracts remain unchanged, including byte-identical inventory retention normalizer/schema. Update bundle path selectors, saved invocations/jobs and exact consumer/report selections using the mapping. Old bundle directories are removed without aliases. Profile/external recipe trees, raw files, retained records and queued events are not rewritten. Historical references remain queryable as their original exact strings. No automated relocation or user-data migration tool is supplied.
+
 ## Consumer delivery receipt change
 
 Retention-to-content updates now use [registered consumers 0.1.0](retention-consumers.md). Existing raw/retained schemas and human notes are preserved. The `content_update` payload changes from a single Vault result to an aggregate with a `consumers` attempt list; callers must update field access. Vault remains enabled by default and retains vault.auto_refresh control. Additional consumers require explicit registration. New writes/deletions commit durable events; prior eventless records are not backfilled, including deduplicated replay. Use explicit application rebuilds for historical output, and `consumers dispatch [ID]` for journal-backed retries. No automatic data migration or historical recipe rerun is performed.
@@ -12,7 +16,7 @@ General host-values declarations are now 0.2.0 and require dataset/field descrip
 
 Storage imports move from host_vault to retention_store; Core programs prefer profile.retention.query/show. Use `retention ingest/delete-observation/rebuild` for data and `vault rebuild/groups/inspect` for content. Default automatic vault refresh remains, configurable through vault.auto_refresh; retention and content receipts are separate. No web hosting, publication or scheduler is added.
 
-Inventory/system recipe 0.3.1 now owns explicit inventory-observations 0.1.0 retention, its local retention.schema.json and the registered retention.py normalizer. Raw output no longer accepts retention_adapter/retained_contract_version/exchange_version keys. Copied descriptors need the new declaration, matching schema and explicit access_mode. Old inventory raw requires a current snapshot or explicit reviewed --recipe-dir; changed installed normalizer/schema digests require reviewed extraction selection. Preserve original execution classification and existing records; conflicting definitions are never silently rewritten. No migration, candidate-code loading or automatic deletion is introduced.
+system/inventory/overview recipe 0.3.1 now owns explicit inventory-observations 0.1.0 retention, its local retention.schema.json and the registered retention.py normalizer. Raw output no longer accepts retention_adapter/retained_contract_version/exchange_version keys. Copied descriptors need the new declaration, matching schema and explicit access_mode. Old inventory raw requires a current snapshot or explicit reviewed --recipe-dir; changed installed normalizer/schema digests require reviewed extraction selection. Preserve original execution classification and existing records; conflicting definitions are never silently rewritten. No migration, candidate-code loading or automatic deletion is introduced.
 
 The product and repository are now OpsFeast (`iapyeh/opsfeast`). The local checkout does not need to move. Private management directories, profile names, targets, credentials, human notes, observations and execution history retain their existing locations and contents.
 
@@ -127,13 +131,13 @@ Host membership uses `group: NAME` for one group or `group: [NAME, ...]` for mul
 
 ## Named recipe sources and input context
 
-Bare inventory/system keeps its checkout meaning; :inventory/system selects profile recipes/, and source:inventory/system selects an explicitly registered recipe_sources root in entry hosts.yaml. Existing recipes/... YAML and ./ instance paths remain supported. Source registrations do not widen include/output paths or authorize execution. Enabled source/host flags and --all --exclude add explicit skips/omissions without rewriting settings. See [sources and controls](recipe-sources.md).
+Bare system/inventory/overview keeps its checkout meaning; :system/inventory/overview selects profile recipes/, and source:system/inventory/overview selects an explicitly registered recipe_sources root in entry hosts.yaml. Existing recipes/... YAML and ./ instance paths remain supported. Source registrations do not widen include/output paths or authorize execution. Enabled source/host flags and --all --exclude add explicit skips/omissions without rewriting settings. See [sources and controls](recipe-sources.md).
 
 Host recipes lists now accept strings or mappings with vars. Vars-bearing inventory implementations must accept the context keyword and declare inputs.variables; legacy four-argument collectors remain valid without effective vars. The bundled recipe is 0.2.1, with descriptor/result schema 0.2.0 unchanged. Linux implementation is 0.1.2 and FreeBSD/macOS are 0.1.1. Required/type/bound checks and first-level overlay precedence are documented in the [input contract](recipe-sources.md#variables-and-implementation-context); no arbitrary-recipe runner or installer is added.
 
 ## Inventory runner arguments
 
-The inventory runner now requires explicit recipe and target selection. Replace positional host/root arguments and --hosts with `run_recipe.py inventory/system --host HOST ... --root ROOT`. Use --group for group names, or exclusive --all for every configured host. A positional recipe must come first; --recipe DIRECTORY may appear at any option position. Omitting the recipe no longer uses host YAML selectors. See the [runner reference](cli.md#toolsrun_recipepy-inventory-execution) for the complete interface, examples and result behavior. Existing YAML recipe selections, profiles and private data are preserved.
+The inventory runner now requires explicit recipe and target selection. Replace positional host/root arguments and --hosts with `run_recipe.py system/inventory/overview --host HOST ... --root ROOT`. Use --group for group names, or exclusive --all for every configured host. A positional recipe must come first; --recipe DIRECTORY may appear at any option position. Omitting the recipe no longer uses host YAML selectors. See the [runner reference](cli.md#toolsrun_recipepy-inventory-execution) for the complete interface, examples and result behavior. Existing YAML recipe selections, profiles and private data are preserved.
 
 ## Git and local integrations
 
@@ -154,7 +158,7 @@ Explicit sudo credentials for the connection account can enable failed identity 
 
 Single/batch runner summaries now include retention and identity_quality; a retention failure returns 1 even if collection status is success. Raw files include a receipt. Consumers must check collection and retention independently. Copies of the retained database preserve source UUID and must not seed independent installations. Structured JSON export/combine, not raw re-ingestion or database file merging, is the sharing path.
 
-Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](../docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](../docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
+Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
 ## Inventory 0.3.0 access and result extension
 
@@ -215,4 +219,4 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

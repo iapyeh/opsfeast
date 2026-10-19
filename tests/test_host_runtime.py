@@ -525,7 +525,7 @@ class InventoryDispatchTests(unittest.TestCase):
                 root=Path(tmp)
                 (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
                 session=Mock(); session.exec_command.side_effect=facts_outputs(kernel)+values
-                report,path=runner.run(root,'h',recipe='inventory/system',session_class=Mock(return_value=session))
+                report,path=runner.run(root,'h',recipe='system/inventory/overview',session_class=Mock(return_value=session))
                 self.assertEqual(report['status'],'success')
                 self.assertEqual(report['recipe']['implementation_id'],platform)
                 self.assertEqual(report['recipe']['implementation_version'],'0.1.1')
@@ -538,13 +538,13 @@ class InventoryDispatchTests(unittest.TestCase):
             root=Path(tmp)
             (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
             session=Mock(); session.exec_command.side_effect=[TimeoutError('secret')]
-            report,_=runner.run(root,'h',recipe='inventory/system',session_class=Mock(return_value=session))
+            report,_=runner.run(root,'h',recipe='system/inventory/overview',session_class=Mock(return_value=session))
             self.assertEqual(report['status'],'skipped')
             self.assertEqual(report['reason_code'],'host_init_failed')
             self.assertNotIn('implementation_id',report['recipe'])
             (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}, other: {connection: {local: true}}}')
             with patch.object(runner,'run',side_effect=[(report,root/'first.json'),(dict(report,status='success'),root/'second.json')]) as run,contextlib.redirect_stdout(io.StringIO()) as out:
-                self.assertEqual(runner.main(['inventory/system','--root',str(root),'--host','h','other']),1)
+                self.assertEqual(runner.main(['system/inventory/overview','--root',str(root),'--host','h','other']),1)
             self.assertEqual(run.call_count,2)
             self.assertEqual(len(json.loads(out.getvalue())['hosts']),2)
 

@@ -84,7 +84,7 @@ hosts:
                 (self.root / 'hosts.yaml').write_text('hosts: {h: {connection: {local: true}, ' + fields + '}}')
                 with self.assertRaisesRegex(ops.ConfigError, 'groups has been renamed to group'):
                     ops.Validator(self.root).check()
-                status, _, err, execute = self.cli(['inventory/system', '--all', '--root', str(self.root)])
+                status, _, err, execute = self.cli(['system/inventory/overview', '--all', '--root', str(self.root)])
                 self.assertEqual(status, 1)
                 self.assertIn('renamed to group', err)
                 execute.assert_not_called()
@@ -109,21 +109,21 @@ hosts:
                                ('--host', 'web'), ('--group', 'web-01')):
             with self.subTest(option=option, target=target):
                 status, out, err, execute = self.cli(
-                    ['inventory/system', '--root', str(self.root), '--host', 'web-01', option, target])
+                    ['system/inventory/overview', '--root', str(self.root), '--host', 'web-01', option, target])
                 self.assertEqual(status, 1)
                 self.assertEqual(out, '')
                 self.assertIn('unknown', err)
                 execute.assert_not_called()
 
     def test_cli_leading_recipe_and_single_host_summary(self):
-        status, out, _, execute = self.cli(['inventory/system', '--host', 'web-01', '--root', str(self.root)])
+        status, out, _, execute = self.cli(['system/inventory/overview', '--host', 'web-01', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual(json.loads(out)['status'], 'success')
-        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'web-01', 'status': 'success', 'connected': True})
+        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result={'host': 'web-01', 'status': 'success', 'connected': True})
 
     def test_cli_multiple_groups_and_hosts_preserve_option_order(self):
         status, out, _, execute = self.cli(
-            ['inventory/system', '--root', str(self.root), '--group', 'production',
+            ['system/inventory/overview', '--root', str(self.root), '--group', 'production',
              '--host', 'bastion', 'web-01', '--group', 'web', 'staging', '--host', 'db-01'])
         expected = ['web-01', 'db-01', 'bastion', 'web-02']
         self.assertEqual(status, 0)
@@ -133,32 +133,32 @@ hosts:
     def test_one_member_group_and_duplicate_hosts_use_single_summary(self):
         for targets in (['--group', 'staging'], ['--host', 'web-02', 'web-02']):
             with self.subTest(targets=targets):
-                status, out, _, execute = self.cli(['inventory/system', '--root', str(self.root), *targets])
+                status, out, _, execute = self.cli(['system/inventory/overview', '--root', str(self.root), *targets])
                 self.assertEqual(status, 0)
                 self.assertEqual(json.loads(out)['status'], 'success')
-                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'web-02', 'status': 'success', 'connected': True})
+                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result={'host': 'web-02', 'status': 'success', 'connected': True})
 
     def test_all_one_host_still_uses_batch_summary(self):
         (self.root / 'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
-        status, out, _, execute = self.cli(['inventory/system', '--all', '--root', str(self.root)])
+        status, out, _, execute = self.cli(['system/inventory/overview', '--all', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual([r['host'] for r in json.loads(out)['hosts']], ['h'])
-        execute.assert_called_once_with(self.root, 'h', 30, recipe='inventory/system', force=False, access_checked=True, access_result={'host': 'h', 'status': 'success', 'connected': True})
+        execute.assert_called_once_with(self.root, 'h', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result={'host': 'h', 'status': 'success', 'connected': True})
 
     def test_cli_explicit_recipe_at_different_positions(self):
-        for args in (['--recipe', 'inventory/system', '--group', 'web'],
-                     ['--group', 'web', '--recipe', 'inventory/system'],
-                     ['--group', 'web', '--recipe', 'inventory/system', '--host', 'db-01']):
+        for args in (['--recipe', 'system/inventory/overview', '--group', 'web'],
+                     ['--group', 'web', '--recipe', 'system/inventory/overview'],
+                     ['--group', 'web', '--recipe', 'system/inventory/overview', '--host', 'db-01']):
             with self.subTest(args=args):
                 status, out, _, execute = self.cli([*args, '--root', str(self.root)])
                 self.assertEqual(status, 0)
                 self.assertEqual(execute.call_count, 3 if '--host' in args else 2)
-                self.assertTrue(all(c.kwargs['recipe'] == 'inventory/system' for c in execute.call_args_list))
+                self.assertTrue(all(c.kwargs['recipe'] == 'system/inventory/overview' for c in execute.call_args_list))
 
     def test_cli_all_with_profile_and_root(self):
         for args in (['--all', '--profile', 'synthetic'], ['--all', '--root', str(self.root)]):
             with self.subTest(args=args), patch.object(runner, 'resolve_root', return_value=self.root) as resolve:
-                status, out, _, execute = self.cli([*args, '--recipe', 'inventory/system'])
+                status, out, _, execute = self.cli([*args, '--recipe', 'system/inventory/overview'])
                 self.assertEqual(status, 0)
                 self.assertEqual(len(json.loads(out)['hosts']), 5)
                 self.assertEqual(execute.call_count, 5)
@@ -170,28 +170,28 @@ hosts:
                    (dict(self.report, status='partial'), self.root / 'partial.json'),
                    (self.report, self.root / 'success.json')]
         status, out, _, execute = self.cli(
-            ['inventory/system', '--root', str(self.root), '--group', 'production', 'web'], side_effect=results)
+            ['system/inventory/overview', '--root', str(self.root), '--group', 'production', 'web'], side_effect=results)
         self.assertEqual(status, 1)
         self.assertEqual([r['status'] for r in json.loads(out)['hosts']], ['failed', 'partial', 'success'])
         self.assertEqual(execute.call_count, 3)
 
     def test_empty_inventory_is_error(self):
         (self.root / 'hosts.yaml').write_text('hosts: {}')
-        status, _, err, execute = self.cli(['inventory/system', '--all', '--root', str(self.root)])
+        status, _, err, execute = self.cli(['system/inventory/overview', '--all', '--root', str(self.root)])
         self.assertEqual(status, 1)
         self.assertIn('no hosts selected', err)
         execute.assert_not_called()
 
     def test_usage_errors_prevent_environment_resolution(self):
-        for args in ([], ['--host', 'web-01'], ['inventory/system'],
-                     ['inventory/system', '--all', '--host', 'web-01'],
-                     ['inventory/system', '--all', '--group', 'web'],
-                     ['inventory/system', '--host'], ['inventory/system', '--group'],
-                     ['inventory/system', '--all', '--recipe', 'inventory/system'],
-                     ['--all', '--recipe', 'inventory/system', '--recipe', 'inventory/system'],
-                     ['--all', 'inventory/system'], ['--root', str(self.root), 'inventory/system', '--all'],
-                     ['inventory/system', '--hosts', 'web-01'],
-                     ['inventory/system', str(self.root), '--host', 'web-01']):
+        for args in ([], ['--host', 'web-01'], ['system/inventory/overview'],
+                     ['system/inventory/overview', '--all', '--host', 'web-01'],
+                     ['system/inventory/overview', '--all', '--group', 'web'],
+                     ['system/inventory/overview', '--host'], ['system/inventory/overview', '--group'],
+                     ['system/inventory/overview', '--all', '--recipe', 'system/inventory/overview'],
+                     ['--all', '--recipe', 'system/inventory/overview', '--recipe', 'system/inventory/overview'],
+                     ['--all', 'system/inventory/overview'], ['--root', str(self.root), 'system/inventory/overview', '--all'],
+                     ['system/inventory/overview', '--hosts', 'web-01'],
+                     ['system/inventory/overview', str(self.root), '--host', 'web-01']):
             with self.subTest(args=args), contextlib.redirect_stderr(io.StringIO()), \
                     patch.object(runner, 'run') as execute, patch.object(runner, 'resolve_root') as resolve:
                 with self.assertRaises(SystemExit) as raised:
@@ -201,7 +201,7 @@ hosts:
                 resolve.assert_not_called()
 
     def test_root_and_profile_conflict_prevents_execution(self):
-        status, _, err, execute = self.cli(['inventory/system', '--host', 'web-01',
+        status, _, err, execute = self.cli(['system/inventory/overview', '--host', 'web-01',
                                           '--root', str(self.root), '--profile', 'synthetic'])
         self.assertEqual(status, 1)
         self.assertIn('either a management directory or --profile', err)
@@ -215,7 +215,7 @@ hosts:
                 with patch.object(out, 'isatty', return_value=tty), \
                         contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
                         patch.object(runner, 'run', return_value=(self.report, self.root / 'result.json')):
-                    code = runner.main(['inventory/system', '--all', '--root', str(self.root), *flags])
+                    code = runner.main(['system/inventory/overview', '--all', '--root', str(self.root), *flags])
                 self.assertEqual(code, 0)
                 if tty and '--json' not in flags:
                     self.assertIn('│ host', out.getvalue())
@@ -233,7 +233,7 @@ hosts:
 
     def test_progress_reports_failed_host_and_continues_without_exception_text(self):
         status, out, err, execute = self.cli(
-            ['inventory/system', '--root', str(self.root), '--host', 'web-01', 'db-01', '--verbose'],
+            ['system/inventory/overview', '--root', str(self.root), '--host', 'web-01', 'db-01', '--verbose'],
             side_effect=[ops.ConfigError('private-secret'), (self.report, self.root / 'result.json')])
         self.assertEqual(status, 1)
         self.assertEqual(execute.call_count, 2)
@@ -266,7 +266,7 @@ hosts:
     def test_verbose_quiet_conflict_is_usage_error(self):
         with contextlib.redirect_stderr(io.StringIO()), patch.object(runner, 'run') as execute:
             with self.assertRaises(SystemExit) as raised:
-                runner.main(['inventory/system', '--all', '--verbose', '--quiet'])
+                runner.main(['system/inventory/overview', '--all', '--verbose', '--quiet'])
         self.assertEqual(raised.exception.code, 2)
         execute.assert_not_called()
 
@@ -298,7 +298,7 @@ hosts:
                     active -= 1
         expected = ['web-01', 'db-01', 'web-02', 'bastion']
         status, out, err, execute = self.cli(
-            ['inventory/system', '--root', str(self.root), '--host', *expected,
+            ['system/inventory/overview', '--root', str(self.root), '--host', *expected,
              '--threads', '2', '--verbose'], side_effect=collect)
         self.assertEqual(status, 1)
         self.assertEqual(maximum, 2)
@@ -316,7 +316,7 @@ hosts:
     def test_sequential_mode_does_not_create_pool(self):
         with patch.object(runner, 'ThreadPoolExecutor') as pool:
             status, out, _, execute = self.cli(
-                ['inventory/system', '--all', '--root', str(self.root), '--threads', '1'])
+                ['system/inventory/overview', '--all', '--root', str(self.root), '--threads', '1'])
         self.assertEqual(status, 0)
         pool.assert_not_called()
         self.assertEqual([c.args[1] for c in execute.call_args_list],
@@ -331,7 +331,7 @@ hosts:
                 patch.object(runner, 'ThreadPoolExecutor', wraps=executor) as pool, \
                 patch.object(runner, 'run', return_value=(self.report, self.root / 'result.json')), \
                 contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(runner.main(['inventory/system', '--all', '--root', str(self.root)]), 0)
+            self.assertEqual(runner.main(['system/inventory/overview', '--all', '--root', str(self.root)]), 0)
         pool.assert_called_once_with(max_workers=3, thread_name_prefix='recipe-host')
 
     def test_invalid_thread_count_and_singular_alias_are_rejected(self):
@@ -340,7 +340,7 @@ hosts:
             with self.subTest(option=option, value=value), contextlib.redirect_stderr(io.StringIO()), \
                     patch.object(runner, 'run') as execute:
                 with self.assertRaises(SystemExit) as raised:
-                    runner.main(['inventory/system', '--all', option, value])
+                    runner.main(['system/inventory/overview', '--all', option, value])
                 self.assertEqual(raised.exception.code, 2)
                 execute.assert_not_called()
 

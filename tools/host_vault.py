@@ -132,7 +132,19 @@ def refresh_groups(root):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser = argparse.ArgumentParser(
+        prog='opsfeast.py vault',
+        description=('Maintain local Markdown views of retained observations and operation evidence.\n'
+        'Rebuild replaces manifest-owned generated pages and preserves unmanaged human\n'
+        'notes. This does not collect host data or change authoritative retention\n'
+        'records.'),
+        epilog=('Actions:\n'
+        '  rebuild    Regenerate current Vault content and group links.\n'
+        '  groups     Refresh group membership links only.\n'
+        '  inspect    Read Vault settings and output location without publishing.\n'
+        '\n'
+        'Example: opsfeast.py vault rebuild --profile main --json'),
+        formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
     parser.add_argument('action', choices=('rebuild', 'groups', 'inspect'))
     location = parser.add_mutually_exclusive_group()
     location.add_argument('--root')

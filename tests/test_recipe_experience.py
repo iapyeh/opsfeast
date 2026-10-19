@@ -35,7 +35,7 @@ class RecipeExperienceTests(unittest.TestCase):
         self.root.mkdir()
         self.settings={'hosts':{'h':{'connection':{'local':True},'recipes':[]}}}
         self.write_config()
-        self.source=ops.REPOSITORY_RECIPES/'report/summary'
+        self.source=ops.REPOSITORY_RECIPES/'feast/report/execution-summary'
         self.input=self.base/'input.json'
         self.input.write_bytes((self.source/'examples/input.synthetic.json').read_bytes())
 
@@ -121,14 +121,14 @@ class RecipeExperienceTests(unittest.TestCase):
         return code,output.getvalue(),error.getvalue()
 
     def selected(self):
-        return catalog.choose(self.root,'report/summary')
+        return catalog.choose(self.root,'feast/report/execution-summary')
 
     def shareable(self):
         directory=self.root/'recipes/report/shareable'
         if not directory.exists(): self.copy_report('report/shareable')
         return catalog.choose(self.root,':report/shareable')
 
-    def copy_report(self,relative='report/summary'):
+    def copy_report(self,relative='feast/report/execution-summary'):
         dest=self.root/'recipes'/relative
         copy_recipe(self.source,dest)
         return dest
@@ -146,19 +146,19 @@ class RecipeExperienceTests(unittest.TestCase):
         data=catalog.catalog(self.root)
         self.assertEqual(data['status'],'success')
         refs=[r['reference'] for r in data['recipes']]
-        self.assertIn('report/summary',refs)
-        self.assertIn(':report/summary',refs)
+        self.assertIn('feast/report/execution-summary',refs)
+        self.assertIn(':feast/report/execution-summary',refs)
         self.assertIn('community:shared-report',refs)
         self.assertEqual(data['sources'][-1]['status'],'disabled')
         with self.assertRaisesRegex(ops.ConfigError,'ambiguous'):
             catalog.choose(self.root,'report-summary')
-        self.assertEqual(catalog.choose(self.root,':report/summary')['source'],'profile')
+        self.assertEqual(catalog.choose(self.root,':feast/report/execution-summary')['source'],'profile')
 
     def test_catalog_no_entrypoint_execution_and_input_descriptions(self):
         directory=self.copy_report()
         entry=directory/'main.py'
         entry.write_text("raise RuntimeError('never load')\n"+entry.read_text())
-        item=catalog.choose(self.root,':report/summary')
+        item=catalog.choose(self.root,':feast/report/execution-summary')
         self.assertTrue(item['runnable'])
         self.assertEqual(item['kind'],'report')
         self.assertIn('title',item['inputs']['variables'])
@@ -171,7 +171,7 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertEqual(data['status'],'failed')
         private=[item for item in data['recipes'] if item['source']=='profile']
         self.assertTrue(all(not item['runnable'] for item in private))
-        self.assertTrue(catalog.choose(self.root,'check/port')['runnable'])
+        self.assertTrue(catalog.choose(self.root,'system/network/check/port')['runnable'])
 
     def test_unavailable_source_and_escaping_descriptor(self):
         self.settings['recipe_sources']={'bad':{'path':str(self.base/'absent')}}
@@ -183,21 +183,21 @@ class RecipeExperienceTests(unittest.TestCase):
         descriptor=directory/'recipe.yaml'
         descriptor.unlink()
         descriptor.symlink_to(self.source/'recipe.yaml')
-        self.assertFalse(catalog.choose(self.root,':report/summary')['runnable'])
+        self.assertFalse(catalog.choose(self.root,':feast/report/execution-summary')['runnable'])
 
     def test_catalog_filter_and_fresh_checkout(self):
-        self.assertEqual([r['reference'] for r in catalog.catalog(self.root,query='plain',kind='report')['recipes']],['report/summary'])
+        self.assertEqual([r['reference'] for r in catalog.catalog(self.root,query='plain',kind='report')['recipes']],['feast/report/execution-summary'])
         output=io.StringIO()
         with patch.object(cli,'resolve_root',side_effect=AssertionError('no Feast needed')),contextlib.redirect_stdout(output):
             self.assertEqual(ops.main(['recipes','list','--checkout-only','--json']),0)
         self.assertEqual(json.loads(output.getvalue())['catalog_version'],'0.1.0')
-        code,out,error=self.invoke('show','report/summary','--json')
+        code,out,error=self.invoke('show','feast/report/execution-summary','--json')
         self.assertEqual(code,0,error)
         self.assertEqual(json.loads(out)['kind'],'report')
 
     def test_catalog_html_escapes_metadata_and_never_overwrites(self):
         directory=self.copy_report()
-        metadata=json.loads(json.dumps(catalog.choose(self.root,':report/summary')['descriptor']))
+        metadata=json.loads(json.dumps(catalog.choose(self.root,':feast/report/execution-summary')['descriptor']))
         metadata['title']='<script>alert(1)</script>'
         (directory/'recipe.yaml').write_text(json.dumps(metadata))
         target=self.base/'catalog.html'
@@ -229,23 +229,23 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertEqual(info['relative_path'],'summary.html')
 
     def test_report_cli_params_and_no_host_selectors(self):
-        code,out,error=self.invoke('run','report/summary','--input',str(self.input),'--var','title=Weekly results')
+        code,out,error=self.invoke('run','feast/report/execution-summary','--input',str(self.input),'--var','title=Weekly results')
         self.assertEqual(code,0,error)
         report=json.loads(out)
         self.assertEqual(report['artifacts'][0]['title'],'Weekly results')
         self.assertTrue(report['result_id'].startswith('reports/'))
-        self.assertEqual(self.invoke('run','report/summary','--host','h')[0],1)
-        self.assertEqual(self.invoke('run','check/port','--input',str(self.input))[0],1)
-        self.assertEqual(self.invoke('run','check/port')[0],1)
+        self.assertEqual(self.invoke('run','feast/report/execution-summary','--host','h')[0],1)
+        self.assertEqual(self.invoke('run','system/network/check/port','--input',str(self.input))[0],1)
+        self.assertEqual(self.invoke('run','system/network/check/port')[0],1)
         with patch.object(runner,'load_runtime') as runtime:
-            self.assertEqual(self.invoke('run','report/summary','--var','unknown=private')[0],1)
+            self.assertEqual(self.invoke('run','feast/report/execution-summary','--var','unknown=private')[0],1)
         runtime.assert_not_called()
 
     def test_operational_run_reuses_existing_runner(self):
         with patch.object(runner,'main',return_value=0) as run:
-            self.assertEqual(self.invoke('run','check/port','--host','h','--var','port=8888')[0],0)
+            self.assertEqual(self.invoke('run','system/network/check/port','--host','h','--var','port=8888')[0],0)
         argv=run.call_args.args[0]
-        self.assertEqual(argv[0],'check/port')
+        self.assertEqual(argv[0],'system/network/check/port')
         self.assertIn('--host',argv)
         self.assertIn('port=8888',argv)
 
@@ -306,11 +306,11 @@ class RecipeExperienceTests(unittest.TestCase):
     def test_report_runtime_failure_does_not_expose_exception_text(self):
         directory=self.copy_report()
         (directory/'main.py').write_text("VERSION='0.1.2'\ndef execute(*,context,timeout): raise RuntimeError('private-value')")
-        report,path=reports.run_report(self.root,catalog.choose(self.root,':report/summary'),[])
+        report,path=reports.run_report(self.root,catalog.choose(self.root,':feast/report/execution-summary'),[])
         self.assertEqual(report['status'],'failed')
         self.assertNotIn('private-value',path.read_text())
         (directory/'main.py').write_text("VERSION='0.1.2'\ndef execute(*,context,timeout): return {'status':'success'}")
-        report,_=reports.run_report(self.root,catalog.choose(self.root,':report/summary'),[])
+        report,_=reports.run_report(self.root,catalog.choose(self.root,':feast/report/execution-summary'),[])
         self.assertEqual(report['reason_code'],'invalid_result')
 
     def test_report_store_symlink_refused_before_execution(self):
@@ -446,7 +446,7 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_offline_recipe_rejected_by_host_runner(self):
         with patch.object(runner,'load_runtime') as runtime,self.assertRaisesRegex(ops.ConfigError,'offline'):
-            runner.run(self.root,'h',recipe='report/summary')
+            runner.run(self.root,'h',recipe='feast/report/execution-summary')
         runtime.assert_not_called()
 
     def test_report_signature_and_inspection_contract(self):
@@ -454,17 +454,17 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertEqual(item['contract'],'valid-python-report')
         directory=self.copy_report()
         (directory/'main.py').write_text("VERSION='0.1.0'\ndef execute(session,*,context,timeout): pass")
-        self.assertFalse(catalog.choose(self.root,':report/summary')['runnable'])
+        self.assertFalse(catalog.choose(self.root,':feast/report/execution-summary')['runnable'])
 
     def test_jobs_save_show_rerun_and_content_change(self):
         directory=self.copy_report()
-        code,out,error=self.invoke('jobs','save','weekly',':report/summary','--input',str(self.input),'--var','title=Weekly')
+        code,out,error=self.invoke('jobs','save','weekly',':feast/report/execution-summary','--input',str(self.input),'--var','title=Weekly')
         self.assertEqual(code,0,error)
         self.assertEqual(json.loads(out)['job_version'],'0.1.0')
         self.assertEqual(self.invoke('jobs','run','weekly')[0],0)
         self.assertEqual(self.invoke('jobs','run','weekly')[0],0)
         self.assertEqual(len(reports.results(self.root)['results']),2)
-        self.assertEqual(self.invoke('jobs','save','weekly',':report/summary')[0],1)
+        self.assertEqual(self.invoke('jobs','save','weekly',':feast/report/execution-summary')[0],1)
         self.assertEqual(json.loads(self.invoke('jobs','list')[1])['jobs'],['weekly'])
         (directory/'template.txt').write_text('new content')
         self.assertEqual(self.invoke('jobs','run','weekly')[0],1)
@@ -472,7 +472,7 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertFalse((self.root/'schedules').exists())
 
     def test_invalid_jobs_preflight_names_and_symlinks(self):
-        self.assertEqual(self.invoke('jobs','save','broken','report/summary','--host','h')[0],1)
+        self.assertEqual(self.invoke('jobs','save','broken','feast/report/execution-summary','--host','h')[0],1)
         self.assertFalse((self.root/'jobs/broken.json').exists())
         for name in ('../escape','bad name',''):
             with self.assertRaises(ops.ConfigError): jobs.job_path(self.root,name)
@@ -490,8 +490,8 @@ class RecipeExperienceTests(unittest.TestCase):
         other=self.base/'other-feast'
         other.mkdir()
         (other/'hosts.yaml').write_text('{"hosts":{}}')
-        shutil.copytree(Path(candidate['recipe_directory']),other/'recipes/report/summary')
-        copied=catalog.choose(other,':report/summary')
+        shutil.copytree(Path(candidate['recipe_directory']),other/'recipes/feast/report/execution-summary')
+        copied=catalog.choose(other,':feast/report/execution-summary')
         result,path=reports.run_report(other,copied,[self.input])
         self.assertEqual(result['status'],'success')
         with zipfile.ZipFile(archive) as zipped:
@@ -500,7 +500,7 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_pack_required_allowlist_private_files_and_symlink(self):
         directory=self.copy_report()
-        item=catalog.choose(self.root,':report/summary')
+        item=catalog.choose(self.root,':feast/report/execution-summary')
         for files in ([],['recipe.yaml'],['main.py','README.md','LICENSE'],['recipe.yaml','main.py','README.md','hosts.yaml'],['../input.json']):
             with self.subTest(files=files),self.assertRaises(ops.ConfigError): packages.pack(item,files,self.base/'bad.zip')
         (directory/'link.txt').symlink_to(self.input)
@@ -547,7 +547,7 @@ class RecipeExperienceTests(unittest.TestCase):
         with self.assertRaises(ops.ConfigError): parse_json_object('{"x":1}'.encode('utf-16'))
 
     def test_job_schema_tampering_is_rejected_before_execution(self):
-        self.assertEqual(self.invoke('jobs','save','safe','report/summary')[0],0)
+        self.assertEqual(self.invoke('jobs','save','safe','feast/report/execution-summary')[0],0)
         path=self.root/'jobs/safe.json'
         original=json.loads(path.read_text())
         for key,value in (('all','false'),('timeout',True),('threads',False),('inputs','a file'),('targets',[['unknown','h']]),('quiet',1)):
@@ -605,7 +605,7 @@ class RecipeExperienceTests(unittest.TestCase):
 
     def test_report_invalid_input_fails_before_creating_run(self):
         self.input.write_text('{"secret":NaN}')
-        code,_,error=self.invoke('run','report/summary','--input',str(self.input))
+        code,_,error=self.invoke('run','feast/report/execution-summary','--input',str(self.input))
         self.assertEqual(code,1)
         self.assertFalse((self.root/'reports').exists())
 
@@ -615,7 +615,7 @@ class RecipeExperienceTests(unittest.TestCase):
         (directory/'bad.json').write_text('{}')
         with self.assertRaises(ops.ConfigError): reports.show_result(self.root,'observations/bad.json')
         with patch.object(reports,'write_json',side_effect=OSError('private-value')):
-            code,_,error=self.invoke('run','report/summary','--input',str(self.input))
+            code,_,error=self.invoke('run','feast/report/execution-summary','--input',str(self.input))
         self.assertEqual(code,1)
         self.assertNotIn('private-value',error)
 
@@ -624,7 +624,7 @@ class RecipeExperienceTests(unittest.TestCase):
         alias.symlink_to(self.root,target_is_directory=True)
         output=io.StringIO()
         with contextlib.redirect_stdout(output):
-            self.assertEqual(ops.main(['recipes','run','report/summary','--root',str(alias),'--input',str(self.input)]),0)
+            self.assertEqual(ops.main(['recipes','run','feast/report/execution-summary','--root',str(alias),'--input',str(self.input)]),0)
         self.assertTrue(json.loads(output.getvalue())['result_id'].startswith('reports/'))
 
 

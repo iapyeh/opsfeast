@@ -88,7 +88,7 @@ class ConsoleTests(unittest.TestCase):
 
     def test_inspection_and_instance_terminal_summaries(self):
         for flags in ([], ['--json']):
-            code, output = self.capture(ops.main, ['inspect-recipe', 'check/identity', *flags])
+            code, output = self.capture(ops.main, ['inspect-recipe', 'system/account/check/identity', *flags])
             self.assertEqual(code, 0)
             self.assertIn('recipes', json.loads(output)) if flags else self.assertIn('│ recipe', output)
         with patch('opsfeast.core.Instance.open') as opened:
@@ -315,14 +315,14 @@ hosts:
         with patch.object(access, 'check_many', return_value=checked), \
                 patch.object(runner, 'run', return_value=(report, self.root / 'synthetic-result.json')) as run:
             for flags in ([], ['--json']):
-                code, output = self.capture(runner.main, ['inventory/system', '--host', 'h', '--root', str(self.root), *flags])
+                code, output = self.capture(runner.main, ['system/inventory/overview', '--host', 'h', '--root', str(self.root), *flags])
                 self.assertEqual(code, 1)  # Retention failure cannot become overall success.
                 if flags: self.assertEqual(json.loads(output)['retention']['status'], 'failed')
                 else:
                     self.assertIn('🐧 h', output)
                     self.assertIn('❌ FAIL', output)
             run.reset_mock()
-            code, output = self.capture(runner.main, ['inventory/system', '--host', 'h', '--dryrun', '--root', str(self.root)])
+            code, output = self.capture(runner.main, ['system/inventory/overview', '--host', 'h', '--dryrun', '--root', str(self.root)])
             self.assertEqual(code, 0)
             self.assertIn('connection', output)
             run.assert_not_called()

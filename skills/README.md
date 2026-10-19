@@ -1,12 +1,14 @@
 # AI Agent Guidance
 
+For recipe classification, variable-depth paths or deciding where an agent writes a new recipe, route through [recipes](opsfeast-recipes/SKILL.md) and [taxonomy/location](../docs/recipe-taxonomy.md). Bundle paths are classified under system/ and feast/; user recipes default to the selected profile's recipes/, and shared code uses registered external sources. Stable IDs do not make path moves transparent to exact selectors/jobs/consumer subscriptions.
+
 For automatic retained-data handlers/converters, read [the consumer contract](../docs/retention-consumers.md), then the [consumer catalog](../consumers/README.md). Route through result-data and recipes skills: static dependency discovery, explicit local activation, read-only consumer input, idempotent outputs and durable per-consumer retry are implemented. No per-recipe runner branch or subscriber list is needed.
 
 For saved raw replay, retention author iteration or source-scoped observation deletion, route to [result-data](opsfeast-result-data/SKILL.md) and [replay contracts](../docs/retention-replay.md). Prefer the bundled ingest/delete CLI; do not independently delete SQLite rows or recreate recovery scripts.
 
 ## Retention and content routing
 
-Use [result-data](opsfeast-result-data/SKILL.md) and [retention contracts](../docs/retention.md) for independent data discovery/query/storage/replay. Recipe creators use [recipes](opsfeast-recipes/SKILL.md) to define host-values 0.2.0 or the registered inventory-observations 0.1.0 contract. Inventory/system owns its declaration, schema and normalizer; no recipe-ID fallback supplies its semantics. Content authors use the offline report retention reader, [bundled content example](../recipes/report/retention/README.md) and [vault ownership](../docs/host-vault.md). Core programs prefer profile.retention.query/show. Vault is the bundled content application; authoritative data lives under retention/, not vault/. Update and inspect separate retention/content receipts.
+Use [result-data](opsfeast-result-data/SKILL.md) and [retention contracts](../docs/retention.md) for independent data discovery/query/storage/replay. Recipe creators use [recipes](opsfeast-recipes/SKILL.md) to define host-values 0.2.0 or the registered inventory-observations 0.1.0 contract. system/inventory/overview owns its declaration, schema and normalizer; no recipe-ID fallback supplies its semantics. Content authors use the offline report retention reader, [bundled content example](../recipes/feast/report/retention-summary/README.md) and [vault ownership](../docs/host-vault.md). Core programs prefer profile.retention.query/show. Vault is the bundled content application; authoritative data lives under retention/, not vault/. Update and inspect separate retention/content receipts.
 
 This directory contains AI agent entry points and skills for establishing and maintaining a user's operations environment.
 
@@ -53,6 +55,6 @@ When writing Python that consumes host settings, start with [runtime configurati
 
 These skills rely on the repository layout and can be read directly by any agent. The full public SSHScript skill snapshot lives in `skills/sshscript/`, including references and SOURCE.json; its presence does not imply installation or automatic loading by a particular agent.
 
-Start with the [getting-started guide](../docs/getting-started.md). The `tools/opsfeast.py` utility initializes and validates management configuration. [Skill download and update checks](../docs/skill-updates.md) use `tools/skill_bundle.py` to compare or stage complete public SSHScript bundles; they do not activate skills or install them into agent-specific locations. The Ops hosts skill above is updated with this repository. Read [recipe experience](../docs/recipe-experience.md) for shared catalog, offline reports/artifacts, basic views, bundles and saved reruns. Read [general execution](../docs/recipe-execution.md) for Python-session capabilities and --var/--vars-file; the inventory-specific flow is described in the [recipe guide](../recipes/inventory/system/README.md).
+Start with the [getting-started guide](../docs/getting-started.md). The `tools/opsfeast.py` utility initializes and validates management configuration. [Skill download and update checks](../docs/skill-updates.md) use `tools/skill_bundle.py` to compare or stage complete public SSHScript bundles; they do not activate skills or install them into agent-specific locations. The Ops hosts skill above is updated with this repository. Read [recipe experience](../docs/recipe-experience.md) for shared catalog, offline reports/artifacts, basic views, bundles and saved reruns. Read [general execution](../docs/recipe-execution.md) for Python-session capabilities and --var/--vars-file; the inventory-specific flow is described in the [recipe guide](../recipes/system/inventory/overview/README.md).
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

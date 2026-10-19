@@ -439,7 +439,7 @@ class PipelineTests(unittest.TestCase):
         session.exec_command.side_effect = execute
         manager = patch.object(runner, 'retain', side_effect=sqlite3.OperationalError()) if fail_retention else contextlib.nullcontext()
         with manager, contextlib.redirect_stderr(io.StringIO()):
-            report, path = runner.run(root, 'node', recipe='inventory/system', session_class=Mock(return_value=session), runtime={'verification': 'synthetic'})
+            report, path = runner.run(root, 'node', recipe='system/inventory/overview', session_class=Mock(return_value=session), runtime={'verification': 'synthetic'})
         return root, report, path
 
     def test_automatic_retention_raw_receipt_and_replay(self):
@@ -478,8 +478,8 @@ class PipelineTests(unittest.TestCase):
         report = raw()
         report.update(reason_code='inventory_complete', message='success', detected_kernel='Linux', supported_platforms=['linux'], retention={'status': 'failed'})
         with patch.object(runner, 'resolve_root', return_value=ROOT), patch.object(runner, 'select_hosts', return_value=['node']), patch.object(runner, 'run', return_value=(report, ROOT / 'synthetic.json')), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(runner.main(['inventory/system', '--host', 'node', '--quiet']), 1)
-            self.assertEqual(runner.main(['inventory/system', '--all', '--quiet']), 1)
+            self.assertEqual(runner.main(['system/inventory/overview', '--host', 'node', '--quiet']), 1)
+            self.assertEqual(runner.main(['system/inventory/overview', '--all', '--quiet']), 1)
 
     def test_atomic_raw_write_preserves_previous_file(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -505,11 +505,11 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(store.retain(root, json.loads(path.read_text()))['status'], 'already_stored')
 
     def test_checked_in_exchange_fixture_and_declared_contract(self):
-        example = json.loads((ROOT / 'recipes/inventory/system/examples/exchange.synthetic.json').read_text())
+        example = json.loads((ROOT / 'recipes/system/inventory/overview/examples/exchange.synthetic.json').read_text())
         self.assertEqual(store.validate_exchange(example), 1)
         from recipe_dispatch import validate
         from opsfeast import read_yaml
-        directory = ROOT / 'recipes/inventory/system'
+        directory = ROOT / 'recipes/system/inventory/overview'
         descriptor = read_yaml(directory / 'recipe.yaml')
         for field in ('retention_adapter', 'retained_contract_version', 'exchange_version'):
             metadata = copy.deepcopy(descriptor)

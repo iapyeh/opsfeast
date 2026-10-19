@@ -20,7 +20,7 @@ import opsfeast as ops
 import run_recipe as runner
 import observation_store as store
 from inventory_values import empty, validate_inventory, csv_text
-D = runpy.run_path(str(ROOT / 'recipes/inventory/system/details.py'))
+D = runpy.run_path(str(ROOT / 'recipes/system/inventory/overview/details.py'))
 
 
 def result(text='', code=0):
@@ -142,7 +142,7 @@ class AccessTests(unittest.TestCase):
         for rejected, mode in ((False, 'root'), (True, 'fallback_user')):
             self.cls.fail_sudo = rejected
             with contextlib.redirect_stderr(io.StringIO()):
-                report, path = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
+                report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
                                           runtime={'verification': 'synthetic'}, force=True)
             self.assertEqual(report['status'], 'success')
             self.assertEqual(report['access']['mode'], mode)
@@ -160,13 +160,13 @@ class AccessTests(unittest.TestCase):
     def test_force_sudo_rejection_is_not_retried(self):
         self.cls.fail_sudo = True
         with contextlib.redirect_stderr(io.StringIO()):
-            report, _ = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
+            report, _ = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
                                    runtime={'verification': 'synthetic'}, force=True)
         self.assertEqual(report['access']['mode'], 'fallback_user')
         self.assertEqual(self.cls.sudo_passwords, ['synthetic-login'])
 
     def test_csv_export_and_exchange_preserve_values_without_process(self):
-        raw = json.loads((ROOT / 'recipes/inventory/system/examples/result.partitioned.synthetic.json').read_text())
+        raw = json.loads((ROOT / 'recipes/system/inventory/overview/examples/result.partitioned.synthetic.json').read_text())
         store.retain(self.root, raw)
         with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
             code = store.main(['export', '--root', str(self.root), '--format', 'csv'])
@@ -187,7 +187,7 @@ class AccessTests(unittest.TestCase):
     def test_failed_exit_blocks_force_and_retention(self):
         self.cls.restoration_failure = True
         with contextlib.redirect_stderr(io.StringIO()):
-            report, path = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
+            report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
                                       runtime={'verification': 'synthetic'}, force=True, access_checked=True)
         self.assertEqual(report['status'], 'failed')
         self.assertFalse(report['access']['restoration_verified'])
@@ -196,7 +196,7 @@ class AccessTests(unittest.TestCase):
     def test_collection_sudo_race_without_force_uses_verified_fallback(self):
         self.cls.fail_sudo = True
         with contextlib.redirect_stderr(io.StringIO()):
-            report, path = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
+            report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
                                       runtime={'verification': 'synthetic'}, access_checked=True)
         self.assertEqual(report['status'], 'success')
         self.assertEqual(report['access']['mode'], 'fallback_user')
@@ -210,7 +210,7 @@ class AccessTests(unittest.TestCase):
         for error in (hr.IdentityProbeError('identity_mismatch'), unrelated):
             with self.subTest(error=type(error).__name__), \
                     patch.object(inventory_actor, 'collection_actor', side_effect=error):
-                report, path = runner.run(self.root, 'h', recipe='inventory/system', session_class=self.cls,
+                report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
                     runtime={'verification': 'synthetic'}, access_checked=True)
                 self.assertEqual(report['status'], 'failed')
                 saved = path.read_text()
@@ -221,7 +221,7 @@ class AccessTests(unittest.TestCase):
                     self.assertIn('identity_mismatch', report['message'])
 
     def test_dryrun_and_independent_command_never_collect_or_write(self):
-        for invoke, args in ((runner.main, ['inventory/system', '--host', 'h', '--dryrun']),
+        for invoke, args in ((runner.main, ['system/inventory/overview', '--host', 'h', '--dryrun']),
                              (ops.main, ['check-access', '--host', 'h', '--json', '--quiet'])):
             with patch.object(access, 'runtime_class', return_value=self.cls), patch.object(runner, 'run') as collect, \
                     contextlib.redirect_stdout(io.StringIO()) as output:
@@ -369,7 +369,7 @@ class AccessTests(unittest.TestCase):
         for force in (False, True):
             with patch.object(access, 'check_many', return_value=check), patch.object(runner, 'run') as collect, \
                     contextlib.redirect_stdout(io.StringIO()) as output:
-                code = runner.main(['inventory/system', '--host', 'h', '--root', str(self.root), *(['--force'] if force else [])])
+                code = runner.main(['system/inventory/overview', '--host', 'h', '--root', str(self.root), *(['--force'] if force else [])])
             self.assertEqual(code, 1)
             collect.assert_not_called()
             report = json.loads(output.getvalue())
@@ -377,7 +377,7 @@ class AccessTests(unittest.TestCase):
 
     def test_dryrun_force_rejected_before_connections(self):
         with patch.object(access, 'check_many') as connect, contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            runner.main(['inventory/system', '--all', '--dryrun', '--force'])
+            runner.main(['system/inventory/overview', '--all', '--dryrun', '--force'])
         connect.assert_not_called()
 
     def test_cleanup_failure_blocks_access(self):

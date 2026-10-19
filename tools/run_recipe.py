@@ -27,7 +27,7 @@ from observation_store import retain
 
 from opsfeast import ConfigError, Validator, REPOSITORY_ROOT, REPOSITORY_RECIPES, connection_plan, connection_error, positive_timeout, read_yaml, mapping, resolve_root
 
-BUNDLE = Path(__file__).resolve().parents[1] / 'recipes/inventory/system'
+BUNDLE = Path(__file__).resolve().parents[1] / 'recipes/system/inventory/overview'
 collector = runpy.run_path(str(BUNDLE / 'main.py'))
 _progress = ContextVar('recipe_progress', default=None)
 _progress_output_lock = threading.Lock()
@@ -602,10 +602,16 @@ class RecipeAction(argparse.Action):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    if '--tui' in argv:
+    if '--tui' in argv and not any(flag in argv for flag in ('-h', '--help')):
         from terminal_ui import launch
         return launch(Path(__file__), argv)
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser = argparse.ArgumentParser(prog='run_recipe.py', allow_abbrev=False,
+        description=('Execute one reviewed inventory or general operational recipe on selected hosts through '
+                     'their configured sessions. Save raw results, retain eligible declared observations and '
+                     'dispatch enabled retention consumers. The recipe may change targets according to its '
+                     'implementation. Use opsfeast.py recipes run for offline report recipes.'),
+        epilog=('Example: run_recipe.py system/inventory/overview --host node --profile main --json. '
+                'Inventory --dryrun tests account access with real connections, without collecting inventory.'))
     parser.add_argument('recipe_positional', nargs='?', metavar='RECIPE', help='recipe directory; must be the first argument')
     parser.add_argument('--root', type=Path, help='management directory (default: selected profile)')
     parser.add_argument('--host', nargs='+', metavar='HOST', dest='targets', action=TargetAction, help='one or more exact host IDs; repeatable')

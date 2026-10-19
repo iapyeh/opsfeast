@@ -87,7 +87,7 @@ def dialog_classes():
         def compose(self):
             with Vertical():
                 yield Static(Text(f'Run recipe on {self.host}\nFeast: {self.root}\nEnter a reviewed operational recipe path.'))
-                yield Input(placeholder='inventory/system or ./recipes/custom', id='recipe-path')
+                yield Input(placeholder='system/inventory/overview or ./recipes/custom', id='recipe-path')
                 yield Static('', id='input-error', markup=False)
                 yield Button('Run on this host', id='run', variant='warning')
                 yield Button('Cancel', id='cancel')

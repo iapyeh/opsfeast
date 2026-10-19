@@ -15,13 +15,13 @@ Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI refere
 From the checkout, using the selected interpreter:
 
 ```sh
-python -B tools/run_recipe.py check/port --host rms3 --root ~/Download/testops --var port=8888
-python -B tools/run_recipe.py :check/port --host rms3 --profile main --vars-file /path/to/inputs.json
-python -B tools/run_recipe.py company:check/port --group web --var port=443 --threads 2
-python -B tools/run_recipe.py inventory/system --host rms3 --var command_timeout_seconds=10
+python -B tools/run_recipe.py system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/run_recipe.py :system/network/check/port --host rms3 --profile main --vars-file /path/to/inputs.json
+python -B tools/run_recipe.py company:system/network/check/port --group web --var port=443 --threads 2
+python -B tools/run_recipe.py system/inventory/overview --host rms3 --var command_timeout_seconds=10
 ```
 
-The second example requires a reviewed compatible recipe already present at the Feast's `recipes/check/port`; the third requires a registered reviewed company source. Source forms, enabled flags and host/group/all/exclude selection are shared with inventory. A recipe need not be listed under the host to be selected explicitly; the first matching host recipe selector supplies overrides. There is no fallback to another source or recipe. The internal `run(root, host, recipe=None)` compatibility API still selects inventory-system only; general recipes require an explicit selector.
+The second example requires a reviewed compatible recipe already present at the Feast's `recipes/system/network/check/port`; the third requires a registered reviewed company source. Source forms, enabled flags and host/group/all/exclude selection are shared with inventory. A recipe need not be listed under the host to be selected explicitly; the first matching host recipe selector supplies overrides. There is no fallback to another source or recipe. The internal `run(root, host, recipe=None)` compatibility API still selects inventory-system only; general recipes require an explicit selector.
 
 `--var NAME=VALUE` may repeat with unique names. Declared string inputs are literal text, including empty text, `true`, leading zeros and additional equals signs. Other types use JSON syntax: `port=8888`, `enabled=false`, `scale=1.5`, `'items=[1,2]'`, `'options={"mode":"basic"}'`. Use shell quoting for spaces, arrays and objects. No shell interpolation is performed by the input parser. Duplicate --var names are errors; supply the final value once.
 
@@ -31,7 +31,7 @@ Precedence is recipe defaults → source vars → first matching host recipe var
 
 ## Core Recipe execution 0.1.0
 
-New recipes may declare runner.contract python-recipe, runner.version 0.1.0 and define synchronous execute(recipe). This is a separate explicit contract; [Core API](core-api.md#runner-integration-and-migration) defines Recipe fields, session ownership, root/su/sudo scopes, instance metadata and cleanup evidence. Descriptor 0.3.0, typed inputs, selection, common results and storage behavior are shared. See [check/identity](../recipes/check/identity/README.md) for a complete example. Existing python-session/python-report/inventory contracts remain unchanged.
+New recipes may declare runner.contract python-recipe, runner.version 0.1.0 and define synchronous execute(recipe). This is a separate explicit contract; [Core API](core-api.md#runner-integration-and-migration) defines Recipe fields, session ownership, root/su/sudo scopes, instance metadata and cleanup evidence. Descriptor 0.3.0, typed inputs, selection, common results and storage behavior are shared. See [system/account/check/identity](../recipes/system/account/check/identity/README.md) for a complete example. Existing python-session/python-report/inventory contracts remain unchanged.
 
 For authorized root-only work, call `with recipe.root() as root:` then `root("id -u", check=True)`. It uses the shared ordered account policy and raises RootUnavailableError if root is unavailable after safe restoration. The yielded value is a callable console, not a Recipe. See [the full example, prerequisites and failure rules](core-api.md#automatic-root-console). Generic recipes never acquire root merely by being invoked.
 
@@ -56,7 +56,7 @@ output:
 
 `output.schema_version` versions the recipe-owned data; the runner validates the common result envelope, not a recipe-specific JSON Schema. `runner` accepts only contract/version/entrypoint; `output` accepts only schema_version. Entrypoints are .py files inside their own recipe directory, without absolute/traversing paths or escaping symlinks. Python helpers must also remain there. The runner statically validates VERSION, the execute signature and input definitions without importing the recipe. It records descriptor, entrypoint and Python bundle hashes; these establish provenance, not publisher trust or immutability during execution. Avoid modifying recipe files during a run.
 
-Optional platforms.planned/implemented/tested lists are declarations for inspection, not dispatch rules. This contract uses one entrypoint and rejects inventory-style implementations. It does not probe host facts or select platform code automatically. Recipe authors check needed platform/dependency capabilities through their reviewed code and return unsupported/failed when unavailable. Use the existing [inventory implementation contract](../recipes/inventory/system/README.md) for system inventory; do not convert its seven-field output to this contract.
+Optional platforms.planned/implemented/tested lists are declarations for inspection, not dispatch rules. This contract uses one entrypoint and rejects inventory-style implementations. It does not probe host facts or select platform code automatically. Recipe authors check needed platform/dependency capabilities through their reviewed code and return unsupported/failed when unavailable. Use the existing [inventory implementation contract](../recipes/system/inventory/overview/README.md) for system inventory; do not convert its seven-field output to this contract.
 
 Declare dependencies, permissions, side effects, implementation choice, applicability and verification evidence as described in [authoring](recipe-authoring.md). Additional descriptive fields are documentation data, not automatically enforced permission or dependency-installation rules. [Explicit-file pack/unpack](recipe-experience.md#portable-recipe-bundles) prepares verified recipe candidates. There is no automatic installer, extension overlay or alternative operational backend loader.
 
@@ -94,7 +94,7 @@ execute returns exactly four fields:
 | message | Nonempty human-readable explanation |
 | data | Object of finite plain JSON data with string object keys, defined and tested by the recipe |
 
-A successful diagnostic may observe an unhealthy service. For check/port, a refused connection is a completed check with status success, data.reachable false and reason_code port_refused; read the observation as well as execution status. Timeout/network errors remain failed with reachable null. Each recipe must document how to interpret its outcomes.
+A successful diagnostic may observe an unhealthy service. For system/network/check/port, a refused connection is a completed check with status success, data.reachable false and reason_code port_refused; read the observation as well as execution status. Timeout/network errors remain failed with reachable null. Each recipe must document how to interpret its outcomes.
 
 The runner adds `run_contract: 0.1.0`, recipe-owned schema_version, host_id, started_at/completed_at UTC timestamps, runtime/evidence_kind, source/version/digest provenance, variable names, hops, host metadata and execution_errors. Result-validation failure produces failed/invalid_result and discards the invalid returned payload. Loading/connection/execute exceptions produce failed/execution_failed with exception type/stage, without custom exception text. Cleanup failure produces failed/cleanup_failed while preserving valid collected data. Recipe-returned partial/skipped/unsupported states remain explicit. Preflight failures do not fabricate a raw report.
 
@@ -106,7 +106,7 @@ Exit 0 requires every attempted host's status to be success, with no retention/c
 
 ## Verification and extension
 
-[Public synthetic tests](../tests/test_general_recipes.py) cover CLI/file precedence, input types/bounds/isolation, descriptor/signature/path validation, static inspection, general execution, connection/loading/result/cleanup failure, result storage and inventory coexistence. The bundled [port recipe](../recipes/check/port/README.md) has synthetic probe/command tests; no real SSH, native su/sudo or target TCP probe was performed for this change. A fresh agent should inspect, review and execute through the documented CLI within the user's scope, without inventing a standalone --host interface for main.py.
+[Public synthetic tests](../tests/test_general_recipes.py) cover CLI/file precedence, input types/bounds/isolation, descriptor/signature/path validation, static inspection, general execution, connection/loading/result/cleanup failure, result storage and inventory coexistence. The bundled [port recipe](../recipes/system/network/check/port/README.md) has synthetic probe/command tests; no real SSH, native su/sudo or target TCP probe was performed for this change. A fresh agent should inspect, review and execute through the documented CLI within the user's scope, without inventing a standalone --host interface for main.py.
 
 To add another Python-session recipe, use a new ID, implement this entrypoint/result contract, declare typed inputs and target dependencies, publish synthetic success/failure/boundary tests, and register a reviewed source when external. If this interface cannot express a required backend, platform dispatch or result capability, document the gap and propose an explicitly versioned extension rather than guessing support.
 
@@ -114,4 +114,4 @@ Terminal presentation does not change recipe return values or saved reports. See
 [compact execution summaries](cli.md#compact-execution-summaries) for unknown actors,
 retention/fallback outcomes and existing offline host-specific inspection.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 15:24:36_

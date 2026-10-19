@@ -141,7 +141,7 @@ class HostGroupsTests(unittest.TestCase):
         from attribution_fixture import copy_recipe
         from opsfeast import REPOSITORY_RECIPES
         directory = self.root / 'parts/recipes/identity'
-        copy_recipe(REPOSITORY_RECIPES / 'check/identity', directory)
+        copy_recipe(REPOSITORY_RECIPES / 'system/account/check/identity', directory)
         self.write({'include': ['parts/hosts.yaml'], 'hosts': {'jump': {
             'connection': {'hostname': 'jump.invalid', 'allow_agent': True}}}})
         path = self.write({'groups': {'backup': {'hosts': {'target': {

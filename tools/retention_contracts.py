@@ -8,7 +8,7 @@ from opsfeast import ConfigError, REPOSITORY_RECIPES
 
 INVENTORY_CONTRACT = ('inventory-observations', '0.1.0')
 # Registration is product code reviewed with its owning recipe, not descriptor executable paths.
-STRUCTURED = {INVENTORY_CONTRACT: ('inventory/system', 'retention.py', 'retention.schema.json')}
+STRUCTURED = {INVENTORY_CONTRACT: ('system/inventory/overview', 'retention.py', 'retention.schema.json')}
 
 
 def location(contract):

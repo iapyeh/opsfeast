@@ -124,25 +124,55 @@ def specification(args):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser = argparse.ArgumentParser(
+        prog='opsfeast.py recipes',
+        description=('Discover reviewed recipes, run host operations or offline reports, and inspect saved results. '
+                     'You can also package recipe files and save recipe invocations as reusable jobs with content fingerprints.'),
+        epilog='Run a subcommand with --help to read its purpose, effects and examples.',
+        allow_abbrev=False)
     commands = parser.add_subparsers(dest='command', required=True)
-    listing = commands.add_parser('list')
+    listing = commands.add_parser('list', help='discover available recipes and their declared capabilities',
+        description=('List recipes from the bundle, selected profile and enabled registered sources. '
+                     'Read metadata to discover purpose, inputs and declared compatibility; no recipe is executed '
+                     'and no host is contacted. --html writes a catalog page.'),
+        epilog='Example: opsfeast.py recipes list --checkout-only --json')
     environment(listing, checkout=True)
     listing.add_argument('--query')
     listing.add_argument('--kind', choices=('operation', 'report'))
     listing.add_argument('--json', action='store_true')
     listing.add_argument('--html', type=Path, help='save a basic escaped catalog page to a new file')
-    show = commands.add_parser('show')
+    show = commands.add_parser('show', help='inspect one recipe before deciding whether to run it',
+        description=('Show the purpose, inputs, dependencies, verification evidence and retention consumers for one recipe. '
+                     'This is static inspection: it does not run the recipe or verify host applicability.'),
+        epilog='Example: opsfeast.py recipes show system/network/check/port --profile main --json')
     environment(show, checkout=True)
     show.add_argument('recipe')
     show.add_argument('--json', action='store_true')
-    run = commands.add_parser('run')
+    run = commands.add_parser('run', help='execute one host-operation recipe or offline report',
+        description=('Run one selected recipe in a Feast and save its execution results.\n\n'
+                     'Operational recipes execute on selected hosts through configured sessions.\n'
+                     'They may change targets according to their reviewed implementation. Raw\n'
+                     'results are saved; eligible declared data is retained and enabled consumers\n'
+                     'are notified.\n\n'
+                     'Offline report recipes read explicit JSON inputs or retained data on the\n'
+                     'controller and save report results/artifacts without host collection.'),
+        epilog=('Examples:\n'
+                '  opsfeast.py recipes run system/network/check/port --host node --var port=443\n'
+                '  opsfeast.py recipes run feast/report/retention-summary --profile main\n\n'
+                'Review the recipe with recipes show first. Inventory --dryrun makes real\n'
+                'connections and tests account access without collecting inventory.\n'
+                'See docs/cli.md for result and exit-code details.'),
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     environment(run)
     invocation(run)
     mode = run.add_mutually_exclusive_group()
     mode.add_argument('--dryrun', action='store_true')
     mode.add_argument('--force', action='store_true')
-    result = commands.add_parser('results')
+    result = commands.add_parser('results', help='browse saved execution results without running recipes',
+        description=('Read previously saved operation/report results. list shows a filtered index, show emits the '
+                     'original saved JSON, and detail includes result metadata and interpreted local timestamps. '
+                     'No recipe is rerun; --html writes a local HTML page for list/show.'),
+        epilog='Example: opsfeast.py recipes results list --profile main --json')
     environment(result)
     result.add_argument('action', choices=('list', 'show', 'detail'))
     result.add_argument('result_id', nargs='?')
@@ -151,26 +181,56 @@ def main(argv=None):
     result.add_argument('--status', choices=('success', 'partial', 'failed', 'skipped', 'unsupported'))
     result.add_argument('--json', action='store_true')
     result.add_argument('--html', type=Path)
-    artifact = commands.add_parser('artifact')
+    artifact = commands.add_parser('artifact', help='retrieve a verified saved report artifact',
+        description=('Read one declared artifact from a saved report result after checking its recorded integrity '
+                     'and safe path. Print JSON metadata including the verified absolute file path; this does not regenerate or stream the artifact.'),
+        epilog='Example: opsfeast.py recipes artifact RESULT_ID retention.html --profile main')
     environment(artifact)
     artifact.add_argument('result_id')
     artifact.add_argument('name')
-    packaging = commands.add_parser('pack')
+    packaging = commands.add_parser('pack', help='package explicitly selected recipe files for review or sharing',
+        description=('Create a recipe bundle archive with metadata and file digests from an explicit file allowlist. '
+                     'This packages portable code/documentation; it does not execute, publish or transmit the recipe.'),
+        epilog=('Example: opsfeast.py recipes pack :database/mysql/check/replication --profile main '
+                '--file recipe.yaml --file main.py --file README.md --file LICENSE --output candidate.zip'))
     environment(packaging, checkout=True)
     packaging.add_argument('recipe')
     packaging.add_argument('--file', action='append', required=True)
     packaging.add_argument('--output', type=Path, required=True)
-    candidate = commands.add_parser('unpack')
+    candidate = commands.add_parser('unpack', help='validate and extract a recipe bundle into a review directory',
+        description=('Validate a bundle manifest, file digests, paths and attribution, then extract it into a new '
+                     'candidate directory for review. This does not register, install or execute the recipe.'),
+        epilog='Example: opsfeast.py recipes unpack candidate.zip --destination reviewed-candidate')
     candidate.add_argument('archive', type=Path)
     candidate.add_argument('--destination', type=Path, required=True)
-    jobs = commands.add_parser('jobs')
+    jobs = commands.add_parser('jobs', help='save and reuse verified recipe invocations',
+        description=('Manage named recipe invocations and their recorded recipe fingerprints in the selected Feast. '
+                     'Saving a job does not execute it or create a schedule; jobs run explicitly executes it.'),
+        epilog='Use jobs save, list, show or run with --help for that operation.')
     jobs_commands = jobs.add_subparsers(dest='action', required=True)
-    saved = jobs_commands.add_parser('save')
+    saved = jobs_commands.add_parser('save', help='save a reviewed invocation without executing it',
+        description=('Save a new named invocation with its recipe reference, input/target selections and recipe '
+                     'fingerprint for later verification. This writes a job definition only; it does not connect, '
+                     'run the recipe, replace an existing job or schedule work.'),
+        epilog=('Example: opsfeast.py recipes jobs save nightly-summary feast/report/retention-summary '
+                '--profile main --json'))
     environment(saved)
     saved.add_argument('name')
     invocation(saved)
     for action in ('list', 'show', 'run'):
-        job = jobs_commands.add_parser(action)
+        summary, description = {
+            'list': ('list saved invocation names',
+                     'List named jobs saved in the selected Feast without running their recipes or changing their definitions.'),
+            'show': ('inspect a saved invocation before execution',
+                     'Read a saved job definition, including its recipe, selections and recorded fingerprint. '
+                     'This does not run the recipe or establish that its current content still matches the saved fingerprint.'),
+            'run': ('verify and execute a saved invocation',
+                    'Verify the saved recipe fingerprint, then execute the recorded operation or offline report with '
+                    'its saved targets and inputs. Changed recipe content is refused; execution writes normal '
+                    'results and may connect to or change targets according to the reviewed recipe.'),
+        }[action]
+        job = jobs_commands.add_parser(action, help=summary, description=description,
+            epilog='Example: opsfeast.py recipes jobs ' + action + ('' if action == 'list' else ' nightly-summary') + ' --profile main --json')
         environment(job)
         if action != 'list': job.add_argument('name')
         job.add_argument('--json', action='store_true')

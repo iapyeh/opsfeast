@@ -97,7 +97,7 @@ class ReplayTests(unittest.TestCase):
 
     def test_migrated_legacy_raw_replay_adds_provenance_preserving_unknown_producer(self):
         report = raw()
-        report['recipe']['reference'] = 'inventory/system'
+        report['recipe']['reference'] = 'system/inventory/overview'
         report['source_observation_id'] = str(uuid4())
         report['retention'] = legacy.retain(self.root, report)
         legacy_bytes = (self.root / 'records/observations.sqlite3').read_bytes()

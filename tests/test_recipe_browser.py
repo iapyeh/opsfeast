@@ -19,17 +19,17 @@ class HistoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
             (root/'observations').mkdir()
-            for name, source, reference in [('a','repository','inventory/system'), ('b','community','community:inventory/system'), ('old',None,None)]:
+            for name, source, reference in [('a','repository','system/inventory/overview'), ('b','community','community:system/inventory/overview'), ('old',None,None)]:
                 raw={'status':'partial','host_id':'host-'+name,'started_at':'2026-10-14T00:00:00Z',
                      'recipe':{'id':'same-id','source_name':source,'reference':reference}}
                 (root/'observations'/f'{name}.json').write_text(json.dumps(raw))
             index=results(root)
-            records=browser.history_for({'source':'repository','reference':'inventory/system'},index['results'])
+            records=browser.history_for({'source':'repository','reference':'system/inventory/overview'},index['results'])
             self.assertEqual(len(records),1)
             self.assertEqual(records[0]['host_id'],'host-a')
             self.assertEqual(records[0]['status'],'partial')
             self.assertEqual(len(index['results']),3)
-            self.assertEqual(browser.directory_parts({'directory':'/fixture/recipes/inventory/system'}, {'root':'/fixture/recipes'}), ('inventory','system'))
+            self.assertEqual(browser.directory_parts({'directory':'/fixture/recipes/system/inventory/overview'}, {'root':'/fixture/recipes'}), ('system','inventory','overview'))
 
 
 @unittest.skipUnless(textual,'install requirements-tui.txt')
@@ -40,12 +40,12 @@ class BrowserTests(unittest.IsolatedAsyncioTestCase):
         data={'catalog':{'status':'success','sources':[
             {'name':'repository','root':'/fixture/repo','status':'available'},
             {'name':'community','root':'/fixture/community','status':'available'}], 'recipes':[
-                {'reference':'inventory/system','source':'repository','directory':'/fixture/repo/inventory/system'},
-                {'reference':'community:inventory/system','source':'community','directory':'/fixture/community/inventory/system','title':'Community inventory','description':'[red]Literal description','inputs':{'variables':{'sample':{'type':'string'}}},'verification':{'evidence':'synthetic'}}]},
+                {'reference':'system/inventory/overview','source':'repository','directory':'/fixture/repo/system/inventory/overview'},
+                {'reference':'community:system/inventory/overview','source':'community','directory':'/fixture/community/system/inventory/overview','title':'Community inventory','description':'[red]Literal description','inputs':{'variables':{'sample':{'type':'string'}}},'verification':{'evidence':'synthetic'}}]},
             'history':{'status':'success','errors':[],'results':[
-                {'recipe_source':'repository','recipe_reference':'inventory/system','started_at':'2026-10-14T01:00:00Z',
+                {'recipe_source':'repository','recipe_reference':'system/inventory/overview','started_at':'2026-10-14T01:00:00Z',
                  'status':'success','host_id':'repo-host','result_id':'repo.json','kind':'operation'},
-                {'recipe_source':'community','recipe_reference':'community:inventory/system','started_at':'2026-10-14T02:00:00.123456Z',
+                {'recipe_source':'community','recipe_reference':'community:system/inventory/overview','started_at':'2026-10-14T02:00:00.123456Z',
                  'status':'failed','host_id':'community-host','result_id':'community.json','kind':'operation'}]},
             'message':'fixture','root':'/fixture/feast'}
         app=recipe_workbench.make_workbench_class()()
@@ -59,7 +59,7 @@ class BrowserTests(unittest.IsolatedAsyncioTestCase):
                 tabs=app.query_one('#recipe-view',TabbedContent)
                 self.assertLessEqual(tree.region.right,tabs.region.x)
                 self.assertEqual(tabs.active,'info-pane')
-                leaf=tree.root.children[1].children[0].children[0]
+                leaf=tree.root.children[1].children[0].children[0].children[0]
                 tree.move_cursor(leaf)
                 await pilot.pause()
                 info=app.query_one('#recipe-info',RichLog)
@@ -72,7 +72,7 @@ class BrowserTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(table.row_count,1)
                 row=table.get_row_at(0)
                 self.assertEqual([cell.plain for cell in row[:3]],[browser.display_started('2026-10-14T02:00:00.123456Z'),'failed','community-host'])
-                tree.move_cursor(tree.root.children[0].children[0].children[0])
+                tree.move_cursor(tree.root.children[0].children[0].children[0].children[0])
                 await pilot.pause()
                 self.assertEqual(tabs.active,'history-pane')
                 self.assertEqual(table.get_row_at(0)[2].plain,'repo-host')
@@ -90,15 +90,15 @@ class ExecutionOutputTests(unittest.TestCase):
             root = Path(directory)
             (root / 'observations').mkdir()
             path = root / 'observations' / 'one.json'
-            original = '{ "status": "partial", "recipe": {"source_name": "repository", "reference": "inventory/system"}, "host_id": "h", "data": {"literal": "[red]"}}\n'
+            original = '{ "status": "partial", "recipe": {"source_name": "repository", "reference": "system/inventory/overview"}, "host_id": "h", "data": {"literal": "[red]"}}\n'
             path.write_text(original)
-            item = {'source': 'repository', 'reference': 'inventory/system'}
+            item = {'source': 'repository', 'reference': 'system/inventory/overview'}
             output = browser.execution_output(root, 'observations/one.json', item)
             self.assertEqual(output['original'], original)
             self.assertIn('partial', output['details'])
             for identifier in ('../one.json', '/tmp/one.json', 'observations/missing.json'):
                 with self.assertRaises(ConfigError): browser.execution_output(root, identifier, item)
-            with self.assertRaises(ConfigError): browser.execution_output(root, 'observations/one.json', {'source': 'community', 'reference': 'inventory/system'})
+            with self.assertRaises(ConfigError): browser.execution_output(root, 'observations/one.json', {'source': 'community', 'reference': 'system/inventory/overview'})
             path.unlink()
             target = root / 'private.json'
             target.write_text(original)

@@ -49,7 +49,7 @@ class IdentityTests(unittest.TestCase):
     def test_bundle_archive_rejected_before_destination_creation(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
-            item=recipe_catalog.choose(None,'report/summary')
+            item=recipe_catalog.choose(None,'feast/report/execution-summary')
             archive=root/'bundle.zip'
             packages.pack(item,['recipe.yaml','README.md','main.py','LICENSE'],archive)
             with self.assertRaises(ConfigError):packages.unpack(archive,root/'candidate')

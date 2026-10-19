@@ -5,13 +5,13 @@ A consumer is a reviewed local program that reacts to retained-data changes. It 
 ## Discover the relation to a recipe
 
 ```sh
-python -B tools/opsfeast.py recipes show inventory/system --profile main --json
-python -B tools/opsfeast.py consumers list --recipe inventory/system --profile main --json
+python -B tools/opsfeast.py recipes show system/inventory/overview --profile main --json
+python -B tools/opsfeast.py consumers list --recipe system/inventory/overview --profile main --json
 python -B tools/opsfeast.py consumers show vault --profile main --json
 python -B tools/opsfeast.py consumers inspect --profile main --json
 ```
 
-`recipes show` includes `consumers` with ID, source, registration, effective enabled state and static validation errors. `consumers list --recipe` resolves the recipe through the existing catalog, then matches its exact source-qualified reference and declared retention contract/version. The bundled reference is `inventory/system`; profile recipes use `:inventory/system`, and registered sources use `company:inventory/system`. A contract-only subscription can consume compatible definitions from multiple sources. Unknown recipe references fail explicitly. A missing consumer descriptor is reported as unavailable; it does not imply that no dependency exists.
+`recipes show` includes `consumers` with ID, source, registration, effective enabled state and static validation errors. `consumers list --recipe` resolves the recipe through the existing catalog, then matches its exact source-qualified reference and declared retention contract/version. The bundled reference is `system/inventory/overview`; profile recipes use `:system/inventory/overview`, and registered sources use `company:system/inventory/overview`. A contract-only subscription can consume compatible definitions from multiple sources. Unknown recipe references fail explicitly. A missing consumer descriptor is reported as unavailable; it does not imply that no dependency exists.
 
 List/show inspect descriptors and entrypoint bytes without importing candidate programs, creating directories or connecting. They distinguish unregistered candidates from enabled registrations. Inspection is static evidence; Python dependencies, historical output quality and execution safety require review. `consumers inspect [ID]` reads the durable event/delivery journal without writing. Its top-level success means the inspection succeeded; inspect individual delivery statuses for failures. An empty delivery list means no attempt has been recorded, including events without matching enabled subscribers.
 
@@ -60,12 +60,12 @@ entrypoint: main.py
 subscriptions:
   - event: retention.observation.created
     selector:
-      recipe_reference: inventory/system
+      recipe_reference: system/inventory/overview
       contract: inventory-observations
       version: "0.1.0"
   - event: retention.observation.deleted
     selector:
-      recipe_reference: inventory/system
+      recipe_reference: system/inventory/overview
       contract: inventory-observations
       version: "0.1.0"
 ```
@@ -78,7 +78,7 @@ The selected Python must be 3.11+ with the normal OpsFeast initialization depend
 def execute(context):
     # Rebuild from current retained state; handles duplicate and deletion hints.
     selection = context.retention.query(
-        recipe="inventory/system", kind="observation"
+        recipe="system/inventory/overview", kind="observation"
     )
     # Render selection into this consumer's reviewed output location.
     # Preserve partial/unknown states, source times and identity warnings.
@@ -131,4 +131,4 @@ The checkout-level `retention_consumers.catalog(root, recipe=None)`, `related(ro
 
 The bundled [Vault consumer](../consumers/vault/README.md) delegates full local rebuilds to `host_vault`, whose renderer remains `vault_content`. Local synthetic tests cover discovery without imports, exact source/contract/version matching, deduplication, disabled backlog, durable rollback/crash recovery, independent failures/retries, deletion/reinsertion, concurrent dispatch, CLI and operation events. They do not establish native SSH/su/sudo, external delivery, application-specific idempotency or live network/cloud filesystem safety. No scheduler or daemon automatically wakes pending work; dispatch occurs on the next shared write/replay or explicit command.
 
-_Last modified: 2026-10-19 14:57:27_
+_Last modified: 2026-10-19 15:24:36_

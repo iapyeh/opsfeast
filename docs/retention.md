@@ -6,10 +6,10 @@ The data flow is **Recipe → Retention → Content**. A recipe creator defines 
 
 ## Discover and read data
 
-Start with `recipes list --profile NAME --json`, `recipes show REFERENCE --profile NAME --json` or `inspect-recipe PATH --json`. Their `retention` metadata identifies the declared contract, field meanings and retrieval interfaces. A declaration does not prove that a recipe has run or produced usable data. Distinguish catalog recipe IDs from exact source-qualified references such as `company:check/port`.
+Start with `recipes list --profile NAME --json`, `recipes show REFERENCE --profile NAME --json` or `inspect-recipe PATH --json`. Their `retention` metadata identifies the declared contract, field meanings and retrieval interfaces. A declaration does not prove that a recipe has run or produced usable data. Distinguish catalog recipe IDs from exact source-qualified references such as `company:system/network/check/port`.
 
 ```sh
-python -B tools/opsfeast.py retention list --profile main --recipe company:check/port --host node --json
+python -B tools/opsfeast.py retention list --profile main --recipe company:system/network/check/port --host node --json
 python -B tools/opsfeast.py retention export --profile main --since 2026-01-01T00:00:00Z --status partial --json
 python -B tools/opsfeast.py retention show RECORD_ID --profile main --json
 python -B tools/opsfeast.py retention inspect --profile main --json
@@ -22,7 +22,7 @@ Readers inspect authoritative archives without creating directories, locks, mani
 ```python
 from opsfeast import Instance
 profile = Instance.open('/path/to/installation').profile('main')
-selection = profile.retention.query(hosts=['node'], recipe='company:check/port', kind='observation')
+selection = profile.retention.query(hosts=['node'], recipe='company:system/network/check/port', kind='observation')
 for record in selection['records']:
     print(record['record_id'], record['observed_at'], record['data'])
 record = profile.retention.show(selection['records'][0]['record_id'])  # only for a nonempty selection
@@ -32,7 +32,7 @@ Checkout composition also supports `from retention_store import query, show, Rea
 
 ## Recipe-owned data declarations
 
-Inventory declares its recipe-owned `inventory-observations` 0.1.0 contract, [schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract). The platform does not infer a declaration from its recipe ID. General operation recipes may declare scalar `host-values` **0.2.0**:
+Inventory declares its recipe-owned `inventory-observations` 0.1.0 contract, [schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). The platform does not infer a declaration from its recipe ID. General operation recipes may declare scalar `host-values` **0.2.0**:
 
 ```yaml
 access_mode: read
@@ -53,7 +53,7 @@ Retention does not execute custom adapter code or templates. `markdown_template`
 
 ### Registered structured retention
 
-Inventory/system 0.3.1 declares `retention: {contract: inventory-observations, version: 0.1.0, description: ..., schema: retention.schema.json}` and explicit access_mode. Its raw `output` no longer selects an adapter. The recipe-owned schema includes nested field meanings/units and limitations; shared retained/exchange schemas reference that source. Discovery reports the declared metadata, schema_path/schema_sha256 and registered normalizer source/digest without loading collection code.
+system/inventory/overview 0.3.1 declares `retention: {contract: inventory-observations, version: 0.1.0, description: ..., schema: retention.schema.json}` and explicit access_mode. Its raw `output` no longer selects an adapter. The recipe-owned schema includes nested field meanings/units and limitations; shared retained/exchange schemas reference that source. Discovery reports the declared metadata, schema_path/schema_sha256 and registered normalizer source/digest without loading collection code.
 
 The platform registry (`retention_contracts`) maps supported contract/version pairs to shipped creator-owned normalizers, independent of recipe ID. It validates declarations and exact schema content (top-level comments excluded), then invokes registered semantic validation/normalization. It never loads arbitrary normalizers from candidate paths. Contributing a new structured contract requires product registration, schema, reviewed code, tests and guidance; descriptor paths are not executable plugin permissions. A clone reusing inventory-observations uses the installed registered normalizer; ship its matching retention.schema.json and declare the required OpsFeast contract support.
 
@@ -101,12 +101,12 @@ Runner execution saves raw results, records operation outcomes, retains data and
 Use the existing `python-report` framework for reviewed local content generation. `ReportContext.retention.query(...)` and `.show(record_id)` provide the selected profile's read-only data interface; existing explicit JSON `context.inputs` and artifact output remain available. No raw files or vault-internal paths are needed. Report results include `retention_sources` recording selections, record IDs, source times and selection digests. Full input records remain authoritative; output must preserve relevant partial/unknown and quality context. This facade is a usable API, not a Python/network sandbox.
 
 ```sh
-python -B tools/opsfeast.py recipes run report/retention --profile main --json
-python -B tools/opsfeast.py recipes run report/retention --profile main \
-  --var 'recipes=["company:check/port","company:check/identity"]' --var 'hosts=["node"]' --json
+python -B tools/opsfeast.py recipes run feast/report/retention-summary --profile main --json
+python -B tools/opsfeast.py recipes run feast/report/retention-summary --profile main \
+  --var 'recipes=["company:system/network/check/port","company:system/account/check/identity"]' --var 'hosts=["node"]' --json
 ```
 
-The bundled [retention report](../recipes/report/retention/README.md) demonstrates Markdown and escaped HTML from the same data that feeds the bundled vault. Multiple selected recipe references can be combined without a connection or collection. Outputs use existing validated artifacts, result lookup, portable recipe packaging and saved-job mechanisms. Custom graph/web renderers declare their dependencies and verification; web hosting, scheduling, transmission and automatic installation are not provided by this feature. Report generation does not refresh collection and is not itself a host retention producer.
+The bundled [retention report](../recipes/feast/report/retention-summary/README.md) demonstrates Markdown and escaped HTML from the same data that feeds the bundled vault. Multiple selected recipe references can be combined without a connection or collection. Outputs use existing validated artifacts, result lookup, portable recipe packaging and saved-job mechanisms. Custom graph/web renderers declare their dependencies and verification; web hosting, scheduling, transmission and automatic installation are not provided by this feature. Report generation does not refresh collection and is not itself a host retention producer.
 
 ## Operation journals and module boundaries
 
@@ -123,4 +123,4 @@ Existing SQLite under `vault/` is rejected before new storage use; no automatic 
 
 Retention/content delivery verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 each passed all 679 public tests, including headless TUI, inventory-owned contracts, scalar/list group rendering, replacement of edited generated outputs, protected human notes and isolated installed-wheel data/content assertions. Older interpreters reused the maintenance environment's Python dependencies; this does not establish native execution-library readiness. Wheel/sdist builds, temporary no-dependency installation and installed-wheel scalar/structured queries, replay/dedup, offline Markdown/HTML, vault and protected operation evidence checks passed. Python 3.11 grammar, schema syntax/references, skill frontmatter, document links/footers and diff whitespace checks passed. Verification used synthetic/local data and performed no host connections or collection, private-data relocation, push or release.
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

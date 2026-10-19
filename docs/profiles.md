@@ -1,5 +1,7 @@
 # Feasts and profiles
 
+User-authored recipes normally live under the selected profile's actual management root at recipes/domain/subdomains/action/name, for example feasts/main/recipes/database/mysql/check/replication. Use a :classified/path selector. Profiles can point to arbitrary registered directories; a profiles/ parent is not required. For code shared across profiles, register one external recipe source. See [classification, placement and relocation](recipe-taxonomy.md).
+
 ## Profile roots, retention and vault content
 
 A profile's optional host vault is the dedicated `vault/` child of its management root, including external attached roots. Init enables it automatically; see [namespace and vault initialization](host-vault.md). Renaming a profile or moving its root does not change namespace. Authoritative retained data lives under retention/; generated content lives under vault/hosts, vault/groups and vault/overview; raw observations, configuration and execution records remain outside vault/. Profile selection chooses both locations; CLI --root always means the profile root. Retained data and notes may be private, so a vault is not automatically a sanitized sharing artifact.
@@ -94,4 +96,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 15:24:36_

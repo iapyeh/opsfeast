@@ -227,7 +227,7 @@ class InventoryActorTests(unittest.TestCase):
                       'access': {'restoration_verified': True}, 'reason_code': 'identity_failed'}
             with patch.object(access, 'check_access', return_value=unsafe), \
                     patch.object(runner, 'connection_plan') as connect:
-                report, path = runner.run(root, 'h', recipe='inventory/system', session_class=Actor,
+                report, path = runner.run(root, 'h', recipe='system/inventory/overview', session_class=Actor,
                     runtime={'verification': 'synthetic'}, force=True)
             self.assertEqual(report['status'], 'skipped')
             self.assertIsNone(path)
@@ -297,7 +297,7 @@ class InventoryActorTests(unittest.TestCase):
                         return {'collect': lambda *a, **kw: None}
                     return original_load(path, *args, **kwargs)
                 load.side_effect = limited
-                report, path = runner.run(root, 'h', recipe='inventory/system', session_class=Session,
+                report, path = runner.run(root, 'h', recipe='system/inventory/overview', session_class=Session,
                     runtime={'verification': 'synthetic'}, access_checked=True)
             self.assertEqual(report['status'], 'success', report['execution_errors'])
             self.assertEqual(report['access']['identity_model'], 'esxi_root_shell')

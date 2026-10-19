@@ -1,6 +1,6 @@
 # Inventory access checks and partitioned results
 
-Inventory/system 0.3.1 owns its [structured retention declaration, schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract). This architecture change preserves the access, actor, data-state and identity rules below; it adds data-definition snapshots and registered schema/normalizer digests without new host probes.
+system/inventory/overview 0.3.1 owns its [structured retention declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). This architecture change preserves the access, actor, data-state and identity rules below; it adds data-definition snapshots and registered schema/normalizer digests without new host probes.
 
 
 Inventory-system recipe 0.3.0 adds an access gate and inventory-values contract 0.1.0. Read this guide before execution: selecting inventory includes bounded account selection with possible su/sudo by default. These are real connections and authentication attempts, even in dryrun. Login-shell startup, configured proxies and authentication/audit records can have side effects. No installation, target configuration changes, environment-variable capture, process arguments or arbitrary file crawling is performed.
@@ -143,8 +143,8 @@ Choose `--host`/`--group` **or** `--all`; exclusions require --all. Additional e
 
 ```sh
 python -B tools/opsfeast.py check-access --all --exclude legacy
-python -B tools/run_recipe.py inventory/system --all --dryrun
-python -B tools/opsfeast.py recipes run inventory/system --all --dryrun
+python -B tools/run_recipe.py system/inventory/overview --all --dryrun
+python -B tools/opsfeast.py recipes run system/inventory/overview --all --dryrun
 ```
 
 Prefer check-access for hosts.yaml access validation and dryrun for a selected inventory invocation. Both share access contract 0.1.0. Check-access validates configuration/connections without inspecting recipe selections. Dryrun additionally statically validates the selected recipe and invocation inputs and uses inventory's bounded two-candidate selection. No recipe collection, platform discovery/cache writes, identity inventory, raw inventory or retained records are created. Check-access defaults to a tabulate table with status, host, test, user and reason columns; inventory dryrun uses terminal tables and retains JSON with --json or non-TTY output. For the complete check-access report, use --json and redirect stdout to a private file if persistence is wanted. Config checks alone do not connect. Check-access tests declared accounts only; skipped accounts remain unverified. Neither workflow proves command-specific sudo policy, recipe platform support or hardware visibility.
@@ -242,7 +242,7 @@ python -B tools/observation_store.py export --profile main --format json > inven
 
 CSV is a long-form inspection export, not the JSON exchange format. Columns include observation_id, host_id, observed_at, identity_quality, collection_mode, effective_uid, section, field, item, attribute and value. Missing values produce empty CSV cells, never the string NULL. Zero stays zero. An observed empty list is represented as [] to distinguish it from missing data. Each table item/attribute has its own row; old seven-field records are projected into an otherwise empty partitioned result. Spreadsheet formula-looking strings receive a leading apostrophe. CSV does not preserve all JSON types or full provenance; use JSON for validated exchange/re-ingestion. Standard JSON export does not transmit data. Exported addresses, serials, paths, packages and services can be sensitive; select/review before authorized sharing.
 
-The bundled report/summary displays partitioned values and collection scope alongside compatibility evidence. It does not reconnect or refresh inventory. Custom report recipes can query inventory by section and must preserve null, scope, identity warnings and source times.
+The bundled feast/report/execution-summary displays partitioned values and collection scope alongside compatibility evidence. It does not reconnect or refresh inventory. Custom report recipes can query inventory by section and must preserve null, scope, identity warnings and source times.
 
 ## Verification and migration
 
@@ -320,4 +320,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-19 11:59:00_
+_Last modified: 2026-10-19 15:24:36_

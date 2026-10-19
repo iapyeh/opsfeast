@@ -113,7 +113,7 @@ class RecipeInspectionTests(unittest.TestCase):
         self.assertIn('freebsd: planned; not implemented', text)
         self.assertIn('openbsd: not declared supported', text)
         self.assertNotIn('dependencies:', text)
-        report = inspection.inspect_recipes('inventory/system', ['freebsd'])
+        report = inspection.inspect_recipes('system/inventory/overview', ['freebsd'])
         text = inspection.format_report(report)
         self.assertIn('freebsd: implemented', text)
         self.assertIn('ssh: not-tested', text)
@@ -130,7 +130,7 @@ class RecipeInspectionTests(unittest.TestCase):
         self.assertIn('os_version', output.getvalue())
 
     def test_inventory_contract_uses_existing_validator(self):
-        report = inspection.inspect_recipes('inventory/system', ['linux', 'freebsd', 'macos', 'openbsd'])
+        report = inspection.inspect_recipes('system/inventory/overview', ['linux', 'freebsd', 'macos', 'openbsd'])
         self.assertEqual(report['status'], 'success')
         item = report['recipes'][0]
         self.assertEqual(item['runner_contract'], 'valid-inventory-system')

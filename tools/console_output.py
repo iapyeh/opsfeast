@@ -1,5 +1,6 @@
 """Checkout-level terminal presentation; structured data remains unchanged."""
 import json
+import shutil
 import sys
 from display_time import human_times
 
@@ -35,9 +36,60 @@ def cell(value):
     return json.dumps(value, ensure_ascii=False, default=str)
 
 
+def render_table(headers, rows):
+    """Render already escaped display strings; constrain tables only on terminal stdout."""
+    formatter = table_formatter()
+    options = dict(tablefmt='rounded_outline', disable_numparse=True, preserve_whitespace=True)
+    if not sys.stdout.isatty():
+        return formatter(rows, headers=headers, **options)
+
+    from wcwidth import wcswidth
+    columns = max(2, shutil.get_terminal_size().columns)
+    count = max(len(headers), max((len(row) for row in rows), default=0))
+    if not count:
+        return formatter(rows, headers=headers, **options)
+    labels = [*headers, *([''] * (count - len(headers)))]
+    cells = [list(row) + [''] * (count - len(row)) for row in rows]
+    # tabulate reserves two additional cells inside each header's content width.
+    widths = [max([wcswidth(labels[index]) + 2, *(wcswidth(row[index]) for row in cells)])
+              for index in range(count)]
+    # Rounded-outline borders and padding use three cells per column plus one.
+    budget = columns - (3 * count + 1)
+    if sum(widths) <= budget:
+        return formatter(rows, headers=headers, **options)
+    if sum(min(width, 8) for width in widths) > budget:
+        # More columns than can be read use labeled records, retaining every cell.
+        records = []
+        for index, row in enumerate(cells, 1):
+            if records:
+                records.append([''])
+            records.append([f'Record {index}'])
+            records.extend([[f'{label}: {value}'] for label, value in zip(labels, row)])
+        if not cells:
+            records = [[label] for label in labels]
+        return formatter(records, tablefmt='plain', disable_numparse=True, preserve_whitespace=True,
+                         maxcolwidths=[columns])
+
+    # Cap wide columns fairly, leaving naturally short columns unchanged.
+    low, high = 1, max(widths)
+    while low < high:
+        cap = (low + high + 1) // 2
+        if sum(min(width, cap) for width in widths) <= budget:
+            low = cap
+        else:
+            high = cap - 1
+    limits = [min(width, low) for width in widths]
+    remaining = budget - sum(limits)
+    for index, width in enumerate(widths):
+        if remaining and limits[index] < width:
+            limits[index] += 1
+            remaining -= 1
+    return formatter(cells, headers=labels, maxcolwidths=limits, maxheadercolwidths=[max(2, limit - 2) for limit in limits], **options)
+
+
 def table(headers, rows):
-    return table_formatter()([[cell(human_times(v)) for v in row] for row in rows], headers=headers,
-                             tablefmt='rounded_outline', disable_numparse=True, preserve_whitespace=True)
+    return render_table([cell(header) for header in headers],
+                        [[cell(human_times(v)) for v in row] for row in rows])
 
 
 def fields(value, prefix=''):

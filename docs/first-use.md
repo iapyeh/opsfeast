@@ -143,7 +143,7 @@ For the configured host diagnostic suite, paste:
 
 > Read docs/host-diagnostics.md and the Ops hosts skill. Run test-host for host-01 in my default profile. I authorize its configured connection, read-only login/platform checks, enabled connection-account sudo shell/identity testing using the selected password or passwordless policy, and independent su shell/identity testing to other accounts declared for that host. Do not test chains or recipes. Report each test, skipped reasons and whether facts were reused or freshly collected; do not disclose credentials.
 
-Test-host reuses successful target-matching facts; direct host-init always refreshes. A zero test-host exit code may include skipped tests. Platform facts do not prove recipe compatibility or complete account privileges. Native SSH/su/sudo validation is still pending; the tool reports actual outcomes without assuming success. Inventory is a separately authorized operation: one inventory/system recipe can dispatch mixed-platform hosts automatically. See its [guide](../recipes/inventory/system/README.md).
+Test-host reuses successful target-matching facts; direct host-init always refreshes. A zero test-host exit code may include skipped tests. Platform facts do not prove recipe compatibility or complete account privileges. Native SSH/su/sudo validation is still pending; the tool reports actual outcomes without assuming success. Inventory is a separately authorized operation: one system/inventory/overview recipe can dispatch mixed-platform hosts automatically. See its [guide](../recipes/system/inventory/overview/README.md).
 
 ## 5. Try a skill update check
 
@@ -177,4 +177,4 @@ git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-19 15:24:36_

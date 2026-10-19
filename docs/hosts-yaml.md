@@ -6,7 +6,7 @@ For namespace-enabled profiles, the logical host identity is the namespace in `f
 
 User agents must reread this guide after every OpsFeast release update, even if unchanged or previously read, to learn the installed release's current host schema and semantics before resuming work. See the [mandatory release schema reading rule](skill-updates.md#required-schema-reread-after-a-release-update). Reading completion is not verified.
 
-這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/inventory/system/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
+這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/system/inventory/overview/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
 
 New to this configuration? Start with [Connect your first host](first-host.md) for a minimal example and practical cases. This document remains the complete reference.
 
@@ -197,7 +197,7 @@ Delivery verification (2026-10-16): 540 tests passed on each of Python 3.11.15,
 TUI navigation/group details. The older interpreters reused the selected environment's
 pure-Python dependencies; native SSH readiness on those environments is not established.
 Wheel/sdist build, temporary installation and outside-checkout bulk-group selection,
-Core execution and the bundled check/identity recipe passed locally on 3.14.
+Core execution and the bundled system/account/check/identity recipe passed locally on 3.14.
 Changed-document links/dates, skill frontmatter and the canonical group YAML passed.
 No real SSH/agent/su/sudo or private configuration migration was performed.
 
@@ -264,7 +264,7 @@ hosts:
       port: 22
       user: operator
     recipes:
-      - recipe: recipes/inventory/hostname
+      - recipe: recipes/system/inventory/hostname
 ```
 
 `web-01` 是穩定的主機 ID，不是 DNS 位址，也不必等於主機實際設定的 hostname。IP 或連線方式改變時，維持相同 ID 可延續紀錄。
@@ -351,7 +351,7 @@ hosts:
       via:
         host: bastion
     recipes:
-      - recipe: recipes/inventory/hostname
+      - recipe: recipes/system/inventory/hostname
 ```
 
 `via.host: bastion` 引用的是 `hosts.bastion.connection`。跳板本身可以再經由其他主機，形成多層跳板；引用必須存在，而且不能形成循環。引用不帶入該主機的 `users`、`vars` 或 `recipes`。
@@ -546,7 +546,7 @@ hosts:
         config_path: /etc/nginx/nginx.conf
       maintenance_enabled: false
     recipes:
-      - recipe: recipes/inventory/hostname
+      - recipe: recipes/system/inventory/hostname
 ```
 
 `connection.user` 是 SSH 登入帳號；`vars.sudo.user` 是 sudo 切換到的目標帳號；`vars.sudo.password` 是 sudo 驗證所需的密碼，通常屬於登入帳號，而不是目標帳號。
@@ -586,7 +586,7 @@ hosts:
       via:
         host: bastion
     recipes:
-      - recipe: recipes/inventory/hostname
+      - recipe: recipes/system/inventory/hostname
 ```
 
 各檔案使用相同格式，也可以再 include 其他檔案。只負責 include 的檔案可以省略 `hosts`。全部載入後組成一份主機清單，才檢查跨檔案引用。
@@ -615,13 +615,13 @@ hosts:
     enabled: true
     connection: {hostname: host1.example}
     recipes:
-      - inventory/system
-      - ":inventory/system"
-      - recipe: community:inventory/system
+      - system/inventory/overview
+      - ":system/inventory/overview"
+      - recipe: community:system/inventory/overview
         vars: {command_timeout_seconds: 10}
 ```
 
-Bare inventory/system selects checkout recipes; :inventory/system selects the profile's recipes/; community:inventory/system selects the registered community root. Legacy recipes/... still selects the checkout, while ./ paths retain declaring-YAML semantics. String items select one recipe; mappings use exactly one of recipe/directory/glob, with optional vars and directory-only recursive. Same-directory duplicates retain their first selection/vars; duplicate IDs within one source fail, while separate sources have independent identities.
+Bare system/inventory/overview selects checkout recipes; :system/inventory/overview selects the profile's recipes/; community:system/inventory/overview selects the registered community root. Legacy recipes/... still selects the checkout, while ./ paths retain declaring-YAML semantics. String items select one recipe; mappings use exactly one of recipe/directory/glob, with optional vars and directory-only recursive. Same-directory duplicates retain their first selection/vars; duplicate IDs within one source fail, while separate sources have independent identities.
 
 Include and output paths remain inside the management root. Recipe paths remain inside their chosen checkout/profile/registered source after symlink resolution; inventory entrypoints/helpers remain inside their recipe directory. Registration does not authorize installation or execution, and path validation is not a sandbox.
 
@@ -768,4 +768,4 @@ and never prints password/vars fields. Recipe validation still runs; the compact
 table omits its count/skip columns. JSON and redirected text retain their detailed
 existing contracts. See [the CLI's exact display rules](cli.md#human-check-overview).
 
-_Last modified: 2026-10-17_
+_Last modified: 2026-10-19 15:24:36_

@@ -32,14 +32,14 @@ class GeneralRecipeTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
-        self.directory = self.root / 'recipes/check/port'
+        self.directory = self.root / 'recipes/system/network/check/port'
         self.directory.mkdir(parents=True)
         self.metadata = {'descriptor_version': '0.3.0', 'id': 'synthetic-port', 'version': '1.0.0',
                          'runner': {'contract': 'python-session', 'version': '0.1.0', 'entrypoint': 'main.py'},
                          'inputs': {'variables': {'port': {'type': 'integer', 'required': True, 'minimum': 1, 'maximum': 65535}}},
                          'output': {'schema_version': '1.0.0'}}
-        self.settings = {'hosts': {'h': {'connection': {'local': True}, 'recipes': [':check/port']},
-                                  'other': {'connection': {'local': True}, 'recipes': [':check/port']}}}
+        self.settings = {'hosts': {'h': {'connection': {'local': True}, 'recipes': [':system/network/check/port']},
+                                  'other': {'connection': {'local': True}, 'recipes': [':system/network/check/port']}}}
         self.code = CODE
         self.write()
 
@@ -52,14 +52,14 @@ class GeneralRecipeTests(unittest.TestCase):
         self.session = Mock()
         self.session.exec_command.return_value = SimpleNamespace(stdout='', stderr='', exitcode=0)
         self.factory = Mock(return_value=self.session)
-        return runner.run(self.root, 'h', recipe=':check/port', session_class=self.factory, **kwargs)
+        return runner.run(self.root, 'h', recipe=':system/network/check/port', session_class=self.factory, **kwargs)
 
     def cli(self, *args):
         output, error = io.StringIO(), io.StringIO()
         factory = Mock(return_value=Mock())
         with contextlib.redirect_stdout(output), contextlib.redirect_stderr(error), \
                 patch.object(runner, 'load_runtime', return_value=(factory, {'verification': 'synthetic'})):
-            status = runner.main([':check/port', '--root', str(self.root), *args])
+            status = runner.main([':system/network/check/port', '--root', str(self.root), *args])
         return status, json.loads(output.getvalue()) if output.getvalue() else None, error.getvalue(), factory
 
     def test_success_saved_envelope_without_inventory_probes_or_retention(self):
@@ -93,7 +93,7 @@ class GeneralRecipeTests(unittest.TestCase):
     def test_cli_file_and_assignments_precedence(self):
         self.metadata['inputs']['variables']['port']['default'] = 1000
         self.settings['recipe_sources'] = {'profile': {'vars': {'port': 2000}}}
-        self.settings['hosts']['h']['recipes'] = [{'recipe': ':check/port', 'vars': {'port': 3000}}]
+        self.settings['hosts']['h']['recipes'] = [{'recipe': ':system/network/check/port', 'vars': {'port': 3000}}]
         self.write()
         file = self.root / 'input.json'
         file.write_text('{"port":4000}')
@@ -110,7 +110,7 @@ class GeneralRecipeTests(unittest.TestCase):
                             ['port=2', 'port=3'], ['port'], ['port=private-value']):
             with self.subTest(assignments=assignments), patch.object(runner, 'load_runtime') as runtime:
                 with self.assertRaises(ops.ConfigError):
-                    runner.run(self.root, 'h', recipe=':check/port', assignments=assignments)
+                    runner.run(self.root, 'h', recipe=':system/network/check/port', assignments=assignments)
                 runtime.assert_not_called()
 
     def test_input_error_output_does_not_disclose_value(self):
@@ -172,7 +172,7 @@ def execute(session, *, context, timeout):
         self.write()
         session = Mock()
         session.close.side_effect = RuntimeError('private-value')
-        report, _ = runner.run(self.root, 'h', recipe=':check/port', assignments=['port=1'], session_class=Mock(return_value=session))
+        report, _ = runner.run(self.root, 'h', recipe=':system/network/check/port', assignments=['port=1'], session_class=Mock(return_value=session))
         self.assertEqual(report['reason_code'], 'cleanup_failed')
         self.assertEqual(report['data']['port'], 1)
 
@@ -218,7 +218,7 @@ def execute(session, *, context, timeout):
         self.settings['hosts']['h']['enabled'] = False
         self.write()
         with patch.object(runner, 'load_runtime') as runtime:
-            report, path = runner.run(self.root, 'h', recipe=':check/port')
+            report, path = runner.run(self.root, 'h', recipe=':system/network/check/port')
         self.assertEqual(report['reason_code'], 'host_disabled')
         self.assertIsNone(path)
         runtime.assert_not_called()
@@ -234,23 +234,23 @@ def execute(session, *, context, timeout):
         self.settings['recipe_sources'] = {'external': {'path': str(self.root / 'recipes')}}
         self.write()
         session = Mock()
-        report, _ = runner.run(self.root, 'h', recipe='external:check/port', assignments=['port=1'], session_class=Mock(return_value=session))
+        report, _ = runner.run(self.root, 'h', recipe='external:system/network/check/port', assignments=['port=1'], session_class=Mock(return_value=session))
         self.assertEqual(report['recipe']['source_name'], 'external')
         self.settings['hosts']['h']['connection'] = {'hostname': 'synthetic.example'}
         self.write()
         session.connect.side_effect = RuntimeError('private-value')
         with patch.object(runner, 'connection_plan', return_value=[{'hostname': 'synthetic.example'}]), \
                 patch('host_runtime.connection_plan', return_value=[{'hostname': 'synthetic.example'}]):
-            report, path = runner.run(self.root, 'h', recipe=':check/port', assignments=['port=1'], session_class=Mock(return_value=session))
+            report, path = runner.run(self.root, 'h', recipe=':system/network/check/port', assignments=['port=1'], session_class=Mock(return_value=session))
         self.assertEqual(report['status'], 'failed')
         self.assertNotIn('private-value', path.read_text())
         self.assertFalse(report['hops'][0]['connected'])
 
     def test_inventory_cli_override_retains_inventory_contract(self):
-        config, _, _, _ = runner.preflight(self.root, 'h', 'inventory/system', assignments=['command_timeout_seconds=7'])
+        config, _, _, _ = runner.preflight(self.root, 'h', 'system/inventory/overview', assignments=['command_timeout_seconds=7'])
         self.assertEqual(config.execution_recipe['effective_vars']['command_timeout_seconds'], 7)
         with self.assertRaises(ops.ConfigError):
-            runner.preflight(self.root, 'h', 'inventory/system', assignments=['port=8888'])
+            runner.preflight(self.root, 'h', 'system/inventory/overview', assignments=['port=8888'])
 
     def test_runtime_version_callable_and_system_exit_fail_with_cleanup(self):
         for suffix in ("globals()['VERSION'] = '2.0.0'", 'execute = None'):
@@ -279,7 +279,7 @@ def execute(session, *, context, timeout):
         factory.assert_not_called()
 
     def test_batch_input_failure_keeps_other_hosts_independent(self):
-        self.settings['hosts']['h']['recipes'] = [{'recipe': ':check/port', 'vars': {'port': 8888}}]
+        self.settings['hosts']['h']['recipes'] = [{'recipe': ':system/network/check/port', 'vars': {'port': 8888}}]
         self.write()
         status, report, _, factory = self.cli('--host', 'h', 'other', '--threads', '1')
         self.assertEqual(status, 1)
@@ -315,7 +315,7 @@ class InputParsingTests(unittest.TestCase):
 
 class PortRecipeTests(unittest.TestCase):
     def setUp(self):
-        self.directory = ops.REPOSITORY_RECIPES/'check/port'
+        self.directory = ops.REPOSITORY_RECIPES/'system/network/check/port'
         self.recipe = runpy.run_path(str(self.directory/'main.py'))
 
     def test_bundled_port_inspection_and_probe_states(self):

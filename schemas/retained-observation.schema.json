@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Registered inventory-observations 0.1.0",
-  "$ref": "../recipes/inventory/system/retention.schema.json",
-  "$comment": "Last modified: 2026-10-19 11:57:21"
+  "$ref": "../recipes/system/inventory/overview/retention.schema.json",
+  "$comment": "Last modified: 2026-10-19 15:20:06"
 }

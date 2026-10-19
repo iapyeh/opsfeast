@@ -4,7 +4,7 @@
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
 
-For retention-backed content use [the data/content guide](retention.md#content-authors-and-offline-reports) and bundled report/retention. ReportContext now supplies retention.query/show alongside vars, inputs and artifact_dir. Reports record retention_sources with selections, source IDs/times and digests. Read-only queries need no raw files or host selection; renderer dependencies and authorization still apply.
+For retention-backed content use [the data/content guide](retention.md#content-authors-and-offline-reports) and bundled feast/report/retention-summary. ReportContext now supplies retention.query/show alongside vars, inputs and artifact_dir. Reports record retention_sources with selections, source IDs/times and digests. Read-only queries need no raw files or host selection; renderer dependencies and authorization still apply.
 
 ## Interactive recipes workbench
 
@@ -16,7 +16,7 @@ Run `python -B tools/opsfeast.py recipes` without a subcommand to open the Textu
 python -B tools/opsfeast.py recipes list --checkout-only
 python -B tools/opsfeast.py recipes list --root /path/to/feast --json
 python -B tools/opsfeast.py recipes list --profile main --query port --kind operation
-python -B tools/opsfeast.py recipes show report/summary --profile main --json
+python -B tools/opsfeast.py recipes show feast/report/execution-summary --profile main --json
 python -B tools/opsfeast.py recipes list --profile main --html /path/to/new-catalog.html
 ```
 
@@ -31,9 +31,9 @@ Terminal catalog/show/index/jobs/execution views use tabulate tables; non-TTY ou
 ## Execute a selected recipe
 
 ```sh
-python -B tools/opsfeast.py recipes run check/port --root /path/to/feast --host rms3 --var port=8888
-python -B tools/opsfeast.py recipes run inventory/system --profile main --group web --threads 2
-python -B tools/opsfeast.py recipes run report/summary --profile main --input /path/to/raw-result.json
+python -B tools/opsfeast.py recipes run system/network/check/port --root /path/to/feast --host rms3 --var port=8888
+python -B tools/opsfeast.py recipes run system/inventory/overview --profile main --group web --threads 2
+python -B tools/opsfeast.py recipes run feast/report/execution-summary --profile main --input /path/to/raw-result.json
 ```
 
 Operational recipes use the existing [run_recipe.py interface](recipe-execution.md), including host/group/all/exclude selection, typed --var/--vars-file, timeout, progress, source/host overrides, concurrency and cleanup. The facade calls the same execution implementation. Use the selected recipe's operations and input interpretation, not CLI exit status alone, to assess service health. No target/source selection grants execution scope.
@@ -86,10 +86,10 @@ results show returns the selected raw JSON; --html presents its fields as escape
 
 ## Portable recipe bundles
 
-The example assumes a reviewed user-authored report/summary in that Feast, with non-Bundle attribution and a LICENSE file. Built-in Bundle archives are not accepted by external unpack.
+The example assumes a reviewed user-authored feast/report/execution-summary in that Feast, with non-Bundle attribution and a LICENSE file. Built-in Bundle archives are not accepted by external unpack.
 
 ```sh
-python -B tools/opsfeast.py recipes pack :report/summary --root /path/to/feast \
+python -B tools/opsfeast.py recipes pack :feast/report/execution-summary --root /path/to/feast \
   --file recipe.yaml --file main.py --file README.md --file LICENSE --file examples/input.synthetic.json \
   --output /path/to/new-report.zip
 python -B tools/opsfeast.py recipes unpack /path/to/new-report.zip --destination /path/to/new-candidate
@@ -104,7 +104,7 @@ Unpack validates exact file inventory, normalized paths, ordinary files, unique 
 ## Saved jobs and recurring work
 
 ```sh
-python -B tools/opsfeast.py recipes jobs save weekly report/summary --profile main \
+python -B tools/opsfeast.py recipes jobs save weekly feast/report/execution-summary --profile main \
   --input /path/to/raw-result.json --var 'title=Weekly results'
 python -B tools/opsfeast.py recipes jobs list --profile main
 python -B tools/opsfeast.py recipes jobs show weekly --profile main
@@ -119,7 +119,7 @@ Saving a job grants no future execution permission and establishes no scheduler.
 
 ## Verification and extension
 
-[Public synthetic tests](../tests/test_recipe_experience.py) cover source/ID selection, static discovery, HTML escaping, offline execution/inputs/status/quality/artifacts, paths, raw-result queries, bundle integrity/boundaries, independent Feast reuse and saved reruns/content drift. Existing operation tests remain applicable through the shared execution implementation. No real host or external scheduler was used. The [summary recipe](../recipes/report/summary/README.md) is an initial plain view; users' agents can author richer versioned report recipes with reviewed renderers and complete synthetic examples/tests. Keep new data/artifact/backends discoverable through canonical contracts and the recipe skill. UI/MCP/web integrations can consume these functions and JSON contracts but are not implemented by this CLI.
+[Public synthetic tests](../tests/test_recipe_experience.py) cover source/ID selection, static discovery, HTML escaping, offline execution/inputs/status/quality/artifacts, paths, raw-result queries, bundle integrity/boundaries, independent Feast reuse and saved reruns/content drift. Existing operation tests remain applicable through the shared execution implementation. No real host or external scheduler was used. The [summary recipe](../recipes/feast/report/execution-summary/README.md) is an initial plain view; users' agents can author richer versioned report recipes with reviewed renderers and complete synthetic examples/tests. Keep new data/artifact/backends discoverable through canonical contracts and the recipe skill. UI/MCP/web integrations can consume these functions and JSON contracts but are not implemented by this CLI.
 
 ## Inspect details after a compact run
 
@@ -158,8 +158,8 @@ Legacy inventory and report files need no migration or connection.
 Results list/detail and human HTML exports display zoned instants in controller local
 time as YYYY-MM-DD HH:MM:SS. TUI Details uses the same policy as history. Raw show JSON,
 --json, Original output and saved/index timestamps retain their original precision and
-offsets. Bundled report/summary 0.1.2 applies this policy to HTML only, preserving its
+offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTML only, preserving its
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 15:24:36_

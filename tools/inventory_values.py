@@ -3,7 +3,7 @@ from pathlib import Path
 import runpy
 from opsfeast import ConfigError
 
-_contract = runpy.run_path(str(Path(__file__).resolve().parents[1] / 'recipes/inventory/system/details.py'))
+_contract = runpy.run_path(str(Path(__file__).resolve().parents[1] / 'recipes/system/inventory/overview/details.py'))
 FIELDS = _contract['FIELDS']
 empty = _contract['empty']
 csv_text = _contract['csv_text']

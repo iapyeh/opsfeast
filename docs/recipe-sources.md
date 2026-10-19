@@ -1,5 +1,7 @@
 # Recipe sources, inputs and execution controls
 
+Recipe paths support more than two levels; follow [classification and location](recipe-taxonomy.md). Current bundle selectors include system/network/check/port and system/inventory/overview. Prefix the complete classified path with : for the selected profile or NAME: for a registered external source. Moving the bundle does not move an existing profile/external copy. Old bundle paths are removed; exact historical retention references remain unchanged.
+
 OpsFeast resolves recipes from the checkout, the selected profile, or explicitly registered local source directories. Registration, configuration checking, installation/update and execution are separate operations. Registering a clone does not authenticate it, install its dependencies, update Git or authorize its code to execute.
 
 Use the [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) for the runner. It requires one explicit inventory-system or compatible Python-session recipe and explicit targets; it does not execute a host's whole recipes list or arbitrary incompatible programs. Read [general execution](recipe-execution.md) for descriptor 0.3.0, the execute contract and raw results. Host lists define configuration selections and per-recipe input overrides. A CLI recipe bypasses unrelated selectors, but uses the first matching selector's vars.
@@ -29,9 +31,9 @@ hosts:
     connection: {hostname: host1.example}
     group: web
     recipes:
-      - inventory/system
-      - ":inventory/system"
-      - recipe: community:inventory/system
+      - system/inventory/overview
+      - ":system/inventory/overview"
+      - recipe: community:system/inventory/overview
         vars:
           command_timeout_seconds: 10
 ```
@@ -42,10 +44,10 @@ External source entries accept path (required), enabled (boolean, default true) 
 
 | Reference | Root |
 | --- | --- |
-| inventory/system | This OpsFeast checkout's recipes/ |
-| :inventory/system | The selected management/profile root's recipes/ |
-| community:inventory/system | The registered community path |
-| recipes/inventory/system | Legacy YAML spelling for checkout content; CLI rejects the recipes/ prefix |
+| system/inventory/overview | This OpsFeast checkout's recipes/ |
+| :system/inventory/overview | The selected management/profile root's recipes/ |
+| community:system/inventory/overview | The registered community path |
+| recipes/system/inventory/overview | Legacy YAML spelling for checkout content; CLI rejects the recipes/ prefix |
 | ./recipes/custom-system | Legacy instance-relative form; YAML uses its declaring file directory, CLI uses the management root |
 
 Quote a YAML reference starting with `:` for clarity. A qualified reference requires a nonempty relative path; absolute paths, unknown source names and escapes are errors. There is no fallback to another source. Neither `:` nor named-source paths depend on where an included YAML file lives. Init does not copy checkout recipes or automatically create the optional profile recipes directory.
@@ -54,8 +56,8 @@ A recipes item can be a string for one recipe or a mapping with exactly one of r
 
 ```yaml
 recipes:
-  - community:inventory/system
-  - directory: community:inventory
+  - community:system/inventory/overview
+  - directory: community:system/inventory
     recursive: true
     vars: {command_timeout_seconds: 10}
   - glob: company:inventory/*
@@ -123,7 +125,7 @@ Source/host skips occur before runtime loading or connections and return result_
 ## Exclude hosts for one invocation
 
 ```sh
-python -B tools/run_recipe.py inventory/system --all --exclude host9 host10
+python -B tools/run_recipe.py system/inventory/overview --all --exclude host9 host10
 ```
 
 --exclude requires --all and accepts exact configured host IDs, without group guessing or wildcard expansion. Unknown excluded IDs fail before execution. Disabled hosts are filtered first; CLI exclusions then remove enabled targets. Repeated names do not duplicate entries, and settings are not rewritten. excluded_hosts lists host_disabled or cli_excluded reasons. If no target remains, the CLI returns 1, prints an empty hosts list and exclusion evidence, and reports the empty selection on stderr.
@@ -136,4 +138,4 @@ Use check to validate configuration/selection without executing code. To inspect
 
 Synthetic tests cover sources, include restrictions, path/symlink boundaries, scalar/mapping selection, input precedence/types/isolation, disable/exclude behavior and inventory collection through mocked Sessions. Real SSH, native privilege transitions and third-party recipe behavior remain unverified.
 
-_Last modified: 2026-10-13_
+_Last modified: 2026-10-19 15:24:36_

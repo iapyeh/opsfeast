@@ -2,7 +2,7 @@
 
 ## Declared retention and bundled content
 
-In a namespace-enabled profile this read recipe retains declared safe scalar result fields through host-values 0.2.0 with dataset/field semantics. The separate bundled vault author can render a per-host state page. Failed/mock results are excluded; missing values remain unavailable. Read [vault setup and output rules](../../../docs/host-vault.md). Profiles without namespace retain raw-only behavior. Read [retention query/content interfaces](../../../docs/retention.md); Markdown templates are not part of the recipe contract.
+In a namespace-enabled profile this read recipe retains declared safe scalar result fields through host-values 0.2.0 with dataset/field semantics. The separate bundled vault author can render a per-host state page. Failed/mock results are excluded; missing values remain unavailable. Read [vault setup and output rules](../../../../../docs/host-vault.md). Profiles without namespace retain raw-only behavior. Read [retention query/content interfaces](../../../../../docs/retention.md); Markdown templates are not part of the recipe contract.
 
 This minimal Core example uses descriptor 0.3.0 and python-recipe 0.1.0. The runner supplies a per-execution Recipe; the entrypoint uses its scoped session and returns the existing common result fields. It never reloads credentials, opens another connection or closes the runner's transport.
 
@@ -11,8 +11,8 @@ This minimal Core example uses descriptor 0.3.0 and python-recipe 0.1.0. The run
 Use Python 3.11+, PyYAML 6.0.3, matching SSHScript import/distribution 5.0.0 and a configured enabled host with POSIX id. Within authorized connection/command scope, from the trusted checkout:
 
 ```sh
-python -B tools/opsfeast.py inspect-recipe check/identity --json
-python -B tools/run_recipe.py check/identity --profile main --host host-01
+python -B tools/opsfeast.py inspect-recipe system/account/check/identity --json
+python -B tools/run_recipe.py system/account/check/identity --profile main --host host-01
 ```
 
 Inspection is static and connection-free. Execution connects and runs id -un, with the runner timeout as the default command budget. No sudo/su or platform initialization is requested by this recipe. Runner stores raw JSON under observations; inventory retention is not used; namespace-enabled profiles save the declared scalar dataset.
@@ -23,8 +23,8 @@ Success data.account is the observed nonempty single-line account name, not proo
 
 ## Implementation choice and extension
 
-[main.py](main.py) uses SSHScript 5.0.0 through the Core facade for one argv command. Core supplies connection planning/lifecycle and a default finite command budget. This fits the existing execution foundation without another backend. See [Core API](../../../docs/core-api.md), [recipes skill](../../../skills/opsfeast-recipes/SKILL.md), and [public tests](../../../tests/test_core_delivery.py). For privileged recipes use explicit Recipe sudo/su scopes and document authorized accounts/effects; do not simply run sudo inside a command string.
+[main.py](main.py) uses SSHScript 5.0.0 through the Core facade for one argv command. Core supplies connection planning/lifecycle and a default finite command budget. This fits the existing execution foundation without another backend. See [Core API](../../../../../docs/core-api.md), [recipes skill](../../../../../skills/opsfeast-recipes/SKILL.md), and [public tests](../../../../../tests/test_core_delivery.py). For privileged recipes use explicit Recipe sudo/su scopes and document authorized accounts/effects; do not simply run sudo inside a command string.
 
 Synthetic runner/result tests and a temporary local credential-free execution are validation evidence. Remote SSH and native su/sudo are unverified; listed platforms are declared applicability, not all-platform execution evidence. Attribution is Bundle, MIT; include LICENSE when packaging.
 
-_Last modified: 2026-10-19 11:41:37_
+_Last modified: 2026-10-19 15:24:36_

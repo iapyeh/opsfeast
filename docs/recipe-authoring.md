@@ -1,14 +1,16 @@
 # Recipe authoring guide
 
+Before choosing a directory, read [recipe classification and location](recipe-taxonomy.md). Default user recipes go in `<selected-profile-root>/recipes/<domain>/<optional-subdomains>/<action>/<name>/`; shared recipes use an explicitly registered external root. The corresponding selectors are :classified/path and company:classified/path. Intermediate folders are categories, not recipes; only leaves carry recipe.yaml. Keep descriptor identity stable across a classification-only move and review dependent selectors/jobs/consumers.
+
 For retained-data handlers and converters, use [retention consumers](retention-consumers.md). Declare consumer subscriptions separately from the producing recipe, reuse the read-only retention reader and existing output/artifact interfaces, and enable reviewed local programs explicitly. Multi-recipe content belongs in a consumer or offline report, with preserved source/status/quality context. No runner edits or recipe-side subscriber list is needed.
 
 Develop retention against saved raw with [retention ingest and explicit read-only deletion](retention-replay.md). New general runs capture a data-definition snapshot before execution; --recipe-dir explicitly tests revised definitions without importing recipe code. Declare access_mode accurately before collection: changing a descriptor later cannot make old write/unknown results deletable. Source UUID and raw digest have separate roles.
 
 ## Host-centered retention and state pages
 
-Recipe creators define and produce retention; they do not embed vault presentation in it. Declare [host-values 0.2.0](retention.md#recipe-owned-data-declarations) for safe scalar fields with explicit units and meaningful dataset/field descriptions. Declare access_mode accurately; runner snapshots contain data declarations only. Inventory/system 0.3.1 owns its [inventory-observations declaration, schema and normalizer](../recipes/inventory/system/README.md#recipe-owned-retention-contract); all inventory descriptors must declare access_mode and retention, independently of raw output. New structured contracts need reviewed registry support, not arbitrary candidate-code loading. Keep credentials out of both field values and descriptions.
+Recipe creators define and produce retention; they do not embed vault presentation in it. Declare [host-values 0.2.0](retention.md#recipe-owned-data-declarations) for safe scalar fields with explicit units and meaningful dataset/field descriptions. Declare access_mode accurately; runner snapshots contain data declarations only. system/inventory/overview 0.3.1 owns its [inventory-observations declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract); all inventory descriptors must declare access_mode and retention, independently of raw output. New structured contracts need reviewed registry support, not arbitrary candidate-code loading. Keep credentials out of both field values and descriptions.
 
-Content authors use `context.retention.query/show` in offline python-report programs to combine multiple recipe/host/time selections. The [bundled example](../recipes/report/retention/README.md) writes Markdown and HTML, preserving full evidence and source times. Vault uses the same public data interface; `markdown_template` is removed from recipe retention. Update public tests, schemas, discovery metadata, capability catalogs and relevant skills with usable contract changes.
+Content authors use `context.retention.query/show` in offline python-report programs to combine multiple recipe/host/time selections. The [bundled example](../recipes/feast/report/retention-summary/README.md) writes Markdown and HTML, preserving full evidence and source times. Vault uses the same public data interface; `markdown_template` is removed from recipe retention. Update public tests, schemas, discovery metadata, capability catalogs and relevant skills with usable contract changes.
 
 ## Reuse product capabilities before authoring new machinery
 
@@ -70,7 +72,7 @@ my-recipe/
   tests/
 ```
 
-Include `schemas/`, assets and supporting files when needed. The layout above is a Python example; other tools may use different entrypoints. Follow public SSHScript guidance when using Python with SSHScript or .spy. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract, including its SSHScript Session requirement; other Python recipe IDs use [descriptor 0.3.0 and Python-session 0.1.0](recipe-execution.md). The [inventory-system descriptor](../recipes/inventory/system/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
+Include `schemas/`, assets and supporting files when needed. The layout above is a Python example; other tools may use different entrypoints. Follow public SSHScript guidance when using Python with SSHScript or .spy. For inventory-system, use the documented descriptor 0.2.0 platform entrypoints and shared output contract, including its SSHScript Session requirement; other Python recipe IDs use [descriptor 0.3.0 and Python-session 0.1.0](recipe-execution.md). The [inventory-system descriptor](../recipes/system/inventory/overview/recipe.yaml) provides useful documentation fields; use that ID only for system inventory and review custom implementation code before execution.
 
 Document at least the following:
 
@@ -118,4 +120,4 @@ Directory selection only establishes configuration selection, not executability.
 
 For inventory and Python-session recipes, use the [source/input contract](recipe-sources.md#variables-and-implementation-context). Declare accepted names/types/defaults under inputs.variables, and accept collect(session, report, timeout, facts, *, context=None) when vars are supplied. Access context.vars and pass context to helpers explicitly. Each invocation receives a deep copy after shallow default/source/host overlay; do not use process globals, automatic environment injection or secret-bearing logs. Invocation inputs overlay default/source/host values through --vars-file then --var; see [execution inputs](recipe-execution.md#select-a-recipe-and-provide-inputs). General recipes access context.vars in execute; legacy inventory implementations remain supported without vars. Source registration and static validation do not establish trust or execution authorization.
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

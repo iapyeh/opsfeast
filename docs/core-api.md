@@ -212,7 +212,7 @@ def execute(recipe):
     }
 ```
 
-See the complete bundled [check/identity example](../recipes/check/identity/README.md). Runner validates static signature/version/inputs without importing recipes during discovery, creates one Recipe per host execution over its existing connection, invalidates the scope on return/error, and closes the connection. Outputs use the same strict result fields/statuses as python-session. Raw files additionally record installation identity, selected profile (or null for an unregistered root), run ID and privilege evidence. Cleanup failure overrides claimed success. Generic results without a retention declaration retain explicit no_retention_adapter; no inventory identity/sudo preflight is added.
+See the complete bundled [system/account/check/identity example](../recipes/system/account/check/identity/README.md). Runner validates static signature/version/inputs without importing recipes during discovery, creates one Recipe per host execution over its existing connection, invalidates the scope on return/error, and closes the connection. Outputs use the same strict result fields/statuses as python-session. Raw files additionally record installation identity, selected profile (or null for an unregistered root), run ID and privilege evidence. Cleanup failure overrides claimed success. Generic results without a retention declaration retain explicit no_retention_adapter; no inventory identity/sudo preflight is added.
 
 Existing python-session 0.1.0 `execute(session, *, context, timeout)`, python-report and inventory contracts remain unchanged. Migrate deliberately by changing the declared contract and entrypoint together; no signature guessing or automatic conversion. New recipes receive Recipe; legacy context does not suddenly acquire root/config/service fields.
 
@@ -288,4 +288,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-19 14:55:28_
+_Last modified: 2026-10-19 15:24:36_

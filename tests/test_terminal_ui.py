@@ -36,7 +36,7 @@ class TransportTests(unittest.TestCase):
             self.assertIsNone(events.decode(line))
 
     def test_argument_forwarding_and_readonly_catalog_json(self):
-        args = ['inventory/system', '--host', 'host-01', '--var', 'label=--tui-value', '--tui']
+        args = ['system/inventory/overview', '--host', 'host-01', '--var', 'label=--tui-value', '--tui']
         child = ui.child_arguments(Path('run_recipe.py'), args)
         self.assertEqual(child, args[:-1] + ['--verbose'])
         self.assertEqual(ui.child_arguments(Path('run_recipe.py'), ['x', '--quiet', '--tui']), ['x', '--quiet'])
@@ -52,7 +52,7 @@ class TransportTests(unittest.TestCase):
     def test_nonterminal_rejection_before_execution(self):
         with patch.object(sys.stdin, 'isatty', return_value=False), patch.object(ui, 'make_app_class') as factory, contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(opsfeast.main(['check', '--tui']), 2)
-            self.assertEqual(run_recipe.main(['inventory/system', '--host', 'h', '--tui']), 2)
+            self.assertEqual(run_recipe.main(['system/inventory/overview', '--host', 'h', '--tui']), 2)
             factory.assert_not_called()
 
     def test_missing_dependency_before_execution(self):
@@ -94,7 +94,7 @@ class TransportTests(unittest.TestCase):
                     patch.object(run_recipe, 'run', return_value=(report, root / 'result.json')), \
                     patch('access_check.check_many', return_value={'status': 'success', 'hosts': []}), \
                     contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-                status = run_recipe.main(['inventory/system', '--all', '--root', str(root), '--threads', '2', '--verbose'])
+                status = run_recipe.main(['system/inventory/overview', '--all', '--root', str(root), '--threads', '2', '--verbose'])
         self.assertEqual(status, 1)
         self.assertEqual([r['status'] for r in json.loads(out.getvalue())['hosts']], ['success', 'success'])
         decoded = [events.decode(line) for line in err.getvalue().split('\n')]
