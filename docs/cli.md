@@ -2,7 +2,7 @@
 
 ## Inventory property queries and periodic jobs
 
-Recipe 0.4.0 supplies `opsfeast.py inventory describe`, `query`, `run`, `configure`, `status`, `dispatch`, `latest` and `cron`. Read the [canonical inventory job guide](inventory-jobs.md) for exact selectors, examples, settings/override precedence, effects, outputs, source times, YANG mapping, platform limits and exit codes. `query` defaults to no storage; `--save` records an immediate comparison through retention/consumers without changing the schedule. `dispatch --dry-run` performs no host operations; ordinary dispatch only runs explicitly enabled inventory.yaml targets, with no retries. `cron install` manages a marked current-user minute entry and enables no hosts. This scheduler differs from retention-consumer dispatch and saved invocation jobs. New job observations use a separate contract; old history is not converted or deleted.
+Recipe 0.4.0 supplies `opsfeast.py inventory describe`, `query`, `run`, `configure`, `status`, `dispatch`, `latest`, `runs list/show` and `cron`. Read the [canonical inventory job guide](inventory-jobs.md) for exact selectors, examples, settings/override precedence, effects, outputs, source times, YANG mapping, platform limits and exit codes. `query` defaults to no storage; `--save` records an immediate comparison through retention/consumers without changing the schedule. `dispatch --dry-run` performs no host operations; ordinary dispatch requires inventory.yaml opt-in plus enabled host/source/resolved recipe policy, with no retries. `cron install` manages a marked current-user minute entry and enables no hosts. This scheduler differs from retention-consumer dispatch and saved invocation jobs. New job observations use a separate contract; old history is not converted or deleted.
 
 
 ## Read what a command does
@@ -376,7 +376,7 @@ python -B tools/opsfeast.py recipes run RECIPE --group web production --threads 
 python -B tools/opsfeast.py recipes run RECIPE --all --exclude host9 host10 --json
 ```
 
-RECIPE is a required positional reference: a checkout-relative path (omit recipes/), :profile-path, a registered source:path, or an unambiguous catalog ID. Explicit management-root-relative ./recipes/PATH and authorized absolute recipe paths resolve through the same source boundaries. Paths never fall back to a different source. See [source and input rules](recipe-sources.md) and [general execution](recipe-execution.md).
+RECIPE is a required positional reference: a checkout-relative path (omit recipes/), equivalent bundle:PATH, :profile-path, a registered source:path, or an unambiguous catalog ID. Explicit management-root-relative ./recipes/PATH and authorized absolute recipe paths resolve through the same source boundaries. Paths never fall back to a different source. See [source and input rules](recipe-sources.md) and [general execution](recipe-execution.md).
 
 | Option | Behavior |
 | --- | --- |
@@ -386,13 +386,19 @@ RECIPE is a required positional reference: a checkout-relative path (omit recipe
 | --root ROOT / --profile NAME | Mutually exclusive environment selection; default is the selected profile. |
 | --timeout SECONDS | Positive finite connection-stage/command timeout, default 30; no whole-run deadline. |
 | --threads N | Positive host concurrency; default min(8, logical CPU count), fallback 1. |
-| --vars-file JSON_FILE / --var NAME=VALUE | Typed recipe inputs; defaults → source → matching host → file → CLI. Values are not included in provenance. |
+| --vars-file JSON_FILE / --var NAME=VALUE | Typed inputs; defaults/source/resolved recipe settings/invocation merge as [documented](recipe-sources.md#variables-and-implementation-context). Inventory separately saves nonsecret Attention policy. |
 | --verbose / --quiet | Force or suppress stderr stages/heartbeats; mutually exclusive. Terminal progress is automatic. |
 | --json | Explicit machine-readable output; terminal default uses shared tables. |
 | --input FILE | Offline report input only; report recipes do not accept host selectors. |
 | --tui | Optional Textual display through opsfeast.py; same operation and authorization. |
 
 Unknown targets, an empty selection and invalid connection configuration fail before execution. Disabled explicit hosts/sources are skipped without connection. Host/group members are deduplicated in merged configuration order; groups do not inherit settings. Each host owns its Session and result. Per-host execution failures do not stop other selected hosts; JSON output preserves selection order. Recipe result, retention receipt and content_update are separate; failure/partial/skipped status or failed retention/content produces a nonzero exit. Saved raw results are under observations/ and can be inspected with recipes results list/show/detail without reconnecting.
+
+Bulk/group recipe execution requires host, source and exact-reference recipe enabled; default recipe state is false. New init enables bundled inventory in default.recipes. Explicit --host overrides the three enabled gates for that target, while disabled jump hosts and invalid recipe/vars/path checks still fail. Host diagnostics retain their own rules. An entirely disabled group/all selection may complete as a journaled all-skipped batch without execution; an entirely CLI-excluded selection still fails.
+
+An all-skipped recipe batch still returns its independent content_update receipt; publication failure makes that invocation exit nonzero even when no host executed. Scheduled skipped targets retain their configured recipe reference.
+
+In namespace-enabled profiles, operational CLI execution returns observation_run_id and persists one batch covering target outcomes, including failures with no raw report. Read it with `inventory runs list --profile main --json` or `inventory runs show RUN_UUID --profile main --json`; both accept --root instead. Successful reads return 0 independently of saved run status. Dry runs, no-store queries, offline reports, replay and rebuild do not create runs. See [batch schema, storage and limits](observation-runs.md).
 
 For system/inventory/overview, recipes run, inventory run and scheduled dispatch all call the same [job collector](inventory-jobs.md). Use inventory query for property/job selection without storage, or add --save for a retained comparison. The former standalone runner entrypoint, --recipe alias, --dryrun/--force flags and snapshot collection path have been removed. Use check-access for explicitly authorized connection/privilege diagnostics, and inventory dispatch --dry-run for a schedule preview without connection. These are different scopes.
 
@@ -728,10 +734,10 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-Current records use records/current-<title>.md, contain data and a Latest report link, and omit Collection metadata. Both current and historical observation pages start with a Contents index; only historical reports end with Collection metadata, including identity/coverage warnings and queries. The redundant Field observations table is removed. Missing sections say No data was collected; observed empty collections remain No entries reported. Read structured retention records for original field states and timestamps. Rebuild regenerates owned pages without collecting again or rewriting retention; old manual links require deliberate updates. Current title collisions across sources fail publication without overwriting evidence.
+Current inventory records use records/SUMMARY.md and topic-based current-title pages with icons, optional DGMO and nonempty Attention. They omit uncollected fields and redundant columns while keeping zero/false/observed empty lists; full yearly reports preserve detailed samples, units, source times/states and collection metadata. Packages/services are complete and name-sorted. See [current/report rendering](host-vault.md#recipe-retention-and-markdown); omitted values are not verified absence or health. Rebuild updates owned output without collection or retention changes, while unmanaged notes and deliberate manual links remain user-owned.
 
 Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
 
 Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
 
-_Last modified: 2026-10-20 14:32:24_
+_Last modified: 2026-10-20 23:32:54_

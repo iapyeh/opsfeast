@@ -28,4 +28,8 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [Inventory-values 0.1.0](inventory-values.schema.json) defines nullable system/hardware/storage/network/software/services sections. Raw and retained schemas accept this optional extension with inventory_contract_version; retained records also require collection_scope. Older records remain valid, while strict consumers must update before accepting extended records. See [access, data semantics, CSV and migration](../docs/inventory-access.md). CSV is an inspection format with empty missing cells, not the JSON exchange contract.
 
-_Last modified: 2026-10-19 17:03:32_
+## Observation execution run contract
+
+[observation-run.schema.json](observation-run.schema.json) defines explicit batch membership, per-host outcomes, major job categories, source record/baseline links and saved Attention policy/findings. It is independent of recipe data contracts and ordinary retention selection/export. [Run lifecycle/storage/read APIs](../docs/observation-runs.md) define semantic validation and immutable completed runs beyond JSON Schema. Retention event/consumer schemas also accept retention.run.updated, whose record_id identifies a run rather than an observation.
+
+_Last modified: 2026-10-20 23:10:05_

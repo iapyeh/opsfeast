@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast observation execution run 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "run_id",
+    "namespace",
+    "anchor_host",
+    "recipe_reference",
+    "started_at",
+    "completed_at",
+    "status",
+    "trigger",
+    "targets"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "namespace": {
+      "type": "string",
+      "minLength": 1
+    },
+    "anchor_host": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recipe_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "running",
+        "success",
+        "partial",
+        "failed"
+      ]
+    },
+    "trigger": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "host_id",
+          "icon",
+          "jobs",
+          "requested_jobs",
+          "recipe_reference",
+          "status",
+          "record_id",
+          "retention_status",
+          "reason_code",
+          "attention",
+          "baseline_record_ids"
+        ],
+        "properties": {
+          "host_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icon": {
+            "type": "string"
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "success",
+                    "partial",
+                    "failed",
+                    "skipped",
+                    "pending"
+                  ]
+                }
+              }
+            }
+          },
+          "requested_jobs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "success",
+                    "partial",
+                    "failed",
+                    "skipped",
+                    "pending"
+                  ]
+                }
+              }
+            }
+          },
+          "recipe_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "success",
+              "partial",
+              "failed",
+              "skipped"
+            ]
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retention_status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attention": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "policy",
+                  "findings",
+                  "assessed",
+                  "disabled"
+                ],
+                "properties": {
+                  "policy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "enabled",
+                      "thresholds"
+                    ],
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "thresholds": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "filesystem_used_percent",
+                          "cpu_utilization_percent",
+                          "memory_available_percent",
+                          "load_5m_per_cpu"
+                        ],
+                        "properties": {
+                          "filesystem_used_percent": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "warning",
+                              "critical"
+                            ],
+                            "properties": {
+                              "warning": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "critical": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            }
+                          },
+                          "cpu_utilization_percent": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "warning",
+                              "critical"
+                            ],
+                            "properties": {
+                              "warning": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "critical": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            }
+                          },
+                          "memory_available_percent": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "warning",
+                              "critical"
+                            ],
+                            "properties": {
+                              "warning": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "critical": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            }
+                          },
+                          "load_5m_per_cpu": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "warning",
+                              "critical"
+                            ],
+                            "properties": {
+                              "warning": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "critical": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "findings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "message",
+                        "severity",
+                        "observed_at",
+                        "baseline_at"
+                      ],
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "severity": {
+                          "enum": [
+                            "warning",
+                            "critical"
+                          ]
+                        },
+                        "observed_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "baseline_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "assessed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "disabled": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_record_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-20 17:51:56"
+}

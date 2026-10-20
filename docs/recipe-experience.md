@@ -7,7 +7,7 @@ Inventory recipe 0.4.0 additionally supplies [internal collection jobs and a min
 
 Read [recipe attribution and installation defaults](recipe-attribution.md) for author name/contacts, declared license, Unknown placeholders and reserved Bundle policy. Before creating a user recipe, copy `python -B tools/recipe_identity.py defaults` into its descriptor. MIT pack allowlists include LICENSE; external unpack rejects Bundle before creating a candidate.
 
-For retention-backed content use [the data/content guide](retention.md#content-authors-and-offline-reports) and bundled feast/report/retention-summary. ReportContext now supplies retention.query/show alongside vars, inputs and artifact_dir. Reports record retention_sources with selections, source IDs/times and digests. Read-only queries need no raw files or host selection; renderer dependencies and authorization still apply.
+For retention-backed content use [the data/content guide](retention.md#content-authors-and-offline-reports) and bundled feast/report/retention-summary. ReportContext supplies retention.query/show and explicit batch readers retention.runs()/run(run_id) alongside vars, inputs and artifact_dir; see [run data](observation-runs.md). Reports record retention_sources with selections, source IDs/times and digests. Read-only queries need no raw files or host selection; renderer dependencies and authorization still apply.
 
 ## Interactive recipes workbench
 
@@ -165,4 +165,4 @@ offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTM
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-20 11:22:14_
+_Last modified: 2026-10-20 23:10:05_

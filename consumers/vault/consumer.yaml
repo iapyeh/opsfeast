@@ -9,4 +9,6 @@ subscriptions:
     selector: {}
   - event: retention.operation.created
     selector: {}
-# Last modified: 2026-10-19 14:55:28
+  - event: retention.run.updated
+    selector: {}
+# Last modified: 2026-10-20 17:51:56

@@ -40,7 +40,7 @@ class CurrentPageTests(unittest.TestCase):
         self.assertNotIn('## Collection metadata', current.read_text())
         self.assertNotIn('Source identifiers', current.read_text())
         self.assertIn('## Collection metadata', history.read_text())
-        self.assertIn('Latest report', current.read_text())
+        self.assertIn('Source report', current.read_text())
         self.assertNotIn(record['record_id'], current.read_text())
 
     def test_latest_link_resolves_to_the_selected_report_across_years(self):
@@ -71,7 +71,9 @@ class CurrentPageTests(unittest.TestCase):
         current, history = self.pages(latest)
         self.assertEqual(len(list(current.parent.glob('current-*.md'))), 1)
         self.assertIn(history.name, current.read_text())
-        self.assertIn('Hostname | Not available', current.read_text())
+        self.assertNotIn('| Hostname |', current.read_text())
+        self.assertIn('Some data was not obtained', current.read_text())
+        self.assertIn('Hostname | Not available', history.read_text())
         self.assertTrue(self.pages(first)[1].exists())
         self.assertTrue(history.exists())
         self.assertEqual(len(store.query(self.root)['records']), 2)
@@ -167,9 +169,12 @@ class CurrentPageTests(unittest.TestCase):
         record['data']['inventory'] = inventory_values.empty()
         for current in (False, True):
             text = content.render_observation(record, current=current)
-            network = text.split('## Network\n', 1)[1].split('## ', 1)[0]
-            self.assertIn('No data was collected for this section.', network)
-            self.assertNotIn('| Interfaces |', network)
+            if current:
+                self.assertNotIn('## Network\n', text)
+            else:
+                network = text.split('## Network\n', 1)[1].split('## ', 1)[0]
+                self.assertIn('No data was collected for this section.', network)
+                self.assertNotIn('| Interfaces |', network)
 
     def test_missing_collection_and_successful_empty_collection_differ(self):
         record = self.retain()
@@ -177,7 +182,7 @@ class CurrentPageTests(unittest.TestCase):
         record['data']['inventory']['network'].update(
             interfaces=None, routes=[], dns_servers=[{'address': '192.0.2.53'}])
         text = content.render_observation(record, current=True)
-        self.assertIn('### Interfaces\n\nNo data was collected.', text)
+        self.assertNotIn('### Interfaces', text)
         self.assertIn('### Routes\n\nNo entries reported.', text)
         self.assertIn('192.0.2.53', text)
 
@@ -188,7 +193,7 @@ class CurrentPageTests(unittest.TestCase):
         record['data']['observations']['hostname'].update(value=None, status='unavailable')
         original = copy.deepcopy(record)
         text = content.render_observation(record, current=True)
-        self.assertIn('| Hostname | Not available |', text)
+        self.assertNotIn('| Hostname |', text)
         self.assertNotIn('contradictory-nested-value', text)
         self.assertEqual(record, original)
 
@@ -196,12 +201,12 @@ class CurrentPageTests(unittest.TestCase):
         record = self.retain()
         record['data'] = {'status': 'partial', 'observations': {
             'reachable': {'value': None, 'status': 'unavailable', 'unit': '', 'description': 'Reachability'}}}
-        self.assertIn('No data was collected for this section.', content.render_observation(record, current=True))
+        self.assertIn('No collected values are available', content.render_observation(record, current=True))
         record['data']['observations']['reachable'].update(value=False, status='success')
         record['data']['observations']['count'] = {'value': 0, 'status': 'success', 'unit': 'items', 'description': 'Count'}
         text = content.render_observation(record, current=True)
         self.assertIn('| Reachable | No | success |', text)
-        self.assertIn('| Count | 0 | success |', text)
+        self.assertIn('| Count | 0 items | success |', text)
 
 
 if __name__ == '__main__':

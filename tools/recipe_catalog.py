@@ -90,6 +90,8 @@ def catalog(root=None, query=None, kind=None):
 
 
 def choose(root, selector):
+    if selector.startswith('bundle:'):
+        selector = selector[len('bundle:'):]
     data = catalog(root)
     exact = [item for item in data['recipes'] if item['reference'] == selector]
     candidates = exact or [item for item in data['recipes'] if item['id'] == selector]
@@ -102,7 +104,7 @@ def choose(root, selector):
             # Disabled references require no descriptor/code reads and cannot connect.
             return {'reference':info['reference'], 'kind':'operation', 'runnable':True,
                     'descriptor':{}, 'collection':None, 'consumers':[]}
-        directory = info['scope'].path(info['pattern'], info['origin']).resolve()
+        directory = (info['scope'] or Validator(info['root'])).path(info['pattern'], info['origin']).resolve()
         candidates = [item for item in data['recipes'] if Path(item['directory']).resolve()==directory and item['source']==info['name']]
     if not candidates:
         raise ConfigError('recipe not found in active catalog; check sources and use an explicit reference')

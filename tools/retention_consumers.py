@@ -17,7 +17,7 @@ from uuid import uuid4
 from opsfeast import ConfigError, REPOSITORY_ROOT, definition_path, read_yaml, resolve_root
 
 VERSION = '0.1.0'
-EVENTS = {'retention.observation.created', 'retention.observation.deleted', 'retention.operation.created'}
+EVENTS = {'retention.observation.created', 'retention.observation.deleted', 'retention.operation.created', 'retention.run.updated'}
 ID = re.compile(r'[a-z][a-z0-9_-]{0,62}')
 _ACTIVE = threading.local()
 

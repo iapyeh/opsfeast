@@ -186,6 +186,19 @@ class HostGroupsTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             profile.reload()
         self.assertEqual(profile.hosts.groups()['backup']['label'], 'UPDATED')
+        self.write({'groups': {'backup': {'recipes': {':custom': {'vars': {
+            'api_token': 'SYNTHETIC-GROUP-SECRET'}}}, 'hosts': {'h': LOCAL}}}})
+        profile.reload()
+        self.assertNotIn('SYNTHETIC-GROUP-SECRET', json.dumps(profile.hosts.groups()))
+        self.assertNotIn('SYNTHETIC-GROUP-SECRET', json.dumps(profile.inspect()))
+        with patch('opsfeast.resolve_root', return_value=self.root), \
+                patch('opsfeast.load_profiles', return_value={'default_profile': 'main'}):
+            self.assertNotIn('SYNTHETIC-GROUP-SECRET', json.dumps(hosts_snapshot()))
+        # Explicit dump remains the raw configuration interface.
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(main(['dump', 'groups', str(self.root)]), 0)
+        self.assertIn('SYNTHETIC-GROUP-SECRET', output.getvalue())
 
 
 if __name__ == '__main__':

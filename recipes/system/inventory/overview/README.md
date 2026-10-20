@@ -54,4 +54,12 @@ Identity is scoped to namespace and configured host ID unless administratively a
 
 tools/run_recipe.py, --recipe, --dryrun/--force and the former snapshot execution route are removed. Use opsfeast.py recipes run or inventory query/run. Existing pinned job fingerprints change and require explicit review/recreation; no user files are rewritten.
 
-_Last modified: 2026-10-20 11:22:14_
+## Execution policy, Attention and batch evidence
+
+Configure this recipe with its exact reference system/inventory/overview (bundle: is equivalent), not its descriptor ID inventory-system. default/group/host recipes mappings accept enabled/vars; enabled defaults false, and new init enables inventory in default. Bulk/group/scheduled collection requires enabled host/source/recipe, plus schedule opt-in/due checks. Explicit inventory/recipe --host overrides the three enabled gates for that target; it does not permit disabled jump hosts or invalid vars/paths. See [configuration examples and precedence](../../../../docs/recipe-sources.md).
+
+The optional attention object input defines enabled and thresholds for filesystem_used_percent, cpu_utilization_percent, memory_available_percent and load_5m_per_cpu. The inventory owner validates numeric ranges and direction before connecting; current views evaluate current settings while [completed run snapshots](../../../../docs/observation-runs.md) preserve actual policy/findings/source and baseline evidence. Read [defaults, example YAML and limits](../../../../docs/inventory-jobs.md#attention-thresholds); no findings does not establish full coverage/health. Changing recipe.enabled does not delete old data or hide pages.
+
+Saved manual execution joins one explicit batch; dispatch owns one batch for due work. Unsaved queries, dry runs, raw replay and content rebuild do not create batches or infer old membership. Read inventory runs list/show or Core retention.runs()/run(run_id) without connecting. Raw reports include observation_run_id and the validated nonsecret attention_policy outside the recipe-normalized payload, so existing registered normalizer/schema digests remain unchanged. Vault's [records/reports/batch views](../../../../docs/host-vault.md) are separate optional content over these contracts.
+
+_Last modified: 2026-10-20 23:27:35_

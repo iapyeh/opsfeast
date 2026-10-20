@@ -312,7 +312,8 @@ class ProfileTests(unittest.TestCase):
                 patch('access_check.check_many', return_value={'status': 'success', 'hosts': []}), \
                 contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(recipe_main(['system/inventory/overview', '--host', 'localhost', '--profile', 'inventory']), 0)
-        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
+        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[], explicit_host=True, observation_run_id=run.call_args.kwargs['observation_run_id'])
+        self.assertIsNotNone(run.call_args.kwargs['observation_run_id'])
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_profile_boundaries_and_result_directories(self):

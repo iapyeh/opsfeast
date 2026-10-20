@@ -140,17 +140,29 @@ def save_receipt(path, report):
                                'error_type':type(exc).__name__}
 
 
-def preflight(root, host, recipe, cli_vars=None, assignments=()):
+def preflight(root, host, recipe, cli_vars=None, assignments=(), *, explicit_host=True):
     config = Validator(root)
     config.load(config.root / 'hosts.yaml')
     config.check_connections()
     if host not in config.hosts:
         raise ConfigError(f'unknown host ID: {host}')
+    def check_jumps(target):
+        for jump in config.edges[target]:
+            if not config.hosts[jump].get('enabled',True):
+                raise ConfigError('disabled jump host cannot participate in a connection')
+            check_jumps(jump)
+    check_jumps(host)
     info = config.recipe_location(str(recipe), config.root / 'hosts.yaml', cli=True,
-                                  check_exists=config.hosts[host].get('enabled', True))
-    if not config.hosts[host].get('enabled', True) or not info['enabled']:
-        config.execution_recipe = dict(info, reason_code='host_disabled' if not config.hosts[host].get('enabled', True) else 'source_disabled')
+                                  check_exists=config.hosts[host].get('enabled', True) or explicit_host)
+    reason = ('host_disabled' if not config.hosts[host].get('enabled', True) else
+              'source_disabled' if not info['enabled'] else
+              'recipe_disabled' if not config.recipe_options(host, info['reference']).get('enabled', False) else None)
+    if reason and not explicit_host:
+        config.execution_recipe = dict(info, reason_code=reason)
         return config, None, None, None
+    if explicit_host:
+        config.hosts[host]['enabled'] = True
+    info['scope'] = info['scope'] or Validator(info['root'])
     directory = info['scope'].path(info['pattern'], info['origin'])
     metadata = mapping(read_yaml(info['scope'].inside(directory / 'recipe.yaml')), 'recipe.yaml')
     if metadata.get('id') == 'inventory-system':
@@ -269,11 +281,11 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     save_receipt(path, report)
     return report, path
 
-def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli_vars=None, assignments=()):
+def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli_vars=None, assignments=(), explicit_host=True, observation_run_id=None):
     """Execute a reviewed explicit recipe; inventory always uses the job collector."""
     timeout = positive_timeout(timeout)
     progress('validating configuration and recipe')
-    config, directory, digest, output_dir = preflight(root, host, recipe, cli_vars, assignments)
+    config, directory, digest, output_dir = preflight(root, host, recipe, cli_vars, assignments, explicit_host=explicit_host)
     if directory is None:
         info = config.execution_recipe
         return {'host_id': host, 'status': 'skipped', 'reason_code': info['reason_code'],
@@ -282,7 +294,8 @@ def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli
     if config.execution_recipe['metadata'].get('collection'):
         from inventory_jobs import collect_host
         report = collect_host(root, host, save=True, reference=recipe, timeout=timeout,
-                              session_class=session_class, cli_values=cli_vars, assignments=assignments)
+                              session_class=session_class, cli_values=cli_vars, assignments=assignments,
+                              explicit_host=explicit_host, observation_run_id=observation_run_id)
         return report, Path(report['result_path']) if report.get('result_path') else None
     if session_class is None:
         progress('checking execution runtime')
@@ -316,7 +329,7 @@ def select_hosts(root, selectors, all_hosts=False, exclude=None, excluded=None):
         if kind == 'host':
             if name not in config.hosts:
                 raise ConfigError(f'unknown host ID: {name}')
-            matches = [name]  # Explicit disabled hosts produce a skipped result.
+            matches = [name]  # Explicit targets override enabled flags, including disabled hosts.
         elif kind == 'group':
             if name not in groups:
                 raise ConfigError(f'unknown group: {name}')
@@ -360,16 +373,30 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     try:
         hosts = select_hosts(root, inv['targets'], inv['all'], inv['exclude'], excluded)
     except ConfigError:
-        if excluded:
-            print(json.dumps({'hosts':[], 'excluded_hosts':excluded}))
-        raise
+        if excluded and all(item['reason_code']=='host_disabled' for item in excluded):
+            hosts = []
+        else:
+            if excluded:
+                print(json.dumps({'hosts':[], 'excluded_hosts':excluded}))
+            raise
     values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
-    workers = min(inv['threads'] or default_threads(), len(hosts))
+    workers = max(1, min(inv['threads'] or default_threads(), len(hosts)))
     show_progress = not inv['quiet'] and (inv['verbose'] or sys.stdout.isatty())
     icons = {}
     if sys.stdout.isatty() and not json_output:
         from access_check import host_icons
         icons = host_icons(root, hosts + [item['host'] for item in excluded])
+    from observation_runs import start, record_result, finish
+    from retention_store import settings as retention_settings, refresh_content
+    config = Validator(root)
+    config.load(config.root / 'hosts.yaml')
+    omitted = [e for e in excluded if e['reason_code']=='host_disabled' and e['host'] not in hosts]
+    planned = hosts + [e['host'] for e in omitted]
+    run_id = start(root, [{'host_id':h, 'icon':config.hosts[h].get('icon', '')} for h in planned], recipe) if retention_settings(root) else None
+    if run_id:
+        for entry in omitted:
+            record_result(root,run_id,entry['host'],{'status':'skipped','reason_code':'host_disabled'})
+    explicit = {name for kind, name in inv['targets'] if kind == 'host'}
     emit('selected', hosts=hosts)
     def execute(target):
         index, host = target
@@ -377,7 +404,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
         with reporting(show_progress, label, host=host):
             try:
                 report, path = run(root, host, inv['timeout'], recipe=recipe,
-                                   cli_vars=values, assignments=inv['assignments'])
+                                   cli_vars=values, assignments=inv['assignments'],
+                                   explicit_host=host in explicit, observation_run_id=run_id)
                 progress(f"completed: {report['status']} ({report.get('reason_code', 'unknown')})")
                 emit('result', host=host, status=report['status'], reason_code=report.get('reason_code'),
                      result_path=str(path) if path else None, retention=report.get('retention'),
@@ -394,17 +422,32 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     else:
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix='recipe-host') as pool:
             results = list(pool.map(execute, targets))
+    if run_id:
+        for host, (report, _) in zip(hosts, results):
+            record_result(root, run_id, host, report)
+        finish(root, run_id)
+        content = refresh_content(root)
+        for report, path in results:
+            # A later batch refresh must not erase an earlier per-host failure.
+            if report.get('content_update',{}).get('status') != 'failed':
+                report['content_update'] = content
+            if path:
+                save_receipt(path,report)
     summaries = []
     for host, (report, path) in zip(hosts, results):
         summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'access', 'actor') if key in report}
         summary.update(host=host, result_path=str(path) if path else None)
         summaries.append(summary)
-    result = {'hosts': summaries} if inv['all'] or len(hosts)>1 else dict(summaries[0])
+    result = {'hosts': summaries} if inv['all'] or len(hosts)!=1 else dict(summaries[0])
+    if run_id:
+        result['observation_run_id'] = run_id
+        if not summaries:
+            result['content_update'] = content
     if excluded:
         result['excluded_hosts'] = excluded
     print_report(result, json_output=json_output, kind='execution', icons=icons,
                  recipe=recipe, host=hosts[0] if len(hosts)==1 else None, ensure_ascii=True)
-    return 0 if all(r['status']=='success' and
+    return 0 if (not run_id or content.get('status') != 'failed') and all(r['status']=='success' and
         not (r.get('access') or {}).get('degraded') and
         (r.get('retention') or {}).get('status')!='failed' and
         (r.get('content_update') or {}).get('status')!='failed' for r in summaries) else 1

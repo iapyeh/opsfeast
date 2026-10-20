@@ -6,7 +6,7 @@ For namespace-enabled profiles, the logical host identity is the namespace in `f
 
 User agents must reread this guide after every OpsFeast release update, even if unchanged or previously read, to learn the installed release's current host schema and semantics before resuming work. See the [mandatory release schema reading rule](skill-updates.md#required-schema-reread-after-a-release-update). Reading completion is not verified.
 
-這份文件定義 OpsFeast 初版的主機設定規則，供使用者與 AI agent 建立及維護管理環境。**目前提供管理目錄初始化、設定檢查與指定主機連線測試工具；另有支援 inventory-system 跨平台實作的 runner，詳見 [recipe 指南](../recipes/system/inventory/overview/README.md)。通用 recipe 執行器與獨立 hostname recipe 尚未實作。** 下列 YAML 定義初版設定格式，不代表可以執行遠端操作。
+This is the host configuration reference for setup, inspection and authorized recipe/inventory execution. See [recipe contracts](recipe-execution.md); configuration checks do not connect or execute code.
 
 New to this configuration? Start with [Connect your first host](first-host.md) for a minimal example and practical cases. This document remains the complete reference.
 
@@ -26,11 +26,11 @@ feasts/main/
 │   ├── bastions.yaml
 │   └── production.yaml
 ├── observations/
-├── records/
-└── runs/
+├── retention/
+└── vault/
 ```
 
-`hosts.yaml` 與其他 YAML 保存設定；可執行 recipes 直接使用 OpsFeast checkout 內的 `recipes/`；`observations/` 保存觀測；`records/` 保存整理後的主機紀錄與人工筆記；`runs/` 保存執行狀態。後三者的詳細格式待定，不是本文件新增的資料契約。
+`hosts.yaml` and included YAML store configuration; profile-root `observations/` stores raw collection results, `retention/` stores authoritative structured data and explicit batches, and `vault/` stores generated content plus human notes. See [storage](retention.md) and [Vault layout](host-vault.md).
 
 公開的 OpsFeast repository 保存工具與合成範例。真實主機設定、憑證與結果留在使用者的管理環境。使用公開 recipes 時，直接更新 OpsFeast checkout 即可，不必複製到管理根目錄。`recipes/...` 固定指向執行工具所在 checkout，不依目前工作目錄或 YAML 所在位置，也不回退到 instance 內的同名副本。自訂 recipe 可另存於管理目錄，用 `./recipes/...` 明確選取；既有副本不會被刪除。
 
@@ -83,7 +83,7 @@ kind: opsfeast
 
 `init` 建立 `hosts/`、`observations/`、`records/`、`runs/` 與 `hosts.yaml` 樣板，接著檢查設定。重複執行只補缺少的目錄或入口檔案，保留既有內容；既有 scaffold 項目是符號連結或型別不符時拒絕初始化。它不建立未實作的 hostname recipe，也不產生 include 子檔案。
 
-新建的樣板自動包含 `localhost`（本機執行）與一個 `host-01` 遠端範例；可設定欄位集中在註解區。遠端 hostname 使用非空的合成值 `host.example`，`recipes: []` 保持空清單，方便尚未選取 recipes 時檢查通過。使用前替換連線值，再加入 checkout 內已有的 recipe 選取。空清單表示沒有選取；非空選取沒有匹配結果仍是錯誤。
+New scaffolds include localhost and a synthetic host-01 using host.example. Both have an empty recipe mapping, while default.recipes explicitly enables system/inventory/overview for inheritance. Replace synthetic connection values before execution. Recipe enabled defaults false elsewhere; an empty host mapping inherits settings rather than disabling them. Existing hosts.yaml files are preserved, not silently updated.
 
 `check` 唯讀載入入口與 include，檢查 YAML 語法、重複鍵、欄位與型別、重複主機 ID、缺少引用、跳板與 include 循環、recipe 路徑邊界及選取。錯誤輸出來源和引用鏈，不輸出 YAML 原文或變數值。成功退出碼為 0，錯誤為 1。`init` 保留既有設定後若檢查失敗，也回傳 1，讓使用者修正；不覆寫有問題的檔案。
 
@@ -264,12 +264,12 @@ hosts:
       port: 22
       user: operator
     recipes:
-      - recipe: recipes/system/inventory/hostname
+      system/inventory/overview: {enabled: true}
 ```
 
 `web-01` 是穩定的主機 ID，不是 DNS 位址，也不必等於主機實際設定的 hostname。IP 或連線方式改變時，維持相同 ID 可延續紀錄。
 
-Root fields include `include`, `hosts`, `recipe_sources` and the icon defaults described below. 主機欄位為 `connection`、`users`、`vars` 與 `recipes`。`connection` 必須存在；不需要帳號資料、變數或 recipe 選取時可以省略其餘欄位。跳板主機不必列出 recipes。
+Root fields include `include`, `hosts`, `groups`, `recipe_sources` and `default` (icon/user defaults and recipes). 主機欄位為 `connection`、`users`、`vars` 與 `recipes`。`connection` 必須存在；不需要帳號資料、變數或 recipe 選取時可以省略其餘欄位。跳板主機不必列出 recipes。
 
 ## ProxyCommand 連線
 
@@ -287,7 +287,7 @@ hosts:
       operator:
         password: "example-target-password"
     vars: {}
-    recipes: []
+    recipes: {}
 ```
 
 命令提供通往目標 SSH server 的標準輸入／輸出資料流。YAML 使用 snake_case 的 `proxy_command`；將來 runner 對應 SSHScript `Session.connect(..., proxyCommand=...)`。`check` 只檢查字串和欄位衝突，不啟動命令；`test-connection` 才會啟動代理並驗證連線與兩個固定指令。
@@ -310,7 +310,7 @@ hosts:
     connection:
       local: true
     vars: {}
-    recipes: []
+    recipes: {}
 ```
 
 `local: true` 表示執行工具的本機，將來 runner 使用 SSHScript 的本機 session，不建立 SSH 連線，也不需要本機啟用 SSH server。這個 connection 只接受 `local: true`，不能混用 hostname、port、user、identity_file、ssh_config_alias、proxy_command 或 via，也不能作為跳板。`hostname: localhost` 則仍代表透過 SSH 連線到 loopback，與本機執行不同。
@@ -351,7 +351,7 @@ hosts:
       via:
         host: bastion
     recipes:
-      - recipe: recipes/system/inventory/hostname
+      system/inventory/overview: {enabled: true}
 ```
 
 `via.host: bastion` 引用的是 `hosts.bastion.connection`。跳板本身可以再經由其他主機，形成多層跳板；引用必須存在，而且不能形成循環。引用不帶入該主機的 `users`、`vars` 或 `recipes`。
@@ -510,7 +510,7 @@ hosts:
       root: {}
     vars:
       environment: staging
-    recipes: []
+    recipes: {}
 ```
 
 Accounts accept optional password, vars, sudo and sudo-password. Read the [inventory access policy](inventory-access.md#configure-the-actual-connection-account) for the exact control-string and field-presence rules. `password` 必須是字串，數字或布林形狀的密碼應加引號；空字串與未提供密碼是不同資料，工具保留此差異。使用金鑰或不需要保存密碼時省略 `password`，不自行推定驗證方式。`vars` 必須是 mapping，保留各值的型別，與 host 層的 `vars` 分開保存，不自動繼承或合併。
@@ -546,14 +546,14 @@ hosts:
         config_path: /etc/nginx/nginx.conf
       maintenance_enabled: false
     recipes:
-      - recipe: recipes/system/inventory/hostname
+      system/inventory/overview: {enabled: true}
 ```
 
 `connection.user` 是 SSH 登入帳號；`vars.sudo.user` 是 sudo 切換到的目標帳號；`vars.sudo.password` 是 sudo 驗證所需的密碼，通常屬於登入帳號，而不是目標帳號。
 
 初版接受明文值。變數是 recipe 輸入，不自動加入觀測、主機紀錄或執行日誌。每個 recipe 應宣告必需變數及型別，執行前檢查；Inventory uses the [two-candidate selection](inventory-access.md#inventory-account-selection): login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority. Account sudo: false disables only that account's sudo; safe login fallback is automatic when root is unavailable.
 
-目標主機與跳板各自使用自己的變數，不自動繼承。也不自動把變數轉成環境變數或插入 shell 命令。Recipe 讀取變數的程式介面尚未定案。
+目標主機與跳板各自使用自己的變數，不自動繼承。也不自動把變數轉成環境變數或插入 shell 命令。Recipe inputs use declared `recipes.REFERENCE.vars`, read through `recipe.vars` or `context.vars`; host/account vars are separate settings, not implicit input inheritance.
 
 ## include：把主機清單分檔
 
@@ -586,7 +586,7 @@ hosts:
       via:
         host: bastion
     recipes:
-      - recipe: recipes/system/inventory/hostname
+      system/inventory/overview: {enabled: true}
 ```
 
 各檔案使用相同格式，也可以再 include 其他檔案。只負責 include 的檔案可以省略 `hosts`。全部載入後組成一份主機清單，才檢查跨檔案引用。
@@ -602,30 +602,43 @@ hosts:
 
 ## Recipe sources and selectors
 
-Read [recipe sources, inputs and execution controls](recipe-sources.md) for the canonical source/variable/disable/exclude contract. Root hosts.yaml may register recipe_sources with local path, enabled and vars; included files reference those registrations without defining new sources.
+Use the [canonical recipe policy guide](recipe-sources.md) for exact references, registrations, three-layer inheritance, typed inputs and runtime gates. `recipes` maps filesystem references directly to `enabled`/`vars`; descriptor IDs are not rewritten into configuration keys.
 
 ```yaml
-recipe_sources:
-  community:
-    path: ~/Download/recipes
-    vars: {command_timeout_seconds: 15}
-
-hosts:
-  host1:
-    enabled: true
-    connection: {hostname: host1.example}
+default:
+  recipes:
+    system/inventory/overview:
+      enabled: true
+      vars:
+        attention:
+          thresholds:
+            filesystem_used_percent: {warning: 80, critical: 85}
+groups:
+  production:
     recipes:
-      - system/inventory/overview
-      - ":system/inventory/overview"
-      - recipe: community:system/inventory/overview
-        vars: {command_timeout_seconds: 10}
+      system/inventory/overview:
+        vars:
+          attention:
+            thresholds:
+              filesystem_used_percent: {warning: 70}
+    hosts:
+      web-01:
+        connection: {hostname: web-01.example}
+        recipes:
+          system/inventory/overview:
+            vars:
+              attention:
+                thresholds:
+                  filesystem_used_percent: {warning: 65, critical: 70}
 ```
 
-Bare system/inventory/overview selects checkout recipes; :system/inventory/overview selects the profile's recipes/; community:system/inventory/overview selects the registered community root. Legacy recipes/... still selects the checkout, while ./ paths retain declaring-YAML semantics. String items select one recipe; mappings use exactly one of recipe/directory/glob, with optional vars and directory-only recursive. Same-directory duplicates retain their first selection/vars; duplicate IDs within one source fail, while separate sources have independent identities.
+Host leaves override ordered groups, which override default. The first resolved group wins overlapping leaves; nested mappings merge and lists replace. Recipes default disabled; new init explicitly enables bundled inventory in default. Group definitions may include recipes, including groups loaded from include files. Root default and source registrations belong only to the entry hosts.yaml.
 
-Include and output paths remain inside the management root. Recipe paths remain inside their chosen checkout/profile/registered source after symlink resolution; inventory entrypoints/helpers remain inside their recipe directory. Registration does not authorize installation or execution, and path validation is not a sandbox.
+`bundle:PATH` normalizes to bare `PATH`; `:PATH` selects profile recipes and `NAME:PATH` selects a registered source. No fallback or hyphen/ID conversion occurs. The same-layer bare/bundle duplicate is invalid. `check` reads every mapping reference/declared variable definition, even disabled/unused entries; unavailable recipes and invalid declared inputs fail. Recipe-specific parameter rules belong to the recipe.
 
-Source enabled: false yields explicit source_disabled skips, even when files are absent. Host enabled: false removes --all/group targets and disallows its use as a jump host; an explicit host request reports host_disabled. Fields/references remain validated. --all --exclude HOST ... excludes targets for one run and does not disable their use as jump hosts. See the [CLI reference](cli.md#operational-recipe-execution) for output and exit codes.
+Bulk recipe `--all`/`--group` and scheduled inventory require enabled host, source and recipe. Explicit recipe/inventory `--host` overrides those enabled flags for that target, while disabled jump hosts, invalid references/vars and path escapes remain errors. Existing diagnostic commands and standalone Core sessions retain their separate disabled-host controls. CLI exclusions do not disable an enabled jump host. Disabling execution never deletes retained data or hides current records; [Attention](inventory-jobs.md#attention-thresholds) has its own enabled flag.
+
+The existing host selection-list syntax remains readable for static selection/first-matching vars, but is not a bulk-execution opt-in. Prefer mappings for new settings; the [source guide](recipe-sources.md#existing-selection-lists) documents retained list behavior and migration actions.
 
 ## include 與變數插值不同
 
@@ -643,7 +656,7 @@ Agent 可以使用上述工具編寫及檢查設定，但必須說明檢查範�
 
 ## 尚待實作與定案
 
-Host configuration/path rules and inventory-system descriptor/result schema 0.2.0 are implemented, alongside platform initialization and requested account diagnostics. The [Python-session contract](recipe-execution.md) supports other reviewed Python recipe IDs and typed invocation inputs; arbitrary backend execution and other retained record schemas remain planned. Linux/FreeBSD have synthetic inventory coverage; macOS has local read-only validation. Real SSH and native su/sudo verification remain pending. Future changes must preserve existing configuration semantics or introduce an explicit version/option.
+Host configuration, recipe policy, typed invocation inputs, inventory jobs and independent retention/content contracts are implemented. See [execution](recipe-execution.md), [inventory jobs](inventory-jobs.md) and [retention](retention.md) for supported versions and verification. Arbitrary backend loading, a general scheduler and automatic recipe installation remain planned. New policy/run/current-view behavior has public synthetic coverage; it adds no native SSH/privilege-policy evidence. Development-stage configuration changes can be incompatible; review [migration notes](migration.md#recipe-policy-and-observation-runs) and update affected private settings explicitly.
 
 ## Diagnostic credential interpretation
 
@@ -768,4 +781,6 @@ and never prints password/vars fields. Recipe validation still runs; the compact
 table omits its count/skip columns. JSON and redirected text retain their detailed
 existing contracts. See [the CLI's exact display rules](cli.md#human-check-overview).
 
-_Last modified: 2026-10-20 11:22:14_
+Group recipe parameters follow the existing Core/UI sensitive-field masking rules in catalog snapshots. Explicit dump groups remains a raw configuration read and can expose private values; use the effective runner vars for execution and preserve private bindings.
+
+_Last modified: 2026-10-20 23:35:59_

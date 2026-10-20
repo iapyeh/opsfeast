@@ -136,16 +136,16 @@ class RecipeSourcesTests(unittest.TestCase):
         self.assertEqual(cfg.selected['h'], [])
         self.assertEqual(cfg.recipe_skips['h'][0]['reason_code'], 'source_disabled')
         with patch.object(runner, 'load_runtime') as runtime:
-            report, path = runner.run(self.root, 'h', recipe='community:missing')
+            report, path = runner.run(self.root, 'h', recipe='community:missing', explicit_host=False)
         runtime.assert_not_called()
         self.assertIsNone(path)
         self.assertEqual(report['status'], 'skipped')
         self.assertEqual(report['reason_code'], 'source_disabled')
         self.assertFalse((self.root / 'observations').exists())
-        code, result, _ = self.cli('community:missing', '--host', 'h')
+        code, result, _ = self.cli('community:missing', '--group', 'g')
         self.assertEqual(code, 1)
-        self.assertEqual(result['reason_code'], 'source_disabled')
-        self.assertIsNone(result['result_path'])
+        self.assertEqual(result['hosts'][0]['reason_code'], 'source_disabled')
+        self.assertIsNone(result['hosts'][0]['result_path'])
 
     def test_bundle_and_profile_disable_cover_all_reference_forms(self):
         self.data['recipe_sources'].update({'bundle': {'enabled': False}, 'profile': {'enabled': False}})
@@ -157,7 +157,7 @@ class RecipeSourcesTests(unittest.TestCase):
         self.assertEqual(len(cfg.recipe_skips['h']), 4)
         for ref in ('system/inventory/overview', ':missing', './recipes/missing', str(BUNDLE.resolve())):
             with self.subTest(ref=ref), patch.object(runner, 'load_runtime') as runtime:
-                report, path = runner.run(self.root, 'h', recipe=ref)
+                report, path = runner.run(self.root, 'h', recipe=ref, explicit_host=False)
                 self.assertEqual(report['reason_code'], 'source_disabled')
                 self.assertIsNone(path)
                 runtime.assert_not_called()
@@ -188,7 +188,7 @@ class RecipeSourcesTests(unittest.TestCase):
                     with self.assertRaises(ops.ConfigError): self.config()
         self.data = original
         self.write()
-        for reference in ('bundle:system/inventory/overview', 'profile:system/inventory/overview'):
+        for reference in ('profile:system/inventory/overview',):
             with self.assertRaisesRegex(ops.ConfigError, 'unknown recipe source'):
                 runner.preflight(self.root, 'h', reference)
 
@@ -232,13 +232,13 @@ class RecipeSourcesTests(unittest.TestCase):
         with self.assertRaisesRegex(ops.ConfigError, 'undeclared'):
             prepare_vars(schema, {'other': 'private'}, {'token': 'private'})
 
-    def test_shallow_overlay_defaults_and_deep_copy(self):
+    def test_deep_overlay_defaults_and_deep_copy(self):
         schema = {'inputs': {'variables': {
             'options': {'type': 'object', 'default': {'a': 1, 'b': 2}},
             'names': {'type': 'array', 'default': ['x']}}}}
         source, host = {'options': {'a': 3, 'b': 4}}, {'options': {'a': 5}}
         values = prepare_vars(schema, source, host)
-        self.assertEqual(values['options'], {'a': 5})
+        self.assertEqual(values['options'], {'a': 5, 'b': 4})
         values['options']['a'] = 9
         values['names'].append('y')
         self.assertEqual(host['options']['a'], 5)
@@ -296,8 +296,8 @@ class RecipeSourcesTests(unittest.TestCase):
         self.assertEqual(omitted, [{'host': 'h', 'reason_code': 'host_disabled'}])
         self.assertEqual(runner.select_hosts(self.root, [('group', 'g')]), ['other'])
         code, result, _ = self.cli('system/inventory/overview', '--host', 'h')
-        self.assertEqual(code, 1)
-        self.assertEqual(result['reason_code'], 'host_disabled')
+        self.assertEqual(code, 0)
+        self.assertEqual(result['status'], 'success')
         self.data['hosts']['h']['connection'] = {'hostname': 'jump.example'}
         self.data['hosts']['other']['connection'] = {'hostname': 'target.example', 'via': {'host': 'h'}}
         self.write()
@@ -306,6 +306,8 @@ class RecipeSourcesTests(unittest.TestCase):
             ops.connection_plan(cfg, 'other', Mock())
 
     def test_cli_exclude_is_exact_and_keeps_excluded_jump_available(self):
+        self.data['default'] = {'recipes': {'system/inventory/overview': {'enabled': True}}}
+        self.write()
         code, report, _ = self.cli('system/inventory/overview', '--all', '--exclude', 'other', 'other')
         self.assertEqual(code, 0)
         self.assertEqual([r['host'] for r in report['hosts']], ['h'])

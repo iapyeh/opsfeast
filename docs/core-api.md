@@ -288,4 +288,10 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-19 15:24:36_
+## Read explicit execution batches
+
+`profile.retention.runs()` returns validated saved observation-run objects; `.run(run_id)` reads one full UUID. Both are read-only, record source/digest evidence and work independently of generated Vault pages. Offline report contexts expose the same methods. Query/show continue to address observation/operation records, not batches. See [run contract, storage, examples and failure states](observation-runs.md). Batch producer helpers remain checkout services, not new Core session/authorization methods. Standalone Core connect still refuses a disabled host; the explicit --host override is a recipe/inventory execution rule.
+
+Group catalogs can now contain recipe policy mappings. Core hosts.groups()/profile inspection and UI read models mask recognized sensitive fields in these nested parameters using the same rules as host snapshots. This is name-based masking, not a guarantee that arbitrary custom input values are nonsecret. Explicit CLI dump remains raw and must not be logged or shared inadvertently.
+
+_Last modified: 2026-10-20 23:35:59_

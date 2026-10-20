@@ -121,7 +121,7 @@ hosts:
         status, out, _, execute = self.cli(['system/inventory/overview', '--host', 'web-01', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual(json.loads(out)['status'], 'success')
-        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
+        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[], explicit_host=True, observation_run_id=None)
 
     def test_cli_multiple_groups_and_hosts_preserve_option_order(self):
         status, out, _, execute = self.cli(
@@ -138,14 +138,14 @@ hosts:
                 status, out, _, execute = self.cli(['system/inventory/overview', '--root', str(self.root), *targets])
                 self.assertEqual(status, 0)
                 self.assertEqual(json.loads(out)['status'], 'success')
-                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
+                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[], explicit_host=targets[0]=='--host', observation_run_id=None)
 
     def test_all_one_host_still_uses_batch_summary(self):
         (self.root / 'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
         status, out, _, execute = self.cli(['system/inventory/overview', '--all', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual([r['host'] for r in json.loads(out)['hosts']], ['h'])
-        execute.assert_called_once_with(self.root, 'h', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
+        execute.assert_called_once_with(self.root, 'h', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[], explicit_host=False, observation_run_id=None)
 
 
     def test_cli_all_with_profile_and_root(self):

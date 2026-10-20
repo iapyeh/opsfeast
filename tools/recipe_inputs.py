@@ -107,8 +107,8 @@ def prepare_vars(metadata, source_vars, host_vars, cli_vars=None):
         if 'default' in spec:
             validate_value(name, spec, spec['default'])
             defaults[name] = spec['default']
-    # Deliberately shallow overlay, followed by a deep copy to isolate threads.
-    values = copy.deepcopy({**defaults, **source_vars, **host_vars, **(cli_vars or {})})
+    from recipe_settings import merge
+    values = merge(merge(merge(defaults, source_vars), host_vars), cli_vars or {})
     plain_values(values, 'recipe variables')
     if set(values) - set(definitions):
         raise ConfigError('recipe vars contain undeclared inputs; declare inputs.variables')

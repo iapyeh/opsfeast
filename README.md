@@ -1,5 +1,7 @@
 # OpsFeast
 
+Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and optional DGMO views](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
+
 For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). Recipe 0.4.0 supports immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
 
 
@@ -288,4 +290,4 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-20 14:32:24_
+_Last modified: 2026-10-20 23:10:05_

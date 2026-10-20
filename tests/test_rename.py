@@ -147,6 +147,7 @@ class RenameTests(unittest.TestCase):
         shutil.copytree(source, tools, dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(source.parent / 'opsfeast', self.checkout / 'opsfeast', ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(source.parent / 'consumers', self.checkout / 'consumers', ignore=shutil.ignore_patterns('__pycache__'))
+        shutil.copytree(source.parent / 'recipes', self.checkout / 'recipes', ignore=shutil.ignore_patterns('__pycache__'))
         for args in (['init'], ['profiles'], ['init']):
             result = subprocess.run([sys.executable, '-B', str(tools / 'opsfeast.py'), *args],
                                     cwd='/', capture_output=True, text=True, timeout=10)

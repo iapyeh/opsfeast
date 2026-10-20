@@ -92,16 +92,45 @@ class VaultLayoutTests(unittest.TestCase):
         self.assertIn('../../hosts/database/node/README.md',
                       (self.root/'vault/groups/production/node.md').read_text())
 
-    def test_same_second_same_title_collision_keeps_all_retention_and_old_output(self):
+    def test_same_second_reports_use_ordinals_and_links_target_the_right_record(self):
         self.retain()
         before = {p:p.read_bytes() for p in (self.root/'vault').rglob('*.md')}
         report = raw()
         report['observations']['hostname']['value'] = 'different-node-name'
         receipt = store.retain(self.root, report)
         self.assertEqual(receipt['status'], 'stored')
-        self.assertEqual(receipt['content_update']['status'], 'failed')
-        self.assertEqual(len(store.query(self.root)['records']), 2)
-        self.assertEqual(before, {p:p.read_bytes() for p in before})
+        self.assertEqual(receipt['content_update']['status'], 'success')
+        records = store.query(self.root)['records']
+        self.assertEqual(len(records), 2)
+        reports = sorted((self.root/'vault/hosts/production/node/2026/reports').glob('*.md'))
+        self.assertEqual(len(reports), 2)
+        self.assertEqual(reports[0].name, '20261013000010-system-inventory-2.md')
+        self.assertEqual(reports[1].name, '20261013000010-system-inventory.md')
+        latest = max(records, key=lambda r: (r['observed_at'], r['record_id']))
+        page = (self.root/'vault/hosts/production/node/records'/content.latest_filename(latest)).read_text()
+        import re
+        from urllib.parse import unquote
+        link = next(link for link in re.findall(r'\]\(([^)]+)\)', page) if '/reports/' in link)
+        linked = self.root/'vault/hosts/production/node/records'/unquote(link)
+        self.assertIn(latest['record_id'], linked.read_text())
+        first_names = {p.name: p.read_text().split('_Last modified:')[0] for p in reports}
+        vault.rebuild(self.root)
+        self.assertEqual(first_names, {p.name:p.read_text().split('_Last modified:')[0] for p in reports})
+
+    def test_summary_index_and_resolved_host_icon_preserve_human_notes(self):
+        self.enable()
+        (self.root/'hosts.yaml').write_text('hosts:\n  node:\n    connection: {local: true}\n    group: [production]\n    icon: 🖥\n')
+        record=self.retain()
+        host=self.root/'vault/hosts/production/node'
+        summary=host/'records/SUMMARY.md'
+        self.assertTrue(summary.exists())
+        self.assertFalse((host/'records/README.md').exists())
+        self.assertIn('# 🖥 node',summary.read_text())
+        self.assertIn('# 🖥 node',(host/'records'/content.latest_filename(record)).read_text())
+        self.assertIn('(records/SUMMARY.md)',(host/'README.md').read_text())
+        (host/'README.md').write_text('Human notes remain intact.')
+        vault.rebuild(self.root)
+        self.assertEqual((host/'README.md').read_text(),'Human notes remain intact.')
 
     def test_operation_intent_and_result_keep_distinct_journal_paths(self):
         record = self.retain()

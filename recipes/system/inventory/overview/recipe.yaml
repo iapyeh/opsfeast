@@ -55,6 +55,8 @@ inputs:
   - command-timeout-seconds
   note: Use opsfeast.py inventory query/run or recipes run; no standalone runner.
   variables:
+    attention:
+      type: object
     collection_budget_seconds:
       type: number
       minimum: 0
@@ -99,4 +101,4 @@ runner:
   contract: inventory-jobs
   version: 0.1.0
   entrypoint: jobs.py
-# Last modified: 2026-10-20 14:34:31
+# Last modified: 2026-10-20 17:51:56

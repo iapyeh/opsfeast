@@ -90,12 +90,12 @@ def rebuild_unlocked(root):
     entries, index, hosts = build(root, runtime)
     # Structure indexes are platform-owned; observation pages belong to the bundled author.
     publish(root, 'structure', {'HOSTS.md': '\n'.join(index),
-            'overview/README.md': '\n'.join(index).replace('](hosts/', '](../hosts/')})
+            'overview/README.md': '\n'.join(index).replace('](hosts/', '](../hosts/').replace('](Observations/', '](../Observations/')})
     publish(root, 'bundled-retention', entries)
     for host in hosts:
         path = vault_checked(root, *host_location(runtime, host).split('/'), 'README.md')
         if not path.exists():
-            atomic(path, '# ' + text(host) + '\n\n[Known state](records/README.md)\n\nHuman notes may be added here.\n\n_Last modified: ' + format_time(now()) + '_\n')
+            atomic(path, '# ' + text(host) + '\n\n[Known state](records/SUMMARY.md)\n\nHuman notes may be added here.\n\n_Last modified: ' + format_time(now()) + '_\n')
     landing = vault_checked(root, 'README.md')
     if not landing.exists():
         atomic(landing, '# Feast host vault\n\n[All hosts](HOSTS.md)\n\n[Groups](groups/README.md)\n\nHuman notes may be added here.\n\n_Last modified: ' + format_time(now()) + '_\n')

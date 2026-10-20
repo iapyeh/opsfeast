@@ -419,6 +419,8 @@ class Validator:
         self.root = root.resolve(strict=True)
         if not self.root.is_dir():
             raise ConfigError('management root must be a directory')
+        self.default_recipes = {}
+        self.effective_recipes = {}
         self.default_host_icon = DEFAULT_HOST_ICON
         self.default_user_icon = DEFAULT_USER_ICON
         self.group_icon_defaults = {}
@@ -461,13 +463,16 @@ class Validator:
         if '://' in text:
             raise ConfigError('remote recipe URLs are not supported')
         path = Path(text)
-        info = {'name': 'repository', 'root': REPOSITORY_RECIPES, 'reference': text,
+        canonical_text = text[len('bundle:'):] if text.startswith('bundle:') else text
+        info = {'name': 'repository', 'root': REPOSITORY_RECIPES, 'reference': canonical_text,
                 **self.default_recipe_sources['bundle']}
         if ':' in text and not path.is_absolute() and not text.startswith(('./', '../')):
             name, relative = text.split(':', 1)
             if not relative or Path(relative).is_absolute() or relative.startswith('~'):
                 raise ConfigError('source-qualified recipe requires a nonempty relative path')
-            if name:
+            if name == 'bundle':
+                pattern = relative
+            elif name:
                 if name not in self.recipe_sources:
                     raise ConfigError(f'unknown recipe source: {name}')
                 info.update(self.recipe_sources[name], name=name)
@@ -532,7 +537,9 @@ class Validator:
             defaults = mapping(data.get('default', {}), f'{path}: default')
             if 'groups' in defaults:
                 raise ConfigError(f'{path}: default.groups has moved to top-level groups; move group icon definitions to groups.<id>.icon')
-            mapping(defaults, f'{path}: default', ('icon', 'users'))
+            mapping(defaults, f'{path}: default', ('icon', 'users', 'recipes'))
+            from recipe_settings import normalize
+            self.default_recipes = normalize(defaults.get('recipes', {}))
             icons = mapping(defaults.get('icon', {}), f'{path}: default.icon', ('host', 'user'))
             for kind in ('host', 'user'):
                 if kind in icons:
@@ -594,7 +601,7 @@ class Validator:
         for group, definition in definitions.items():
             string(group, f'{path}: group ID')
             where = f'{path}: groups.{group}'
-            definition = mapping(definition, where, ('label', 'description', 'icon', 'hosts'))
+            definition = mapping(definition, where, ('label', 'description', 'icon', 'hosts', 'recipes'))
             if group in self._group_definitions:
                 raise ConfigError(f'duplicate group {group}: {self.group_sources[group]} and {path}')
             label = string(definition.get('label', group), where + '.label')
@@ -606,7 +613,8 @@ class Validator:
             icons = mapping(definition.get('icon', {}), where + '.icon', ('host', 'user'))
             self._group_definitions[group] = {
                 'label': label, 'description': description,
-                'icon': {kind: validate_icon(value, f'{where}.icon.{kind}') for kind, value in icons.items()}}
+                'icon': {kind: validate_icon(value, f'{where}.icon.{kind}') for kind, value in icons.items()},
+                'recipes': __import__('recipe_settings').normalize(definition.get('recipes', {}))}
             self.group_sources[group] = path
         self._add_hosts(mapping(data.get('hosts', {}), f'{path}: hosts'), path)
         for group, definition in definitions.items():
@@ -635,6 +643,9 @@ class Validator:
         """Build one catalog and apply presentation after the whole include tree loads."""
         self.groups = copy.deepcopy(self._group_definitions)
         for definition in self.groups.values():
+            if not definition.get('recipes'):
+                definition.pop('recipes', None)
+        for definition in self.groups.values():
             definition['hosts'] = []
         self.group_icon_defaults = {group: definition['icon'] for group, definition in self.groups.items()}
         self.host_user_icons = {}
@@ -642,6 +653,13 @@ class Validator:
             host_config = copy.deepcopy(raw)
             path = self.sources[host]
             groups = group_names(host_config.get('group', []), f'{path}: {host}.group')
+            from recipe_settings import normalize, resolved
+            local = raw.get('recipes', {})
+            local_options = normalize(local) if isinstance(local, dict) else {}
+            if not isinstance(local, (dict, list)):
+                raise ConfigError('recipes must be a reference mapping or selection list')
+            self.effective_recipes[host] = resolved(self.default_recipes,
+                [self.groups.get(group, {}).get('recipes', {}) for group in groups], local_options)
             fallback = self.icon_default('host', groups)
             self.host_user_icons[host] = self.icon_default('user', groups)
             host_config['icon'] = validate_icon(host_config.get('icon', fallback), f'{path}: {host}.icon')
@@ -788,12 +806,31 @@ class Validator:
             raise ConfigError('recipe/directory does not exist')
         return [directory] if kind == 'recipe' else list(scope.descendants(directory, selector.get('recursive', False)))
 
+    def validate_recipe_settings(self, values, source):
+        where = str(source) + ": recipes"
+        for reference, options in values.items():
+            info = self.recipe_location(reference, source, check_exists=False)
+            scope = Validator(info['root'])
+            directory = scope.path(info['pattern'], info['origin'])
+            metadata = mapping(read_yaml(scope.inside(directory / 'recipe.yaml')), 'recipe.yaml')
+            from recipe_inputs import validate_value
+            definitions = metadata.get('inputs', {}).get('variables', {})
+            for name, value in options.get('vars', {}).items():
+                if name not in definitions:
+                    raise ConfigError(f'{where}: recipe vars contain undeclared inputs')
+                validate_value(name, definitions[name], value)
+
+
     def recipes(self, host, config):
         source = self.sources[host]
         where = f'{source}: {host}.recipes'
-        selectors = config.get('recipes', [])
+        selectors = config.get('recipes', {})
+        if isinstance(selectors, dict):
+            selectors = [ref for ref, opts in self.effective_recipes.get(host, {}).items() if opts.get('enabled', False)]
         if not isinstance(selectors, list):
-            raise ConfigError(f'{where}: expected a list')
+            raise ConfigError(f'{where}: expected a reference mapping or selection list')
+        self.validate_recipe_settings(self.effective_recipes.get(host, {}), source)
+
         selected, ids, entries, skipped = [], {}, [], []
         host_enabled = config.get('enabled', True)
         for selector in selectors:
@@ -833,8 +870,9 @@ class Validator:
         # CLI selects one concrete directory. Do not validate/expand unrelated
         # host selections; the first matching selector supplies its vars.
         selectors = self.hosts[host].get('recipes', [])
+        effective = self.recipe_options(host, selected_info['reference']).get('vars', {})
         if not isinstance(selectors, list):
-            return {}
+            return copy.deepcopy(effective)
         for raw in selectors:
             candidate = {'recipe': raw} if isinstance(raw, str) else raw
             if not isinstance(candidate, dict):
@@ -862,8 +900,16 @@ class Validator:
                 continue
             if matches:
                 selector, _ = self.recipe_selector(candidate, f'{self.sources[host]}: {host}.recipes')
-                return copy.deepcopy(selector.get('vars', {}))
-        return {}
+                return __import__('recipe_settings').merge(effective, selector.get('vars', {}))
+        return copy.deepcopy(effective)
+
+    def recipe_options(self, host, reference):
+        from recipe_settings import reference as canonical
+        try:
+            key = canonical(reference)
+        except ConfigError:
+            return {}
+        return copy.deepcopy(self.effective_recipes.get(host, {}).get(key, {}))
 
     def check_connections(self):
         identity_keys = set()
@@ -907,6 +953,9 @@ class Validator:
     def check(self):
         self.load(self.root / 'hosts.yaml')
         self.check_connections()
+        self.validate_recipe_settings(self.default_recipes, self.root / 'hosts.yaml')
+        for group, definition in self._group_definitions.items():
+            self.validate_recipe_settings(definition.get('recipes', {}), self.group_sources[group])
         for host, config in self.hosts.items():
             self.recipes(host, config)
         return self
@@ -944,6 +993,11 @@ TEMPLATE = '''# First host: read docs/first-host.md for minimal examples and tes
 #     description: Backup servers  # Defaults to an empty string.
 #     icon: {host: 🗂, user: 👩}
 #     hosts: {}  # Same host definitions as hosts below; backup becomes first group.
+default:
+  recipes:
+    system/inventory/overview:
+      enabled: true
+
 hosts:
   # Each host ID requires connection; icon resolves through defaults (built-in 🍎).
   # enabled, group, users, vars, recipes, identity_key, label and description are optional.
@@ -971,7 +1025,7 @@ hosts:
   #     #   hostname: jump.example
   #     #   port: 22
   #     #   user: operator
-  #   enabled: true  # Optional; false disables the host and its use as a jump host.
+  #   enabled: true  # False excludes bulk execution and use as a jump host; --host overrides only the target.
   #   group: web  # Optional; a string for one group or [web, production] for multiple.
   #   users:  # Optional account names, credentials and account-specific vars.
   #     operator:  # SSH login account selected by connection.user.
@@ -986,28 +1040,28 @@ hosts:
   #     sudo:
   #       user: root
   #       password: example-password
-  #   recipes:  # Optional; select recipe directories from the checkout.
-  #     - system/inventory/overview
-  #     # - recipe: community:system/inventory/overview
-  #     #   vars: {command_timeout_seconds: 15}
-  #     # Use ./recipes/... for custom recipes inside this management directory.
-  #     # Or select recipe directories with either of these entries:
-  #     # - directory: recipes/system/inventory
-  #     #   recursive: false  # Optional; only valid with directory.
-  #     # - glob: recipes/system/inventory/*
+  #   recipes:  # Exact references; host > first group > later groups > default.
+  #     system/inventory/overview:
+  #       enabled: true
+  #       vars: {command_timeout_seconds: 15}
+  #     community:system/network/check/port:
+  #       enabled: false
+  # Bare references and bundle: select the bundled recipes/ tree.
+  # Use :classified/path for this profile's recipes/ tree.
+  # Recipes default to disabled unless explicitly enabled through inheritance.
   # See docs/hosts-yaml.md in the OpsFeast repository for details.
   localhost:
     connection:
       local: true  # Execute locally without SSH; no hostname is required.
     users: {}
     vars: {}
-    recipes: []
+    recipes: {}
   host-01:
     connection:
       hostname: host.example
     users: {}
     vars: {}
-    recipes: []
+    recipes: {}
 # Optional split files, relative to this YAML:
 # include:
 #   - hosts/production.yaml

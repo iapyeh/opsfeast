@@ -1,95 +1,113 @@
 # Bundled host vault content application
 
-Inventory job observations 0.1.0 use the [job collection contract](inventory-jobs.md). Historical pages preserve group/sample times and probe evidence; current pages combine latest attempts per property, retaining mixed ages, identity warnings and source observation IDs. A failed latest attempt is a gap, not an old success. For this contract only, historical names add a short record digest after the time/title to preserve multiple manual samples in one second. Other observation naming rules below retain their scope. Consumers do not remap commands to YANG nodes or recollect during rebuild.
-
-
-Automatic publication is performed by the [bundled Vault consumer](../consumers/vault/README.md), registered as `builtin:vault` through the [consumer contract](retention-consumers.md). Its subscriptions are discoverable with `consumers list --recipe system/inventory/overview`. Failures are tracked per event/consumer and retried with `consumers dispatch vault`; explicit `vault rebuild` regenerates current content independently of delivery acknowledgements.
-
-Vault is the bundled application over [recipe retention](retention.md). The platform manages its structure, identity/path rules and output ownership. The bundled content author renders retained observations and operation evidence. User AI agents may create other content authors or use retention for web pages, graphs and reports without using vault.
+Vault is the bundled content application over [recipe retention](retention.md). Structured retention remains authoritative; generated Markdown and human notes live in `vault/`. The platform owns paths and publication, while the bundled author chooses readable views. Other reviewed content applications can consume the same data without Vault.
 
 ## Identity and configuration
 
-Open `<profile-root>/vault/` in a Markdown reader or Obsidian. No plugin, model or connection is needed. Logical namespace/host identity and all authoritative SQLite data belong to [retention](retention.md#storage-and-execution-phases). Vault contains content and human notes only. `feast.yaml` accepts `vault: {auto_refresh: false}` to disable automatic publication; default is true.
+Open `<profile-root>/vault/` in Obsidian or another Markdown reader. Reading tables requires no model, connection or plugin. The optional DGMO plugin renders `dgmo` fences; a DGMO MCP server is not required to generate these text definitions. Tables remain available when diagrams are unsupported. `feast.yaml` accepts `vault: {auto_refresh: false}` to disable automatic publication; it does not disable retention or change recipe selection.
+
+Host identity is namespace plus host ID. Primary group affects content routing, not identity or the independent annual SQLite archives. See [retention storage](retention.md#storage-and-execution-phases).
 
 ## Enable or migrate
 
-`opsfeast.py init NAME --namespace production --json` initializes data storage and the bundled vault without connecting or collecting. Namespace defaults to the saved namespace or first profile name. Reinitialization preserves it. There is no `vault migrate` command: the earlier SQLite-in-vault layout is incompatible and not moved automatically. Preserve the old profile and initialize a separate one, then use [retention replay](retention-replay.md) for selected raw results. Never delete old data or notes to enable initialization.
-
 ```sh
+python -B tools/opsfeast.py init main --namespace production --json
 python -B tools/opsfeast.py vault rebuild --profile main --json
 python -B tools/opsfeast.py vault groups --profile main --json
 python -B tools/opsfeast.py vault inspect --profile main --json
 ```
 
-All commands also accept `--root PROFILE_ROOT` instead of `--profile`. Rebuild refreshes local content and group links; groups only refreshes membership links. Inspect is read-only. Output is JSON, exit 0 success, 1 failure, 2 parsing error. `retention rebuild` rebuilds SQLite projections independently; `vault rebuild` never writes SQLite or executes recipes.
+All commands also accept `--root PATH` instead of `--profile`. Init preserves an existing namespace/configuration. Rebuild refreshes generated pages and group links without collecting or writing retention/run data; groups refreshes membership links only; inspect is read-only. Exit codes are 0 success, 1 failure, 2 argument error. The old SQLite-in-vault layout is incompatible and is never moved/deleted automatically: preserve the old profile and use a separate initialized profile plus reviewed [raw replay](retention-replay.md). Rebuild cannot reconstruct missing old collection values/evidence.
+
+Automatic publication uses the [Vault consumer](../consumers/vault/README.md), default registration `builtin:vault`. Observation creation/deletion, operation creation and `retention.run.updated` events trigger current-state rebuilds. Use `consumers inspect` and `consumers dispatch vault` for failed deliveries. Explicit `vault rebuild` does not create or acknowledge events.
 
 ## Directory and ownership
 
 ```text
 vault/
-  README.md                        # preserved human landing page
-  HOSTS.md                         # platform index
+  README.md                         # preserved human landing page
+  HOSTS.md                          # generated host and Observations navigation
   .content-structure.json
   .content-bundled-retention.json
   .content-groups.json
+  Observations/
+    SUMMARY.md                      # explicit execution-batch index
+    YYYYMMDDHHMMSS.md                # UTC batch start, collisions use -2, -3...
   hosts/<encoded-primary-group>/<encoded-host-id>/
-    README.md                      # preserved human host notes
-    records/README.md
-    records/current-<consumer-title-slug>.md
-    <UTC-year>/reports/<YYYYMMDDHHMMSS>-<title-slug>.md
-    <UTC-year>/operations/<UTC-timestamp>-<title-slug>--<record-hash12>.md
+    README.md                       # preserved human notes/entrypoint
+    records/SUMMARY.md               # generated host record index
+    records/current-<title>.md       # readable current state
+    <UTC-year>/reports/<YYYYMMDDHHMMSS>-<title>.md
+    <UTC-year>/operations/<precise-UTC-time>-<title>--<record-hash12>.md
   overview/README.md
   groups/README.md
   groups/<encoded-group-id>/README.md
   groups/<encoded-group-id>/<encoded-host-id>.md
 ```
 
-The consumer chooses a presentation title independently of the recipe path. Inventory pages use System inventory; other pages use a human label derived from their recipe ID. Latest filenames look like current-system-inventory.md: a current prefix and the consumer-selected readable title, without UUIDs or reference hashes. Observation report filenames use a compact UTC timestamp to whole seconds plus the label, for example 20261019084328-system-inventory.md. They have no fractional seconds, timestamp punctuation, UUID or hash suffix. Independent current datasets resolving to the same title fail publication explicitly rather than overwrite one another; consumers must choose distinct titles. Operation-journal filenames retain precise timestamps and record discriminators because an intent and result share an observation time. Any equal-second/equal-title observation path collision fails explicitly without overwriting a report or removing retained records; publication failure is separate from successful retention. Names are normalized, path-safe and bounded. Source-qualified references and full record IDs remain in historical report metadata. These are content-author naming rules, not recipe naming or retention identity.
+The consumer title is independent of recipe path; inventory uses System inventory. Historical observation report names contain a whole-second UTC time and title, with no UUID, fractional seconds or hash suffix. Same-second/title collisions get `-2`, `-3`, etc.; a shared mapping drives generated report paths and source links. Operation journals retain precise time and intent/result discriminators. Independent current datasets that resolve to the same title still fail publication rather than overwrite one another. Names are safe and bounded; full IDs/references remain in report metadata.
 
-Primary group means the first ordered group membership in the current resolved host configuration (a scalar is one group). A host has one content tree, such as hosts/production/node/; secondary groups link to it. No current membership, including an archived/unconfigured host, uses hosts/_ungrouped/HOST/. A real group named _ungrouped is encoded as %5Fungrouped so it cannot merge with that bucket. Group and host identity still use reversible safe path components. This routing affects Vault content only; authoritative retention/hosts/HOST/ remains independent of groups.
+Primary group is the first resolved membership; secondary groups link to that one host tree. Ungrouped/archived hosts use `_ungrouped`; a real group with that name is encoded distinctly. Full rebuild routes all generated history/current pages and indexes to the current primary group and removes stale owned pages. Human README files and unmanaged notes stay at their original paths; relocate/link them deliberately. `groups` alone does not relocate host content.
 
-A full rebuild publishes current-group history/latest pages, updates HOSTS/overview/group links and removes stale owned pages. It creates missing human README entrypoints but never relocates, rewrites or deletes unmanaged notes, including old host README files. After this layout change or a later primary-group change, move or link your human notes from their preserved old directory deliberately. Empty or note-containing previous directories can remain. groups alone refreshes membership links; use full rebuild after changing primary groups so target pages are also regenerated.
+`records/SUMMARY.md` replaces the generated records/README index. It is a navigation page for current records and operation history, not an additional observation or human notebook. Missing host README stubs point to SUMMARY. Existing human README pages are preserved and may need their own link updates. Generated old names are removed only when manifest-owned; manual links are not migrated or aliased.
 
-Rebuild replaces old manifest-owned encoded-reference/digest pages with the new names and updates generated indexes. Unmanaged notes remain untouched; a collision with an unmanaged target fails. Existing hand-written links to old generated paths need manual updates. No aliases, old-path migration utility or user-data rewrite is supplied.
+Manifests track separate structure, bundled-content and group owners. Ownership authorizes replacing generated output even after editor/manual changes and removing stale owned paths. Removing the notice does not remove ownership. Unmanaged paths and other owners' files remain protected; collisions fail explicitly. Publication is atomic per file, not for the whole Vault; inspect an interrupted generation before retrying. Never store human notes inside owned pages.
 
-Separate manifests track platform structure, bundled content and groups. Each maps relative Markdown paths to SHA-256 digests of the latest generated bytes. Manifest ownership authorizes replacement: regeneration overwrites owned outputs even after manual edits or editor formatting, without confirmation or a required backup. The generated notice states this policy; removing the notice does not remove ownership. Digests record generated content and do not block replacement. Stale outputs belonging to that owner are removed even if edited. Unmanaged files and other authors' outputs still cause an explicit collision, including unmanaged files carrying a generated notice. Human landing pages and notes outside the manifests remain intact. Publication can leave different generations across files; interrupted writes may require inspection before retrying.
-
-Checkout authors can use `host_vault.publish(root, owner, entries)` while holding `host_vault.locked(root)`. `owner` is a stable lowercase letter followed by lowercase letters/digits/hyphens/underscores. `entries` maps safe relative `.md` paths to Markdown bodies. The platform adds a generated notice and local-second modification footer. Assets can remain validated report artifacts linked from Markdown; arbitrary binary vault publication is not part of this interface. Ownership manifests are coordination metadata, not a security sandbox against arbitrary Python/filesystem writes.
-
-## Record and SQLite contracts
-
-Vault stores no databases. Use the [retention query and schemas](retention.md#discover-and-read-data); never derive data access from generated page paths. The retained envelopes remain authoritative and preserve precise source timestamps and quality warnings.
+Checkout authors may call `host_vault.publish(root, owner, entries)` while holding `host_vault.locked(root)`. owner is a stable lowercase identifier and entries maps safe relative `.md` paths to bodies. The publisher adds the generated notice and local-second modification footer. Arbitrary binary publication is outside this interface; link validated report artifacts instead. This is a checkout service, not a stable Core API.
 
 ## Recipe retention and Markdown
 
-Recipe creators own the data declaration and extraction. Content authors own Markdown and other presentation. `retention.markdown_template` is removed. `consumers/vault/main.py` is the event entrypoint. The shared renderer `vault_content.build(root, runtime)` is the bundled content author: it selects public retention records and returns Markdown bodies, a host index and host IDs; it performs no writes or connections. `host_vault` publishes those bodies under the bundled author's manifest. User AI agents can query multiple recipe references independently and use [offline content reports](retention.md#content-authors-and-offline-reports).
+Recipe authors own data definitions/extraction; content authors own presentation. There is no `retention.markdown_template`. `vault_content.build(root, runtime)` reads retained records and explicit runs, returning bodies/index/host IDs without writes or connections. `host_vault` publishes them; consumers/vault/main.py supplies event dispatch. Never scrape Markdown as the data interface: use `profile.retention.query/show` and `runs/run`.
 
-The host list includes configured and archived hosts. Latest-state pages select the newest whole observation per stable recipe ID within its origin namespace and recipe source, with record ID breaking equal-time ties. Partial remains partial; no old-value backfill occurs. The host index reports latest observation status or no observations, not online status or health. Every historical observation report preserves record ID, origin, source time/status, environment identity evidence and typed values. Observation pages use readable sections and tables rather than dumping inventory JSON. The header shows only the host. Successful observations have no Status: success banner. Historical reports have a single final Collection metadata section that combines the report title, recipe/source, observation time, collection account, query/coverage states and provenance. Partial/identity warnings remain visible, and nonsuccess observation state is retained in metadata. Identity warnings and partial-observation limits remain visible. Inventory pages cover System, Hardware, Storage, Network, Software and Services; collections such as interfaces, packages and filesystems have column headings derived from their retained keys. Capacity/time fields show human units with exact base values. Null means Not available; zero and false remain values, while an empty collection says No entries reported and does not prove absence beyond collection scope. Observation states/times and supplied collection coverage remain available. General host-values pages show values, states, units and meanings without an empty inventory block.
+### Current records: readability
 
-Opaque identifiers, original origin fields, mapping/retention provenance and identity evidence appear in the final Collection metadata section as labeled fields under an HTML details element. Readers supporting disclosure show this section collapsed; other Markdown readers may show it expanded. This is a navigation aid, not secrecy or an access boundary. Content is escaped before entering headings, lists or tables. Operation-journal pages retain their existing JSON presentation in this change.
+Current inventory pages start with the configured host icon/name and Observed time. Empty Attention is omitted; flagged Attention appears before Contents. Content is grouped by subject: System, Hardware, CPU and memory, Network, Storage, Software and Services. There is no static/dynamic split. Network configuration and measured network state stay together, as do other topic-related values.
 
-The final Collection metadata section reads the actual recorded collection actor from optional local collection_evidence 0.1.0, separate from the login account. Collection queries show recorded commands, per-query state, reason and exit code/time, including the base fields and extended probes. Missing data can mean command_not_found, command_not_executable, command_failed, producer_marker_missing, parse_failed, output_limit, item_limit or total_budget_exhausted; not_supported means the platform has no implemented query. The base seven-field observation state does not promise that every extended query succeeded. No password, raw output, stderr or privilege-attempt credential source is retained here. The identity adapter may supplement hardware fields; its separate raw evidence is not presented as the extended probe's output.
+Current views omit null/empty-string fields and sections with no readable data. Zero, false and explicitly observed empty collections remain distinct; the latter says No entries reported. Missing/failed/latest coverage is still signaled and linked to the full report; an omitted value is not a successful absence check. Package and service collections are shown completely, sorted by name. Other long collections can use a 12-row preview and source-report link. Table units are incorporated into values instead of a redundant Unit column; duplicate Sample time columns are removed while section/sample provenance remains in reports/structured data. Matching byte/MB filesystem projections are deduplicated only when entity, source/time and converted value agree. Filesystem layout and capacity remain distinct tables.
 
-Historical records lacking the optional evidence show Not recorded for account name and explain that commands/reasons were not retained. Their retained collection_scope may still report effective UID/mode, but UID 0 does not establish a username. A Vault rebuild cannot reconstruct missing inventory or missing evidence and does not inspect raw results. New authorized collection with recipe 0.3.2 records it; do not manufacture historical metadata or rerun hosts merely to change page names.
+Single cumulative I/O counters do not establish rates and are omitted from current views; measured-window CPU utilization remains. The renderer does not invent throughput or link topology. Data/coverage and identity warnings remain visible. A single top source-report link is used when all displayed sections share it; mixed-age sections link their own source reports when different. Current pages omit the full Collection metadata disclosure, which belongs in reports.
 
-Both yearly reports and latest-state records share data rendering and begin with a Contents index linking to native Obsidian headings. Current records contain data and a Latest report link to ../<UTC-year>/reports/<timestamp>-<title>.md, with no Collection metadata section; follow that link for collection account, partial/identity warnings, queries and provenance. The link always targets the selected latest whole observation, including across year boundaries. Historical reports retain the final metadata section. Neither view includes the redundant Field observations table. System values use the seven primary observations from the same retained record when present; no earlier observation supplies missing values. A section with no collected values says No data was collected for this section; a missing collection within a populated section says No data was collected. An observed empty list remains No entries reported. Original field states/times remain available through structured retention reads. Existing pages adopt the new layout on the next enabled consumer refresh or an explicit authorized vault rebuild; no recipe rerun, new collection or retention rewrite is required. The generator replaces its owned Markdown even after manual edits, as described above. CLI example: python -B tools/opsfeast.py vault rebuild --profile main --json. Human notes remain outside generator ownership. Query original structured values with retention show RECORD_ID --profile main --json instead of parsing Markdown. Groups are relative Markdown links, never symlinks. Host-index and overview group cells accept scalar or list membership: group: backup and group: [backup] both display backup; multiple groups are comma-separated. Rendering does not rewrite hosts.yaml. The host-index and overview tables always have six columns, including matching header/delimiter/data rows.
+The DGMO definitions add reported filesystem-usage bars and host/interface/address overviews. Example text generated from observed values:
 
-Generated pages distinguish observation/generation times and display controller-local seconds. Original precision remains in retention JSON/SQLite. Host/group IDs use reversible UTF-8 percent encoding and Markdown URLs encode filesystem components as URL targets. One profile has one namespace. Do not place credentials in retained fields or notes merely because content is stored locally.
+```dgmo
+bar Filesystem usage (%)
+orientation-horizontal
+y-label Used (%)
+"/ (/dev/example)" 82
+```
+
+Only valid reported percentages in 0–100 are plotted; absent percentages are not calculated or treated as zero. Interface graphs show grouping/addresses, not physical links or inferred operational health. Labels are escaped/sanitized against fence/line/diagram injection. Diagram support is optional and introduces no collection or network dependency.
+
+### Reports: complete evidence
+
+Yearly reports prioritize completeness over compact display. Job reports retain every sample's property, entity, value, unit, state, sample time and source; full observations and collection metadata remain available, including null/unavailable values. Null, false, zero and empty collections are not interchangeable. Original precision is retained in structured data even when Markdown uses human units or local-second time display. Current-view omission/preview/deduplication does not remove stored or full-report data.
+
+Historical reports have one final Collection metadata section with source/reference/version, record/origin/retention provenance, actor/identity scope and recorded coverage/queries. Detailed provenance can use HTML disclosure; readers without it may show expanded content. Commands/states/reasons come only from recorded collection evidence or job probes. Legacy reports lacking evidence explicitly say Not recorded; rebuilding does not read raw results, guess the collector or recollect data. A successful base observation does not establish full extended coverage. Identity quality, partial/unknown states and failure reasons remain interpretation context.
+
+### Latest selection and source times
+
+Current datasets are grouped per host by origin namespace, recipe-source qualifier and stable recipe ID, then the newest whole record is selected with record ID breaking equal-time ties. Recipe moves within that source do not rewrite historical references or create aliases. Independent sources/origins remain separate; title collisions are errors.
+
+For inventory-job-observations, current pages combine the latest attempt per property/entity, with original group/sample source times. Failed latest attempts stay gaps; they never fall back to older successes. Attention can compare different-age baseline/metric observations and identifies their times. Other contracts retain their own whole-observation semantics. The host index reports observation state/time, not online status or live health.
+
+Contents links use native Obsidian heading fragments with preserved case and URL-encoded spaces/non-ASCII text. Repeated headings get distinct readable names. In Reading view follow the link normally; Live Preview uses the reader's follow-link gesture. Heading conventions in other readers can differ.
+
+## Observation batches and Attention
+
+[Execution runs](observation-runs.md) produce `Observations/SUMMARY.md` and timestamp-named batch pages. They list selected hosts, available major collection jobs, outcomes, retention state and source reports. Attention contains flagged hosts only. This directory is distinct from profile-root `observations/` raw JSON. Old nearby records are not fabricated into historical runs.
+
+Current inventory Attention uses the current resolved `recipes.REFERENCE.vars.attention` policy; a local rebuild applies changed thresholds without recollection. Batch pages display the saved policy/findings for that execution and do not reevaluate history using current settings/new samples. Disabling recipe execution preserves retained data/current pages; disabling `attention.enabled` suppresses current threshold evaluation independently. See [threshold definitions and limits](inventory-jobs.md#attention-thresholds).
 
 ## Long-lived operation journal
 
-Write/unknown operation evidence belongs to retention. Vault renders intent/outcome links and preserves unresolved/unknown verification states. A successful operation result is not proof of a verified change. Content failure does not erase the journal. See [data/audit interfaces](retention.md#operation-journals-and-module-boundaries).
+Write/unknown operation evidence belongs to retention. Vault renders intent/outcome links, preserving unresolved and unknown verification states; successful command results do not prove a verified change. Content failure never erases the journal. See [operation interfaces](retention.md#operation-journals-and-module-boundaries).
 
 ## Checkout module interfaces
 
-Use `host_vault.rebuild(root)`, `refresh_groups(root)`, `publish(root, owner, entries)` and the vault CLI for content work. Use `profile.retention`, `retention_store.query/show`, `retention rebuild/ingest` and explicit journaling for data work. Storage functions are no longer exposed from `host_vault`.
+Use `host_vault.rebuild/refresh_groups/publish` and Vault CLI for content. Use Core `profile.retention.query/show/runs/run`, checkout `retention_store.query/show`, `observation_runs.list_runs/show`, and the retention CLI for data. Read [run producer interfaces](observation-runs.md#checkout-interfaces-and-verification) before composing a batch writer. Do not edit annual SQLite tables or instantiate a second configuration/normalization pipeline.
 
 ## Consistency and verification limits
 
-Synthetic tests cover independent storage/content, offline reads/reports, source-qualified selection, partial data, publication conflicts, replacement of edited generated files, stale-output cleanup, replay and protected operation evidence. Vault publication is local; it provides no hosting, transport, automatic private-data migration, Obsidian UI automation, whole-vault atomic snapshot or cryptographic evidence guarantee.
+Public synthetic tests cover current-view omission versus full reports, sorting, units, filesystem deduplication, I/O suppression, diagram-label safety, thresholds, batch snapshots, links, collisions, publication ownership, retention/replay and independent failure receipts. The local verification rendered 44 generated DGMO diagrams with @diagrammo/dgmo 0.85.0 without diagnostics; this is renderer evidence, not a universal editor/plugin compatibility guarantee. No new native SSH/privilege-policy evidence, hosting, transmission, whole-vault transaction or cryptographic authenticity claim is added.
 
-Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
-
-Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
-
-_Last modified: 2026-10-20 10:53:49_
+_Last modified: 2026-10-20 23:08:29_

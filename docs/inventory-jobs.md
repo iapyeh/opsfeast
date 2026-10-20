@@ -25,7 +25,7 @@ Select one host and one or more `--property` values or `--job` values; do not co
 
 Without `--save`, results go only to stdout/the terminal. There are no raw result, retention, Vault, host-fact cache or scheduler-state writes by this utility. The response still contains actual sample/source times, actor scope, statuses, errors and property definitions. This does not suppress the target OS's SSH/sudo audit mechanisms. Connections and the existing bounded root-selection/user-fallback policy are real operations and require the user's target/privilege authorization. No packages or agents are installed on targets.
 
-Use `--root PATH` instead of `--profile NAME` when selecting an explicit management directory. Existing connection/jump/trust settings are loaded at runtime through Core configuration. Neither utility mode changes them. `--timeout` bounds connection stages/actor checks and default command duration, and `--budget` bounds the collection commands rather than the whole connection lifecycle. Existing declared source/host recipe variables and `--var`/`--vars-file` remain available; variable values are not included in provenance. `command_timeout_seconds` and `collection_budget_seconds` set collection command budgets.
+Use `--root PATH` instead of `--profile NAME` when selecting an explicit management directory. Existing connection/jump/trust settings are loaded at runtime through Core configuration. Explicit inventory `--host` overrides host/source/recipe enabled gates for that target only, while disabled jump hosts, invalid paths and invalid inputs remain errors; see [execution policy](recipe-sources.md#enabled-flags-and-explicit-targets). Neither utility mode changes them. `--timeout` bounds connection stages/actor checks and default command duration, and `--budget` bounds the collection commands rather than the whole connection lifecycle. Existing declared source/host recipe variables and `--var`/`--vars-file` remain available; arbitrary variable values are not included in provenance; the validated nonsecret Attention policy is intentionally saved in raw/batch evidence. `command_timeout_seconds` and `collection_budget_seconds` set collection command budgets.
 
 ## Save an immediate refresh for comparison
 
@@ -79,7 +79,7 @@ hosts:
       hardware-sensors: {enabled: false}
 ```
 
-`configure` writes equivalent JSON, which is valid YAML, atomically. It does not connect or install cron. `--job --enable` enables only that job, not the host. Existing `hosts.yaml` host/source disabled controls still apply. Preserve private configuration; do not copy synthetic host IDs as actual targets.
+`configure` writes equivalent JSON, which is valid YAML, atomically. It does not connect or install cron. `--job --enable` enables only that job, not the host. Scheduled collection additionally requires enabled host, source and resolved recipe policy in hosts.yaml. New init scaffolds enable bundled inventory in default.recipes; existing profiles must opt in explicitly. inventory.yaml enablement alone does not override these gates. Preserve private configuration; do not copy synthetic host IDs as actual targets.
 
 ## Dispatcher and cron
 
@@ -120,9 +120,11 @@ python -B tools/opsfeast.py retention list --profile main \
 
 `latest` is a read-only latest-attempt view per property; records and original times remain unchanged. Updating one property does not clear other properties in that job. A newer failure replaces that property's current attempt with a gap, not a carried-forward success. Complete empty enumeration differs from a failed/truncated enumeration; do not infer disappearance from incomplete coverage. Different namespaces, recipe sources and definition digests remain separate. Renamed/recreated devices require identity review, not array-position matching.
 
-Vault renders independent histories and a mixed-age current view with original sample times and source observation IDs. Job-history filenames include a short record digest to preserve manual samples taken within the same second. A manual annotation is visible in its historical report. Trend consumers should use retention APIs, not Markdown scraping. Counters are counters, not rates: calculate deltas only across comparable entities/scopes and valid elapsed times, handling resets/wraps/restarts explicitly. CPU load average and CPU utilization remain different measurements. Gaps are never silently interpolated.
+Vault renders independent histories and a mixed-age current view with original sample times and source observation IDs. Job-history filenames use whole-second UTC time/title and ordinal collision suffixes (-2, -3), without UUIDs or hashes; full IDs remain in metadata. A manual annotation is visible in its historical report. Trend consumers should use retention APIs, not Markdown scraping. Counters are counters, not rates: calculate deltas only across comparable entities/scopes and valid elapsed times, handling resets/wraps/restarts explicitly. CPU load average and CPU utilization remain different measurements. Gaps are never silently interpolated.
 
 ## Reuse, extension and verification
+
+Saved manual collections and due-work dispatch also persist [explicit run batches](observation-runs.md), with independent retention/content receipts and saved threshold evidence. Unsaved queries and dry runs do not create runs. Inspect with inventory runs list/show; rebuild never invents missing old batches.
 
 Checkout-level Python interfaces are `inventory_jobs.catalog()`, `collect_host(root, host, properties=[...], save=False)`, `dispatch(root, dry_run=True)` and `latest_groups(records)`. Use the existing Core `profile.retention.query/show` to obtain input records. These helpers are bundled product services, not a new installed stable SDK contract. The collector entrypoint is recipe-local `jobs.collect`; normalizer registration and storage remain shared services. Do not create per-host scripts with copied credentials or load candidate normalizers during replay.
 
@@ -132,7 +134,7 @@ Run public unit tests with the selected environment. For complete offline schema
 
 ## Delivery verification (2026-10-20)
 
-- Current full public suite after entrypoint consolidation: 763 tests passed on CPython 3.11.15, 3.13.13 and 3.14.4. The inventory-specific file contains 29 tests; test_recipe_runner.py adds nine focused unified-entrypoint regressions. Obsolete snapshot-runner/dryrun/force integrations were removed, while independent parser, historical-data/replay, actor, selector, concurrency, report and Vault coverage remains. This supersedes the earlier 808-test count for the dual-runner implementation.
+- Current full public suite: 800 tests passed on CPython 3.11.15, 3.13.13 and 3.14.4, including policy/run and current-view regressions. The inventory-specific file contains 29 tests; test_recipe_runner.py adds nine focused unified-entrypoint regressions. Obsolete snapshot-runner/dryrun/force integrations were removed, while independent parser, historical-data/replay, actor, selector, concurrency, report and Vault coverage remains. This supersedes the earlier entrypoint-consolidation and dual-runner counts.
 - Offline model QA: 72 property paths and their standard list-key paths resolved; 122 pinned public module snapshots passed digest checks, and the extension/module graph and JSON Schema passed validation. Validators ran in an isolated Python 3.13 QA directory; no target dependencies were installed.
 - Native local evidence: macOS with SSHScript 5.0.0 passed a credential-free selective kernel/architecture query with unchanged profile files, followed by two independent saved observations and successful retention/Vault updates. Installed-wheel smoke checks also passed. This does not establish remote SSH, su/sudo or native Linux/FreeBSD/ESXi probe behavior.
 - Wheel and sdist builds include all 123 YANG files, public source manifests and the OpenConfig license. Private profile settings, generated observations, local guidance and caches are excluded. Packaging is local verification, not a release or publication.
@@ -140,4 +142,38 @@ Run public unit tests with the selected environment. For complete offline schema
 
 Reproduce the public suite with `python -B -m unittest discover -s tests -p 'test_*.py'`; run the inventory subset with `-p test_inventory_jobs.py`. Use the model checker described above for schema-node validation. Environment and target-specific evidence must be reassessed when porting this recipe.
 
-_Last modified: 2026-10-20 14:36:51_
+## Attention thresholds
+
+Inventory declares the `attention` object input and owns validation/evaluation in `inventory_attention.resolve/evaluate`. Generic Core input validation checks the declared object type; the inventory owner validates metric names, ranges and warning/critical direction. Configure under `default.recipes.REFERENCE.vars.attention`, group recipes or host recipes; use the exact source/path reference and [three-layer merge rules](recipe-sources.md#three-configuration-layers).
+
+```yaml
+default:
+  recipes:
+    system/inventory/overview:
+      enabled: true
+      vars:
+        attention:
+          enabled: true
+          thresholds:
+            filesystem_used_percent: {warning: 80, critical: 85}
+            cpu_utilization_percent: {warning: 90, critical: 95}
+            memory_available_percent: {warning: 10, critical: 5}
+            load_5m_per_cpu: {warning: 1, critical: 2}
+```
+
+The example sets filesystem limits to 80/85; internal defaults, applied when fields are absent, are:
+
+| Metric | Warning | Critical | Comparison |
+| --- | --- | --- | --- |
+| filesystem_used_percent | 90 | 95 | Reported filesystem use >= limit |
+| cpu_utilization_percent | 90 | 95 | Measured-window utilization >= limit |
+| memory_available_percent | 10 | 5 | Available/total memory × 100 <= limit |
+| load_5m_per_cpu | 1 | 2 | Five-minute load/logical CPUs >= limit |
+
+Attention defaults enabled independently of recipe.enabled. Percentage limits must be finite numbers within 0–100; load limits must be positive. Critical is >= warning for rising metrics and <= warning for available memory. Partial threshold mappings inherit other fields; unknown keys, Booleans as numbers and reversed limits fail recipe validation before connection. A high load is not itself CPU utilization and cannot distinguish CPU pressure from I/O waiting.
+
+Only successful finite samples and valid baselines are assessed; failed/unavailable values never become zero or reuse an earlier successful latest value. Different-age metric/baseline comparisons retain both times. Missing memory/core baselines can prevent assessment; no findings does not prove health or full coverage. Current views omit Attention and its Contents link when there are no hints. `attention.enabled: false` suppresses evaluation without deleting data or enabling/disabling execution.
+
+Current pages use current merged settings, so `vault rebuild` can apply new thresholds without a host connection. Saved run targets preserve actual policy, findings and baseline/source IDs/times; rebuilding those pages does not reevaluate old runs with new thresholds or future observations. See [run storage/read API](observation-runs.md). The raw inventory report also records attention_policy and observation_run_id outside the recipe-normalized data contract; existing normalizer/schema digests remain unchanged.
+
+_Last modified: 2026-10-20 23:08:29_

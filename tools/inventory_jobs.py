@@ -41,11 +41,14 @@ def inspect_collection(directory, metadata):
     return data
 
 
-def definition(config, reference='system/inventory/overview'):
+def definition(config, reference='system/inventory/overview', *, explicit_host=False):
     """Static candidate inspection; never execute recipe code here."""
     info = config.recipe_location(reference, config.root/'hosts.yaml', cli=True)
-    if not info['enabled']:
+    if not info['enabled'] and not explicit_host:
         raise ConfigError('inventory source is disabled')
+    if info['scope'] is None:
+        from opsfeast import Validator
+        info['scope'] = Validator(info['root'])
     directory = info['scope'].path(info['pattern'],info['origin'])
     from recipe_dispatch import validate, bundle_digest
     metadata = read_yaml(directory/'recipe.yaml')
@@ -77,23 +80,68 @@ def select(data, jobs=None, properties=None, *, include_disabled=False):
     return selected, None
 
 
-def collect_host(root, host, *, jobs=None, properties=None, save=False, note='', trigger='manual',
+def collect_host(root, host, **options):
+    """A saved explicit host invocation owns one batch unless its caller supplies one."""
+    from observation_runs import start, record_result, finish
+    from retention_store import settings as retention_settings, refresh_content
+    own = options.get('save', False) and not options.get('observation_run_id') and retention_settings(root) is not None
+    run_id = options.get('observation_run_id')
+    if own:
+        config = profile(root).hosts._config
+        if host not in config.hosts:
+            raise ConfigError('unknown inventory host')
+        jobs = options.get('jobs') or [key for key,value in catalog()['jobs'].items() if value['enabled']]
+        if options.get('properties'):
+            jobs = list(dict.fromkeys(catalog()['properties'][n]['job'] for n in options['properties'] if n in catalog()['properties']))
+        run_id = start(root, [{'host_id':host, 'icon':config.hosts[host].get('icon',''),
+                              'jobs':[{'id':j} for j in jobs]}],
+                       options.get('reference','system/inventory/overview'), trigger=options.get('trigger','manual'))
+        options['observation_run_id'] = run_id
+    result = None
+    try:
+        result = _collect_host(root, host, **options)
+        if own:
+            record_result(root, run_id, host, result)
+        return result
+    except BaseException:
+        if own:
+            record_result(root, run_id, host, {'status':'failed','reason_code':'execution_did_not_complete'})
+        raise
+    finally:
+        if own:
+            finish(root, run_id)
+            content = refresh_content(root)
+            if result is not None:
+                result['content_update'] = content
+                if result.get('result_path'):
+                    from recipe_runner import save_receipt
+                    save_receipt(Path(result['result_path']),result)
+
+
+def _collect_host(root, host, *, jobs=None, properties=None, save=False, note='', trigger='manual',
                  reference='system/inventory/overview', timeout=30, budget=90,
-                 session_class=None, prepared=None, cli_values=None, assignments=()):
+                 session_class=None, prepared=None, cli_values=None, assignments=(), explicit_host=True,
+                 observation_run_id=None):
     if not isinstance(note,str) or len(note)>4096 or '\x00' in note:
         raise ConfigError('note must be at most 4096 characters without NUL')
     from opsfeast import positive_timeout
     timeout, budget = positive_timeout(timeout), positive_timeout(budget)
     p = profile(root)
     config = p.hosts._config
-    if host not in config.hosts or not config.hosts[host].get('enabled',True):
+    if host not in config.hosts or (not explicit_host and not config.hosts[host].get('enabled',True)):
         raise ConfigError('unknown or disabled inventory host')
+    if explicit_host:
+        config.hosts[host]['enabled'] = True
     # Revalidate current source enabled/settings even after scheduler planning.
-    chosen = definition(config, prepared['reference'] if prepared else reference)
+    chosen = definition(config, prepared['reference'] if prepared else reference, explicit_host=explicit_host)
+    if not explicit_host and not config.recipe_options(host, chosen['reference']).get('enabled', False):
+        return {'host_id':host, 'status':'skipped', 'reason_code':'recipe_disabled'}
     from recipe_inputs import prepare_vars, cli_variables
     source = chosen['source_info']
     variables = prepare_vars(chosen['metadata'],source['vars'],config.matching_recipe_vars(host,chosen['directory'],source),
                              cli_variables(chosen['metadata'],cli_values,assignments))
+    from inventory_attention import resolve as resolve_attention
+    attention_policy = resolve_attention(variables.get('attention', {}))
     command_timeout = variables.get('command_timeout_seconds',timeout)
     budget = variables.get('collection_budget_seconds',budget)
     selected, names = select(chosen['catalog'], jobs, properties)
@@ -112,7 +160,7 @@ def collect_host(root, host, *, jobs=None, properties=None, save=False, note='',
            'actor':{'username':None,'effective_uid':None,'mode':'unverified'},
            'recipe':{'id':'inventory-system','version':chosen['metadata']['version'],
                      'reference':chosen['reference'],'bundle_sha256':chosen['bundle_sha256']},
-           'execution_errors':[]}
+           'execution_errors':[], 'attention_policy':attention_policy, 'observation_run_id':observation_run_id}
     raw['host_metadata'] = {key:config.hosts[host][key] for key in ('label','description') if key in config.hosts[host]}
     raw['identity_warning'] = ('Configured identity_key is administrator-assigned, not independently verified machine identity.'
                                if config.hosts[host].get('identity_key') else
@@ -180,7 +228,10 @@ def collect_host(root, host, *, jobs=None, properties=None, save=False, note='',
         raw['retention'] = retain(root,raw)
     except Exception as exc:
         raw['retention'] = {'status':'failed','error_type':type(exc).__name__,'reason_code':'retention_failed'}
-    finalize_content(root,raw)
+    if observation_run_id:
+        raw['content_update'] = {'status':'pending','reason_code':'observation_run_in_progress'}
+    else:
+        finalize_content(root,raw)
     save_receipt(path,raw)
     return raw
 
@@ -198,9 +249,21 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
         results = []
         tasks = []
         for host,entry in settings.get('hosts',{}).items():
-            if not entry.get('enabled',False) or not config.hosts[host].get('enabled',True):
+            if not entry.get('enabled',False):
                 continue
-            chosen = definition(config,entry.get('recipe','system/inventory/overview'))
+            if not config.hosts[host].get('enabled',True):
+                results.append({'host_id':host,'status':'skipped','reason_code':'host_disabled'})
+                continue
+            reference = entry.get('recipe','system/inventory/overview')
+            try:
+                source = config.recipe_location(reference,config.root/'hosts.yaml',check_exists=False)
+                if not source['enabled'] or not config.recipe_options(host,reference).get('enabled',False):
+                    results.append({'host_id':host,'status':'skipped','reason_code':'source_disabled' if not source['enabled'] else 'recipe_disabled'})
+                    continue
+                chosen = definition(config,reference)
+            except (ConfigError,OSError) as exc:
+                chosen = {'reference':reference,'definition_sha256':hashlib.sha256(('unavailable:'+reference).encode()).hexdigest(),
+                          'planning_error':type(exc).__name__}
             key = schedule.state_key(host,chosen['reference'],chosen['definition_sha256'])
             jobs = schedule.effective(data,settings,host)
             selected = schedule.due(jobs,state['targets'].get(key,{}),stamp)
@@ -216,11 +279,23 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
         if tasks:
             # All attempt times are durable before any worker connects.
             schedule.write_state(root,state)
+        from observation_runs import start, record_result, finish
+        run_id = start(root, [{'host_id':h, 'icon':config.hosts[h].get('icon',''),
+                              'recipe_reference':chosen['reference'],
+                              'jobs':[{'id':j} for j in selected]} for h,_,chosen,selected in tasks] +
+                       [{'host_id':r['host_id'],'icon':config.hosts[r['host_id']].get('icon',''),
+                         'recipe_reference':settings['hosts'][r['host_id']].get('recipe','system/inventory/overview')} for r in results],
+                       'system/inventory/overview', trigger='scheduled') if tasks else None
+        if run_id:
+            for result in results:
+                record_result(root,run_id,result['host_id'],result)
         def acquire(task):
             host,key,chosen,selected = task
             try:
+                if chosen.get('planning_error'):
+                    raise ConfigError('scheduled recipe unavailable: '+chosen['planning_error'])
                 result = (collect or collect_host)(root,host,jobs=selected,save=True,trigger='scheduled',
-                                                  timeout=timeout,budget=budget,prepared=chosen)
+                                                  timeout=timeout,budget=budget,prepared=chosen,explicit_host=False,observation_run_id=run_id)
             except Exception as exc:
                 # Pre-acquisition/storage failures are durable scheduler evidence too.
                 result = {'host_id':host,'status':'failed','error_type':type(exc).__name__,
@@ -246,9 +321,19 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
                 from retention_store import atomic
                 atomic(failure,canonical({'host_id':host,'jobs':selected,'attempted_at':stamp,'error_type':result['error_type'],'reason':result['reason']})+'\n')
             schedule.write_state(root,state)
+            record_result(root,run_id,host,result)
             results.append(result)
-        failed = any(r['status'] not in ('success','due') or r.get('retention',{}).get('status')=='failed' or r.get('content_update',{}).get('status')=='failed' for r in results)
-        return {'status':'failed' if failed else 'success','dry_run':dry_run,'hosts':results,'attempted_at':stamp}
+        if run_id:
+            finish(root,run_id)
+            from retention_store import refresh_content
+            content = refresh_content(root)
+            for result in results:
+                result['content_update'] = content
+                if result.get('result_path'):
+                    from recipe_runner import save_receipt
+                    save_receipt(Path(result['result_path']),result)
+        failed = any(r['status'] not in ('success','due','skipped') or r.get('retention',{}).get('status')=='failed' or r.get('content_update',{}).get('status')=='failed' for r in results)
+        return {'status':'failed' if failed else 'success','dry_run':dry_run,'hosts':results,'attempted_at':stamp,'observation_run_id':run_id}
     if dry_run:
         return execute(schedule.read_state(root))
     with schedule.lock(root) as acquired:

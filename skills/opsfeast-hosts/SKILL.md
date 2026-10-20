@@ -5,6 +5,12 @@ description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
 
+## Exact-reference recipe policy
+
+Before editing execution settings, read [recipe sources and policy](../../docs/recipe-sources.md). Use default/group/host recipes mappings keyed by exact filesystem references, with enabled/vars; bare PATH and bundle:PATH are the same bundle key, :PATH is profile-only, NAME:PATH is a registered source. Do not flatten paths or substitute descriptor IDs. Discover references with `python -B tools/opsfeast.py recipes list --profile NAME --json`. Mappings merge by leaf; lists replace, explicit false wins and the first resolved group wins overlapping leaves. Recipes default disabled; new init enables bundled inventory explicitly, preserving existing configs.
+
+For bulk/group or scheduled execution, host, source and resolved recipe must all be enabled (plus schedule opt-in/due checks). Explicit recipe/inventory --host overrides those three gates for that target only; invalid references/vars/paths and disabled jump hosts still fail. This rule does not change host diagnostics or standalone Core connect. check validates all mapping references/basic declared inputs, including disabled/unused entries; business validation belongs to each recipe. Existing selection lists are not a bulk enabled opt-in. Changing execution enablement does not remove retention or hide current pages. Use [migration actions](../../docs/migration.md#recipe-policy-and-observation-runs) when updating existing workflows.
+
 
 Human terminal tables automatically wrap headers and complete values to the current terminal cell width; narrow multi-column views become labeled records. Reuse the shared console_output.table helper for new checkout summaries. Use --json where supported for agent parsing; wrapped text is presentation, not a data contract. See [console output policy](../../docs/cli.md#terminal-tables-and-json) for width lookup, redirected output and limits.
 
@@ -25,7 +31,7 @@ Read [retention contracts](../../docs/retention.md), [offline replay/protection]
 
 1. Discover declared datasets with recipes list/show or inspect-recipe --json. Read field meanings, units, versions, limits and source-qualified references before selecting data; metadata is not execution evidence.
 2. Query with `retention list/show/export --profile NAME --json`, Core `profile.retention.query/show`, or checkout `retention_store.query/show`. Annual authoritative SQLite lives in retention/; reads never initialize or connect. Preserve source times, origins, identity warnings, partial/unknown states and zero/false values.
-3. Authors declare host-values 0.2.0 with dataset/field descriptions; system/inventory/overview 0.3.2 owns inventory-observations 0.1.0, its schema and registered normalizer. Discovery reads the explicit declaration; it never guesses from recipe ID. Retention snapshots 0.2.0 contain data definitions only. No markdown_template or rendered Markdown is retained.
+3. Authors declare host-values 0.2.0 with dataset/field descriptions; system/inventory/overview 0.4.0 owns inventory-job-observations 0.1.0 (older inventory-observations remain read/replay contracts), its schema and registered normalizer. Discovery reads the explicit declaration; it never guesses from recipe ID. Retention snapshots 0.2.0 contain data definitions only. No markdown_template or rendered Markdown is retained.
    Read [inventory-owned data semantics](../../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract) before authoring or interpreting inventory: explicit access_mode/retention declaration, recipe-local schema, normalizer/schema digests, supported versions and partial/identity limits. Registered contract/version selects shipped pure normalization; candidate main.py/retention.py is never loaded by replay. A new structured contract requires reviewed product registration and tests, not descriptor executable paths. Reuse runner/replay/query; include retention.schema.json in portable clone bundles. Current envelopes preserve retention_definition and source provenance.
 4. Reuse offline python-report's `context.retention.query/show` and artifact/result/job support for content. [feast/report/retention-summary](../../recipes/feast/report/retention-summary/README.md) generates Markdown and HTML and combines multiple recipe references without raw access or connections. Custom renderers declare dependencies and verification; no hosting or transmission is implied.
 5. Use retention ingest/delete-observation/rebuild for data and vault rebuild/groups/inspect for content. Replay does not execute recipe code. Write/unknown operations and linked evidence remain protected. Direct Core calls need explicit retention_store.operation_intent/operation_result journaling.
@@ -141,7 +147,7 @@ Use attach PATH [--profile NAME] for existing directories (the former add comman
 
 - Host-level `group` is an optional non-empty string or list of non-empty group names; one host may belong to multiple groups, including memberships declared in included files. Omitted/empty lists mean no membership; a scalar is treated as a one-element list for selection without rewriting stored configuration. Reject the former groups field with a migration hint, including when both names are present. Groups select targets through the shared CLI selection path and do not inherit connection settings, variables or recipes. Read [host groups](../../docs/hosts-yaml.md#host-groups) and the [runner reference](../../docs/cli.md#operational-recipe-execution) for mixed host/group unions, explicit --host/--group options, required recipe selection, exclusive --all and deduplication. test-connection and check-access also support group/all selection; narrower diagnostics keep their own documented selectors. Group/all selection does not authorize execution.
 - `hosts` 的鍵是穩定主機 ID；`connection.hostname` 是 DNS 或 IP。
-- 新建的 init 樣板包含 `localhost: {connection: {local: true}, users: {}, vars: {}, recipes: []}`。本機 connection 只接受 `local: true`，不建立 SSH 連線，不能作為跳板或混用 SSH 欄位；既有設定仍保留，不自行覆寫。
+- 新建的 init 樣板包含 `localhost: {connection: {local: true}, users: {}, vars: {}, recipes: {}}`。本機 connection 只接受 `local: true`，不建立 SSH 連線，不能作為跳板或混用 SSH 欄位；既有設定仍保留，不自行覆寫。
 - 明確 SSH 連線可使用 `connection.proxy_command` 非空字串，不能與同一層的 `via` 或 `ssh_config_alias` 混用。命令原樣保存，不展開 `%h`、`%p` 或 shell 變數；使用具體目標值。check 只驗證設定；明確要求 test-connection 時可啟動代理並測試連線。
 - proxy_command 建立資料通道；目標 SSH 驗證仍使用 connection.user 與該 host 對應 users 帳號的 password。提供密碼且未設定 identity_file 時，test-connection 停用 agent 與自動搜尋金鑰。沒有對應帳號或 password 時，不借用其他帳號密碼、不自動新增帳號，使用私鑰或 agent／預設金鑰，驗證失敗則回報失敗。代理程式自己的憑證不自動取用 users 中的 SSH 密碼。
 - `via: {host: bastion}` 引用載入後的 `hosts.bastion.connection`。也接受巢狀明確連線；不能把主機引用與覆寫欄位混用。
@@ -151,7 +157,7 @@ Use attach PATH [--profile NAME] for existing directories (the former add comman
 - `vars.sudo.user` 是 sudo 的目標帳號；`vars.sudo.password` 是驗證密碼，通常屬於登入帳號。初版可保存明文；不自動輸出這些值到日誌、觀測或紀錄。
 - 根層 `include` 是明確的本機 YAML 路徑清單，可遞迴，不接受 glob、URL 或 `!include`。同一實際檔案只載入一次；載入中的循環必須報錯。
 - 重複 mapping 鍵或跨檔案主機 ID 都報錯，沒有載入優先級或覆寫。一般 YAML parser 可能默默採最後一個鍵；驗證時需確認使用的 parser 能拒絕重複鍵，否則揭露檢查限制。
-- Recipe items accept shorthand strings or selector mappings with optional vars. Read [recipe sources and controls](../../docs/recipe-sources.md) for entry-only recipe_sources, checkout/profile/named references, shallow default/source/host input overlays and typed runner validation. Predefined recipe_sources.bundle/profile accept enabled/vars without path; optional path assertions must resolve to their fixed defaults from entry hosts.yaml. They do not create bundle:/profile: aliases. Host/source enabled flags default true; disabled hosts cannot be jump hosts. Source disable is an explicit skip, not a fallback or unknown-source exemption. --all --exclude is one-invocation target filtering only.
+- Use direct reference-keyed recipes mappings and the policy above. Existing host selector lists remain readable for static selection/first-matching vars but do not enable bulk execution. Do not use a selector object or glob as a new mapping key; no source fallback occurs.
 - `recipes` 是選取 mapping 的清單：`recipe` 指完整 recipe 目錄；`directory` 選直接子目錄，只有 `recursive: true` 時遞迴；`glob` 比對 recipe 目錄，`*`、`?` 不跨 `/`，`**` 可跨層級。
 - 每個 recipe 目錄含 `recipe.yaml`，不直接把任意檔案當 recipe。依選取清單順序及組內路徑排序展開；同一實際目錄保留第一次，同一來源內不同目錄同 ID 報錯，不同來源可有相同 ID；空匹配報錯。
 - `${...}` 目前是原樣字串；不加入未定案的版本、全域 vars、exclude 或變數存取 API。
@@ -277,4 +283,6 @@ returns the full evidence within an authorized host scope. Human tables explain 
 root shell and show sudo already_root. Native evidence covers the two tested two-hop
 paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
-_Last modified: 2026-10-20 11:24:28_
+Group recipes can carry private inputs. Core/UI catalog snapshots mask recognized sensitive fields, while explicit dump remains raw. Do not use a masked display snapshot as executable input or assume arbitrary values are safe to publish.
+
+_Last modified: 2026-10-20 23:35:59_

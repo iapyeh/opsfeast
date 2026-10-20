@@ -210,7 +210,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(len(store.records(self.root)), 1)
         shutil.rmtree(self.host() / 'records')
         self.assertEqual(vault.rebuild(self.root)['records'], 1)
-        self.assertTrue((self.host() / 'records/README.md').exists())
+        self.assertTrue((self.host() / 'records/SUMMARY.md').exists())
         self.assertEqual(legacy.retain(self.root, raw())['status'], 'already_stored')
 
     def test_latest_partial_not_silently_filled_from_previous(self):
@@ -226,7 +226,9 @@ class VaultTests(unittest.TestCase):
         latest = max(store.query(self.root)['records'], key=lambda item: item['observed_at'])
         history = self.host() / latest['observed_at'][:4] / 'reports' / content.history_filename(latest)
         self.assertIn('partial', history.read_text())
-        self.assertIn('Hostname | Not available | unavailable', markdown)
+        self.assertNotIn('| Hostname |', markdown)
+        self.assertIn('Some data was not obtained', markdown)
+        self.assertIn('Hostname | Not available | unavailable', history.read_text())
         self.assertIn(vault.NOTICE, markdown)
 
     def test_overview_expiry_does_not_remove_old_host_or_history(self):

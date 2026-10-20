@@ -147,6 +147,9 @@ class InventoryJobTests(unittest.TestCase):
                     service.collect_host(self.root,'node',**options)
 
     def test_due_failure_advances_normal_interval_without_retry(self):
+        self.enable()
+        with (self.root/'hosts.yaml').open('a') as stream:
+            stream.write('default:\n  recipes:\n    system/inventory/overview: {enabled: true}\n')
         (self.root/'inventory.yaml').write_text(json.dumps({'schema_version':'0.1.0','defaults':{},'hosts':{'node':{'enabled':True,'jobs':{}}}}))
         calls=[]
         def fail(root,host,**options):
@@ -284,8 +287,9 @@ class InventoryJobTests(unittest.TestCase):
         self.assertIn('address',data['network.ipv6.address']['key_paths'])
 
     def test_parallel_dispatch_is_bounded_and_attempts_precede_connections(self):
+        self.enable()
         import threading
-        (self.root/'hosts.yaml').write_text(json.dumps({'hosts':{name:{'connection':{'local':True}} for name in ('node','other')}}))
+        (self.root/'hosts.yaml').write_text(json.dumps({'default':{'recipes':{'system/inventory/overview':{'enabled':True}}},'hosts':{name:{'connection':{'local':True}} for name in ('node','other')}}))
         data=service.catalog()
         defaults={job:{'enabled':job=='system-runtime'} for job in data['jobs']}
         (self.root/'inventory.yaml').write_text(json.dumps({'schema_version':'0.1.0','defaults':defaults,

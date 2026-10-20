@@ -661,6 +661,18 @@ def show(root, record_id):
 
 class Reader:
     """Read-only report input facade; no session or write API."""
+    def runs(self):
+        from observation_runs import list_runs
+        result = list_runs(self._root)
+        self.sources.append({'runs':[r['run_id'] for r in result], 'sha256':hashlib.sha256(canonical(result).encode()).hexdigest()})
+        return result
+
+    def run(self, run_id):
+        from observation_runs import show
+        result = show(self._root, run_id)
+        self.sources.append({'run_id':run_id, 'sha256':hashlib.sha256(canonical(result).encode()).hexdigest()})
+        return result
+
     def __init__(self, root):
         self._root = Path(root)
         self.sources = []

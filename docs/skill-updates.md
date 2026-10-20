@@ -93,4 +93,8 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 
 文件不會啟動排程。使用者授權後，由其 agent 平台排程執行相同 `check` 命令，保留 scope、週期、環境與通知約定。預設未變更時保持安靜；有差異、檢查失敗或需使用者決定時通知。定期檢查授權不等於套用、套件升級或遠端執行授權；若另外授權特定更新流程，按其明確範圍執行。
 
-_Last modified: 2026-10-19 11:57:21_
+## Recipe policy and explicit run reading
+
+When updating to a release containing recipe policy/observation batches, include [recipe reference settings and gates](recipe-sources.md), [observation runs](observation-runs.md) and [observation-run.schema.json](../schemas/observation-run.schema.json) in the current-contract reread, alongside the host/retention/consumer contracts above. Learn the new exact-reference enabled opt-in before bulk execution and use runs()/run() for run IDs; do not silently infer batch membership or apply current thresholds to historical snapshots. Reading is guidance, not an enforced receipt/permission mechanism.
+
+_Last modified: 2026-10-20 23:27:35_

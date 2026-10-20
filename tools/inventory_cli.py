@@ -40,6 +40,9 @@ def main(argv=None):
     dispatch.add_argument('--budget',type=positive_timeout,default=90)
     dispatch.add_argument('--threads',type=int,default=4,help='concurrent hosts, 1–64; default 4')
     dispatch.add_argument('--quiet',action='store_true',help='suppress success output; durable observations/errors remain local')
+    runs = commands.add_parser('runs', help='read durable observation runs without connecting')
+    runs.add_argument('operation', choices=('list','show'))
+    runs.add_argument('run_id', nargs='?')
     state = commands.add_parser('status',description='Read scheduler settings and last attempts without connecting or writing.',help='inspect settings and attempts')
     latest = commands.add_parser('latest',description='Query retained inventory as a mixed-age latest-attempt view per property. No connection or writes; failed values remain gaps.',help='read latest retained property attempts')
     latest.add_argument('--host',required=True)
@@ -57,7 +60,7 @@ def main(argv=None):
     cron = commands.add_parser('cron',description='Show/install/remove this profile\'s marked entry in the current user crontab. Installation does not enable any host.',
                                help='manage the marked minute cron entry')
     cron.add_argument('operation',choices=('show','install','remove'))
-    for sub in (desc,*[commands.choices[n] for n in ('query','run')],dispatch,state,latest,edit,cron):
+    for sub in (desc,*[commands.choices[n] for n in ('query','run')],dispatch,state,latest,edit,cron,runs):
         sub.add_argument('--json',action='store_true',help='JSON output, including in terminals')
         if sub is not desc:
             env = sub.add_mutually_exclusive_group()
@@ -86,6 +89,11 @@ def main(argv=None):
                     timeout=args.timeout,budget=args.budget,
                     cli_values=__import__('recipe_inputs').json_object(args.vars_file) if args.vars_file else None,
                     assignments=args.assignments)
+            elif args.command=='runs':
+                from observation_runs import list_runs, show
+                if (args.operation == 'show') != bool(args.run_id):
+                    raise ConfigError('runs show requires run_id; runs list excludes it')
+                result = show(root,args.run_id) if args.run_id else {'runs':list_runs(root)}
             elif args.command=='dispatch':
                 result = service.dispatch(root,dry_run=args.dry_run,timeout=args.timeout,budget=args.budget,threads=args.threads)
                 if args.quiet:
@@ -152,6 +160,8 @@ def main(argv=None):
                 print(json.dumps(result,indent=2,ensure_ascii=False,allow_nan=False))
         else:
             print(json.dumps(result,indent=2,ensure_ascii=False,allow_nan=False))
+        if args.command=='runs':
+            return 0
         return 0 if result.get('status','success') in ('success','skipped') and result.get('retention',{}).get('status')!='failed' and result.get('content_update',{}).get('status')!='failed' else 1
     except (ConfigError,OSError,ValueError,ImportError,ConsoleDependencyError) as exc:
         print('ERROR: '+(str(exc) if isinstance(exc,(ConfigError,ConsoleDependencyError)) else type(exc).__name__),file=sys.stderr)

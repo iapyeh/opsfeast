@@ -62,7 +62,7 @@ class Hosts:
 
     def groups(self):
         """Return an independent group catalog with metadata and member host IDs."""
-        return copy.deepcopy(self._config.groups)
+        return _masked(self._config.groups)
 
     def get(self, host_id, *, reveal_secrets=False):
         if host_id not in self._config.hosts:

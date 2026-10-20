@@ -26,7 +26,7 @@ The inventory runner now performs stage 1 → 2 after every completed report. Hu
 | Exchange | [0.1.0 schema](../schemas/observation-exchange.schema.json) | Explicit JSON stdout/file selected by the user |
 | Analysis | Recipient-selected | DuckDB, SQLite or another consumer; no bundled importer |
 
-The new raw filename uses the UTC started_at second plus UUID. Existing unprefixed files remain readable and are not renamed. See [raw filenames and timestamp ordering](cli.md#saved-results-and-stdout) for precision, same-second ties, mixed history and lookup rules.
+The new raw filename uses the UTC started_at second plus UUID. Existing unprefixed files remain readable and are not renamed. See [raw filenames and timestamp ordering](cli.md#compact-execution-summaries) for precision, same-second ties, mixed history and lookup rules.
 
 SQLite is the first local stage-2 implementation, using Python's standard library. It is not an exchange-format requirement. Database `user_version=2` identifies this physical layout; contract versions identify data independently. Python 3.11+, PyYAML and SQLite JSON functions are required. Existing environment checks remain applicable; the tests exercise JSON SQL views with the chosen interpreter.
 
@@ -118,4 +118,10 @@ The draft retained/exchange 0.1.0 contract now permits these optional fields and
 
 MAC addresses may be useful network-interface evidence but are not automatically used as fallback keys. They identify an interface, can remain unchanged across OS reinstall, and may be cloned, changed or randomized. Multiple interfaces also require an explicit selection rule. MAC collection is not implemented by this change. A manually assigned MAC-based identity_key remains a user assertion and needs an installation-specific component/rotation policy. Reference: [Apple private Wi-Fi addresses](https://support.apple.com/en-ie/102509), [NetworkManager address configuration](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/settings-802-11-wireless.html).
 
-_Last modified: 2026-10-20 10:53:49_
+## Explicit batches versus individual records
+
+Use [observation runs 0.1.0](observation-runs.md) for actual batch membership and saved Attention findings. `inventory runs list/show`, Core profile.retention.runs()/run(run_id) and report context.retention.runs()/run(run_id) read the run journal without connecting/writing. Ordinary retention query/export reads observation/operation records and does not include batches. Never infer membership from similar timestamps or use current thresholds/new data to recreate historical Attention. Source links can be unavailable after authorized record deletion; preserve that state and immutable run evidence.
+
+Current inventory-job-observations 0.1.0 preserves failed collection attempts and partial/null property gaps as valid recipe-owned data; older legacy inventory export/recovery eligibility rules below do not define this contract's success criteria. Read the [inventory job guide](inventory-jobs.md) before selecting, replaying or combining current job results. Current Vault pages may omit unknown/unreadable fields and single counters, while full reports and structured retention preserve detailed values/states/times; Markdown omission is not a successful absence or health check.
+
+_Last modified: 2026-10-20 23:29:18_

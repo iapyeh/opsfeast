@@ -219,7 +219,7 @@ def execute(session, *, context, timeout):
         self.settings['hosts']['h']['enabled'] = False
         self.write()
         with patch.object(runner, 'load_runtime') as runtime:
-            report, path = runner.run(self.root, 'h', recipe=':system/network/check/port')
+            report, path = runner.run(self.root, 'h', recipe=':system/network/check/port', explicit_host=False)
         self.assertEqual(report['reason_code'], 'host_disabled')
         self.assertIsNone(path)
         runtime.assert_not_called()
@@ -227,7 +227,7 @@ def execute(session, *, context, timeout):
         self.settings['recipe_sources'] = {'profile': {'enabled': False}}
         self.write()
         with patch.object(runner, 'load_runtime') as runtime:
-            report, path = runner.run(self.root, 'h', recipe=':missing')
+            report, path = runner.run(self.root, 'h', recipe=':missing', explicit_host=False)
         self.assertEqual(report['reason_code'], 'source_disabled')
         runtime.assert_not_called()
 

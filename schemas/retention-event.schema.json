@@ -44,7 +44,8 @@
       "enum": [
         "retention.observation.created",
         "retention.observation.deleted",
-        "retention.operation.created"
+        "retention.operation.created",
+        "retention.run.updated"
       ]
     },
     "emitted_at": {
@@ -68,5 +69,5 @@
       ]
     }
   },
-  "$comment": "Last modified: 2026-10-19 14:52:29"
+  "$comment": "Last modified: 2026-10-20 17:51:56"
 }

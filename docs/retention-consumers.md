@@ -1,6 +1,6 @@
 # Retention consumers 0.1.0
 
-A consumer is a reviewed local program that reacts to retained-data changes. It can render Vault Markdown, rebuild an index, combine recipe datasets or update another local application. Recipe creators keep ownership of retention definitions. Consumers declare their input dependencies independently; adding a consumer requires no edits to the recipe or runner.
+A consumer is a reviewed local program that reacts to retained-data or explicit observation-run changes. It can render Vault Markdown, rebuild an index, combine recipe datasets or update another local application. Recipe creators keep ownership of retention definitions. Consumers declare their input dependencies independently; adding a consumer requires no edits to the recipe or runner.
 
 ## Discover the relation to a recipe
 
@@ -70,7 +70,7 @@ subscriptions:
       version: "0.1.0"
 ```
 
-All five top-level fields are required; unknown fields fail validation. `entrypoint` names a relative `.py` file. `subscriptions` is a nonempty list. Each subscription requires `event` and `selector`; permitted events are `retention.observation.created`, `retention.observation.deleted` and `retention.operation.created`. The selector permits only `recipe_reference`, `contract` and `version`, each an exact nonempty string. Contract/version must appear together. `{}` selects all events of that type. Conditions within a subscription are AND; multiple subscriptions are OR and do not duplicate a delivery. Operation events have null contract/version and can be selected by recipe reference or an empty selector.
+All five top-level fields are required; unknown fields fail validation. `entrypoint` names a relative `.py` file. `subscriptions` is a nonempty list. Each subscription requires `event` and `selector`; permitted events are `retention.observation.created`, `retention.observation.deleted`, `retention.operation.created` and `retention.run.updated`. The selector permits only `recipe_reference`, `contract` and `version`, each an exact nonempty string. Contract/version must appear together. `{}` selects all events of that type. Conditions within a subscription are AND; multiple subscriptions are OR and do not duplicate a delivery. Operation events have null contract/version and can be selected by recipe reference or an empty selector.
 
 The selected Python must be 3.11+ with the normal OpsFeast initialization dependencies. Declare any consumer-specific dependencies and supported data versions in its README and verify availability in the selected environment; the dispatcher does not install packages. It imports the registered entrypoint and invokes:
 
@@ -131,4 +131,8 @@ The checkout-level `retention_consumers.catalog(root, recipe=None)`, `related(ro
 
 The bundled [Vault consumer](../consumers/vault/README.md) delegates full local rebuilds to `host_vault`, whose renderer remains `vault_content`. Local synthetic tests cover discovery without imports, exact source/contract/version matching, deduplication, disabled backlog, durable rollback/crash recovery, independent failures/retries, deletion/reinsertion, concurrent dispatch, CLI and operation events. They do not establish native SSH/su/sudo, external delivery, application-specific idempotency or live network/cloud filesystem safety. No scheduler or daemon automatically wakes pending work; dispatch occurs on the next shared write/replay or explicit command.
 
-_Last modified: 2026-10-19 15:24:36_
+## Observation-run update events
+
+`retention.run.updated` is an additional supported event. It shares event envelope 0.1.0, with contract observation-run, version 0.1.0, the run UUID in record_id, anchor host in host_id and batch start in observed_at. The update/table write commits in the same annual archive transaction. It is not an observation creation event and does not change recipe retention schemas. Consumers subscribing to this event read `context.retention.run(event["record_id"])` or `.runs()`, not `.show()`. The bundled Vault consumer subscribes and renders [explicit run pages](observation-runs.md#attention-evidence-and-vault-pages). Rebuild/replay does not backfill old batches. Current persisted state can be newer than the event hint; preserve completed policy/findings and existing at-least-once/idempotency rules. Disabling consumers leaves durable data intact.
+
+_Last modified: 2026-10-20 23:27:35_

@@ -154,4 +154,12 @@ returns the full evidence within an authorized host scope. Human tables explain 
 root shell and show sudo already_root. Native evidence covers the two tested two-hop
 paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
-_Last modified: 2026-10-20 11:24:28_
+## Read execution-batch evidence
+
+Use `python -B tools/opsfeast.py inventory runs list --profile NAME --json`, then `inventory runs show RUN_UUID --profile NAME --json`, or Core/report `profile.retention.runs()/run(run_id)` and `context.retention.runs()/run(run_id)`. See [explicit run contract/lifecycle](../../docs/observation-runs.md) and [schema](../../schemas/observation-run.schema.json). These are read-only; do not query private SQLite tables or group observations by nearby timestamps. Query/show select individual retained records; run IDs require run(), including retention.run.updated consumer events.
+
+Preserve actual selected hosts/icons, major jobs, skipped/preflight-failed targets, retention states, source/baseline IDs and stored policy/findings. Completed batches are immutable; later settings/new observations affect current pages only. A running/pending batch can reflect interrupted persistence, and success with all targets skipped is not successful collection. A failed source record link cannot be filled from another observation. No automatic batch backfill, resume/reconciliation, pruning or import is supplied. Rebuild regenerates owned pages without modifying retention/run data or reconnecting. Read [Vault current/report/batch separation](../../docs/host-vault.md) before interpreting omissions or authoring a content consumer.
+
+Group catalogs include configured recipe policy; Core/UI snapshots mask recognized sensitive fields in nested vars, while explicit CLI dump remains raw. Name-based masking does not make arbitrary custom values safe to publish. Use resolved runner vars for execution and keep private bindings out of output.
+
+_Last modified: 2026-10-20 23:35:59_

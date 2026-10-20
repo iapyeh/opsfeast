@@ -137,7 +137,7 @@ class VaultReadabilityTests(unittest.TestCase):
         before = {p.relative_to(self.root): p.read_bytes() for p in (self.root/'retention').rglob('*.sqlite3')}
         with patch('opsfeast.load_session_class', side_effect=AssertionError('no host operation')):
             vault.rebuild(self.root)
-        pages = [p for p in (self.root/'vault/hosts/production/node').rglob('*.md') if p.name != 'README.md']
+        pages = [p for p in (self.root/'vault/hosts/production/node').rglob('*.md') if p.name not in ('README.md', 'SUMMARY.md')]
         self.assertTrue(any('reports' in p.parts for p in pages))
         self.assertTrue(any('records' in p.parts for p in pages))
         for page in pages:
@@ -145,7 +145,7 @@ class VaultReadabilityTests(unittest.TestCase):
                 self.assertIn('Identifiers and source evidence', page.read_text())
             else:
                 self.assertNotIn('Collection metadata', page.read_text())
-                self.assertIn('Latest report', page.read_text())
+                self.assertIn('Source report', page.read_text())
             self.assertNotIn('Origin: {', page.read_text())
         after = {p.relative_to(self.root): p.read_bytes() for p in (self.root/'retention').rglob('*.sqlite3')}
         self.assertEqual(before, after)
