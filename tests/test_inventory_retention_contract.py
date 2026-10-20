@@ -20,6 +20,7 @@ import recipe_inspection
 from opsfeast import ConfigError, read_yaml
 import test_host_vault as fixtures
 from test_result_data import raw
+from inventory_fixture import historical_metadata
 
 BUNDLE = ROOT / 'recipes/system/inventory/overview'
 
@@ -31,17 +32,24 @@ class InventoryRetentionContractTests(unittest.TestCase):
     def metadata(self):
         return read_yaml(BUNDLE/'recipe.yaml')
 
+    def historical_directory(self):
+        candidate = self.root/'historical-definition'
+        candidate.mkdir(exist_ok=True)
+        shutil.copy(BUNDLE/'retention.schema.json', candidate/'retention.schema.json')
+        (candidate/'recipe.yaml').write_text(json.dumps(historical_metadata()))
+        return candidate
+
     def test_recipe_declaration_is_discovery_authority(self):
         metadata = self.metadata()
         report = recipe_inspection.inspect_one(BUNDLE, [])
         self.assertEqual(report['status'], 'success', report)
         self.assertEqual(report['retention']['declaration'], metadata['retention'])
-        self.assertEqual(report['retention']['schema_path'], str(BUNDLE/'retention.schema.json'))
+        self.assertEqual(report['retention']['schema_path'], str(BUNDLE/'job-retention.schema.json'))
         self.assertIn('retention list', report['retention']['cli'])
         # Discovery never guesses a declaration based on recipe ID.
         self.assertIsNone(store.describe({'id': 'inventory-system'})['declaration'])
         metadata['id'] = 'some-other-producer'
-        self.assertEqual(store.describe(metadata)['declaration']['contract'], 'inventory-observations')
+        self.assertEqual(store.describe(metadata)['declaration']['contract'], 'inventory-job-observations')
 
     def test_descriptor_requires_retention_and_rejects_output_adapter_knobs(self):
         metadata = self.metadata()
@@ -61,7 +69,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
             report = recipe_inspection.inspect_one(BUNDLE, [])
             saved = replay.snapshot(self.metadata(), BUNDLE)
         self.assertEqual(report['status'], 'success', report)
-        self.assertEqual(saved['normalizer_sha256'], hashlib.sha256((BUNDLE/'retention.py').read_bytes()).hexdigest())
+        self.assertEqual(saved['normalizer_sha256'], hashlib.sha256((BUNDLE/'job_retention.py').read_bytes()).hexdigest())
 
     def test_schema_declares_nested_data_meanings_units_and_limits(self):
         schema = json.loads((BUNDLE/'retention.schema.json').read_text())
@@ -102,7 +110,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
         candidate = self.root/'candidate'
         candidate.mkdir()
         shutil.copy(BUNDLE/'retention.schema.json', candidate/'retention.schema.json')
-        meta = self.metadata()
+        meta = historical_metadata()
         meta.update(version=report['recipe']['version'])
         (candidate/'recipe.yaml').write_text(json.dumps(meta))
         (candidate/'retention.py').write_text("raise AssertionError('candidate code must never load')")
@@ -122,7 +130,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
         file = self.root/'old-raw.json'
         file.write_text(json.dumps(report))
         self.assertEqual(replay.ingest(self.root, [file])['status'], 'failed')
-        result = replay.ingest(self.root, [file], recipe_directory=BUNDLE)
+        result = replay.ingest(self.root, [file], recipe_directory=self.historical_directory())
         self.assertEqual(result['status'], 'success', result)
 
     def test_wrong_normalizer_digest_fails_without_data_writes(self):
@@ -137,7 +145,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
         self.assertEqual(replay.ingest(self.root, [file])['status'], 'failed')
         self.assertEqual(before, {p:p.read_bytes() for p in before})
         self.assertEqual(store.records(self.root), [])
-        self.assertEqual(replay.ingest(self.root, [file], recipe_directory=BUNDLE)['status'], 'success')
+        self.assertEqual(replay.ingest(self.root, [file], recipe_directory=self.historical_directory())['status'], 'success')
 
     def test_schema_digest_is_verified_independently_of_code(self):
         saved = replay.snapshot(self.metadata(), BUNDLE)

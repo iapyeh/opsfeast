@@ -1,5 +1,11 @@
 # AI Agent Guidance
 
+Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../docs/recipe-execution.md).
+
+
+For inventory property queries, grouping/interval overrides or periodic collection, route to [recipes](opsfeast-recipes/SKILL.md), [result-data](opsfeast-result-data/SKILL.md) and the [inventory job guide](../docs/inventory-jobs.md). `inventory describe/query/run/configure/status/dispatch/latest/cron` are implemented; query defaults to no store, optional --save preserves manual comparisons, and scheduled hosts are explicitly opt-in. Failures leave gaps until the normal next interval. These jobs differ from saved invocations and retention-consumer dispatch. Public YANG node references and source/sample times belong to the recipe/retention contract, not Vault remapping.
+
+
 For recipe classification, variable-depth paths or deciding where an agent writes a new recipe, route through [recipes](opsfeast-recipes/SKILL.md) and [taxonomy/location](../docs/recipe-taxonomy.md). Bundle paths are classified under system/ and feast/; user recipes default to the selected profile's recipes/, and shared code uses registered external sources. Stable IDs do not make path moves transparent to exact selectors/jobs/consumer subscriptions.
 
 For automatic retained-data handlers/converters, read [the consumer contract](../docs/retention-consumers.md), then the [consumer catalog](../consumers/README.md). Route through result-data and recipes skills: static dependency discovery, explicit local activation, read-only consumer input, idempotent outputs and durable per-consumer retry are implemented. No per-recipe runner branch or subscriber list is needed.
@@ -18,7 +24,7 @@ OpsFeast skills follow the [tool selection workflow](../docs/recipe-authoring.md
 
 SSHScript execution semantics belong to the SSHScript project. Guidance here should reference the appropriate SSHScript version rather than duplicate its API documentation.
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../docs/cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](../docs/cli.md). It covers tools/opsfeast.py and its recipe/inventory subcommands for administrators and agents.
 
 For an existing instance received from a colleague, route to the [handover prompt](../README.md#take-over-an-existing-opsfeast-instance): identify the tool checkout and inherited management roots, read skills and check readiness without init or host operations. For a later release check and authorized update, use the [update/skill-refresh prompt](../README.md#update-opsfeast-and-refresh-your-agents-skills). A workspace containing only Feast data is not automatically a Git checkout. These prompts explain actual knowledge reading versus platform-supported installed-skill refresh.
 
@@ -57,4 +63,4 @@ These skills rely on the repository layout and can be read directly by any agent
 
 Start with the [getting-started guide](../docs/getting-started.md). The `tools/opsfeast.py` utility initializes and validates management configuration. [Skill download and update checks](../docs/skill-updates.md) use `tools/skill_bundle.py` to compare or stage complete public SSHScript bundles; they do not activate skills or install them into agent-specific locations. The Ops hosts skill above is updated with this repository. Read [recipe experience](../docs/recipe-experience.md) for shared catalog, offline reports/artifacts, basic views, bundles and saved reruns. Read [general execution](../docs/recipe-execution.md) for Python-session capabilities and --var/--vars-file; the inventory-specific flow is described in the [recipe guide](../recipes/system/inventory/overview/README.md).
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:24:28_

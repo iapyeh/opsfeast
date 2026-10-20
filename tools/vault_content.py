@@ -132,6 +132,9 @@ def history_filename(record):
         # Intent and result share observation time; the operation journal keeps its own naming.
         digest = hashlib.sha256(record['record_id'].encode()).hexdigest()[:12]
         return observed.strftime('%Y-%m-%d_%H-%M-%S.%fZ') + '-' + page_slug(record) + '--' + digest + '.md'
+    if (record.get('retention_definition') or {}).get('contract') == 'inventory-job-observations':
+        digest = hashlib.sha256(record['record_id'].encode()).hexdigest()[:12]
+        return observed.strftime('%Y%m%d%H%M%S') + '-' + page_slug(record) + '--' + digest + '.md'
     return observed.strftime('%Y%m%d%H%M%S') + '-' + page_slug(record) + '.md'
 
 
@@ -194,7 +197,24 @@ def render_observation(record, *, current=False):
     lines = ['# ' + text(record['host_id']), '']
     observations = data.get('observations', {})
     inventory = data.get('inventory')
-    if inventory:
+    if 'groups' in data:
+        lines += ['## Inventory jobs', '', 'Each group retains its own source times. Missing samples are gaps, not carried-forward measurements.', '']
+        if current and data.get('identity_warning'):
+            lines += ['> Identity warning: '+text(data['identity_warning']), '']
+        for group in data['groups']:
+            lines += ['### '+text(group['title']), '', 'State: '+text(group['status'])+'; collected: '+text(group['observed_at']), '']
+            if group.get('source_record_id'):
+                lines += ['Source observation: '+text(group['source_record_id'])+'; actor: '+text(group['source_actor'].get('username') or 'unknown'), '']
+            definitions = group.get('property_definitions',data.get('property_definitions',{}))
+            lines += markdown_table(['Property','Entity','Value','Unit','State','Sample time','Source'],
+                [(s['property'], value_text(s['keys']), value_text(s['value'],s['property'].split('.')[-1]),
+                  definitions.get(s['property'],{}).get('unit',''),s['status'],s['observed_at'],s['source_id']) for s in group['samples']]) + ['']
+            if not group['samples']:
+                lines += [('Complete enumeration returned no matching instances.' if group['coverage'] and all(c['complete'] for c in group['coverage']) else
+                           'No samples; inspect coverage and collection evidence.'), '']
+        if data.get('note'):
+            lines += ['Manual note: '+text(data['note']), '']
+    elif inventory:
         for section in ('system', 'hardware', 'storage', 'network', 'software', 'services'):
             if section in inventory:
                 lines += ['## ' + label(section), '']
@@ -220,7 +240,7 @@ def render_observation(record, *, current=False):
         report_link = '../' + record['observed_at'][:4] + '/reports/' + history_filename(record)
         return with_contents(lines, report_link)
     evidence = record.get('collection_evidence')
-    actor = evidence['actor'] if evidence else {
+    actor = evidence['actor'] if evidence else data.get('actor') or {
         'username': None, **data.get('collection_scope', {'mode': 'unverified', 'effective_uid': None})}
     lines += ['## Collection metadata', '']
     overview = [('Host', record['host_id']), ('Report', page_title(record)),
@@ -253,7 +273,12 @@ def render_observation(record, *, current=False):
              value_text(probe['exitcode']), value_text(format_time(probe['observed_at']))] for probe in probes]) + ['']
         lines += ['Commands are recorded sources, not instructions to execute. Identity-adapter queries may supplement hardware fields; their raw execution evidence remains separate.', '']
     else:
-        lines += ['Collection commands and per-query reasons were not retained for this observation. '
+        if 'groups' in data:
+            lines += ['### Collection queries', '']
+            lines += markdown_table(['Source','Command','State','Reason','Sample time'],
+                [(p['id'],p.get('command') or 'Acquisition',p['status'],p.get('reason_code') or '',p['observed_at']) for p in data.get('probes',[])])+['']
+        else:
+            lines += ['Collection commands and per-query reasons were not retained for this observation. '
                   'Inspect its original raw result for historical execution evidence; rebuilding a page does not collect missing data.', '']
     if data.get('collection_scope'):
         lines += ['### Collection scope', '']
@@ -263,7 +288,7 @@ def render_observation(record, *, current=False):
     metadata = {key: value for key, value in record.items() if key not in ('data', 'collection_evidence')}
     metadata['dataset_evidence'] = {
         key: value for key, value in data.items()
-        if key not in ('inventory', 'observations', 'description', 'status', 'collection_scope', 'identity_warning')
+        if key not in ('inventory', 'observations', 'description', 'status', 'collection_scope', 'identity_warning','groups','probes','actor','property_definitions')
     }
     lines += dataset_lines(human_times(metadata), level=3)
 
@@ -312,7 +337,14 @@ def build(root, runtime):
         for _, record in sorted(latest.items()):
             recipe = record['recipe_reference']
             name = latest_filename(record)
-            rendered = render_observation(record, current=True)
+            current_record = record
+            if (record.get('retention_definition') or {}).get('contract') == 'inventory-job-observations':
+                import copy
+                from inventory_jobs import latest_groups
+                current_record = copy.deepcopy(record)
+                same_source = [r for r in items if r['kind']=='observation' and current_identity(r)==current_identity(record)]
+                current_record['data']['groups'] = latest_groups(same_source)
+            rendered = render_observation(current_record, current=True)
             path = folder + '/records/' + name
             if path in entries:
                 raise ConfigError('vault latest-state filename collision')
@@ -331,7 +363,7 @@ def build(root, runtime):
         entries[folder + '/records/README.md'] = with_contents(summary)
         configured = runtime.hosts.get(host, {})
         inventory = next((r for r in reversed(items) if r['kind'] == 'observation' and r['recipe_id'] == 'inventory-system'), None)
-        system = inventory['data']['observations'].get('system_name', {}).get('value') if inventory else None
+        system = inventory['data'].get('observations',{}).get('system_name', {}).get('value') if inventory else None
         last = max(latest.values(), key=lambda r: (r['observed_at'], r['record_id'])) if latest else None
         index.append('| [' + text(configured.get('label') or host) + '](' + quote(folder + '/README.md', safe='/') + ') | ' +
                      ' | '.join(text(v) for v in (configured.get('enabled', True) if host in runtime.hosts else 'not configured',

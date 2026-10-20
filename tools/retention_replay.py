@@ -143,7 +143,9 @@ def ingest(root, files=(), *, all_files=False, recipe_directory=None, dry_run=Fa
             source_identity(report)
             if not isinstance(report.get('recipe', {}), dict):
                 raise ConfigError('raw recipe must be an object')
-            if report.get('status') not in ('success', 'partial') or report.get('evidence_kind') not in ('local', 'ssh'):
+            job_failure = (report.get('status') == 'failed' and
+                           (report.get('retention_snapshot',{}).get('retention') or {}).get('contract') == 'inventory-job-observations')
+            if report.get('status') not in ('success', 'partial') and not job_failure or report.get('evidence_kind') not in ('local', 'ssh'):
                 result = {'status': 'skipped', 'reason_code': 'result_not_retained'}
             elif not report.get('host_id') or 'report_contract' in report:
                 result = {'status': 'skipped', 'reason_code': 'not_host_observation'}

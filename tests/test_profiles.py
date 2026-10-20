@@ -1,4 +1,5 @@
 """Synthetic profile lifecycle and interaction tests; no SSH or real user data."""
+from recipe_test_support import recipe_main
 import contextlib
 import io
 import json
@@ -11,7 +12,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import opsfeast as ops
-import run_recipe
+import recipe_runner as run_recipe
 
 
 class Terminal(io.StringIO):
@@ -310,8 +311,8 @@ class ProfileTests(unittest.TestCase):
         with patch.object(run_recipe, 'run', return_value=(report, path)) as run, \
                 patch('access_check.check_many', return_value={'status': 'success', 'hosts': []}), \
                 contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(run_recipe.main(['system/inventory/overview', '--host', 'localhost', '--profile', 'inventory']), 0)
-        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result=None)
+            self.assertEqual(recipe_main(['system/inventory/overview', '--host', 'localhost', '--profile', 'inventory']), 0)
+        run.assert_called_once_with(path.parent, 'localhost', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
         self.assertEqual(ops.load_profiles()['default_profile'], 'main')
 
     def test_profile_boundaries_and_result_directories(self):
@@ -329,10 +330,19 @@ class ProfileTests(unittest.TestCase):
         for profile in ('main', 'inventory'):
             session = Mock()
             session.exec_command.return_value = SimpleNamespace(stdout='OpenBSD\n', stderr='', exitcode=0)
-            report, path = run_recipe.run(ops.resolve_root(profile=profile), 'localhost',
+            from inventory_fixture import COLLECTOR
+            import inventory_jobs
+            from contextlib import nullcontext
+            original = inventory_jobs.collect_host
+            def query(*args, **kwargs):
+                kwargs['properties'] = ['system.kernel_name']
+                with patch.object(inventory_jobs,'collection_actor',return_value=nullcontext(session)):
+                    return original(*args, **kwargs)
+            with patch.object(inventory_jobs,'collect_host',side_effect=query):
+                report, path = run_recipe.run(ops.resolve_root(profile=profile), 'localhost',
                                           recipe='system/inventory/overview',
                                           session_class=Mock(return_value=session))
-            self.assertEqual(report['status'], 'unsupported')
+            self.assertEqual(report['status'], 'failed')
             self.assertEqual(path.parent, self.checkout / 'feasts' / profile / 'observations')
             paths.append(path)
         self.assertTrue(all(p.is_file() for p in paths))

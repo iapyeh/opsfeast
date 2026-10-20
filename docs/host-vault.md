@@ -1,5 +1,8 @@
 # Bundled host vault content application
 
+Inventory job observations 0.1.0 use the [job collection contract](inventory-jobs.md). Historical pages preserve group/sample times and probe evidence; current pages combine latest attempts per property, retaining mixed ages, identity warnings and source observation IDs. A failed latest attempt is a gap, not an old success. For this contract only, historical names add a short record digest after the time/title to preserve multiple manual samples in one second. Other observation naming rules below retain their scope. Consumers do not remap commands to YANG nodes or recollect during rebuild.
+
+
 Automatic publication is performed by the [bundled Vault consumer](../consumers/vault/README.md), registered as `builtin:vault` through the [consumer contract](retention-consumers.md). Its subscriptions are discoverable with `consumers list --recipe system/inventory/overview`. Failures are tracked per event/consumer and retried with `consumers dispatch vault`; explicit `vault rebuild` regenerates current content independently of delivery acknowledgements.
 
 Vault is the bundled application over [recipe retention](retention.md). The platform manages its structure, identity/path rules and output ownership. The bundled content author renders retained observations and operation evidence. User AI agents may create other content authors or use retention for web pages, graphs and reports without using vault.
@@ -89,4 +92,4 @@ Current selection groups each host by origin namespace, recipe-source qualifier 
 
 Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
 
-_Last modified: 2026-10-19 20:06:02_
+_Last modified: 2026-10-20 10:53:49_

@@ -15,7 +15,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import build_backend
 from opsfeast import Instance
-import run_recipe
+import recipe_runner as run_recipe
 from recipe_inspection import inspect_one
 from recipe_catalog import catalog
 from test_core_api import Actor

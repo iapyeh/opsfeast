@@ -59,27 +59,22 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(store.settings(self.root)['namespace'], 'initial')
 
     def test_init_then_first_inventory_automatically_retains_without_migrate(self):
-        import test_inventory_system as inventory
+        import test_inventory_jobs as jobs
         from opsfeast import initialize
-        fixture = inventory.RunnerTests()
-        fixture.setUp()
-        self.addCleanup(fixture.doCleanups)
-        initialize(fixture.root, quiet=True, profile='first-inventory')
-        # Keep execution synthetic while exercising the runner's operational retention path.
-        import run_recipe
-        from contextlib import nullcontext
-        with patch('inventory_actor.collection_actor', return_value=nullcontext(fixture.session)):
-            report, path = run_recipe.run(fixture.root, 'example', session_class=fixture.session_class,
-                                          runtime={'verification': 'synthetic-test'}, access_checked=True)
-        self.assertEqual(report['status'], 'success', report)
+        initialize(self.root, quiet=True, profile='first-inventory')
+        actor = jobs.Actor()
+        with patch('inventory_jobs.connected', jobs.contextmanager(lambda *args, **kwargs: iter([actor]))), \
+                patch('inventory_jobs.collection_actor', jobs.contextmanager(lambda *args, **kwargs: iter([actor]))):
+            report = jobs.service.collect_host(self.root, 'node', properties=['system.kernel_name'], save=True, session_class=jobs.Actor)
+        self.assertEqual(report['status'], 'success')
         self.assertEqual(report['retention']['status'], 'stored')
-        self.assertEqual(path.parent, fixture.root.resolve() / 'observations')
-        found = store.records(fixture.root)
+        path = Path(report['result_path'])
+        self.assertEqual(path.parent, self.root/'observations')
+        found = store.records(self.root)
         self.assertEqual(len(found), 1)
-        self.assertEqual(found[0]['namespace'], 'first-inventory')
-        self.assertTrue((fixture.root / 'vault/HOSTS.md').exists())
-        initialize(fixture.root, quiet=True, profile='renamed')
-        self.assertEqual(store.records(fixture.root), found)
+        self.assertTrue((self.root/'vault/HOSTS.md').exists())
+        initialize(self.root, quiet=True, profile='renamed')
+        self.assertEqual(store.records(self.root), found)
 
     def test_core_profile_init_namespace_override_and_saved_default(self):
         from opsfeast import Instance
@@ -336,7 +331,7 @@ class VaultTests(unittest.TestCase):
         return directory
 
     def test_runner_intent_failure_prevents_connection(self):
-        import run_recipe
+        import recipe_runner as run_recipe
         self.enable()
         self.recipe()
         factory = Mock()
@@ -346,7 +341,7 @@ class VaultTests(unittest.TestCase):
         factory.assert_not_called()
 
     def test_runner_success_and_outcome_failure_preserves_raw(self):
-        import run_recipe
+        import recipe_runner as run_recipe
         self.enable()
         self.recipe()
         factory = Mock(return_value=Mock())

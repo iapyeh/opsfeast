@@ -1,5 +1,7 @@
 """Portable catalog 0.1.0; static inspection, no entrypoint imports or connections."""
 
+from pathlib import Path
+
 from opsfeast import ConfigError, Validator, REPOSITORY_RECIPES
 from recipe_inspection import inspect_one
 
@@ -59,6 +61,7 @@ def catalog(root=None, query=None, kind=None):
                     'contract': contract, 'status': inspected['status'], 'errors': list(inspected['errors']),
                     'runnable': inspected['status'] == 'success' and contract in ('valid-python-session', 'valid-python-report', 'valid-python-recipe', 'valid-inventory-system'),
                     'retention': inspected.get('retention'),
+                    'collection': inspected.get('collection'),
                     'inputs': meta.get('inputs', {}), 'dependencies': meta.get('dependencies', {}),
                     'verification': meta.get('verification', {}), 'descriptor': meta,
                     'availability_evidence': 'static-only; dependencies, data and host applicability are not verified'}
@@ -92,6 +95,15 @@ def choose(root, selector):
     candidates = exact or [item for item in data['recipes'] if item['id'] == selector]
     if len(candidates) > 1:
         raise ConfigError('recipe selector is ambiguous; use an explicit source/path reference')
+    if not candidates and root is not None:
+        config = configuration(root)
+        info = config.recipe_location(selector, config.root/'hosts.yaml', cli=True, check_exists=False)
+        if not info['enabled']:
+            # Disabled references require no descriptor/code reads and cannot connect.
+            return {'reference':info['reference'], 'kind':'operation', 'runnable':True,
+                    'descriptor':{}, 'collection':None, 'consumers':[]}
+        directory = info['scope'].path(info['pattern'], info['origin']).resolve()
+        candidates = [item for item in data['recipes'] if Path(item['directory']).resolve()==directory and item['source']==info['name']]
     if not candidates:
         raise ConfigError('recipe not found in active catalog; check sources and use an explicit reference')
     item = dict(candidates[0], consumers=[])

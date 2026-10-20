@@ -14,7 +14,7 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 ## Command-line tools
 
 - **[Recipe sources and inputs](recipe-sources.md)**: checkout/profile/registered roots, shorthand selections, variable contracts, enabled flags and per-run exclusions.
-- **[Complete CLI reference](cli.md)**: opsfeast.py subcommands, run_recipe.py options, defaults, platform dispatch, cache behavior, outputs, storage and exit codes for humans and agents.
+- **[Complete CLI reference](cli.md)**: opsfeast.py subcommands, opsfeast.py recipes run options, defaults, platform dispatch, cache behavior, outputs, storage and exit codes for humans and agents.
 - [Host initialization and diagnostics](host-diagnostics.md): detailed platform/credential semantics and su/sudo verification limits.
 
 ## Configuration guide
@@ -29,7 +29,7 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 ## Initial decisions
 
 - The central project is named OpsFeast; its repository is `opsfeast`.
-- Built-in recipes live under `recipes/`; users may author and share their own recipes in separate repositories or archives. Python-session execution is implemented through run_recipe.py; distribution tooling remains planned.
+- Built-in recipes live under `recipes/`; users may author and share their own recipes in separate repositories or archives. Python-session execution is implemented through opsfeast.py recipes run; distribution tooling remains planned.
 - SSHScript remains the currently supported execution foundation; other backends are a design direction, not implemented support.
 - Obsidian, AI agent workflows, and compliance evidence collection are integrations or functional areas, not restrictions on the project name.
 - The public repository contains tools and examples. User operational data stays in the user's environment.
@@ -53,4 +53,4 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 Extend the implemented Python-session contract only with versioned, tested capabilities. Implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/FreeBSD/SSH and native su/sudo validation and the collect-record-repeat-compare workflow, including preservation of human notes.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

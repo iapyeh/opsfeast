@@ -40,10 +40,10 @@ One Feast may eventually use multiple authorized Buffets. Enterprise review and 
 
 SSHScript is the currently supported execution foundation for host diagnostics and the recipe execution tool, and the preferred tool for suitable command execution and session orchestration. OpsFeast also serves as a practical SSHScript showcase. Recipes may use CLIs, SDKs, HTTP APIs or mixed tools when their dependencies, behavior and evidence contracts are defined and verified. Follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools); user-selected tools and operational constraints take precedence. Standalone recipes need their own reviewed execution instructions. A name change or documented tool preference does not implement additional runner backends.
 
-OpsFeast currently provides profiles, configuration checks, explicit host/account diagnostics, static recipe inspection and run_recipe.py for inventory-system and [general Python-session recipes](recipe-execution.md). [Catalog/report/artifact/bundle/job commands](recipe-experience.md) now support discovery, plain views, offline reports, verified candidates and ordinary reruns. Exchange client/server, automatic installer, publication CLI, scheduler, general sandbox and machine-enforced authorization records are not implemented. See the [README status](../README.md#status), [CLI reference](cli.md), [recipe catalog](../recipes/README.md) and [vision](vision.md).
+OpsFeast currently provides profiles, configuration checks, explicit host/account diagnostics, static recipe inspection and opsfeast.py recipes run for inventory-system and [general Python-session recipes](recipe-execution.md). [Catalog/report/artifact/bundle/job commands](recipe-experience.md) now support discovery, plain views, offline reports, verified candidates and ordinary reruns. Exchange client/server, automatic installer, publication CLI, scheduler, general sandbox and machine-enforced authorization records are not implemented. See the [README status](../README.md#status), [CLI reference](cli.md), [recipe catalog](../recipes/README.md) and [vision](vision.md).
 
 ## Naming and compatibility
 
 Use OpsFeast and OpsBuffet as complete public brands; Feast and Buffet are internal concepts. Prefer opsfeast for the local repository and tools/opsfeast.py for new commands. Existing CLI and configuration compatibility is documented in the [migration guide](migration.md).
 
-_Last modified: 2026-10-15_
+_Last modified: 2026-10-20 11:22:14_

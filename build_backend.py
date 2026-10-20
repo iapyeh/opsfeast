@@ -21,7 +21,7 @@ def source_files():
     for name in ('VERSION', 'README.md', 'AGENTS.md', 'pyproject.toml', 'build_backend.py',
                  'requirements.txt', 'requirements-init.txt', 'requirements-tui.txt'):
         yield Path(name)
-    allowed = {'.py', '.md', '.yaml', '.json', '.txt', '.sh', '.html', '.css', '.js', '.svg'}
+    allowed = {'.py', '.md', '.yaml', '.json', '.txt', '.sh', '.html', '.css', '.js', '.svg', '.yang'}
     for directory in ('opsfeast', 'tools', 'recipes', 'consumers', 'skills', 'docs', 'schemas', 'templates', 'tests'):
         for path in sorted((ROOT / directory).rglob('*')):
             if path.is_file() and not path.is_symlink() and (path.suffix in allowed or path.name == 'LICENSE') and '__pycache__' not in path.parts:

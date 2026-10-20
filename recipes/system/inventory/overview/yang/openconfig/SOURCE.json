@@ -1,0 +1,680 @@
+{
+  "repository": "https://github.com/openconfig/public",
+  "commit": "60011899be5486cafc68b8d53f0cf4060d34a79d",
+  "license": "Apache-2.0",
+  "description": "Unmodified system module and its import/include closure. Module metadata contains original copyright/license notices.",
+  "modules": [
+    {
+      "module": "openconfig-aaa",
+      "revision": "2025-10-31",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-aaa.yang",
+      "sha256": "75a3d4f7e22d846c4402a809c0a9a071a76e0ee2d36ffc1d1429e24101c9b824"
+    },
+    {
+      "module": "openconfig-aaa-radius",
+      "revision": "2025-10-31",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-aaa-radius.yang",
+      "sha256": "f174b49131eacc2210f8689f9ecd74193f2ddc818d4c9b3ed1aaece54e672244"
+    },
+    {
+      "module": "openconfig-aaa-tacacs",
+      "revision": "2025-10-31",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-aaa-tacacs.yang",
+      "sha256": "58f4a7343becb6da0d95400f791f30259da5451d21b008fb3840654929193f4f"
+    },
+    {
+      "module": "openconfig-aaa-types",
+      "revision": "2018-11-21",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-aaa-types.yang",
+      "sha256": "e4275b400e7c1bc3ca7be8ecb56c4bb61eaea0b537480e79065eac16d5c07dac"
+    },
+    {
+      "module": "openconfig-acl",
+      "revision": "2023-02-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/acl/openconfig-acl.yang",
+      "sha256": "0b37eb2dea5bd240e68186f6db65d1eff775308ad6475e692c01188eeebdf946"
+    },
+    {
+      "module": "openconfig-aft",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft.yang",
+      "sha256": "df6e4c5548197bbcc6e8e8a68e938b381c816a6e0e5fb7bcb803d05a34a3ec41"
+    },
+    {
+      "module": "openconfig-aft-common",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-common.yang",
+      "sha256": "a313421e128a71eb09b31f0d42e100ba744ecb764c73a66e905ae9bb56324bf8"
+    },
+    {
+      "module": "openconfig-aft-ethernet",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-ethernet.yang",
+      "sha256": "058d37ada7d4100d5aeb1d61969751fb53b9c20b21056aaee822b3bb96fa06af"
+    },
+    {
+      "module": "openconfig-aft-ipv4",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-ipv4.yang",
+      "sha256": "f6ab265288156848dc8fd1b5b1aface05bb3f35e982b607ccba9a06c8e7167b8"
+    },
+    {
+      "module": "openconfig-aft-ipv6",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-ipv6.yang",
+      "sha256": "a6c02e2fa61695394a32eccba0dc5f213989ce014802c7402878e147b0acfe1f"
+    },
+    {
+      "module": "openconfig-aft-mpls",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-mpls.yang",
+      "sha256": "1e1daf0a7e50d70ae262aab1a7affe413d49f51ba2ef2b33f05bf6494b35ddf7"
+    },
+    {
+      "module": "openconfig-aft-pf",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-pf.yang",
+      "sha256": "e9f5e928b9c8da06d9f0a049610b5dc53a8ceb14ba9297e7634142a339639c22"
+    },
+    {
+      "module": "openconfig-aft-state-synced",
+      "revision": "2026-09-01",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-state-synced.yang",
+      "sha256": "d536795b0cfdd1295efe3bda6052da20e5096d50414c5e676f5b056f5c54f833"
+    },
+    {
+      "module": "openconfig-aft-types",
+      "revision": "2025-01-28",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/aft/openconfig-aft-types.yang",
+      "sha256": "c04fe4d883d04d4f43d09bc0dfdfa14d49c3e3b9c3b2c947a8206ff2a392b222"
+    },
+    {
+      "module": "openconfig-alarm-types",
+      "revision": "2018-11-21",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-alarm-types.yang",
+      "sha256": "c44254634930e07d144f51a74289b88dbcaf1fde5688cdae314f97d825733883"
+    },
+    {
+      "module": "openconfig-alarms",
+      "revision": "2019-07-09",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-alarms.yang",
+      "sha256": "10c1b592e0e7a09a5e7b4ae04a9838cbfc33554a7a5e0be2b13fc74c7310de3f"
+    },
+    {
+      "module": "openconfig-bfd",
+      "revision": "2025-09-03",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bfd/openconfig-bfd.yang",
+      "sha256": "c30c87a9a2692abb6e200a9035f48bbf9236a8f11e98047fa13dace07cfce4e1"
+    },
+    {
+      "module": "openconfig-bgp",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp.yang",
+      "sha256": "fc45d02f3f1eecb9a5f9048077b97419890405746a881fb1819a3630df748233"
+    },
+    {
+      "module": "openconfig-bgp-common",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-common.yang",
+      "sha256": "dfb61a757f17e07c7053f439d9b489319ea0172722e7b5773cf7989211eaa234"
+    },
+    {
+      "module": "openconfig-bgp-common-multiprotocol",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-common-multiprotocol.yang",
+      "sha256": "30703a2cecd5e1f692bd31009a423b6cc99fea3b165c8eff91da8c9b7f72f242"
+    },
+    {
+      "module": "openconfig-bgp-common-structure",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-common-structure.yang",
+      "sha256": "d63059fb8191ae1dc5ce686d1782df99d20ef2b927baf5697afa90a38a06d46c"
+    },
+    {
+      "module": "openconfig-bgp-errors",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-errors.yang",
+      "sha256": "d95b97e2d3c8844250175a2162235c3b758feaa2ba91ecd162d87e6a3b2bc868"
+    },
+    {
+      "module": "openconfig-bgp-global",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-global.yang",
+      "sha256": "d0a0cac0047612f467a76522d6240551d1f2a1201308084617966c46d41f0a51"
+    },
+    {
+      "module": "openconfig-bgp-neighbor",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-neighbor.yang",
+      "sha256": "6c80d4da071fbbc6d7b72634c492d06680a07b93964ead5fbe129b86a1365297"
+    },
+    {
+      "module": "openconfig-bgp-peer-group",
+      "revision": "2025-04-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-peer-group.yang",
+      "sha256": "823d86a98fdc1444e40b832e3147543be4f71c0fccfee5de8069cbbe5aa08907"
+    },
+    {
+      "module": "openconfig-bgp-types",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/bgp/openconfig-bgp-types.yang",
+      "sha256": "377d9b49712fc28d732220ffd8a6241586f8f36ae0fc165fb95be136f906e782"
+    },
+    {
+      "module": "openconfig-defined-sets",
+      "revision": "2025-05-30",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/defined-sets/openconfig-defined-sets.yang",
+      "sha256": "809c188b8c3728aee0f32b942048425852b1aae2134195a52a33b98463e096be"
+    },
+    {
+      "module": "openconfig-evpn",
+      "revision": "2024-08-14",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-evpn.yang",
+      "sha256": "887b1e38df49145018c39bb87c27c8ca739dacecc8c7f14bec622751130e57da"
+    },
+    {
+      "module": "openconfig-evpn-types",
+      "revision": "2021-06-21",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-evpn-types.yang",
+      "sha256": "f16d5456d3b02163be99cf5520c5bdcffe8c2352ee24ca9dabf9720b23570bb2"
+    },
+    {
+      "module": "openconfig-extensions",
+      "revision": "2025-01-02",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/openconfig-extensions.yang",
+      "sha256": "17a79f242a429122b4d59f6bf6dea4cbb3f8e6ede78f0908cbf70e15a47756ae"
+    },
+    {
+      "module": "openconfig-fs-types",
+      "revision": "2025-07-08",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-fs-types.yang",
+      "sha256": "a82666a9426436d4c292f9fe40bfd29ddcd7edeb1b47604e42e17bd92ab1bab7"
+    },
+    {
+      "module": "openconfig-icmpv4-types",
+      "revision": "2023-01-26",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/acl/openconfig-icmpv4-types.yang",
+      "sha256": "fb68bd896ab959917c06e3d73ec1745506fbccd25f066d14b9b1b99d19eb4b4b"
+    },
+    {
+      "module": "openconfig-icmpv6-types",
+      "revision": "2023-05-02",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/acl/openconfig-icmpv6-types.yang",
+      "sha256": "13f2893c8279d3f44e56f7645b30f9c976a7ae3611353c28dacbba66893aebff"
+    },
+    {
+      "module": "openconfig-if-aggregate",
+      "revision": "2026-01-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/interfaces/openconfig-if-aggregate.yang",
+      "sha256": "8402599db88ae91d1c5248c6250196bca78705e8e25d17f9e7930adf4337449c"
+    },
+    {
+      "module": "openconfig-if-ethernet",
+      "revision": "2026-06-22",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/interfaces/openconfig-if-ethernet.yang",
+      "sha256": "1098544c50f71a0fd9baff9dc822d9cd51c492592657d2ce8a704e578cde985d"
+    },
+    {
+      "module": "openconfig-igmp",
+      "revision": "2023-02-03",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/multicast/openconfig-igmp.yang",
+      "sha256": "8e379212369ddc9f7bbc31a088f9ebf9ff3ec3b04a7b9c952fb1d49be8c1a2ae"
+    },
+    {
+      "module": "openconfig-igmp-types",
+      "revision": "2018-11-21",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/multicast/openconfig-igmp-types.yang",
+      "sha256": "9d881ff4b8bf1886be5d660145f7d0267b7970ce422ee60e322891c06f401d9c"
+    },
+    {
+      "module": "openconfig-inet-types",
+      "revision": "2025-06-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/types/openconfig-inet-types.yang",
+      "sha256": "d1dff3ab21bafccb02026d591181acfb4ee9543dbe19e6c140ae4a28f2f36d70"
+    },
+    {
+      "module": "openconfig-interfaces",
+      "revision": "2026-10-05",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/interfaces/openconfig-interfaces.yang",
+      "sha256": "b4e92e39467ae69b7a9d63281b1464f529b727d10dfd218d1efe2ecfd896d19c"
+    },
+    {
+      "module": "openconfig-isis",
+      "revision": "2026-05-23",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/isis/openconfig-isis.yang",
+      "sha256": "7a1b730b43fa2c93b83066ac01fc7db3d21f1810058bbeeae8341baf1fe9b6c8"
+    },
+    {
+      "module": "openconfig-isis-lsdb-types",
+      "revision": "2018-11-21",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/isis/openconfig-isis-lsdb-types.yang",
+      "sha256": "7fed6762ee400271a3fa26090f3140d7f436931704b05188ded2b04dfbcbef0c"
+    },
+    {
+      "module": "openconfig-isis-lsp",
+      "revision": "2026-05-23",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/isis/openconfig-isis-lsp.yang",
+      "sha256": "659cda4a18c424075246374f6e40dbe9403d7d22bcfa7e9c862acfd48516b045"
+    },
+    {
+      "module": "openconfig-isis-routing",
+      "revision": "2026-05-23",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/isis/openconfig-isis-routing.yang",
+      "sha256": "e8a8eca8a13221212cc2b8d02eca4803448b021e3c201c7162818cc887827265"
+    },
+    {
+      "module": "openconfig-isis-types",
+      "revision": "2026-05-23",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/isis/openconfig-isis-types.yang",
+      "sha256": "f7a1fe2810303fd63f58704b5f8796de2830544385260c5ec97237b2d8414d0a"
+    },
+    {
+      "module": "openconfig-keychain",
+      "revision": "2026-05-18",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/keychain/openconfig-keychain.yang",
+      "sha256": "ea98d7d46046565cf5c39bf7209ed7a50e5f8db7d3a3a46b0b18075a0670ba9d"
+    },
+    {
+      "module": "openconfig-keychain-types",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/keychain/openconfig-keychain-types.yang",
+      "sha256": "0e91c50688b66dca6f278e54d6c75ca2400ccd84ddf959158e2a89ba9fff785e"
+    },
+    {
+      "module": "openconfig-license",
+      "revision": "2020-04-22",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-license.yang",
+      "sha256": "8f76f0e4762f45b73d5305ad5b479ed3dc7417b6ddf3e356c21efaf6bad06933"
+    },
+    {
+      "module": "openconfig-local-routing",
+      "revision": "2025-07-29",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/local-routing/openconfig-local-routing.yang",
+      "sha256": "8f3bbd1ef72a257a3dc88dbc3272dd2c4ccb61212df7a2d2be81a8342a903466"
+    },
+    {
+      "module": "openconfig-messages",
+      "revision": "2024-07-15",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-messages.yang",
+      "sha256": "42258f3f881582769c5c8f2788a003416247d220d71fedd7287012b7b9752b95"
+    },
+    {
+      "module": "openconfig-mpls",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls.yang",
+      "sha256": "95fefabaec8396b441c7aa5187afd56c629bbdbbefb8fb2b5c5305b41e9ef439"
+    },
+    {
+      "module": "openconfig-mpls-igp",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-igp.yang",
+      "sha256": "cfff892efabb955d18b7227b432ccefb0a3e9110d2241537954455844cea9514"
+    },
+    {
+      "module": "openconfig-mpls-ldp",
+      "revision": "2023-02-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-ldp.yang",
+      "sha256": "9a12cf7429e25127577350e14765cffd38a4109056de1c07cc7ece7b5292356f"
+    },
+    {
+      "module": "openconfig-mpls-rsvp",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-rsvp.yang",
+      "sha256": "344f55fd280ed7009f62cee9a5f1fe248052a24909f55be7e1577f4a29b3df05"
+    },
+    {
+      "module": "openconfig-mpls-sr",
+      "revision": "2018-11-21",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-sr.yang",
+      "sha256": "588b307eb39f77cf3e3abb3b0380a28c780662e0a9927d86d51e1c9f9e498a69"
+    },
+    {
+      "module": "openconfig-mpls-static",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-static.yang",
+      "sha256": "064dbfecbe589cb3a094062e2af0a64ae150fcb8d19d7100c62f3312e8224f85"
+    },
+    {
+      "module": "openconfig-mpls-te",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-te.yang",
+      "sha256": "da7192ed25165db231f87ed93687a7aa1747078d6edc16dfdaa65d98d7ac6cb6"
+    },
+    {
+      "module": "openconfig-mpls-types",
+      "revision": "2025-12-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/mpls/openconfig-mpls-types.yang",
+      "sha256": "3ce765fb1b940da8d39ad86189fb45868b05b982e00f8c49cf599b078a05facb"
+    },
+    {
+      "module": "openconfig-network-instance",
+      "revision": "2026-08-04",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-network-instance.yang",
+      "sha256": "5d686a2335d33f7d3033d374d245219a75ea07fe17b5b9b89b4257a56ad4fbf4"
+    },
+    {
+      "module": "openconfig-network-instance-l2",
+      "revision": "2026-08-04",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-network-instance-l2.yang",
+      "sha256": "92fa2653d84bdbb103eba2083968bbb1cc93d7ab76532c6e3e7cb47dd36b7539"
+    },
+    {
+      "module": "openconfig-network-instance-l3",
+      "revision": "2022-11-08",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-network-instance-l3.yang",
+      "sha256": "7f59f54043299150c0fcf84b9407de02c6f36abb54f236f71efb80e7b473f5e3"
+    },
+    {
+      "module": "openconfig-network-instance-static",
+      "revision": "2026-05-12",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-network-instance-static.yang",
+      "sha256": "eb4c61ae4ef6b5808da76dc3f73ce7665614b83b3a217b0868667ee50329ea28"
+    },
+    {
+      "module": "openconfig-network-instance-types",
+      "revision": "2026-08-04",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/network-instance/openconfig-network-instance-types.yang",
+      "sha256": "cf549fef651a424e7b9e359935d61fb09071e34b74d13fb11b403767d45c6f3c"
+    },
+    {
+      "module": "openconfig-ospf",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospf.yang",
+      "sha256": "a6255765f28ebb6c207b71a632fb88e8081dcd5a7a1820448bc40d48f83518cd"
+    },
+    {
+      "module": "openconfig-ospf-area",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospf-area.yang",
+      "sha256": "36460af9b863d4082c2c8ecf7a0346715dd43ce663eaedc70b9959d72e2d2290"
+    },
+    {
+      "module": "openconfig-ospf-area-interface",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospf-area-interface.yang",
+      "sha256": "716e9d48155fc883b66170c2977ffe178138e28d943bf66770b4f98fb21b2e40"
+    },
+    {
+      "module": "openconfig-ospf-common",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospf-common.yang",
+      "sha256": "edf7fda4f195c0fe73fb8aede4421f0350d225f0422b70589e5af5f0f79eb243"
+    },
+    {
+      "module": "openconfig-ospf-global",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospf-global.yang",
+      "sha256": "7d43734aeca60b4295971d8bec843976d257ec24f27c6fca33f5d6312226033d"
+    },
+    {
+      "module": "openconfig-ospf-types",
+      "revision": "2025-02-13",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospf-types.yang",
+      "sha256": "66ff7842e3e298ecfe5a0a695dda607e4276ec17e8e807032e48c20695011870"
+    },
+    {
+      "module": "openconfig-ospfv2",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospfv2.yang",
+      "sha256": "36b61af99ee55618d8b870e5c20da266ecd5c0d394b46cb17ce350126e0a9185"
+    },
+    {
+      "module": "openconfig-ospfv2-area",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospfv2-area.yang",
+      "sha256": "e85fdf396312b3e674d568c97d74237c590cfb6c04620549f6275d439b530396"
+    },
+    {
+      "module": "openconfig-ospfv2-area-interface",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospfv2-area-interface.yang",
+      "sha256": "34fc404a4d12110df0adfaf3f8c1df27d81358ebf96f33b131940d82bba140d9"
+    },
+    {
+      "module": "openconfig-ospfv2-common",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospfv2-common.yang",
+      "sha256": "dd09e9e535fe56f97443dd48062caf2f28a194a3e621d873353410caaabacbf2"
+    },
+    {
+      "module": "openconfig-ospfv2-global",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospfv2-global.yang",
+      "sha256": "ce6a67ebe05e2088a4bf2a2ea9bd6828de790f0335a551c5bb9d3262c59713c1"
+    },
+    {
+      "module": "openconfig-ospfv2-lsdb",
+      "revision": "2026-09-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/ospf/openconfig-ospfv2-lsdb.yang",
+      "sha256": "86bcd7aba51d6de251cd296408c45ff73222d52509e1ef5b55b8101fd44eb2f9"
+    },
+    {
+      "module": "openconfig-packet-match",
+      "revision": "2026-05-11",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/acl/openconfig-packet-match.yang",
+      "sha256": "7361e5b8473250fd949824272a4d8c69a3afb5a2643a560ede2c9f141be230ed"
+    },
+    {
+      "module": "openconfig-packet-match-types",
+      "revision": "2026-05-12",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/acl/openconfig-packet-match-types.yang",
+      "sha256": "08c949673bc63cd7f9418c32bd75052127aefab4b92898a26ff2c9ceae8c8aad"
+    },
+    {
+      "module": "openconfig-pcep",
+      "revision": "2023-04-25",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/pcep/openconfig-pcep.yang",
+      "sha256": "5bc58f7ceef66ef93ea82c473e7523abf6bc4d7d6b35fe3a86089f49d2ec892e"
+    },
+    {
+      "module": "openconfig-pf-forwarding-policies",
+      "revision": "2026-03-13",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/policy-forwarding/openconfig-pf-forwarding-policies.yang",
+      "sha256": "093a8320dd788eb3fef1ba898bab2849cae84ceb91d3e90cfa10a21a8352afb7"
+    },
+    {
+      "module": "openconfig-pf-interfaces",
+      "revision": "2026-03-13",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/policy-forwarding/openconfig-pf-interfaces.yang",
+      "sha256": "d9bb36ec68dec46594b3c7125ad9cfd3e7d7e43bcd34179ab753ae7ef7640e91"
+    },
+    {
+      "module": "openconfig-pf-path-groups",
+      "revision": "2026-03-13",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/policy-forwarding/openconfig-pf-path-groups.yang",
+      "sha256": "81ca40a4aa0ca335a39d1b6841008cdb49dc60e53565069c4a71611a329ac740"
+    },
+    {
+      "module": "openconfig-pim",
+      "revision": "2024-12-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/multicast/openconfig-pim.yang",
+      "sha256": "815eb90d1fe4824b873f742e1abcd0959257a6c332ee301bf1c5982a4e6bf034"
+    },
+    {
+      "module": "openconfig-pim-types",
+      "revision": "2024-05-31",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/multicast/openconfig-pim-types.yang",
+      "sha256": "a3154b22b0a03f7cd5bfb5b146be0da656a8e809d7ecdb3fa3fa610d2a4fda2d"
+    },
+    {
+      "module": "openconfig-platform",
+      "revision": "2026-07-08",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/platform/openconfig-platform.yang",
+      "sha256": "3110725bddf8345cf4f4df775b271a9cab4f4f0b40705cf7c53f5d6b7e2838b2"
+    },
+    {
+      "module": "openconfig-platform-common",
+      "revision": "2026-07-08",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/platform/openconfig-platform-common.yang",
+      "sha256": "0e3c8991e14c40cc50ba50cf7f82dea457688986baafd7670a67b4a1eed0bfb7"
+    },
+    {
+      "module": "openconfig-platform-types",
+      "revision": "2026-08-29",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/platform/openconfig-platform-types.yang",
+      "sha256": "40990ce24c21ce5caef7cedaf75be68b1b00546db87ea1f5e862e42f835eb61c"
+    },
+    {
+      "module": "openconfig-policy-forwarding",
+      "revision": "2026-03-13",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/policy-forwarding/openconfig-policy-forwarding.yang",
+      "sha256": "94838dc43c6f48735ee10532885652b624d6d18b96dc0cc15dcce82ddc65353f"
+    },
+    {
+      "module": "openconfig-policy-types",
+      "revision": "2024-05-14",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/policy/openconfig-policy-types.yang",
+      "sha256": "d6f72e569de010d8c1082b5ff23a0d8719592c33ae8c8bf19908e44c042e6e59"
+    },
+    {
+      "module": "openconfig-procmon",
+      "revision": "2019-03-15",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-procmon.yang",
+      "sha256": "7bd69fc537c385637ef33c34eb45c22c5877752270d740d16be96c96a69b48fe"
+    },
+    {
+      "module": "openconfig-qos",
+      "revision": "2026-04-30",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/qos/openconfig-qos.yang",
+      "sha256": "081ba5d72df97ce61cc0a5c17e80c4cda1b3b6118313268e098e99a7d2174c2a"
+    },
+    {
+      "module": "openconfig-qos-elements",
+      "revision": "2026-04-30",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/qos/openconfig-qos-elements.yang",
+      "sha256": "dc299c048e993a7c47afec163274ccf53af53a6f2ad8a1c9499b653e0901650e"
+    },
+    {
+      "module": "openconfig-qos-interfaces",
+      "revision": "2026-04-30",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/qos/openconfig-qos-interfaces.yang",
+      "sha256": "f7608948004ffa65002c4fc38aed703ec7c668ffbd2950b83b5e9debe8a14d0e"
+    },
+    {
+      "module": "openconfig-qos-mem-mgmt",
+      "revision": "2026-04-30",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/qos/openconfig-qos-mem-mgmt.yang",
+      "sha256": "f701e9aeeb530b0218de255263822dde912e842a6cdb7f8fc6a7c536d565aeb9"
+    },
+    {
+      "module": "openconfig-qos-types",
+      "revision": "2026-01-06",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/qos/openconfig-qos-types.yang",
+      "sha256": "f47435e917a266e2b1f788d2a043a62b31d70a380d9819606ba2e297e3c802f9"
+    },
+    {
+      "module": "openconfig-rib-bgp",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/rib/openconfig-rib-bgp.yang",
+      "sha256": "6120c0f1c36d3aa87374b08c3734391d53afba08a9d72dd55a06140ff4f6c22e"
+    },
+    {
+      "module": "openconfig-rib-bgp-attributes",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/rib/openconfig-rib-bgp-attributes.yang",
+      "sha256": "332cdd4d7861c64ac9f5739e28fc8c80189b24d7319022e2af5048c43c300e89"
+    },
+    {
+      "module": "openconfig-rib-bgp-shared-attributes",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/rib/openconfig-rib-bgp-shared-attributes.yang",
+      "sha256": "5bac46683b6e51e2bfecf7c9280e1c237b01abf6f5ab4e61262d197461b62c7b"
+    },
+    {
+      "module": "openconfig-rib-bgp-table-attributes",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/rib/openconfig-rib-bgp-table-attributes.yang",
+      "sha256": "a5d0fc6d2685eaa02996e18849d99e084106cc984fa37cc3f18b7d6115b380ab"
+    },
+    {
+      "module": "openconfig-rib-bgp-tables",
+      "revision": "2026-03-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/rib/openconfig-rib-bgp-tables.yang",
+      "sha256": "73f52d0e5fc76ee2e5c8ea42631e0335de19c345a864173c6df67da7d77585ad"
+    },
+    {
+      "module": "openconfig-rib-bgp-types",
+      "revision": "2019-03-14",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/rib/openconfig-rib-bgp-types.yang",
+      "sha256": "d29061aec85002639b58677ab97a4e697b62d491e42761add8ccb7d3d39c61c5"
+    },
+    {
+      "module": "openconfig-routing-policy",
+      "revision": "2024-11-26",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/policy/openconfig-routing-policy.yang",
+      "sha256": "6e27336a1c44d083389800369bb7ebf885473a69218ade98e3a55d34efee2685"
+    },
+    {
+      "module": "openconfig-segment-routing",
+      "revision": "2023-08-09",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/segment-routing/openconfig-segment-routing.yang",
+      "sha256": "a3d6889a214ab1b8b2b0aa582000eb38d5402ab179036137b90fbe59ccad8cd9"
+    },
+    {
+      "module": "openconfig-segment-routing-types",
+      "revision": "2020-02-04",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/segment-routing/openconfig-segment-routing-types.yang",
+      "sha256": "0d6b860a720846eae4f3d34e9841c07d39b57f6b2a5354dd2f457598eb20073c"
+    },
+    {
+      "module": "openconfig-snmp",
+      "revision": "2026-05-05",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-snmp.yang",
+      "sha256": "d89c4f0c5c660389f61b46bced1606e81b20bfda71bc11a9fbd745dea2a879f1"
+    },
+    {
+      "module": "openconfig-srte-policy",
+      "revision": "2026-02-09",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/segment-routing/openconfig-srte-policy.yang",
+      "sha256": "0d79e09c6dcba80d6769916d53ca3a9ff5e1ca710877a685393babe9269509a5"
+    },
+    {
+      "module": "openconfig-system",
+      "revision": "2026-07-20",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "sha256": "e46d544d9f3e702353ad9bcfb3f59fb8d2ce1f0cdc868c0ae5f3c250462853c5"
+    },
+    {
+      "module": "openconfig-system-logging",
+      "revision": "2024-08-20",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system-logging.yang",
+      "sha256": "de39d13a1364fee09b87e0dd45fbdcf970fcb33004c89084edd9dbecd82e1981"
+    },
+    {
+      "module": "openconfig-system-terminal",
+      "revision": "2025-11-10",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system-terminal.yang",
+      "sha256": "82c99d3b4ec0a2ce05d8631300d563088a8eedc50442ee24c39325c6919e7d92"
+    },
+    {
+      "module": "openconfig-transport-types",
+      "revision": "2026-06-09",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/optical-transport/openconfig-transport-types.yang",
+      "sha256": "f0a1d7a9386431c65f82ee6fd77c8dcbb04e10c9db709dad57f36af42244289d"
+    },
+    {
+      "module": "openconfig-types",
+      "revision": "2024-01-31",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/types/openconfig-types.yang",
+      "sha256": "85341594d67fee625f5835204646befcaebe216756f0bf31ad9565dbbc821390"
+    },
+    {
+      "module": "openconfig-vlan",
+      "revision": "2023-02-07",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/vlan/openconfig-vlan.yang",
+      "sha256": "856392276224931b072e6db873aaf45b14ddb3ba70d7190fc6a7a489f7217e56"
+    },
+    {
+      "module": "openconfig-vlan-types",
+      "revision": "2026-06-24",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/vlan/openconfig-vlan-types.yang",
+      "sha256": "851e87f116f76e5624e7632052b24749261ad7871f646051f52bd513674b9633"
+    },
+    {
+      "module": "openconfig-yang-types",
+      "revision": "2024-05-30",
+      "source": "https://raw.githubusercontent.com/openconfig/public/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/types/openconfig-yang-types.yang",
+      "sha256": "08fa3cdc4715e845e2de91e24f89466c8b169dedd37d8bc694f7f42800f452b8"
+    }
+  ]
+}

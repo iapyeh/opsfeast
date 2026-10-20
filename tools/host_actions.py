@@ -20,7 +20,7 @@ def command_for(action, host, root, recipe='', user=None):
         if action == 'test-sudo': args.append('--run-as=root')
         return args
     if action == 'run recipe' and recipe.strip():
-        return [sys.executable, '-B', str(ROOT/'tools/run_recipe.py'), '--recipe='+recipe.strip(), '--host', host, '--root='+root, '--verbose']
+        return [sys.executable, '-B', str(ROOT/'tools/opsfeast.py'), 'recipes', 'run', recipe.strip(), '--host', host, '--root='+root, '--verbose']
     raise ValueError('select a valid operation and nonempty recipe path')
 
 

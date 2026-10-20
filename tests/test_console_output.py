@@ -1,4 +1,5 @@
 """TTY/non-TTY presentation with synthetic data; native Sessions are forbidden."""
+from recipe_test_support import recipe_main
 import contextlib
 import io
 import json
@@ -14,7 +15,7 @@ import opsfeast as ops
 import host_runtime as hr
 import access_check as access
 import recipe_cli
-import run_recipe as runner
+import recipe_runner as runner
 import check_environment
 import recipe_identity
 import skill_bundle
@@ -315,14 +316,14 @@ hosts:
         with patch.object(access, 'check_many', return_value=checked), \
                 patch.object(runner, 'run', return_value=(report, self.root / 'synthetic-result.json')) as run:
             for flags in ([], ['--json']):
-                code, output = self.capture(runner.main, ['system/inventory/overview', '--host', 'h', '--root', str(self.root), *flags])
+                code, output = self.capture(recipe_main, ['system/inventory/overview', '--host', 'h', '--root', str(self.root), *flags])
                 self.assertEqual(code, 1)  # Retention failure cannot become overall success.
                 if flags: self.assertEqual(json.loads(output)['retention']['status'], 'failed')
                 else:
                     self.assertIn('🐧 h', output)
                     self.assertIn('❌ FAIL', output)
             run.reset_mock()
-            code, output = self.capture(runner.main, ['system/inventory/overview', '--host', 'h', '--dryrun', '--root', str(self.root)])
+            code, output = self.capture(ops.main, ['check-access', '--host', 'h', '--quiet', '--root', str(self.root)])
             self.assertEqual(code, 0)
             self.assertIn('connection', output)
             run.assert_not_called()

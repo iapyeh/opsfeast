@@ -1,0 +1,236 @@
+module opsfeast-inventory {
+  yang-version 1.1;
+  namespace "urn:opsfeast:yang:inventory";
+  prefix ofinv;
+  organization "OpsFeast contributors";
+  description "Inventory extensions without an exact selected standard node. Read-only observations; provenance is in the observation envelope.";
+  revision 2026-10-20 { description "Initial grouped inventory definitions."; }
+  container inventory {
+    config false;
+    description "Collected extension properties.";
+    container system {
+      description "system observations.";
+      leaf system-version {
+        type string;
+        description "Distribution/userland version; not equated with ietf-system os-version.";
+      }
+      leaf platform {
+        type string;
+        description "system: platform";
+      }
+      leaf system-name {
+        type string;
+        description "system: system name";
+      }
+      leaf timezone {
+        type string;
+        description "Timezone is the source abbreviation, not an IANA zone.";
+      }
+      leaf virtualization {
+        type string;
+        description "system: virtualization";
+      }
+      leaf uptime-seconds {
+        type decimal64 { fraction-digits 6; }
+        units "seconds";
+        description "system: uptime seconds";
+      }
+      leaf boot-time {
+        type string;
+        description "Estimated controller time minus uptime; not an authoritative target boot timestamp.";
+      }
+    }
+    container hardware {
+      description "hardware observations.";
+      leaf cpu-model {
+        type string;
+        description "hardware: cpu model";
+      }
+      leaf logical-cpus {
+        type uint64;
+        description "hardware: logical cpus";
+      }
+      leaf vendor {
+        type string;
+        description "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.";
+      }
+      leaf model {
+        type string;
+        description "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.";
+      }
+      leaf serial {
+        type string;
+        description "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.";
+      }
+      leaf uuid {
+        type string;
+        description "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.";
+      }
+    }
+    container storage {
+      description "storage observations.";
+      list filesystems {
+        description "filesystems observations.";
+        leaf source {
+          type string;
+          description "storage: filesystems: source";
+        }
+        leaf mountpoint {
+          type string;
+          description "storage: filesystems: mountpoint";
+        }
+        leaf total-bytes {
+          type uint64;
+          units "bytes";
+          description "storage: filesystems: total bytes";
+        }
+        leaf used-bytes {
+          type uint64;
+          units "bytes";
+          description "storage: filesystems: used bytes";
+        }
+        leaf available-bytes {
+          type uint64;
+          units "bytes";
+          description "storage: filesystems: available bytes";
+        }
+        leaf used-percent {
+          type decimal64 { fraction-digits 6; }
+          units "percent";
+          description "storage: filesystems: used percent";
+        }
+      }
+      list block-devices {
+        description "block devices observations.";
+        leaf name {
+          type string;
+          description "storage: block devices: name";
+        }
+        leaf type {
+          type string;
+          description "storage: block devices: type";
+        }
+        leaf size {
+          type uint64;
+          units "bytes";
+          description "storage: block devices: size";
+        }
+        leaf fstype {
+          type string;
+          description "storage: block devices: fstype";
+        }
+        leaf mountpoint {
+          type string;
+          description "storage: block devices: mountpoint";
+        }
+        leaf model {
+          type string;
+          description "storage: block devices: model";
+        }
+      }
+      container swap {
+        description "swap observations.";
+        leaf total-bytes {
+          type uint64;
+          units "bytes";
+          description "storage: swap: total bytes";
+        }
+        leaf used-bytes {
+          type uint64;
+          units "bytes";
+          description "storage: swap: used bytes";
+        }
+        leaf available-bytes {
+          type uint64;
+          units "bytes";
+          description "storage: swap: available bytes";
+        }
+      }
+    }
+    container network {
+      description "network observations.";
+      list interfaces {
+        description "interfaces observations.";
+        leaf mtu {
+          type uint64;
+          units "bytes";
+          description "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.";
+        }
+        leaf address {
+          type string;
+          description "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.";
+        }
+        leaf prefix-length {
+          type uint64;
+          description "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.";
+        }
+        leaf kind {
+          type string;
+          description "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.";
+        }
+      }
+      anydata dns-servers {
+        description "Resolver-file nameserver snapshot; not claimed to be complete ietf-system configured/effective DNS policy.";
+      }
+      anydata routes {
+        description "Platform route rows; not falsely identified as complete ietf-routing RIB entries.";
+      }
+      anydata listening-endpoints {
+        description "network: listening endpoints";
+      }
+    }
+    container software {
+      description "software observations.";
+      anydata packages {
+        description "software: packages";
+      }
+    }
+    container services {
+      description "services observations.";
+      anydata services {
+        description "services: services";
+      }
+    }
+    container metrics {
+      description "metrics observations.";
+      leaf load-1m {
+        type decimal64 { fraction-digits 6; }
+        units "tasks";
+        description "metrics: load 1m";
+      }
+      leaf load-5m {
+        type decimal64 { fraction-digits 6; }
+        units "tasks";
+        description "metrics: load 5m";
+      }
+      leaf load-15m {
+        type decimal64 { fraction-digits 6; }
+        units "tasks";
+        description "metrics: load 15m";
+      }
+      leaf cpu-utilization-percent {
+        type decimal64 { fraction-digits 6; }
+        units "percent";
+        description "Aggregate visible CPU busy-time delta; iowait treated as idle, guest columns are not added twice. Rounded to six decimal places; window recorded per probe.";
+      }
+      anydata disk-counters {
+        description "Linux diskstats cumulative counters; raw counters, not rates. Linux sector counters are 512-byte sectors.";
+      }
+      anydata interface-counters {
+        description "Linux net/dev cumulative counters; raw counters, not rates.";
+      }
+      anydata memory-pressure {
+        description "Linux PSI some/full average stall percentages over 10/60/300 seconds and cumulative stall microseconds; missing PSI remains unavailable.";
+      }
+    }
+    container sensors {
+      description "sensors observations.";
+      anydata temperatures {
+        description "Linux thermal-zone readings, Celsius; sensor inventory does not establish ietf-hardware component identity.";
+      }
+      anydata fans {
+        description "Linux hwmon fan readings, RPM; unsupported sources remain explicit.";
+      }
+    }
+  }
+}

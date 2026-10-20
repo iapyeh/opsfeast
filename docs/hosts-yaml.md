@@ -625,7 +625,7 @@ Bare system/inventory/overview selects checkout recipes; :system/inventory/overv
 
 Include and output paths remain inside the management root. Recipe paths remain inside their chosen checkout/profile/registered source after symlink resolution; inventory entrypoints/helpers remain inside their recipe directory. Registration does not authorize installation or execution, and path validation is not a sandbox.
 
-Source enabled: false yields explicit source_disabled skips, even when files are absent. Host enabled: false removes --all/group targets and disallows its use as a jump host; an explicit host request reports host_disabled. Fields/references remain validated. --all --exclude HOST ... excludes targets for one run and does not disable their use as jump hosts. See the [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) for output and exit codes.
+Source enabled: false yields explicit source_disabled skips, even when files are absent. Host enabled: false removes --all/group targets and disallows its use as a jump host; an explicit host request reports host_disabled. Fields/references remain validated. --all --exclude HOST ... excludes targets for one run and does not disable their use as jump hosts. See the [CLI reference](cli.md#operational-recipe-execution) for output and exit codes.
 
 ## include 與變數插值不同
 
@@ -768,4 +768,4 @@ and never prints password/vars fields. Recipe validation still runs; the compact
 table omits its count/skip columns. JSON and redirected text retain their detailed
 existing contracts. See [the CLI's exact display rules](cli.md#human-check-overview).
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

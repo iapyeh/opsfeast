@@ -6,7 +6,7 @@ Open a project directory in your AI coding tool and give its agent the single pr
 
 The goal is to create a management environment and understand where to configure hosts. After initialization, choose the hosts to test and the collection tasks to run.
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers tools/opsfeast.py and its recipe/inventory subcommands for administrators and agents.
 
 
 ## Choose the right starting prompt
@@ -177,4 +177,4 @@ git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

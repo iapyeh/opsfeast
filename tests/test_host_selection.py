@@ -1,4 +1,5 @@
 """Synthetic host/group selection tests; no sessions or network operations."""
+from recipe_test_support import recipe_main
 import contextlib
 import io
 import json
@@ -11,7 +12,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import opsfeast as ops
-import run_recipe as runner
+import recipe_runner as runner
+import recipe_cli
 
 
 class HostSelectionTests(unittest.TestCase):
@@ -22,7 +24,7 @@ class HostSelectionTests(unittest.TestCase):
         self.addCleanup(checker.stop)
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
-        self.root = Path(temporary.name)
+        self.root = Path(temporary.name).resolve()
         (self.root / 'included.yaml').write_text('''hosts:
   web-01:
     connection: {hostname: web-01.example}
@@ -51,7 +53,7 @@ hosts:
         options = {'return_value': (self.report, self.root / 'result.json'), **run_options}
         with patch.object(runner, 'run', **options) as execute, \
                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            status = runner.main([*argv, '--threads', '1'] if '--threads' not in argv else argv)
+            status = recipe_main([*argv, '--threads', '1'] if '--threads' not in argv else argv)
         return status, stdout.getvalue(), stderr.getvalue(), execute
 
     def test_multi_membership_and_include_union_order(self):
@@ -119,7 +121,7 @@ hosts:
         status, out, _, execute = self.cli(['system/inventory/overview', '--host', 'web-01', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual(json.loads(out)['status'], 'success')
-        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result={'host': 'web-01', 'status': 'success', 'connected': True})
+        execute.assert_called_once_with(self.root, 'web-01', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
 
     def test_cli_multiple_groups_and_hosts_preserve_option_order(self):
         status, out, _, execute = self.cli(
@@ -136,29 +138,20 @@ hosts:
                 status, out, _, execute = self.cli(['system/inventory/overview', '--root', str(self.root), *targets])
                 self.assertEqual(status, 0)
                 self.assertEqual(json.loads(out)['status'], 'success')
-                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result={'host': 'web-02', 'status': 'success', 'connected': True})
+                execute.assert_called_once_with(self.root, 'web-02', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
 
     def test_all_one_host_still_uses_batch_summary(self):
         (self.root / 'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
         status, out, _, execute = self.cli(['system/inventory/overview', '--all', '--root', str(self.root)])
         self.assertEqual(status, 0)
         self.assertEqual([r['host'] for r in json.loads(out)['hosts']], ['h'])
-        execute.assert_called_once_with(self.root, 'h', 30, recipe='system/inventory/overview', force=False, access_checked=True, access_result={'host': 'h', 'status': 'success', 'connected': True})
+        execute.assert_called_once_with(self.root, 'h', 30, recipe='system/inventory/overview', cli_vars=None, assignments=[])
 
-    def test_cli_explicit_recipe_at_different_positions(self):
-        for args in (['--recipe', 'system/inventory/overview', '--group', 'web'],
-                     ['--group', 'web', '--recipe', 'system/inventory/overview'],
-                     ['--group', 'web', '--recipe', 'system/inventory/overview', '--host', 'db-01']):
-            with self.subTest(args=args):
-                status, out, _, execute = self.cli([*args, '--root', str(self.root)])
-                self.assertEqual(status, 0)
-                self.assertEqual(execute.call_count, 3 if '--host' in args else 2)
-                self.assertTrue(all(c.kwargs['recipe'] == 'system/inventory/overview' for c in execute.call_args_list))
 
     def test_cli_all_with_profile_and_root(self):
         for args in (['--all', '--profile', 'synthetic'], ['--all', '--root', str(self.root)]):
-            with self.subTest(args=args), patch.object(runner, 'resolve_root', return_value=self.root) as resolve:
-                status, out, _, execute = self.cli([*args, '--recipe', 'system/inventory/overview'])
+            with self.subTest(args=args), patch.object(recipe_cli, 'resolve_root', return_value=self.root) as resolve:
+                status, out, _, execute = self.cli(['system/inventory/overview', *args])
                 self.assertEqual(status, 0)
                 self.assertEqual(len(json.loads(out)['hosts']), 5)
                 self.assertEqual(execute.call_count, 5)
@@ -183,29 +176,19 @@ hosts:
         execute.assert_not_called()
 
     def test_usage_errors_prevent_environment_resolution(self):
-        for args in ([], ['--host', 'web-01'], ['system/inventory/overview'],
-                     ['system/inventory/overview', '--all', '--host', 'web-01'],
-                     ['system/inventory/overview', '--all', '--group', 'web'],
-                     ['system/inventory/overview', '--host'], ['system/inventory/overview', '--group'],
-                     ['system/inventory/overview', '--all', '--recipe', 'system/inventory/overview'],
-                     ['--all', '--recipe', 'system/inventory/overview', '--recipe', 'system/inventory/overview'],
-                     ['--all', 'system/inventory/overview'], ['--root', str(self.root), 'system/inventory/overview', '--all'],
-                     ['system/inventory/overview', '--hosts', 'web-01'],
-                     ['system/inventory/overview', str(self.root), '--host', 'web-01']):
+        for args in (['system/inventory/overview','--all','--host','web-01'],
+                     ['system/inventory/overview','--host','web-01','--exclude','other'],
+                     ['system/inventory/overview','--all','--dryrun'],
+                     ['system/inventory/overview','--all','--force'],
+                     ['--recipe','system/inventory/overview','--all']):
             with self.subTest(args=args), contextlib.redirect_stderr(io.StringIO()), \
-                    patch.object(runner, 'run') as execute, patch.object(runner, 'resolve_root') as resolve:
+                    patch.object(recipe_cli,'resolve_root') as resolve, patch.object(runner,'run') as execute:
                 with self.assertRaises(SystemExit) as raised:
-                    runner.main(args)
-                self.assertEqual(raised.exception.code, 2)
-                execute.assert_not_called()
+                    recipe_main(args)
+                self.assertEqual(raised.exception.code,2)
                 resolve.assert_not_called()
+                execute.assert_not_called()
 
-    def test_root_and_profile_conflict_prevents_execution(self):
-        status, _, err, execute = self.cli(['system/inventory/overview', '--host', 'web-01',
-                                          '--root', str(self.root), '--profile', 'synthetic'])
-        self.assertEqual(status, 1)
-        self.assertIn('either a management directory or --profile', err)
-        execute.assert_not_called()
 
     def test_progress_auto_tty_and_manual_overrides_with_json_output_override(self):
         for tty, flags, expected in ((True, [], True), (False, [], False),
@@ -215,7 +198,7 @@ hosts:
                 with patch.object(out, 'isatty', return_value=tty), \
                         contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
                         patch.object(runner, 'run', return_value=(self.report, self.root / 'result.json')):
-                    code = runner.main(['system/inventory/overview', '--all', '--root', str(self.root), *flags])
+                    code = recipe_main(['system/inventory/overview', '--all', '--root', str(self.root), *flags])
                 self.assertEqual(code, 0)
                 if tty and '--json' not in flags:
                     self.assertIn('│ host', out.getvalue())
@@ -266,7 +249,7 @@ hosts:
     def test_verbose_quiet_conflict_is_usage_error(self):
         with contextlib.redirect_stderr(io.StringIO()), patch.object(runner, 'run') as execute:
             with self.assertRaises(SystemExit) as raised:
-                runner.main(['system/inventory/overview', '--all', '--verbose', '--quiet'])
+                recipe_main(['system/inventory/overview', '--all', '--verbose', '--quiet'])
         self.assertEqual(raised.exception.code, 2)
         execute.assert_not_called()
 
@@ -331,7 +314,7 @@ hosts:
                 patch.object(runner, 'ThreadPoolExecutor', wraps=executor) as pool, \
                 patch.object(runner, 'run', return_value=(self.report, self.root / 'result.json')), \
                 contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(runner.main(['system/inventory/overview', '--all', '--root', str(self.root)]), 0)
+            self.assertEqual(recipe_main(['system/inventory/overview', '--all', '--root', str(self.root)]), 0)
         pool.assert_called_once_with(max_workers=3, thread_name_prefix='recipe-host')
 
     def test_invalid_thread_count_and_singular_alias_are_rejected(self):
@@ -340,7 +323,7 @@ hosts:
             with self.subTest(option=option, value=value), contextlib.redirect_stderr(io.StringIO()), \
                     patch.object(runner, 'run') as execute:
                 with self.assertRaises(SystemExit) as raised:
-                    runner.main(['system/inventory/overview', '--all', option, value])
+                    recipe_main(['system/inventory/overview', '--all', option, value])
                 self.assertEqual(raised.exception.code, 2)
                 execute.assert_not_called()
 

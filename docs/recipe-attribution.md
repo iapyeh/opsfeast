@@ -1,6 +1,6 @@
 # Recipe authors, licenses and installation defaults
 
-Recipe attribution contract **0.1.0** adds the same fields to inventory descriptor 0.2.0 and Python-session/report descriptor 0.3.0:
+Recipe attribution contract **0.1.0** adds the same fields to inventory descriptor 0.3.0 and Python-session/report descriptor 0.3.0:
 
 ```yaml
 author:
@@ -54,4 +54,4 @@ Packing a built-in recipe for inspection is possible, but its Bundle archive can
 
 Public tests cover keyboard/mouse editing, cancellation, atomic save failures, invalid-file/symlink preservation, defaults and copy preservation, case/whitespace reservation, author/contact types, all built-in identities/LICENSE files, required MIT packaging, rejected Bundle archives before extraction, ordinary candidate imports and manifest spoofing. Synthetic user-copy fixtures explicitly use synthetic authors rather than pretending to be Bundle. No real download, third-party execution or publication is performed.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:24:28_

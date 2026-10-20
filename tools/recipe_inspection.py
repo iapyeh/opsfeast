@@ -38,6 +38,13 @@ def inspect_one(directory, requested):
         report['descriptor'] = metadata
         from retention_store import describe
         report['retention'] = describe(metadata, directory)
+        if 'collection' in metadata:
+            collection = metadata['collection']
+            from inventory_jobs import inspect_collection
+            data = inspect_collection(directory,metadata)
+            report['collection'] = {'declaration':collection,'catalog':data,
+                                    'retention':describe({'retention':collection['retention']},directory),
+                                    'cli':'opsfeast.py inventory describe --json'}
         platforms = metadata.get('platforms', {})
         if not isinstance(platforms, dict):
             raise ConfigError('platforms must be a mapping')
@@ -184,7 +191,7 @@ def format_report(report, details=False):
                               if isinstance(item['declaration'].get('match'), dict)
                               and item['declaration']['match'].get('os_name', platform) == platform]
                 if not candidates:
-                    lines.append('    No entrypoint declared for this OS; inspect --details.')
+                    lines.append('    Job collector: jobs.py; ssh: not-tested' if recipe.get('collection') else '    No entrypoint declared for this OS; inspect --details.')
                 for item in candidates:
                     entry = item['declaration']
                     conditions = {k: v for k, v in entry['match'].items() if k != 'os_name'}

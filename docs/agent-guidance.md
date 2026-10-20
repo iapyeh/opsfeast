@@ -46,7 +46,7 @@ Distinguish [product developers from DevOps users](vision.md#distinguish-product
 
 ## Shared tool reference
 
-The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/opsfeast.py and tools/run_recipe.py. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.
+The [CLI reference](cli.md) is the complete human/agent entrypoint for tools/opsfeast.py and tools/opsfeast.py recipes run. Use it to identify the implemented command, required arguments, location form, defaults, side effects and result interpretation. Follow its links for detailed configuration, diagnostics or recipe authoring; do not infer capability from an isolated example.
 
 ## Route operational requests
 
@@ -76,4 +76,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

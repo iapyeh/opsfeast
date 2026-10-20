@@ -242,7 +242,7 @@ class ReplayTests(unittest.TestCase):
         self.assertTrue((directory / 'main.py').exists())
 
     def test_runner_captures_snapshot_before_execution_and_links_audit(self):
-        import run_recipe
+        import recipe_runner as run_recipe
         from unittest.mock import Mock
         self.enable()
         directory = self.recipe()
@@ -255,25 +255,6 @@ class ReplayTests(unittest.TestCase):
         self.assertTrue(all(store.observation_source(r) == report['source_observation_id'] for r in events))
         self.assertEqual(json.loads(file.read_text())['retention_snapshot'], report['retention_snapshot'])
 
-    def test_custom_inventory_write_declaration_is_not_misclassified_as_read(self):
-        import test_inventory_system as inventory
-        fixture = inventory.RunnerTests()
-        fixture.setUp()
-        self.addCleanup(fixture.doCleanups)
-        (fixture.root / 'feast.yaml').write_text('schema_version: 1\nkind: opsfeast\n')
-        store.initialize(fixture.root, 'synthetic-inventory')
-        descriptor = fixture.directory / 'recipe.yaml'
-        import yaml
-        metadata = yaml.safe_load(descriptor.read_text())
-        metadata['access_mode'] = 'write'
-        descriptor.write_text(yaml.safe_dump(metadata))
-        report, _ = fixture.run_recipe()
-        self.assertEqual(report['execution_access_mode'], 'write')
-        events = store.records(fixture.root)
-        self.assertEqual(len(events), 2)
-        self.assertTrue(all(r['data']['access_mode'] == 'write' for r in events))
-        with self.assertRaises(ConfigError):
-            store.delete_observation(fixture.root, report['source_observation_id'])
 
 
 if __name__ == '__main__':

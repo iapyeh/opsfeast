@@ -22,7 +22,7 @@ import recipe_reports as reports
 import recipe_packages as packages
 import recipe_jobs as jobs
 import recipe_contract as contract
-import run_recipe as runner
+import recipe_runner as runner
 from recipe_inputs import parse_json_object
 
 
@@ -134,7 +134,7 @@ class RecipeExperienceTests(unittest.TestCase):
         return dest
 
     def run_report(self):
-        with patch.object(runner,'load_runtime',side_effect=AssertionError('must not load SSHScript')),patch.object(runner,'connection_plan',side_effect=AssertionError('no connections')):
+        with patch.object(runner,'load_runtime',side_effect=AssertionError('must not load SSHScript')),patch('opsfeast.connection_plan',side_effect=AssertionError('no connections')):
             return reports.run_report(self.root,self.selected(),[self.input])
 
     def test_catalog_three_sources_and_disabled_missing(self):
@@ -242,9 +242,10 @@ class RecipeExperienceTests(unittest.TestCase):
         runtime.assert_not_called()
 
     def test_operational_run_reuses_existing_runner(self):
-        with patch.object(runner,'main',return_value=0) as run:
+        with patch.object(runner,'execute_hosts',return_value=0) as run:
             self.assertEqual(self.invoke('run','system/network/check/port','--host','h','--var','port=8888')[0],0)
-        argv=run.call_args.args[0]
+        inv=run.call_args.args[2]
+        argv=[run.call_args.args[1],*[x for _, names in inv['targets'] for x in ('--host',names)],*inv['assignments']]
         self.assertEqual(argv[0],'system/network/check/port')
         self.assertIn('--host',argv)
         self.assertIn('port=8888',argv)

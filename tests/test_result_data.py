@@ -1,4 +1,6 @@
 """Public synthetic stage 1/2/3, identity and ESXi tests; no real hosts or sudo."""
+from inventory_fixture import BUNDLE, COLLECTOR, historical_metadata
+from recipe_test_support import recipe_main
 import contextlib
 import copy
 import io
@@ -16,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import host_identity as hi
 import observation_store as store
-import run_recipe as runner
+import recipe_runner as runner
 from opsfeast import ConfigError
 
 
@@ -25,15 +27,15 @@ def result(text='', code=0):
 
 
 def raw(host='node'):
-    report = runner.collector['new_report'](host, 'ssh')
+    report = COLLECTOR['new_report'](host, 'ssh')
     report.update(started_at='2026-10-13T00:00:00+00:00', finished_at='2026-10-13T00:00:10+00:00', status='success')
     for field in store.FIELDS:
         report['observations'][field].update(value='example', status='success', observed_at='2026-10-13T00:00:01+00:00', error=None)
     from retention_replay import snapshot
     from opsfeast import read_yaml
-    descriptor = read_yaml(runner.BUNDLE / 'recipe.yaml')
+    descriptor = historical_metadata()
     report['execution_access_mode'] = descriptor['access_mode']
-    report['retention_snapshot'] = snapshot(dict(descriptor, version=report['recipe']['version']), runner.BUNDLE)
+    report['retention_snapshot'] = snapshot(dict(descriptor, version=report['recipe']['version']), BUNDLE)
     return report
 
 
@@ -413,73 +415,11 @@ class HostMetadataTests(unittest.TestCase):
 
 
 class PipelineTests(unittest.TestCase):
-    def run_inventory(self, kernel='Linux', fail_retention=False, metadata=None):
-        temporary = tempfile.TemporaryDirectory()
-        self.addCleanup(temporary.cleanup)
-        root = Path(temporary.name)
-        from opsfeast import yaml
-        (root / 'hosts.yaml').write_text(yaml.safe_dump({'hosts': {'node': {'connection': {'local': True}, 'users': {'actor': {'sudo': False}}, **(metadata or {})}}}, allow_unicode=True))
-        session = Mock()
-        def execute(argv, **kwargs):
-            if argv[:1] == ['uname']:
-                return result({'-s': kernel, '-n': 'node', '-r': '8.0', '-m': 'x86_64'}[argv[1]] + '\n')
-            if argv == ['vmware', '-v']:
-                return result('VMware ESXi 8.0.0 build-example\n')
-            if argv == ['esxcli', 'hardware', 'platform', 'get']:
-                return result('UUID: UUID-EXAMPLE\nSerial Number: SERIAL-EXAMPLE\nEnclosure Serial Number: ENCLOSURE-EXAMPLE\n')
-            if argv == ['cat', '/etc/machine-id']:
-                return result('1234567890abcdef1234567890abcdef\n')
-            if argv[:1] == ['cat']:
-                return result(code=1)
-            if argv == ['id', '-un']:
-                return result('actor\n')
-            if argv == ['id', '-u']:
-                return result('10\n')
-            return result('ID=example\nNAME="Example Linux"\nVERSION_ID=1.2\n')
-        session.exec_command.side_effect = execute
-        manager = patch.object(runner, 'retain', side_effect=sqlite3.OperationalError()) if fail_retention else contextlib.nullcontext()
-        with manager, contextlib.redirect_stderr(io.StringIO()):
-            report, path = runner.run(root, 'node', recipe='system/inventory/overview', session_class=Mock(return_value=session), runtime={'verification': 'synthetic'})
-        return root, report, path
 
-    def test_automatic_retention_raw_receipt_and_replay(self):
-        root, report, path = self.run_inventory()
-        self.assertEqual(report['status'], 'success')
-        self.assertEqual(report['retention']['status'], 'stored')
-        self.assertEqual(json.loads(path.read_text()), report)
-        self.assertEqual(store.retain(root, json.loads(path.read_text()))['status'], 'already_stored')
-        self.assertEqual(store.validate_exchange(store.export(root)), 1)
 
-    def test_configured_identity_and_labels_reach_exchange(self):
-        root, report, path = self.run_inventory(metadata={'identity_key': 'example.org:mail:os-1', 'label': '郵件服務', 'description': 'Line one\nLine two'})
-        self.assertEqual(report['identity']['quality'], 'user-assigned')
-        self.assertEqual(json.loads(path.read_text())['host_metadata']['label'], '郵件服務')
-        record = store.export(root)['records'][0]
-        self.assertEqual(record['identity_key'], 'example.org:mail:os-1')
-        self.assertEqual(record['label'], '郵件服務')
-        self.assertEqual(record['description'], 'Line one\nLine two')
 
-    def test_retention_failure_preserves_recoverable_raw(self):
-        root, report, path = self.run_inventory(fail_retention=True)
-        self.assertEqual(report['status'], 'success')
-        self.assertEqual(report['retention']['status'], 'failed')
-        self.assertEqual(json.loads(path.read_text()), report)
-        self.assertEqual(store.retain(root, report)['status'], 'stored')
 
-    def test_esxi_dispatch_identity_and_retention(self):
-        root, report, path = self.run_inventory(kernel='VMkernel')
-        self.assertEqual(report['recipe']['implementation_id'], 'esxi')
-        self.assertEqual(report['host_init']['facts']['os_name'], 'esxi')
-        self.assertEqual(report['observations']['system_name']['value'], 'VMware ESXi')
-        self.assertEqual(report['identity']['quality'], 'fallback')
-        self.assertEqual(report['retention']['status'], 'stored')
 
-    def test_cli_retention_failure_is_nonzero(self):
-        report = raw()
-        report.update(reason_code='inventory_complete', message='success', detected_kernel='Linux', supported_platforms=['linux'], retention={'status': 'failed'})
-        with patch.object(runner, 'resolve_root', return_value=ROOT), patch.object(runner, 'select_hosts', return_value=['node']), patch.object(runner, 'run', return_value=(report, ROOT / 'synthetic.json')), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(runner.main(['system/inventory/overview', '--host', 'node', '--quiet']), 1)
-            self.assertEqual(runner.main(['system/inventory/overview', '--all', '--quiet']), 1)
 
     def test_atomic_raw_write_preserves_previous_file(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -490,19 +430,6 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(json.loads(path.read_text()), {'previous': True})
             self.assertEqual(list(path.parent.iterdir()), [path])
 
-    def test_receipt_write_failure_still_reports_raw_path(self):
-        save = runner.save_report
-        calls = []
-        def saving(path, report):
-            calls.append(path)
-            if len(calls) == 2:
-                raise OSError()
-            return save(path, report)
-        with patch.object(runner, 'save_report', side_effect=saving):
-            root, report, path = self.run_inventory()
-        self.assertEqual(report['retention']['reason_code'], 'receipt_save_failed')
-        self.assertTrue(path.is_file())
-        self.assertEqual(store.retain(root, json.loads(path.read_text()))['status'], 'already_stored')
 
     def test_checked_in_exchange_fixture_and_declared_contract(self):
         example = json.loads((ROOT / 'recipes/system/inventory/overview/examples/exchange.synthetic.json').read_text())

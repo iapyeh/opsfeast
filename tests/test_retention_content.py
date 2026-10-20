@@ -1,4 +1,5 @@
 """Public synthetic data/content boundaries; no network or private profile data."""
+from recipe_test_support import recipe_main
 import contextlib
 import copy
 import hashlib
@@ -231,7 +232,7 @@ class RetentionContentTests(unittest.TestCase):
         self.assertEqual(before, {p: p.read_bytes() for p in before})
 
     def test_runner_content_failure_preserves_status_and_returns_nonzero(self):
-        import run_recipe
+        import recipe_runner as run_recipe
         self.enable()
         fixtures.VaultTests.recipe(self)
         directory = self.root/'recipes/update'
@@ -247,7 +248,7 @@ class RetentionContentTests(unittest.TestCase):
         self.assertNotIn('content_update', report['retention'])
         self.assertEqual(json.loads(path.read_text())['status'], 'success')
         with patch.object(run_recipe, 'run', return_value=(report, path)), contextlib.redirect_stdout(io.StringIO()) as out:
-            code = run_recipe.main([':update', '--host', 'node', '--root', str(self.root), '--json'])
+            code = recipe_main([':update', '--host', 'node', '--root', str(self.root), '--json'])
         self.assertEqual(code, 1)
         self.assertEqual(json.loads(out.getvalue())['content_update']['status'], 'failed')
         vault.rebuild(self.root)

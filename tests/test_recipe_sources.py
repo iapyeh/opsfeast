@@ -1,4 +1,6 @@
 """Public synthetic source/vars/disable/exclude integration; no real hosts."""
+from inventory_fixture import BUNDLE, COLLECTOR
+from recipe_test_support import recipe_main
 import contextlib
 import copy
 import io
@@ -15,7 +17,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import opsfeast as ops
-import run_recipe as runner
+import recipe_runner as runner
 from recipe_inputs import prepare_vars
 from types import SimpleNamespace
 
@@ -32,8 +34,8 @@ class RecipeSourcesTests(unittest.TestCase):
         self.root = self.base / 'profile'
         self.root.mkdir()
         self.external = self.base / 'community'
-        copy_recipe(runner.BUNDLE, self.external / 'system/inventory/overview')
-        copy_recipe(runner.BUNDLE, self.root / 'recipes/system/inventory/overview')
+        copy_recipe(BUNDLE, self.external / 'system/inventory/overview')
+        copy_recipe(BUNDLE, self.root / 'recipes/system/inventory/overview')
         self.data = {
             'recipe_sources': {'community': {'path': str(self.external)}},
             'hosts': {'h': {'connection': {'local': True}, 'group': 'g',
@@ -63,25 +65,23 @@ class RecipeSourcesTests(unittest.TestCase):
     def cli(self, *args):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
-                patch.object(runner, 'load_runtime', side_effect=lambda: (Mock(return_value=self.session()), {'verification': 'synthetic'})):
-            code = runner.main([*args, '--root', str(self.root), '--threads', '1'])
+                patch('inventory_jobs.collect_host', return_value={'status':'success','reason_code':'synthetic','result_path':None}):
+            code = recipe_main([*args, '--root', str(self.root), '--threads', '1'])
         return code, json.loads(out.getvalue()) if out.getvalue() else None, err.getvalue()
 
     def test_three_sources_shorthand_and_legacy_paths(self):
-        for reference, directory in (('system/inventory/overview', runner.BUNDLE.resolve()),
+        for reference, directory in (('system/inventory/overview', BUNDLE.resolve()),
                                      (':system/inventory/overview', self.root / 'recipes/system/inventory/overview'),
                                      ('community:system/inventory/overview', self.external / 'system/inventory/overview'),
-                                     ('recipes/system/inventory/overview', runner.BUNDLE.resolve()),
+                                     ('recipes/system/inventory/overview', BUNDLE.resolve()),
                                      ('./recipes/system/inventory/overview', self.root / 'recipes/system/inventory/overview')):
             with self.subTest(reference=reference):
                 self.data['hosts']['h']['recipes'] = [reference]
                 self.write()
                 self.assertEqual(self.config().selected['h'], [directory])
                 if not reference.startswith('recipes/'):
-                    report, path = runner.run(self.root, 'h', recipe=reference, session_class=Mock(return_value=self.session()))
-                    self.assertEqual(report['status'], 'success')
-                    self.assertEqual(report['recipe']['resolved_path'], str(directory))
-                    self.assertTrue(path.is_relative_to(self.root / 'observations'))
+                    cfg, selected, _, _ = runner.preflight(self.root, 'h', reference)
+                    self.assertEqual(selected.resolve(), directory.resolve())
 
     def test_includes_use_entry_sources_and_profile_prefix(self):
         self.data['include'] = ['hosts/extra.yaml']
@@ -155,14 +155,14 @@ class RecipeSourcesTests(unittest.TestCase):
         cfg = self.config()
         self.assertEqual(cfg.selected['h'], [])
         self.assertEqual(len(cfg.recipe_skips['h']), 4)
-        for ref in ('system/inventory/overview', ':missing', './recipes/missing', str(runner.BUNDLE.resolve())):
+        for ref in ('system/inventory/overview', ':missing', './recipes/missing', str(BUNDLE.resolve())):
             with self.subTest(ref=ref), patch.object(runner, 'load_runtime') as runtime:
                 report, path = runner.run(self.root, 'h', recipe=ref)
                 self.assertEqual(report['reason_code'], 'source_disabled')
                 self.assertIsNone(path)
                 runtime.assert_not_called()
-        report, _ = runner.run(self.root, 'h', recipe='community:system/inventory/overview', session_class=Mock(return_value=self.session()))
-        self.assertEqual(report['status'], 'success')
+        _, directory, _, _ = runner.preflight(self.root, 'h', 'community:system/inventory/overview')
+        self.assertEqual(directory.resolve(), (self.external/'system/inventory/overview').resolve())
 
     def test_default_source_vars_and_host_overrides(self):
         for name, ref in (('bundle', 'system/inventory/overview'), ('profile', ':system/inventory/overview')):
@@ -213,14 +213,8 @@ class RecipeSourcesTests(unittest.TestCase):
         self.data['recipe_sources']['community']['vars'] = {'command_timeout_seconds': 15}
         self.data['hosts']['h']['recipes'] = [{'recipe': 'community:system/inventory/overview', 'vars': {'command_timeout_seconds': 7}}]
         self.write()
-        session = self.session()
-        report, _ = runner.run(self.root, 'h', recipe='community:system/inventory/overview', session_class=Mock(return_value=session))
-        self.assertEqual(report['status'], 'success')
-        self.assertEqual(report['recipe']['variable_names'], ['command_timeout_seconds'])
-        # The initial facts probe keeps the CLI timeout; collection gets the recipe override.
-        self.assertEqual(session.exec_command.call_args_list[-1].kwargs['command_timeout'], 7)
-        self.assertEqual(session.exec_command.call_args_list[0].kwargs['command_timeout'], 30)
-        self.assertNotIn('effective_vars', json.dumps(report))
+        cfg, _, _, _ = runner.preflight(self.root, 'h', 'community:system/inventory/overview')
+        self.assertEqual(cfg.execution_recipe['effective_vars']['command_timeout_seconds'], 7)
         self.assertEqual(self.data['recipe_sources']['community']['vars']['command_timeout_seconds'], 15)
 
     def test_invalid_or_required_vars_fail_before_session(self):
@@ -262,15 +256,6 @@ class RecipeSourcesTests(unittest.TestCase):
                 with self.assertRaises(ops.ConfigError): prepare_vars(schema, {}, {'v': good})
         with self.assertRaises(ops.ConfigError):
             prepare_vars({'inputs': {'variables': {'v': {'type': 'number', 'minimum': 3, 'maximum': 1}}}}, {}, {})
-
-    def test_vars_require_context_support_before_loading_legacy_code(self):
-        entry = self.external / 'system/inventory/overview/implementations/linux.py'
-        entry.write_text("VERSION = '0.1.2'\nraise RuntimeError('never execute candidate')\ndef collect(session, report, timeout, facts):\n    pass\n")
-        self.data['recipe_sources']['community']['vars'] = {'command_timeout_seconds': 5}
-        self.write()
-        with self.assertRaisesRegex(ops.ConfigError, 'context'), patch.object(runner, 'load_runtime') as runtime:
-            runner.run(self.root, 'h', recipe='community:system/inventory/overview')
-        runtime.assert_not_called()
 
     def test_first_matching_selector_wins_and_unrelated_selectors_are_bypassed(self):
         self.data['hosts']['h']['recipes'] = [
@@ -333,7 +318,7 @@ class RecipeSourcesTests(unittest.TestCase):
         self.assertEqual(len(report['excluded_hosts']), 2)
         self.assertIn('no hosts selected', error)
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            runner.main(['system/inventory/overview', '--host', 'h', '--exclude', 'other'])
+            recipe_main(['system/inventory/overview', '--host', 'h', '--exclude', 'other'])
         # Exclusion is target-only; it does not mutate enabled or the jump plan.
         self.data['hosts']['other']['connection'] = {'hostname': 'jump.example', 'allow_agent': True}
         self.data['hosts']['h']['connection'] = {'hostname': 'target.example', 'allow_agent': True, 'via': {'host': 'other'}}

@@ -1,5 +1,8 @@
 # Vision and design principles
 
+The inventory-specific [job/utility/periodic collection service](inventory-jobs.md) now implements deterministic minute dispatch with opt-in hosts, source-timestamped samples and public YANG model reuse. References below to planned scheduling concern a general scheduler; they do not negate this narrower implemented capability.
+
+
 ## Host-centered management and portable knowledge
 
 A logical host is identified by user-selected namespace + host ID. Its history continues across replacement, VM relocation and OS reinstall; native identifiers are observations. Keep authoritative structured data and durable write-operation history in retention/, independent of content applications. Bundle a plain vault/ for host/group Markdown and human notes. Users can add human notes beside generated Markdown. See [implemented contracts and limits](host-vault.md). Recipe adapters and product read interfaces own normalization so users and agents need not repeatedly clean raw outputs.
@@ -144,4 +147,4 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
-_Last modified: 2026-10-19 15:36:52_
+_Last modified: 2026-10-20 10:53:49_

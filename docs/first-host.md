@@ -184,7 +184,7 @@ Review entry, identity and restoration separately. A skipped or incomplete test 
 After the connection test succeeds, choose whether to authorize read-only system inventory. This requires the full environment, reviewed recipe code and supported target platform; connection success alone does not establish recipe applicability.
 
 ```sh
-.venv/bin/python -B tools/run_recipe.py system/inventory/overview --host server-01 --profile main
+.venv/bin/python -B tools/opsfeast.py recipes run system/inventory/overview --host server-01 --profile main
 ```
 
 Explicit recipe selection works without adding a hosts.yaml recipes list. The runner obtains missing platform facts, selects an implementation and saves reports in the selected Feast. Read its JSON summary and reported saved paths; zero requires complete inventory success. Partial, unsupported, skipped and failed results remain visible. See the [inventory guide](../recipes/system/inventory/overview/README.md) for operations and verification limits.
@@ -202,4 +202,4 @@ Agent prompt:
 
 Documentation examples are synthetic. Configuration validation and automated mock tests do not prove native SSH, su or sudo behavior on your host.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

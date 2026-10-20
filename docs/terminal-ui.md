@@ -109,12 +109,12 @@ python -B tools/opsfeast.py check --profile main --tui
 python -B tools/opsfeast.py test-host host-01 --profile main --tui
 python -B tools/opsfeast.py test-su host-01 alice --tui
 python -B tools/opsfeast.py test-sudo host-01 --run-as root --tui
-python -B tools/run_recipe.py system/inventory/overview --group web --threads 4 --tui
+python -B tools/opsfeast.py recipes run system/inventory/overview --group web --threads 4 --tui
 python -B tools/opsfeast.py recipes list --checkout-only --tui
 python -B tools/opsfeast.py recipes results list --profile main --tui
 ```
 
-Supported `opsfeast.py` commands are `check`, `inspect-recipe`, `test-connection`, `host-init`, `test-host`, `test-su`, `test-sudo`, and `recipes list/show/results/run`. All existing `run_recipe.py` selections and typed inputs remain available. Profile registration/switching and initialization are outside the recipes workbench. Bundles, artifacts and saved jobs are available through the workbench forms or their ordinary CLI; the single-invocation `--tui` flag supports only the commands listed above.
+Supported `opsfeast.py` commands are `check`, `inspect-recipe`, `test-connection`, `host-init`, `test-host`, `test-su`, `test-sudo`, and `recipes list/show/results/run`. All existing `opsfeast.py recipes run` selections and typed inputs remain available. Profile registration/switching and initialization are outside the recipes workbench. Bundles, artifacts and saved jobs are available through the workbench forms or their ordinary CLI; the single-invocation `--tui` flag supports only the commands listed above.
 
 Examples involving diagnostics or recipes are executions and require the user's actual target/operation scope. Opening a UI is not an execution preview: the supplied command starts immediately after UI prerequisites pass, and the ordinary command's configuration/selection checks still run before connections. The single-invocation display has no selection menu; use the bare recipes workbench for its action forms.
 
@@ -163,4 +163,4 @@ Original output and JSON exports retain the original timezone/precision. The his
 heading still names its offset(s). See [the shared time policy](cli.md#human-time-display-policy)
 for DST, invalid/unzoned timestamps, HTML generation and machine-data exceptions.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

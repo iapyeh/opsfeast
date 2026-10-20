@@ -14,7 +14,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from opsfeast import ConfigError, Instance, Validator, main
 from management_view import hosts_snapshot
-from run_recipe import select_hosts
+from recipe_runner import select_hosts
 
 
 LOCAL = {'connection': {'local': True}}

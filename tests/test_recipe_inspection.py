@@ -135,7 +135,8 @@ class RecipeInspectionTests(unittest.TestCase):
         item = report['recipes'][0]
         self.assertEqual(item['runner_contract'], 'valid-inventory-system')
         self.assertEqual(item['coverage']['not_declared_implemented'], ['openbsd'])
-        self.assertEqual(len(item['implementations']), 4)
+        self.assertEqual(item['implementations'], [])
+        self.assertEqual(item['collection']['declaration']['entrypoint'], 'jobs.py')
 
 
 if __name__ == '__main__':

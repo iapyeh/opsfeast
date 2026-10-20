@@ -1,4 +1,5 @@
 """Purpose-first CLI help must be useful without profiles, connections or writes."""
+from recipe_test_support import recipe_main
 import argparse
 from contextlib import ExitStack, redirect_stdout
 import io
@@ -15,7 +16,7 @@ sys.path.insert(0, str(ROOT / 'tools'))
 import opsfeast
 from cli_help import TaskHelpFormatter
 import observation_store
-import run_recipe
+import recipe_runner as run_recipe
 
 
 class CommandHelpTests(unittest.TestCase):
@@ -26,7 +27,7 @@ class CommandHelpTests(unittest.TestCase):
                          'recipe_cli.execute', 'retention_store.resolve_root', 'retention_store.refresh_content',
                          'retention_consumers.resolve_root', 'retention_consumers.dispatch',
                          'host_vault.resolve_root', 'host_vault.rebuild', 'observation_store.resolve_root',
-                         'run_recipe.resolve_root', 'run_recipe.load_runtime', 'terminal_ui.launch'):
+                         'recipe_cli.resolve_root', 'recipe_runner.load_runtime', 'terminal_ui.launch'):
                 stack.enter_context(patch(name, side_effect=AssertionError('help must not perform work')))
             stack.enter_context(redirect_stdout(output))
             with self.assertRaises(SystemExit) as exit:
@@ -101,7 +102,7 @@ class CommandHelpTests(unittest.TestCase):
         self.assertIn('Examples:', help_text)
         self.assertIn('system/network/check/port', help_text)
         self.assertIn('feast/report/retention-summary', help_text)
-        self.assertIn('--dryrun makes real', help_text)
+        self.assertIn('check-access for connection and privilege diagnostics', help_text)
         self.assertIn('--vars-file', help_text)
 
     def test_parent_help_summarizes_recipe_and_job_commands(self):
@@ -170,9 +171,9 @@ class CommandHelpTests(unittest.TestCase):
                     self.assertIn(meaning, help_text)
 
     def test_standalone_runner_and_exchange_tools_have_purpose_descriptions(self):
-        prose = self.description(self.help([], run_recipe.main))
+        prose = self.description(self.help(['recipes','run']))
         self.assertIn('selected hosts', prose)
-        self.assertIn('opsfeast.py recipes run for offline report', prose)
+        self.assertIn('Offline report', prose)
         for command, meanings in (
             ('ingest', ('saved raw', 'does not reconnect')),
             ('export', ('stdout', 'no recipient')),
@@ -196,7 +197,7 @@ class CommandHelpTests(unittest.TestCase):
                 text = self.help(arguments)
                 self.assertTrue(text.startswith('usage: opsfeast.py recipes run'))
                 self.assertIn('Run one selected recipe', self.description(text))
-        self.assertIn('selected hosts', self.description(self.help(['--tui'], run_recipe.main)))
+        self.assertIn('selected hosts', self.description(self.help(['recipes','run','--tui'])))
 
     def test_real_help_from_an_empty_directory_needs_no_profile_or_recipe(self):
         with tempfile.TemporaryDirectory() as directory:

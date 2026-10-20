@@ -4,7 +4,7 @@ Recipe paths support more than two levels; follow [classification and location](
 
 OpsFeast resolves recipes from the checkout, the selected profile, or explicitly registered local source directories. Registration, configuration checking, installation/update and execution are separate operations. Registering a clone does not authenticate it, install its dependencies, update Git or authorize its code to execute.
 
-Use the [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) for the runner. It requires one explicit inventory-system or compatible Python-session recipe and explicit targets; it does not execute a host's whole recipes list or arbitrary incompatible programs. Read [general execution](recipe-execution.md) for descriptor 0.3.0, the execute contract and raw results. Host lists define configuration selections and per-recipe input overrides. A CLI recipe bypasses unrelated selectors, but uses the first matching selector's vars.
+Use the [CLI reference](cli.md#operational-recipe-execution) for the runner. It requires one explicit inventory-system or compatible Python-session recipe and explicit targets; it does not execute a host's whole recipes list or arbitrary incompatible programs. Read [general execution](recipe-execution.md) for descriptor 0.3.0, the execute contract and raw results. Host lists define configuration selections and per-recipe input overrides. A CLI recipe bypasses unrelated selectors, but uses the first matching selector's vars.
 
 ## Register sources at the entrypoint
 
@@ -125,7 +125,7 @@ Source/host skips occur before runtime loading or connections and return result_
 ## Exclude hosts for one invocation
 
 ```sh
-python -B tools/run_recipe.py system/inventory/overview --all --exclude host9 host10
+python -B tools/opsfeast.py recipes run system/inventory/overview --all --exclude host9 host10
 ```
 
 --exclude requires --all and accepts exact configured host IDs, without group guessing or wildcard expansion. Unknown excluded IDs fail before execution. Disabled hosts are filtered first; CLI exclusions then remove enabled targets. Repeated names do not duplicate entries, and settings are not rewritten. excluded_hosts lists host_disabled or cli_excluded reasons. If no target remains, the CLI returns 1, prints an empty hosts list and exclusion evidence, and reports the empty selection on stderr.
@@ -138,4 +138,4 @@ Use check to validate configuration/selection without executing code. To inspect
 
 Synthetic tests cover sources, include restrictions, path/symlink boundaries, scalar/mapping selection, input precedence/types/isolation, disable/exclude behavior and inventory collection through mocked Sessions. Real SSH, native privilege transitions and third-party recipe behavior remain unverified.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

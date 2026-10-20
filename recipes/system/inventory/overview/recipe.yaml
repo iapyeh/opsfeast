@@ -1,11 +1,11 @@
-descriptor_version: 0.2.0
+descriptor_version: 0.3.0
 author:
   name: Bundle
   contacts:
   - Bundle
 license: MIT
 id: inventory-system
-version: 0.3.2
+version: 0.4.0
 status: implemented
 title: System inventory
 description: Collect bounded system, hardware, storage, network, software and services
@@ -33,15 +33,11 @@ dependencies:
   - PyYAML
   - SSHScript ==5.0.0
   target:
-  - uname
-  - id (when identity sudo is used)
-  - ioreg (macOS identity)
-  - kenv (FreeBSD identity)
-  - esxcli and vmware (ESXi)
   - /bin/sh
-  - cat (Linux)
-  - freebsd-version (FreeBSD)
-  - sw_vers (macOS)
+  - uname
+  - id
+  - head
+  - platform-specific tools declared by the property probes
   status: defined
 permissions:
   account: login-user
@@ -57,11 +53,8 @@ inputs:
   - host-id
   optional:
   - command-timeout-seconds
-  note: 'CLI: RECIPE --host HOST --timeout SECONDS; default 30 seconds per connection
-    stage/command, not whole run.'
+  note: Use opsfeast.py inventory query/run or recipes run; no standalone runner.
   variables:
-    identity_sudo:
-      type: boolean
     collection_budget_seconds:
       type: number
       minimum: 0
@@ -72,86 +65,38 @@ inputs:
       exclusive_minimum: true
 output:
   format: json
-  schema_version: 0.2.0
-  example: examples/result.synthetic.json
-  inventory_contract_version: 0.1.0
-  fields:
-  - hostname
-  - platform
-  - system_name
-  - system_version
-  - kernel_name
-  - kernel_release
-  - architecture
-  summary_fields:
-  - reason_code
-  - message
-  - detected_kernel
-  - supported_platforms
+  schema_version: 0.3.0
   run_statuses:
   - success
   - partial
   - failed
-  - unsupported
   - skipped
-  observation_statuses:
-  - success
-  - unavailable
-  - unsupported
-  - permission_denied
-  - timeout
-  - command_failed
-  - parsing_failed
-  - not_attempted
 verification:
-  synthetic_example: examples/result.synthetic.json
-  parser_tests: tests/test_inventory_system.py and tests/test_host_runtime.py
-  local_execution: Historical recipe 0.2.0, 2026-10-11 macOS local host-init and inventory
-    success; Linux/FreeBSD not tested
+  tests:
+  - tests/test_inventory_jobs.py
+  - tests/test_recipe_runner.py
+  local_execution: macOS local selective kernel/architecture query and retention/Vault
+    verified
   ssh_execution: not-tested
-implementations:
-- id: linux
-  version: 0.1.2
-  entrypoint: implementations/linux.py
-  match:
-    os_name: linux
-  verification:
-    synthetic: tested
-    ssh: not-tested
-    local: not-tested
-- id: freebsd
-  version: 0.1.1
-  entrypoint: implementations/freebsd.py
-  match:
-    os_name: freebsd
-  verification:
-    synthetic: tested
-    ssh: not-tested
-    local: not-tested
-- id: macos
-  version: 0.1.1
-  entrypoint: implementations/macos.py
-  match:
-    os_name: macos
-  verification:
-    synthetic: tested
-    ssh: not-tested
-    local: 2026-10-11 read-only success
-- id: esxi
-  version: 0.1.0
-  entrypoint: implementations/esxi.py
-  match:
-    os_name: esxi
-  verification:
-    synthetic: tested
-    ssh: not-tested
-    local: not-tested
 access_mode: read
-retention:
-  contract: inventory-observations
+collection:
   version: 0.1.0
-  description: Allowlisted system inventory observations and native identity evidence.
-    Partial/unknown fields and collection scope must be preserved; this dataset is
-    not online status or overall health.
-  schema: retention.schema.json
-# Last modified: 2026-10-19 16:59:26
+  catalog: collection.json
+  entrypoint: jobs.py
+  retention:
+    contract: inventory-job-observations
+    version: 0.1.0
+    description: Per-job standard YANG node references and extension values with source
+      times, identity scope and explicit gaps.
+    schema: job-retention.schema.json
+retention:
+  contract: inventory-job-observations
+  version: 0.1.0
+  description: Per-job standard YANG node references and extension values with source
+    times, identity scope and explicit gaps.
+  schema: job-retention.schema.json
+runner:
+  contract: inventory-jobs
+  version: 0.1.0
+  entrypoint: jobs.py
+# Last modified: 2026-10-20 14:34:31

@@ -1,0 +1,1464 @@
+{
+  "contract_version": "0.1.0",
+  "modules": {
+    "ietf-system": {
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://www.rfc-editor.org/rfc/rfc7317.html"
+    },
+    "ietf-interfaces": {
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html"
+    },
+    "ietf-ip": {
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-ip",
+      "revision": "2018-02-22",
+      "source": "https://www.rfc-editor.org/rfc/rfc8344.html"
+    },
+    "ietf-hardware": {
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+      "revision": "2018-03-13",
+      "source": "https://www.rfc-editor.org/rfc/rfc8348.html"
+    },
+    "openconfig-system": {
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang"
+    },
+    "opsfeast-inventory": {
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang"
+    }
+  },
+  "jobs": {
+    "hardware-baseline": {
+      "title": "Hardware baseline",
+      "interval": 604800,
+      "enabled": true
+    },
+    "system-configuration": {
+      "title": "System configuration",
+      "interval": 86400,
+      "enabled": true
+    },
+    "network-configuration": {
+      "title": "Network configuration",
+      "interval": 86400,
+      "enabled": true
+    },
+    "software-inventory": {
+      "title": "Installed software",
+      "interval": 86400,
+      "enabled": true
+    },
+    "storage-layout": {
+      "title": "Storage layout",
+      "interval": 86400,
+      "enabled": true
+    },
+    "storage-capacity": {
+      "title": "Storage capacity",
+      "interval": 900,
+      "enabled": true
+    },
+    "service-state": {
+      "title": "Services and listening endpoints",
+      "interval": 300,
+      "enabled": true
+    },
+    "network-state": {
+      "title": "Network operational state",
+      "interval": 300,
+      "enabled": true
+    },
+    "system-runtime": {
+      "title": "System runtime",
+      "interval": 300,
+      "enabled": true
+    },
+    "resource-metrics": {
+      "title": "Resource utilization",
+      "interval": 60,
+      "enabled": true
+    },
+    "hardware-sensors": {
+      "title": "Hardware sensors",
+      "interval": 60,
+      "enabled": false
+    }
+  },
+  "properties": {
+    "system.hostname": {
+      "id": "system.hostname",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-system:system/hostname",
+      "module": "ietf-system",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://www.rfc-editor.org/rfc/rfc7317.html",
+      "keys": [],
+      "column": null,
+      "description": "system: hostname",
+      "mapping": "standard",
+      "max_length": 253,
+      "pattern": "((([a-zA-Z0-9_]([a-zA-Z0-9\\-_]){0,61})?[a-zA-Z0-9]\\.)*([a-zA-Z0-9_]([a-zA-Z0-9\\-_]){0,61})?[a-zA-Z0-9]\\.?)|\\.",
+      "key_paths": {}
+    },
+    "system.kernel_name": {
+      "id": "system.kernel_name",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-system:system-state/platform/os-name",
+      "module": "ietf-system",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://www.rfc-editor.org/rfc/rfc7317.html",
+      "keys": [],
+      "column": null,
+      "description": "system: kernel name",
+      "mapping": "standard",
+      "key_paths": {}
+    },
+    "system.system_version": {
+      "id": "system.system_version",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/system/system-version",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Distribution/userland version; not equated with ietf-system os-version.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "system.kernel_release": {
+      "id": "system.kernel_release",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-system:system-state/platform/os-release",
+      "module": "ietf-system",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://www.rfc-editor.org/rfc/rfc7317.html",
+      "keys": [],
+      "column": null,
+      "description": "system: kernel release",
+      "mapping": "standard",
+      "key_paths": {}
+    },
+    "system.architecture": {
+      "id": "system.architecture",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-system:system-state/platform/machine",
+      "module": "ietf-system",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://www.rfc-editor.org/rfc/rfc7317.html",
+      "keys": [],
+      "column": null,
+      "description": "system: architecture",
+      "mapping": "standard",
+      "key_paths": {}
+    },
+    "system.platform": {
+      "id": "system.platform",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/system/platform",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "system: platform",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "system.system_name": {
+      "id": "system.system_name",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/system/system-name",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "system: system name",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "system.timezone": {
+      "id": "system.timezone",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/system/timezone",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Timezone is the source abbreviation, not an IANA zone.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "system.virtualization": {
+      "id": "system.virtualization",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/system/virtualization",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "system: virtualization",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "system.kernel_version": {
+      "id": "system.kernel_version",
+      "job": "system-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-system:system-state/platform/os-version",
+      "module": "ietf-system",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://www.rfc-editor.org/rfc/rfc7317.html",
+      "keys": [],
+      "column": null,
+      "description": "system: kernel version",
+      "mapping": "standard",
+      "key_paths": {}
+    },
+    "system.uptime_seconds": {
+      "id": "system.uptime_seconds",
+      "job": "system-runtime",
+      "type": "number",
+      "unit": "seconds",
+      "fraction_digits": 6,
+      "yang_path": "/opsfeast-inventory:inventory/system/uptime-seconds",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "system: uptime seconds",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "system.boot_time": {
+      "id": "system.boot_time",
+      "job": "system-runtime",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/system/boot-time",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Estimated controller time minus uptime; not an authoritative target boot timestamp.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "hardware.cpu_model": {
+      "id": "hardware.cpu_model",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/hardware/cpu-model",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "hardware: cpu model",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "hardware.logical_cpus": {
+      "id": "hardware.logical_cpus",
+      "job": "hardware-baseline",
+      "type": "integer",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/hardware/logical-cpus",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "hardware: logical cpus",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "hardware.memory_total_bytes": {
+      "id": "hardware.memory_total_bytes",
+      "job": "hardware-baseline",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/memory/state/physical",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [],
+      "column": null,
+      "description": "hardware: memory total bytes",
+      "mapping": "standard",
+      "key_paths": {}
+    },
+    "hardware.vendor": {
+      "id": "hardware.vendor",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/hardware/vendor",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "hardware.model": {
+      "id": "hardware.model",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/hardware/model",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "hardware.serial": {
+      "id": "hardware.serial",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/hardware/serial",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "hardware.uuid": {
+      "id": "hardware.uuid",
+      "job": "hardware-baseline",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/hardware/uuid",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Visible environment scope. Chassis/component identity is not assumed from whole-host DMI values.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.source": {
+      "id": "storage.filesystems.source",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/filesystems/source",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "source",
+        "mountpoint"
+      ],
+      "column": "source",
+      "description": "storage: filesystems: source",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.mountpoint": {
+      "id": "storage.filesystems.mountpoint",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/filesystems/mountpoint",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "source",
+        "mountpoint"
+      ],
+      "column": "mountpoint",
+      "description": "storage: filesystems: mountpoint",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.total_bytes": {
+      "id": "storage.filesystems.total_bytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/filesystems/total-bytes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "source",
+        "mountpoint"
+      ],
+      "column": "total_bytes",
+      "description": "storage: filesystems: total bytes",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.used_bytes": {
+      "id": "storage.filesystems.used_bytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/filesystems/used-bytes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "source",
+        "mountpoint"
+      ],
+      "column": "used_bytes",
+      "description": "storage: filesystems: used bytes",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.available_bytes": {
+      "id": "storage.filesystems.available_bytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/filesystems/available-bytes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "source",
+        "mountpoint"
+      ],
+      "column": "available_bytes",
+      "description": "storage: filesystems: available bytes",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.used_percent": {
+      "id": "storage.filesystems.used_percent",
+      "job": "storage-capacity",
+      "type": "number",
+      "unit": "percent",
+      "fraction_digits": 6,
+      "yang_path": "/opsfeast-inventory:inventory/storage/filesystems/used-percent",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "source",
+        "mountpoint"
+      ],
+      "column": "used_percent",
+      "description": "storage: filesystems: used percent",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.filesystems.total_megabytes": {
+      "id": "storage.filesystems.total_megabytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "megabytes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/mount-points/mount-point/state/size",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "total_bytes",
+      "description": "Floor of exact source bytes / 1000000, matching integer decimal megabytes. Exact byte-valued properties remain separate to preserve precision.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/openconfig-system:system/mount-points/mount-point/name"
+      }
+    },
+    "storage.filesystems.used_megabytes": {
+      "id": "storage.filesystems.used_megabytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "megabytes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/mount-points/mount-point/state/utilized",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "used_bytes",
+      "description": "Floor of exact source bytes / 1000000, matching integer decimal megabytes. Exact byte-valued properties remain separate to preserve precision.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/openconfig-system:system/mount-points/mount-point/name"
+      }
+    },
+    "storage.filesystems.available_megabytes": {
+      "id": "storage.filesystems.available_megabytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "megabytes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/mount-points/mount-point/state/available",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "available_bytes",
+      "description": "Floor of exact source bytes / 1000000, matching integer decimal megabytes. Exact byte-valued properties remain separate to preserve precision.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/openconfig-system:system/mount-points/mount-point/name"
+      }
+    },
+    "storage.block_devices.name": {
+      "id": "storage.block_devices.name",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/block-devices/name",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "name",
+      "description": "storage: block devices: name",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.block_devices.type": {
+      "id": "storage.block_devices.type",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/block-devices/type",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "type",
+      "description": "storage: block devices: type",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.block_devices.size": {
+      "id": "storage.block_devices.size",
+      "job": "storage-layout",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/block-devices/size",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "size",
+      "description": "storage: block devices: size",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.block_devices.fstype": {
+      "id": "storage.block_devices.fstype",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/block-devices/fstype",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "fstype",
+      "description": "storage: block devices: fstype",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.block_devices.mountpoint": {
+      "id": "storage.block_devices.mountpoint",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/block-devices/mountpoint",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "mountpoint",
+      "description": "storage: block devices: mountpoint",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.block_devices.model": {
+      "id": "storage.block_devices.model",
+      "job": "storage-layout",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/block-devices/model",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "model",
+      "description": "storage: block devices: model",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.interfaces.name": {
+      "id": "network.interfaces.name",
+      "job": "network-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/name",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "name",
+      "description": "network: interfaces: name",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "network.interfaces.mac": {
+      "id": "network.interfaces.mac",
+      "job": "network-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/phys-address",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "mac",
+      "description": "network: interfaces: mac",
+      "mapping": "standard",
+      "pattern": "([0-9a-fA-F]{2}(:[0-9a-fA-F]{2})*)?",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "network.interfaces.state": {
+      "id": "network.interfaces.state",
+      "job": "network-state",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/oper-status",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "state",
+      "description": "network: interfaces: state",
+      "mapping": "standard",
+      "enum": [
+        "up",
+        "down",
+        "testing",
+        "unknown",
+        "dormant",
+        "not-present",
+        "lower-layer-down"
+      ],
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "network.interfaces.mtu": {
+      "id": "network.interfaces.mtu",
+      "job": "network-configuration",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/interfaces/mtu",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name",
+        "kind",
+        "address"
+      ],
+      "column": "mtu",
+      "description": "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.interfaces.address": {
+      "id": "network.interfaces.address",
+      "job": "network-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/interfaces/address",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name",
+        "kind",
+        "address"
+      ],
+      "column": "address",
+      "description": "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.interfaces.prefix_length": {
+      "id": "network.interfaces.prefix_length",
+      "job": "network-configuration",
+      "type": "integer",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/interfaces/prefix-length",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name",
+        "kind",
+        "address"
+      ],
+      "column": "prefix_length",
+      "description": "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.interfaces.kind": {
+      "id": "network.interfaces.kind",
+      "job": "network-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/interfaces/kind",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [
+        "name",
+        "kind",
+        "address"
+      ],
+      "column": "kind",
+      "description": "Source interface/address observation; link MTU is not assumed to be IP-layer MTU.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.ipv4.address": {
+      "id": "network.ipv4.address",
+      "job": "network-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv4/address/ip",
+      "module": "ietf-ip",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-ip",
+      "revision": "2018-02-22",
+      "source": "https://www.rfc-editor.org/rfc/rfc8344.html",
+      "keys": [
+        "name",
+        "address"
+      ],
+      "column": "address",
+      "description": "Address family selected explicitly; keys identify interface and address.",
+      "mapping": "standard",
+      "ip_version": 4,
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name",
+        "address": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv4/address/ip"
+      }
+    },
+    "network.ipv4.prefix_length": {
+      "id": "network.ipv4.prefix_length",
+      "job": "network-configuration",
+      "type": "integer",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv4/address/prefix-length",
+      "module": "ietf-ip",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-ip",
+      "revision": "2018-02-22",
+      "source": "https://www.rfc-editor.org/rfc/rfc8344.html",
+      "keys": [
+        "name",
+        "address"
+      ],
+      "column": "prefix_length",
+      "description": "Address family selected explicitly; keys identify interface and address.",
+      "mapping": "standard",
+      "maximum": 32,
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name",
+        "address": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv4/address/ip"
+      }
+    },
+    "network.ipv6.address": {
+      "id": "network.ipv6.address",
+      "job": "network-configuration",
+      "type": "string",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv6/address/ip",
+      "module": "ietf-ip",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-ip",
+      "revision": "2018-02-22",
+      "source": "https://www.rfc-editor.org/rfc/rfc8344.html",
+      "keys": [
+        "name",
+        "address"
+      ],
+      "column": "address",
+      "description": "Address family selected explicitly; keys identify interface and address.",
+      "mapping": "standard",
+      "ip_version": 6,
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name",
+        "address": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv6/address/ip"
+      }
+    },
+    "network.ipv6.prefix_length": {
+      "id": "network.ipv6.prefix_length",
+      "job": "network-configuration",
+      "type": "integer",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv6/address/prefix-length",
+      "module": "ietf-ip",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-ip",
+      "revision": "2018-02-22",
+      "source": "https://www.rfc-editor.org/rfc/rfc8344.html",
+      "keys": [
+        "name",
+        "address"
+      ],
+      "column": "prefix_length",
+      "description": "Address family selected explicitly; keys identify interface and address.",
+      "mapping": "standard",
+      "maximum": 128,
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name",
+        "address": "/ietf-interfaces:interfaces/interface/ietf-ip:ipv6/address/ip"
+      }
+    },
+    "network.dns_servers": {
+      "id": "network.dns_servers",
+      "job": "network-configuration",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/dns-servers",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Resolver-file nameserver snapshot; not claimed to be complete ietf-system configured/effective DNS policy.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.routes": {
+      "id": "network.routes",
+      "job": "network-state",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/routes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Platform route rows; not falsely identified as complete ietf-routing RIB entries.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "network.listening_endpoints": {
+      "id": "network.listening_endpoints",
+      "job": "service-state",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/network/listening-endpoints",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "network: listening endpoints",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "software.packages": {
+      "id": "software.packages",
+      "job": "software-inventory",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/software/packages",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "software: packages",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "services.services": {
+      "id": "services.services",
+      "job": "service-state",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/services/services",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "services: services",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.inodes.total": {
+      "id": "storage.inodes.total",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "inodes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/mount-points/mount-point/state/inodes-total",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "total",
+      "description": "storage: inodes: total",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/openconfig-system:system/mount-points/mount-point/name"
+      }
+    },
+    "storage.inodes.used": {
+      "id": "storage.inodes.used",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "inodes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/mount-points/mount-point/state/inodes-utilized",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "used",
+      "description": "storage: inodes: used",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/openconfig-system:system/mount-points/mount-point/name"
+      }
+    },
+    "storage.inodes.available": {
+      "id": "storage.inodes.available",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "inodes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/mount-points/mount-point/state/inodes-available",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [
+        "name"
+      ],
+      "column": "available",
+      "description": "storage: inodes: available",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/openconfig-system:system/mount-points/mount-point/name"
+      }
+    },
+    "storage.swap.total_bytes": {
+      "id": "storage.swap.total_bytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/swap/total-bytes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "storage: swap: total bytes",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.swap.used_bytes": {
+      "id": "storage.swap.used_bytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/swap/used-bytes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "storage: swap: used bytes",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "storage.swap.available_bytes": {
+      "id": "storage.swap.available_bytes",
+      "job": "storage-capacity",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/storage/swap/available-bytes",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "storage: swap: available bytes",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.load_1m": {
+      "id": "metrics.load_1m",
+      "job": "resource-metrics",
+      "type": "number",
+      "unit": "tasks",
+      "fraction_digits": 6,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/load-1m",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "metrics: load 1m",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.load_5m": {
+      "id": "metrics.load_5m",
+      "job": "resource-metrics",
+      "type": "number",
+      "unit": "tasks",
+      "fraction_digits": 6,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/load-5m",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "metrics: load 5m",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.load_15m": {
+      "id": "metrics.load_15m",
+      "job": "resource-metrics",
+      "type": "number",
+      "unit": "tasks",
+      "fraction_digits": 6,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/load-15m",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "metrics: load 15m",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.cpu_utilization_percent": {
+      "id": "metrics.cpu_utilization_percent",
+      "job": "resource-metrics",
+      "type": "number",
+      "unit": "percent",
+      "fraction_digits": 6,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/cpu-utilization-percent",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Aggregate visible CPU busy-time delta; iowait treated as idle, guest columns are not added twice. Rounded to six decimal places; window recorded per probe.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.memory_available_bytes": {
+      "id": "metrics.memory_available_bytes",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/openconfig-system:system/memory/state/available",
+      "module": "openconfig-system",
+      "namespace": "http://openconfig.net/yang/system",
+      "revision": "2026-07-20",
+      "source": "https://github.com/openconfig/public/blob/60011899be5486cafc68b8d53f0cf4060d34a79d/release/models/system/openconfig-system.yang",
+      "keys": [],
+      "column": null,
+      "description": "metrics: memory available bytes",
+      "mapping": "standard",
+      "key_paths": {}
+    },
+    "metrics.disk_counters": {
+      "id": "metrics.disk_counters",
+      "job": "resource-metrics",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/disk-counters",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Linux diskstats cumulative counters; raw counters, not rates. Linux sector counters are 512-byte sectors.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.interface_counters": {
+      "id": "metrics.interface_counters",
+      "job": "resource-metrics",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/interface-counters",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Linux net/dev cumulative counters; raw counters, not rates.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.memory_pressure": {
+      "id": "metrics.memory_pressure",
+      "job": "resource-metrics",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/metrics/memory-pressure",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Linux PSI some/full average stall percentages over 10/60/300 seconds and cumulative stall microseconds; missing PSI remains unavailable.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "metrics.interfaces.in_octets": {
+      "id": "metrics.interfaces.in_octets",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/statistics/in-octets",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "in_octets",
+      "description": "Cumulative counter, not a rate; use source times and reset/discontinuity evidence.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "metrics.interfaces.out_octets": {
+      "id": "metrics.interfaces.out_octets",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "bytes",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/statistics/out-octets",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "out_octets",
+      "description": "Cumulative counter, not a rate; use source times and reset/discontinuity evidence.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "metrics.interfaces.in_errors": {
+      "id": "metrics.interfaces.in_errors",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "packets",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/statistics/in-errors",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "in_errors",
+      "description": "Cumulative counter, not a rate; use source times and reset/discontinuity evidence.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "metrics.interfaces.out_errors": {
+      "id": "metrics.interfaces.out_errors",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "packets",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/statistics/out-errors",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "out_errors",
+      "description": "Cumulative counter, not a rate; use source times and reset/discontinuity evidence.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "metrics.interfaces.in_discards": {
+      "id": "metrics.interfaces.in_discards",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "packets",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/statistics/in-discards",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "in_discards",
+      "description": "Cumulative counter, not a rate; use source times and reset/discontinuity evidence.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "metrics.interfaces.out_discards": {
+      "id": "metrics.interfaces.out_discards",
+      "job": "resource-metrics",
+      "type": "integer",
+      "unit": "packets",
+      "fraction_digits": null,
+      "yang_path": "/ietf-interfaces:interfaces/interface/statistics/out-discards",
+      "module": "ietf-interfaces",
+      "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://www.rfc-editor.org/rfc/rfc8343.html",
+      "keys": [
+        "name"
+      ],
+      "column": "out_discards",
+      "description": "Cumulative counter, not a rate; use source times and reset/discontinuity evidence.",
+      "mapping": "standard",
+      "key_paths": {
+        "name": "/ietf-interfaces:interfaces/interface/name"
+      }
+    },
+    "sensors.temperatures": {
+      "id": "sensors.temperatures",
+      "job": "hardware-sensors",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/sensors/temperatures",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Linux thermal-zone readings, Celsius; sensor inventory does not establish ietf-hardware component identity.",
+      "mapping": "extension",
+      "key_paths": {}
+    },
+    "sensors.fans": {
+      "id": "sensors.fans",
+      "job": "hardware-sensors",
+      "type": "array",
+      "unit": "",
+      "fraction_digits": null,
+      "yang_path": "/opsfeast-inventory:inventory/sensors/fans",
+      "module": "opsfeast-inventory",
+      "namespace": "urn:opsfeast:yang:inventory",
+      "revision": "2026-10-20",
+      "source": "opsfeast-inventory.yang",
+      "keys": [],
+      "column": null,
+      "description": "Linux hwmon fan readings, RPM; unsupported sources remain explicit.",
+      "mapping": "extension",
+      "key_paths": {}
+    }
+  }
+}

@@ -1,4 +1,5 @@
 """Synthetic access gates and partitioned values; no native sudo or SSH."""
+from recipe_test_support import recipe_main
 import contextlib
 import csv
 import io
@@ -17,7 +18,7 @@ sys.path.insert(0, str(ROOT / 'tools'))
 import access_check as access
 import host_runtime as hr
 import opsfeast as ops
-import run_recipe as runner
+import recipe_runner as runner
 import observation_store as store
 from inventory_values import empty, validate_inventory, csv_text
 D = runpy.run_path(str(ROOT / 'recipes/system/inventory/overview/details.py'))
@@ -138,34 +139,7 @@ class AccessTests(unittest.TestCase):
         self.assertEqual(self.cls.sudo_passwords, ['override'])
         self.assertNotIn('override', json.dumps(report))
 
-    def test_force_fallback_and_root_collection(self):
-        for rejected, mode in ((False, 'root'), (True, 'fallback_user')):
-            self.cls.fail_sudo = rejected
-            with contextlib.redirect_stderr(io.StringIO()):
-                report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
-                                          runtime={'verification': 'synthetic'}, force=True)
-            self.assertEqual(report['status'], 'success')
-            self.assertEqual(report['access']['mode'], mode)
-            self.assertEqual(report['collection_evidence']['actor']['mode'], mode)
-            self.assertEqual(report['collection_evidence']['actor']['username'], report['access']['actual_identity']['username'])
-            self.assertTrue(report['access']['restoration_verified'])
-            commands = self.cls.instances[-1].calls
-            detail_calls = [(argv, elevated) for argv, elevated in commands if argv[:2] == ['/bin/sh', '-c'] and '__OPSFEAST_EXIT_' in argv[2]]
-            self.assertTrue(detail_calls)
-            self.assertTrue(all(elevated == (mode == 'root') for argv, elevated in detail_calls))
-            self.assertEqual(json.loads(path.read_text())['inventory']['system']['hostname'], 'synthetic')
-            record = store.export(self.root)['records'][-1]
-            self.assertEqual(record['collection_scope']['mode'], mode)
-            self.assertNotIn('collection_process', record)
-            self.assertEqual(store.validate_exchange(store.export(self.root)), 1 if not rejected else 2)
 
-    def test_force_sudo_rejection_is_not_retried(self):
-        self.cls.fail_sudo = True
-        with contextlib.redirect_stderr(io.StringIO()):
-            report, _ = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
-                                   runtime={'verification': 'synthetic'}, force=True)
-        self.assertEqual(report['access']['mode'], 'fallback_user')
-        self.assertEqual(self.cls.sudo_passwords, ['synthetic-login'])
 
     def test_csv_export_and_exchange_preserve_values_without_process(self):
         raw = json.loads((ROOT / 'recipes/system/inventory/overview/examples/result.partitioned.synthetic.json').read_text())
@@ -186,45 +160,11 @@ class AccessTests(unittest.TestCase):
         with self.assertRaises(ops.ConfigError):
             store.validate_exchange(changed)
 
-    def test_failed_exit_blocks_force_and_retention(self):
-        self.cls.restoration_failure = True
-        with contextlib.redirect_stderr(io.StringIO()):
-            report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
-                                      runtime={'verification': 'synthetic'}, force=True, access_checked=True)
-        self.assertEqual(report['status'], 'failed')
-        self.assertFalse(report['access']['restoration_verified'])
-        self.assertEqual(report['retention']['status'], 'skipped')
 
-    def test_collection_sudo_race_without_force_uses_verified_fallback(self):
-        self.cls.fail_sudo = True
-        with contextlib.redirect_stderr(io.StringIO()):
-            report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
-                                      runtime={'verification': 'synthetic'}, access_checked=True)
-        self.assertEqual(report['status'], 'success')
-        self.assertEqual(report['access']['mode'], 'fallback_user')
-        self.assertTrue(report['access']['degraded'])
-        self.assertEqual(report['retention']['status'], 'stored')
 
-    def test_identity_failure_summary_is_actionable_without_third_party_details(self):
-        import inventory_actor
-        unrelated = RuntimeError('private exception text')
-        unrelated.reason_code = 'private third-party code'
-        for error in (hr.IdentityProbeError('identity_mismatch'), unrelated):
-            with self.subTest(error=type(error).__name__), \
-                    patch.object(inventory_actor, 'collection_actor', side_effect=error):
-                report, path = runner.run(self.root, 'h', recipe='system/inventory/overview', session_class=self.cls,
-                    runtime={'verification': 'synthetic'}, access_checked=True)
-                self.assertEqual(report['status'], 'failed')
-                saved = path.read_text()
-                self.assertNotIn('private exception text', saved)
-                self.assertNotIn('private third-party code', saved)
-                if isinstance(error, hr.IdentityProbeError):
-                    self.assertEqual(report['execution_errors'][0]['reason_code'], 'identity_mismatch')
-                    self.assertIn('identity_mismatch', report['message'])
 
     def test_dryrun_and_independent_command_never_collect_or_write(self):
-        for invoke, args in ((runner.main, ['system/inventory/overview', '--host', 'h', '--dryrun']),
-                             (ops.main, ['check-access', '--host', 'h', '--json', '--quiet'])):
+        for invoke, args in ((ops.main, ['check-access', '--host', 'h', '--json', '--quiet']),):
             with patch.object(access, 'runtime_class', return_value=self.cls), patch.object(runner, 'run') as collect, \
                     contextlib.redirect_stdout(io.StringIO()) as output:
                 code = invoke([*args, '--root', str(self.root)])
@@ -366,21 +306,7 @@ class AccessTests(unittest.TestCase):
             with self.assertRaisesRegex(ops.ConfigError, r'tabulate\[widechars\]'):
                 access.table_formatter()
 
-    def test_entire_batch_gate_and_force_skip(self):
-        check = {'status': 'failed', 'hosts': [{'host': 'h', 'status': 'failed', 'connected': False}]}
-        for force in (False, True):
-            with patch.object(access, 'check_many', return_value=check), patch.object(runner, 'run') as collect, \
-                    contextlib.redirect_stdout(io.StringIO()) as output:
-                code = runner.main(['system/inventory/overview', '--host', 'h', '--root', str(self.root), *(['--force'] if force else [])])
-            self.assertEqual(code, 1)
-            collect.assert_not_called()
-            report = json.loads(output.getvalue())
-            self.assertEqual(report['status'], 'skipped' if force else 'failed')
 
-    def test_dryrun_force_rejected_before_connections(self):
-        with patch.object(access, 'check_many') as connect, contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            runner.main(['system/inventory/overview', '--all', '--dryrun', '--force'])
-        connect.assert_not_called()
 
     def test_cleanup_failure_blocks_access(self):
         self.cls.close_failure = True

@@ -1,4 +1,6 @@
 """Synthetic platform initialization and su/sudo tests; no host connections."""
+from inventory_fixture import BUNDLE, COLLECTOR
+from recipe_test_support import recipe_main
 import contextlib
 import io
 import json
@@ -15,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import host_runtime as hr
 import opsfeast as ops
 import recipe_dispatch as dispatch
-import run_recipe as runner
+import recipe_runner as runner
 
 
 def result(text='', code=0, **kwargs):
@@ -501,13 +503,13 @@ class DispatchTests(unittest.TestCase):
     def test_manifest_version_symlink_and_unselected_code(self):
         import shutil
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp); bundle=root/'recipe'; copy_recipe(runner.BUNDLE,bundle)
+            root=Path(tmp); bundle=root/'recipe'; copy_recipe(BUNDLE,bundle)
             metadata=ops.read_yaml(bundle/'recipe.yaml')
             dispatch.validate(bundle,metadata)
-            entry=bundle/'implementations/linux.py'
-            entry.write_text(entry.read_text().replace("VERSION = '0.1.2'","VERSION = '9'"))
+            entry=bundle/'jobs.py'
+            entry.write_text(entry.read_text().replace("VERSION = '0.1.0'","VERSION = '9'"))
             with self.assertRaises(ops.ConfigError): dispatch.validate(bundle,metadata)
-            entry.unlink(); entry.symlink_to(runner.BUNDLE/'implementations/linux.py')
+            entry.unlink(); entry.symlink_to(BUNDLE/'jobs.py')
             with self.assertRaises(ops.ConfigError): dispatch.validate(bundle,metadata)
 
 
@@ -517,52 +519,8 @@ class InventoryDispatchTests(unittest.TestCase):
         checker.start()
         self.addCleanup(checker.stop)
 
-    def test_platform_collectors_and_result_versions(self):
-        for kernel, platform, values in [
-            ('FreeBSD','freebsd',[result('node'),result('FreeBSD'),result('14.1'),result('amd64'),result('14.2-RELEASE')]),
-            ('Darwin','macos',[result('node'),result('Darwin'),result('24.0'),result('arm64'),result('macOS'),result('15.0')])]:
-            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as tmp:
-                root=Path(tmp)
-                (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
-                session=Mock(); session.exec_command.side_effect=facts_outputs(kernel)+values
-                report,path=runner.run(root,'h',recipe='system/inventory/overview',session_class=Mock(return_value=session))
-                self.assertEqual(report['status'],'success')
-                self.assertEqual(report['recipe']['implementation_id'],platform)
-                self.assertEqual(report['recipe']['implementation_version'],'0.1.1')
-                self.assertEqual(report['recipe']['recipe_version'], ops.read_yaml(runner.BUNDLE/'recipe.yaml')['version'])
-                self.assertEqual(report['schema_version'],'0.2.0')
-                self.assertEqual(json.loads(path.read_text()),report)
 
-    def test_failed_host_init_skips_recipe_and_batch_continues(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp)
-            (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
-            session=Mock(); session.exec_command.side_effect=[TimeoutError('secret')]
-            report,_=runner.run(root,'h',recipe='system/inventory/overview',session_class=Mock(return_value=session))
-            self.assertEqual(report['status'],'skipped')
-            self.assertEqual(report['reason_code'],'host_init_failed')
-            self.assertNotIn('implementation_id',report['recipe'])
-            (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}, other: {connection: {local: true}}}')
-            with patch.object(runner,'run',side_effect=[(report,root/'first.json'),(dict(report,status='success'),root/'second.json')]) as run,contextlib.redirect_stdout(io.StringIO()) as out:
-                self.assertEqual(runner.main(['system/inventory/overview','--root',str(root),'--host','h','other']),1)
-            self.assertEqual(run.call_count,2)
-            self.assertEqual(len(json.loads(out.getvalue())['hosts']),2)
 
-    def test_no_fallback_after_selected_implementation_fails(self):
-        import shutil
-        with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp); bundle=root/'recipes/system'; copy_recipe(runner.BUNDLE,bundle)
-            (root/'hosts.yaml').write_text('hosts: {h: {connection: {local: true}}}')
-            metadata=ops.read_yaml(bundle/'recipe.yaml')
-            metadata['implementations'].append({'id':'special','version':'1','entrypoint':'special.py','priority':1,'match':{'os_name':'linux'}})
-            (bundle/'special.py').write_text("VERSION='1'\ndef collect(*args):\n    raise RuntimeError('secret')\n")
-            (bundle/'recipe.yaml').write_text(yaml.safe_dump(metadata))
-            session=Mock(); session.exec_command.side_effect=facts_outputs()
-            report,_=runner.run(root,'h',recipe='./recipes/system',session_class=Mock(return_value=session))
-            self.assertEqual(report['recipe']['implementation_id'],'special')
-            self.assertEqual(report['status'],'failed')
-            self.assertEqual(session.exec_command.call_count,4)
-            self.assertNotIn('secret',json.dumps(report))
 
     def test_connection_test_optional_host_init(self):
         with tempfile.TemporaryDirectory() as tmp:

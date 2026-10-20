@@ -60,64 +60,30 @@ def declared_version(path):
 
 
 def validate(directory, metadata):
+    """Validate the current inventory job descriptor, never a snapshot execution path."""
     from recipe_identity import validate as validate_identity
     validate_identity(metadata, directory)
-    if metadata.get('access_mode') not in ('read', 'write', 'unknown'):
-        raise ConfigError('access_mode must be read, write or unknown')
-    if not isinstance(metadata.get('output'), dict):
-        raise ConfigError('output contract must be a mapping')
-    if (metadata.get('descriptor_version') != '0.2.0' or metadata.get('id') != 'inventory-system'
-            or (metadata.get('output') or {}).get('schema_version') != '0.2.0'):
-        raise ConfigError('runner requires inventory-system descriptor 0.2.0 and output schema 0.2.0')
-    if not isinstance(metadata.get('version'), str) or not metadata['version']:
-        raise ConfigError('recipe version must be a nonempty string')
-    from retention_contracts import validate_declaration, INVENTORY_CONTRACT
-    declaration = validate_declaration(metadata, directory)
-    if declaration is None or (declaration['contract'], declaration['version']) != INVENTORY_CONTRACT:
-        raise ConfigError('inventory collection requires its declared structured retention contract')
-    if any(key in metadata['output'] for key in ('retained_contract_version', 'exchange_version', 'retention_adapter')):
+    if (metadata.get('descriptor_version') != '0.3.0' or metadata.get('id') != 'inventory-system'
+        or metadata.get('runner') != {'contract':'inventory-jobs','version':'0.1.0','entrypoint':'jobs.py'}
+        or metadata.get('output',{}).get('schema_version') != '0.3.0'):
+        raise ConfigError('inventory requires descriptor 0.3.0, inventory-jobs 0.1.0 and raw schema 0.3.0')
+    if any(key in metadata.get('output',{}) for key in ('retained_contract_version','exchange_version','retention_adapter')):
         raise ConfigError('declare inventory retention under retention, independently of raw output')
-    if 'inventory_contract_version' in metadata['output']:
-        helper = directory / 'details.py'
-        if metadata['output']['inventory_contract_version'] != '0.1.0' or not helper.resolve().is_relative_to(directory.resolve()) or not helper.is_file() or declared_version(helper) != '0.1.0':
-            raise ConfigError('inventory-values 0.1.0 requires a matching recipe-local details.py')
-        tree = ast.parse(helper.read_text(encoding='utf-8'))
-        functions = {node.name for node in tree.body if isinstance(node, ast.FunctionDef)}
-        if not {'collect', 'validate'}.issubset(functions):
-            raise ConfigError('inventory values helper requires collect and validate functions')
-    entries = metadata.get('implementations')
-    if not isinstance(entries, list) or not entries:
-        raise ConfigError('recipe must declare implementations')
-    ids = set()
-    for entry in entries:
-        if not isinstance(entry, dict) or set(entry) - {'id', 'version', 'entrypoint', 'match', 'priority', 'verification'}:
-            raise ConfigError('invalid implementation descriptor')
-        if not isinstance(entry.get('id'), str) or not entry['id'] or entry['id'] in ids:
-            raise ConfigError('implementation IDs must be unique nonempty strings')
-        ids.add(entry['id'])
-        name = entry.get('entrypoint')
-        if not isinstance(name, str) or Path(name).is_absolute() or '..' in Path(name).parts:
-            raise ConfigError('implementation entrypoint must be recipe-relative')
-        path = (directory / name).resolve()
-        if not path.is_relative_to(directory.resolve()) or not path.is_file() or path.suffix != '.py':
-            raise ConfigError('implementation must be a Python file inside its recipe')
-        if declared_version(path) != entry.get('version'):
-            raise ConfigError('implementation VERSION differs from descriptor')
-        if type(entry.get('priority', 0)) is not int:
-            raise ConfigError('implementation priority must be an integer')
-        conditions = entry.get('match')
-        if not isinstance(conditions, dict) or not conditions or set(conditions) - MATCH_FIELDS:
-            raise ConfigError('invalid implementation match fields')
-        for key, spec in conditions.items():
-            if not isinstance(spec, str) or not spec:
-                raise ConfigError('match conditions must be nonempty strings')
-            if key in ('os_version', 'distribution_version', 'kernel_release'):
-                version_match(None, spec)
-    # Include recipe helpers in provenance and reject symlink escapes too.
+    if metadata.get('access_mode') != 'read':
+        raise ConfigError('inventory job collection requires access_mode read')
+    if not isinstance(metadata.get('version'),str) or not metadata['version']:
+        raise ConfigError('recipe version must be a nonempty string')
+    if 'implementations' in metadata:
+        raise ConfigError('inventory jobs do not accept snapshot implementations')
+    from inventory_jobs import inspect_collection, CONTRACT
+    inspect_collection(directory, metadata)
+    if metadata.get('retention') != CONTRACT:
+        raise ConfigError('inventory requires the registered inventory-job-observations retention contract')
     for path in directory.rglob('*.py'):
         if not path.resolve().is_relative_to(directory.resolve()):
             raise ConfigError('recipe Python helper escapes recipe directory')
-    return entries
+    return metadata['collection']
+
 
 
 def select(entries, facts):

@@ -1,5 +1,8 @@
 # OpsFeast
 
+For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). Recipe 0.4.0 supports immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
+
+
 Recipe paths now follow [domain/subdomains/action/name](docs/recipe-taxonomy.md). The bundle uses system/inventory/overview, system/network/check/port, system/account/check/identity and feast/report/{execution-summary,retention-summary}. IDs and data contracts remain stable; old bundle paths are removed. Review the relocation table before updating existing configuration, saved jobs or exact consumer subscriptions. User recipes belong in the selected profile's recipes/ or an explicitly registered shared source.
 
 Retention handlers/converters now use [consumers 0.1.0](docs/retention-consumers.md). Discover inventory dependencies with `recipes show system/inventory/overview` or `consumers list --recipe system/inventory/overview`; reviewed local consumers declare subscriptions and register in feast.yaml. Shared writes commit durable events, with separate per-consumer outcomes and retry. See the [consumer catalog](consumers/README.md); Vault is the default consumer.
@@ -37,7 +40,7 @@ For a system administrator, the value is continuity: fewer repeated explanations
 - **Make evidence part of the workflow.** Distinguish observations from interpretations, configuration checks from execution, and successful commands from verified outcomes. Missing information stays unknown.
 - **Keep control of your environment.** Real host data and credentials stay in your management environment. Third-party recipes follow a review and authorization workflow before installation; execution has its own scope.
 
-The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS/ESXi implementation selection and a shared recipe execution tool. It also includes skills and guides for authoring, sharing and reviewing recipes. Python-session recipes can also run through `run_recipe.py` with typed invocation inputs; see the [execution contract](docs/recipe-execution.md) and [port check](recipes/system/network/check/port/README.md). A third-party installer remains planned; real Linux/SSH inventory validation is pending.
+The project is growing toward a recipe ecosystem. Today, it provides management-directory setup, configuration checks, explicit connection tests, and a system inventory recipe with automatic Linux/FreeBSD/macOS/ESXi implementation selection and a shared recipe execution tool. It also includes skills and guides for authoring, sharing and reviewing recipes. Python-session recipes can also run through `opsfeast.py recipes run` with typed invocation inputs; see the [execution contract](docs/recipe-execution.md) and [port check](recipes/system/network/check/port/README.md). A third-party installer remains planned; real Linux/SSH inventory validation is pending.
 
 **[Take the first-use walkthrough](docs/first-use.md)** or **[explore the recipe catalog](recipes/README.md)** to get started.
 
@@ -53,11 +56,11 @@ These safeguards combine implemented checks with documented agent procedures. Th
 
 Our goal is for you to describe the desired result in ordinary language while your agent handles skills, configuration and execution details. You still define the systems in scope, provide authentication through an appropriate private channel, and authorize actions that may affect them. The agent should ask only for missing information that matters, explain consequences clearly and reuse context already supplied.
 
-Today, that approach is supported by setup and connection tools, agent guides and recipe execution through run_recipe.py. Arbitrary requests may require a new recipe, compatibility work and validation before use. We are building toward this experience; it is not yet a general system that can safely perform every IT task from a single sentence.
+Today, that approach is supported by setup and connection tools, agent guides and recipe execution through opsfeast.py recipes run. Arbitrary requests may require a new recipe, compatibility work and validation before use. We are building toward this experience; it is not yet a general system that can safely perform every IT task from a single sentence.
 
 Read the [vision and design principles](docs/vision.md) for the shared direction followed by project contributors and recipe authors.
 
-Inventory uses at most two accounts: the login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority; otherwise login sudo is first. Safe login-user fallback is automatic; `--force` permits unavailable hosts to be skipped. `--dryrun` previews the same access selection without collecting. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
+Inventory uses at most two accounts: the login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority; otherwise login sudo is first. Safe login-user fallback is automatic. Use check-access for separate account diagnostics; inventory acquires its own bounded actor during collection. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
 
 ## Getting started with your AI agent
 
@@ -158,7 +161,7 @@ For DevOps users and their agents, before writing operational programs, consult 
 ### Learn Ops and choose the relevant skill
 
 1. Read [AGENTS.md](AGENTS.md) for project instructions, then any user-maintained `AGENTS.local.md` in this checkout. Local guidance is optional, private and not supplied by a clone; see [public and local guidance](docs/agent-guidance.md).
-2. Read the [getting-started guide](docs/getting-started.md) for prerequisites and setup, and the [CLI reference](docs/cli.md) before selecting commands. It documents `tools/opsfeast.py` and `tools/run_recipe.py`, including arguments, defaults, side effects, saved data, results and exit codes. Use the interpreter selected by the user.
+2. Read the [getting-started guide](docs/getting-started.md) for prerequisites and setup, and the [CLI reference](docs/cli.md) before selecting commands. It documents `tools/opsfeast.py` and `tools/opsfeast.py recipes run`, including arguments, defaults, side effects, saved data, results and exit codes. Use the interpreter selected by the user.
 3. Select the task-specific skill below and follow its linked guides. Reuse already-read material when it remains applicable. Before designing features or writing recipes or documentation, read the [vision and design principles](docs/vision.md).
 
 | Task | Start with |
@@ -198,7 +201,7 @@ See [host diagnostics](docs/host-diagnostics.md) for `host-init`, `test-host`, i
 
 ## Host configuration
 
-See the [hosts.yaml user guide](docs/hosts-yaml.md) for the management-directory format, group catalogs, bulk host definitions, includes, jump hosts, host variables, and recipe selection. AI agents can use the repository skill [opsfeast-hosts](skills/opsfeast-hosts/SKILL.md) to help maintain these settings. On a fresh checkout, use `python tools/opsfeast.py init` to create the `main` profile at `feasts/main/`, and `python tools/opsfeast.py check` to validate it (Python 3.11+ and PyYAML required). Use `python tools/opsfeast.py test-connection <host-id>` to connect and run `hostname` and `date` (SSHScript 4.0.1+ also required). New checkouts use the ignored `.opsfeast.yaml` registry and new instances contain `feast.yaml`. Existing `.my-ops.yaml` registries and `my-ops.yaml` definitions remain supported; existing named profiles are reused by init. Use `init inventory` to create `feasts/inventory`, `attach /existing/directory` to register existing settings, `profiles` to list environments, and `use inventory` to switch the default. Adding profiles preserves an existing default. See the [profile guide](docs/profiles.md). Use `--profile NAME` on either tool for one invocation without changing the default, or pass an explicit directory. Registered relative paths are located from the tool checkout; relative CLI directory paths use the shell directory. Initialization, dumps and configuration checks do not connect. Use `python -B tools/run_recipe.py system/inventory/overview --host <host-id>` to run system inventory directly from this checkout. No copying into the instance is needed after updating this repository. Recipe and targets are required; put the recipe first or use `--recipe DIRECTORY` elsewhere, and select hosts/groups with `--host`/`--group` or every configured host with `--all`. Use `--root` for an explicit management directory. Register external clones in entry hosts.yaml recipe_sources, select profile content with :system/inventory/overview or named content with community:system/inventory/overview, and attach vars to matching recipe selectors. Source/host enabled flags and --all --exclude support temporary selection controls; see [sources and inputs](docs/recipe-sources.md); see [its guide](recipes/system/inventory/overview/README.md) for runtime requirements and validation limits.
+See the [hosts.yaml user guide](docs/hosts-yaml.md) for the management-directory format, group catalogs, bulk host definitions, includes, jump hosts, host variables, and recipe selection. AI agents can use the repository skill [opsfeast-hosts](skills/opsfeast-hosts/SKILL.md) to help maintain these settings. On a fresh checkout, use `python tools/opsfeast.py init` to create the `main` profile at `feasts/main/`, and `python tools/opsfeast.py check` to validate it (Python 3.11+ and PyYAML required). Use `python tools/opsfeast.py test-connection <host-id>` to connect and run `hostname` and `date` (SSHScript 4.0.1+ also required). New checkouts use the ignored `.opsfeast.yaml` registry and new instances contain `feast.yaml`. Existing `.my-ops.yaml` registries and `my-ops.yaml` definitions remain supported; existing named profiles are reused by init. Use `init inventory` to create `feasts/inventory`, `attach /existing/directory` to register existing settings, `profiles` to list environments, and `use inventory` to switch the default. Adding profiles preserves an existing default. See the [profile guide](docs/profiles.md). Use `--profile NAME` on the selected subcommand for one invocation without changing the default, or pass an explicit directory. Registered relative paths are located from the tool checkout; relative CLI directory paths use the shell directory. Initialization, dumps and configuration checks do not connect. Use `python -B tools/opsfeast.py recipes run system/inventory/overview --host <host-id>` to run system inventory directly from this checkout. No copying into the instance is needed after updating this repository. Recipe and targets are required; put the recipe first or use `--recipe DIRECTORY` elsewhere, and select hosts/groups with `--host`/`--group` or every configured host with `--all`. Use `--root` for an explicit management directory. Register external clones in entry hosts.yaml recipe_sources, select profile content with :system/inventory/overview or named content with community:system/inventory/overview, and attach vars to matching recipe selectors. Source/host enabled flags and --all --exclude support temporary selection controls; see [sources and inputs](docs/recipe-sources.md); see [its guide](recipes/system/inventory/overview/README.md) for runtime requirements and validation limits.
 
 ## Explore, run and reuse recipes
 
@@ -214,13 +217,13 @@ The catalog combines checkout, Feast and registered external sources with explic
 
 ## Run a recipe with invocation inputs
 
-Use `run_recipe.py` for inventory and compatible Python-session recipes. Inputs declared in recipe.yaml are supplied with `--var NAME=VALUE` or a JSON `--vars-file`, without editing hosts.yaml. For example, within authorized connection/probe scope:
+Use `opsfeast.py recipes run` for inventory and compatible Python-session recipes. Inputs declared in recipe.yaml are supplied with `--var NAME=VALUE` or a JSON `--vars-file`, without editing hosts.yaml. For example, within authorized connection/probe scope:
 
 ```sh
-python -B tools/run_recipe.py system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/opsfeast.py recipes run system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
 ```
 
-This checks TCP 127.0.0.1:8888 from rms3 itself; read the [recipe's interpretation and prerequisites](recipes/system/network/check/port/README.md). General recipes use execute(session, *, context, timeout), save raw JSON and report skipped inventory retention. See [authoring/execution](docs/recipe-execution.md) and the [CLI reference](docs/cli.md#toolsrun_recipepy-inventory-execution). Existing inventory platform dispatch and retention remain supported.
+This checks TCP 127.0.0.1:8888 from rms3 itself; read the [recipe's interpretation and prerequisites](recipes/system/network/check/port/README.md). General recipes use execute(session, *, context, timeout), save raw JSON and report skipped inventory retention. See [authoring/execution](docs/recipe-execution.md) and the [CLI reference](docs/cli.md#operational-recipe-execution). Existing inventory platform dispatch and retention remain supported.
 
 ## Initialize and diagnose a host
 
@@ -231,10 +234,10 @@ python -B tools/opsfeast.py test-host host-01
 python -B tools/opsfeast.py host-init host-01
 python -B tools/opsfeast.py test-su host-01 --chain user2 user3 --chain user3 user2
 python -B tools/opsfeast.py test-sudo host-01 user2 user3 --run-as root
-python -B tools/run_recipe.py system/inventory/overview --host host-01 host-02 host-03
+python -B tools/opsfeast.py recipes run system/inventory/overview --host host-01 host-02 host-03
 ```
 
-Test-host checks login, reuses or initializes platform facts, tests the login account's enabled sudo with the selected password or passwordless policy, and independently tests su to other declared accounts. Direct host-init always refreshes facts. For inventory-system, run_recipe.py automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/system/inventory/overview/README.md) before executing custom code. Python-session recipes use the [general execution contract](docs/recipe-execution.md); extension installation remains planned.
+Test-host checks login, reuses or initializes platform facts, tests the login account's enabled sudo with the selected password or passwordless policy, and independently tests su to other declared accounts. Direct host-init always refreshes facts. For inventory-system, opsfeast.py recipes run automatically initializes facts when needed, dispatches each host to its platform implementation, and records recipe/implementation/schema versions. Read the [diagnostic guide](docs/host-diagnostics.md) for credentials, skipped states, cache limits and management-root arguments, and the [inventory guide](recipes/system/inventory/overview/README.md) before executing custom code. Python-session recipes use the [general execution contract](docs/recipe-execution.md); extension installation remains planned.
 
 ## Find, create and share recipes
 
@@ -285,4 +288,4 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 14:32:24_

@@ -30,7 +30,7 @@ class CommandTests(unittest.TestCase):
         command = host_actions.command_for('test-connection', 'host-01', '/fixture/root with spaces')
         self.assertEqual(command[-4:], ['test-connection', 'host-01', '/fixture/root with spaces', '--verbose'])
         command = host_actions.command_for('run recipe', 'host-01', '/fixture/root', 'custom; echo example')
-        self.assertIn('--recipe=custom; echo example', command)
+        self.assertIn('custom; echo example', command)
         self.assertEqual(command[command.index('--host')+1], 'host-01')
         self.assertNotIn('--all', command)
         for action, recipe in [('run recipe',''), ('cancel',''), ('unknown','path')]:
@@ -149,7 +149,7 @@ class DialogTests(unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.15)
                 self.assertEqual(run.call_count,1)
                 command=run.call_args.args[0]
-                self.assertIn('--recipe=system/inventory/overview',command)
+                self.assertIn('system/inventory/overview',command)
                 self.assertIn('--root=/fixture/root',command)
                 self.assertIn('host-01',command)
                 self.assertEqual(app.screen.exit_code,1)

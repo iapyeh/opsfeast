@@ -107,7 +107,7 @@ python -B tools/opsfeast.py check
 
 New init establishes retention/ storage plus vault/ content and saves namespace (default: profile name); use --namespace for an explicit valid value and --json for structured output. The first operational inventory run retains automatically; no separate vault migration is needed.
 
-For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers both tools/opsfeast.py and tools/run_recipe.py for administrators and agents.
+For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers tools/opsfeast.py and its recipe/inventory subcommands for administrators and agents.
 
 ## Recipe next steps
 
@@ -115,7 +115,7 @@ Use [recipes list/show/run](recipe-experience.md) to explore bundled/Feast/exter
 
 When creating or adapting a recipe, follow the [tool selection workflow](recipe-authoring.md#choose-execution-tools). OpsFeast keeps tool choice open and prefers SSHScript for suitable command execution and session orchestration, while respecting user-selected tools and operational constraints. Read the selected tools' relevant documentation; recipes using other tools need their own prerequisite checks and reviewed standalone execution instructions. The current host diagnostics and inventory runner continue to require SSHScript.
 
-To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. run_recipe.py supports inventory-system descriptor 0.2.0 and [general Python-session recipes](recipe-execution.md) using descriptor 0.3.0/contract 0.1.0. Invocation inputs use --var or a JSON --vars-file. Arbitrary standalone programs and other backend contracts are not automatically supported.
+To select, create or share recipes, start with the [recipe user guide](recipes.md) and repository [recipes skill](../skills/opsfeast-recipes/SKILL.md). The guides provide copyable prompts and a review/authorization workflow for third-party content. opsfeast.py recipes run supports inventory-jobs descriptor 0.3.0 and [general Python-session recipes](recipe-execution.md) using descriptor 0.3.0/contract 0.1.0. Invocation inputs use --var or a JSON --vars-file. Arbitrary standalone programs and other backend contracts are not automatically supported.
 
 ## Authorized host checks and inventory
 
@@ -156,4 +156,4 @@ See [host diagnostics](host-diagnostics.md) for platform initialization/cache se
 
 Authorized inventory now performs raw saving followed by structured retention automatically. Report the raw path, separate retention/content_update receipts and identity_quality, including fallback warnings and recovery instructions. Use the [result workflow](result-data.md) and [result-data skill](../skills/opsfeast-result-data/SKILL.md) for local recovery, selected JSON export and exchange combination. Those operations do not authorize new connections or sending data. ESXi collection is implemented with synthetic verification only; source capability declarations do not prove native access or reliable OS-installation identity.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:24:28_

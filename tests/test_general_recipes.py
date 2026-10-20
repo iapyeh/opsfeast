@@ -1,4 +1,5 @@
 """Public Python-session runner/input contracts, with synthetic Sessions only."""
+from recipe_test_support import recipe_main
 import contextlib
 import copy
 import io
@@ -17,7 +18,7 @@ import opsfeast as ops
 import recipe_contract
 import recipe_inspection
 from recipe_inputs import cli_variables, json_object, prepare_vars
-import run_recipe as runner
+import recipe_runner as runner
 
 CODE = '''VERSION = '1.0.0'
 def execute(session, *, context, timeout):
@@ -59,11 +60,11 @@ class GeneralRecipeTests(unittest.TestCase):
         factory = Mock(return_value=Mock())
         with contextlib.redirect_stdout(output), contextlib.redirect_stderr(error), \
                 patch.object(runner, 'load_runtime', return_value=(factory, {'verification': 'synthetic'})):
-            status = runner.main([':system/network/check/port', '--root', str(self.root), *args])
+            status = recipe_main([':system/network/check/port', '--root', str(self.root), *args])
         return status, json.loads(output.getvalue()) if output.getvalue() else None, error.getvalue(), factory
 
     def test_success_saved_envelope_without_inventory_probes_or_retention(self):
-        with patch.object(runner, 'discover') as discover, patch.object(runner, 'retain') as retain:
+        with patch('host_runtime.discover') as discover, patch('observation_store.retain') as retain:
             report, path = self.execute(assignments=['port=8888'])
         discover.assert_not_called()
         retain.assert_not_called()
@@ -239,8 +240,7 @@ def execute(session, *, context, timeout):
         self.settings['hosts']['h']['connection'] = {'hostname': 'synthetic.example'}
         self.write()
         session.connect.side_effect = RuntimeError('private-value')
-        with patch.object(runner, 'connection_plan', return_value=[{'hostname': 'synthetic.example'}]), \
-                patch('host_runtime.connection_plan', return_value=[{'hostname': 'synthetic.example'}]):
+        with patch('host_runtime.connection_plan', return_value=[{'hostname': 'synthetic.example'}]):
             report, path = runner.run(self.root, 'h', recipe=':system/network/check/port', assignments=['port=1'], session_class=Mock(return_value=session))
         self.assertEqual(report['status'], 'failed')
         self.assertNotIn('private-value', path.read_text())

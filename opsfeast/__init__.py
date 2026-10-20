@@ -1254,7 +1254,7 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
 
 def _test_connections(args):
     """CLI selection/controller; each target uses its own connection lifecycle."""
-    from run_recipe import select_hosts
+    from recipe_runner import select_hosts
     from console_output import DisplayIcons, diagnostic, human_output, table, host_label, cell
     selectors = [('host', args.host)] if args.host else []
     selectors.extend(('group', name) for name in args.group)
@@ -1324,6 +1324,9 @@ def main(argv=None):
     if argv[:1] == ['recipes']:
         from recipe_cli import main as recipe_main
         return recipe_main(argv[1:])
+    if argv[:1] == ['inventory']:
+        from inventory_cli import main as inventory_main
+        return inventory_main(argv[1:])
     if argv[:1] == ['retention']:
         from retention_store import main as retention_main
         return retention_main(argv[1:])
@@ -1346,6 +1349,7 @@ def main(argv=None):
         'Use COMMAND --help for details, or --tui on supported commands for an optional Textual display.')
     commands = parser.add_subparsers(dest='command', required=True, metavar='COMMAND', title='Commands by task')
     commands.help_groups = COMMAND_GROUPS
+    commands.add_parser('inventory', help='query inventory properties, save refreshes and manage opt-in collection schedules')
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
     commands.add_parser('consumers', help='discover retention consumers, inspect deliveries and dispatch pending events')
@@ -1499,7 +1503,7 @@ def main(argv=None):
             print_report(result, json_output=args.json)
             return 1 if result.get('status') == 'partial' else 0
         if args.command == 'check-access':
-            from run_recipe import select_hosts
+            from recipe_runner import select_hosts
             from access_check import check_many, format_summary, progress_printer, table_formatter, host_icons
             root = resolve_root(args.root, args.profile)
             targets = [('host', h) for h in args.host] + [('group', g) for g in args.group]

@@ -25,3 +25,10 @@
 /dist/
 /*.egg-info/
 /.opsfeast-profiles.lock
+
+# Private inventory schedule settings and execution evidence at a management root.
+/inventory.yaml
+/.inventory-state.json
+/.inventory-dispatch.lock
+/inventory-errors/
+/inventory-cron-errors.log

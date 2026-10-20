@@ -37,7 +37,7 @@ def safe_directory(root, relative, create=False):
 
 
 def write_json(path, value):
-    from run_recipe import save_report
+    from recipe_runner import save_report
     save_report(path, value)
 
 
@@ -122,7 +122,7 @@ def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
     stage = 'implementation_loading'
     try:
         # Same lock as host recipe loading: runpy alters process import state.
-        from run_recipe import _implementation_lock
+        from recipe_runner import _implementation_lock
         with _implementation_lock:
             selected = runpy.run_path(str(directory / metadata['runner']['entrypoint']))
         if selected.get('VERSION') != metadata['version'] or not callable(selected.get('execute')):

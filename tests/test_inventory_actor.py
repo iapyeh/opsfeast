@@ -16,7 +16,7 @@ import host_runtime as hr
 import inventory_actor as policy
 import access_check as access
 import opsfeast as ops
-import run_recipe as runner
+import recipe_runner as runner
 from test_inventory_access import SyntheticSession
 from test_esxi_identity import EsxiSession, result
 
@@ -219,19 +219,6 @@ class InventoryActorTests(unittest.TestCase):
             with self.assertRaises(hr.IdentityProbeError):
                 self.collect({'operator': {}}, actor)
 
-    def test_forced_runner_never_retries_unsafe_preflight_with_restored_login(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'hosts.yaml').write_text('hosts:\n  h:\n    connection: {local: true}\n')
-            unsafe = {'host': 'h', 'status': 'failed', 'connected': True,
-                      'access': {'restoration_verified': True}, 'reason_code': 'identity_failed'}
-            with patch.object(access, 'check_access', return_value=unsafe), \
-                    patch.object(runner, 'connection_plan') as connect:
-                report, path = runner.run(root, 'h', recipe='system/inventory/overview', session_class=Actor,
-                    runtime={'verification': 'synthetic'}, force=True)
-            self.assertEqual(report['status'], 'skipped')
-            self.assertIsNone(path)
-            connect.assert_not_called()
 
     def test_dryrun_table_retains_alternate_attempts_and_fallback_reason(self):
         actor = Actor(failures={('operator', 'su', 'root'): PermissionError,
@@ -262,45 +249,3 @@ class InventoryActorTests(unittest.TestCase):
         self.assertEqual(diagnostic['status'], 'failed')
         self.assertEqual(inventory['status'], 'success')
         self.assertEqual(inventory['access']['mode'], 'fallback_user')
-
-    def test_esxi_runner_preserves_authenticated_login_for_root_shell(self):
-        class Session(EsxiSession):
-            def __init__(self):
-                super().__init__(expected=1001)
-
-            def connect(self, *args, **kwargs):
-                return self
-
-            def exec_command(self, argv, **kwargs):
-                if argv[:1] == ['uname'] and argv != ['uname', '-s']:
-                    return result({'-n': 'synthetic', '-r': '7.0', '-m': 'x86_64'}[argv[1]])
-                if argv == ['vmware', '-v']:
-                    return result('VMware ESXi 7.0')
-                return super().exec_command(argv, **kwargs)
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'hosts.yaml').write_text('hosts:\n  h:\n    connection:\n      hostname: synthetic.invalid\n      user: operator\n    users:\n      operator: {password: private-login}\n')
-            facts = {'status': 'success', 'observed_at': hr.now(), 'facts': {'os_name': 'esxi', 'kernel_name': 'VMkernel'}}
-            selected_identity = {'schema_version': '0.1.0', 'sudo': {'status': 'not_needed'},
-                                 'quality': 'fallback', 'evidence': [], 'warnings': []}
-            with patch.object(runner, 'cached_facts', return_value=facts), \
-                    patch.object(runner, 'connection_plan', return_value=[{'hostname': 'synthetic.invalid', 'username': 'operator'}]), \
-                    patch.object(runner, 'probe_identity', return_value=selected_identity), \
-                    patch.object(runner, 'retain', return_value={'status': 'skipped', 'reason_code': 'synthetic'}), \
-                    patch.object(runner, 'supports_context', return_value=False), \
-                    patch.object(runner.runpy, 'run_path', wraps=runner.runpy.run_path) as load, \
-                    contextlib.redirect_stderr(io.StringIO()):
-                original_load = load._mock_wraps
-                def limited(path, *args, **kwargs):
-                    if str(path).endswith('/details.py'):
-                        return {'collect': lambda *a, **kw: None}
-                    return original_load(path, *args, **kwargs)
-                load.side_effect = limited
-                report, path = runner.run(root, 'h', recipe='system/inventory/overview', session_class=Session,
-                    runtime={'verification': 'synthetic'}, access_checked=True)
-            self.assertEqual(report['status'], 'success', report['execution_errors'])
-            self.assertEqual(report['access']['identity_model'], 'esxi_root_shell')
-            self.assertEqual(report['login_identity']['username'], 'operator')
-            self.assertEqual(report['access']['actual_identity']['effective_uid'], 0)
-            self.assertTrue(path.is_file())

@@ -1,5 +1,14 @@
 # SSHScript Ops to OpsFeast
 
+## 2026-10-20: one recipe execution entrypoint
+
+Use opsfeast.py recipes run for operations/reports and inventory query/run for selective collection. tools/run_recipe.py and its --recipe, --dryrun and --force options are removed. All inventory execution uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. Update scripts and reviewed copied inventory descriptors explicitly; use check-access for independent account diagnostics. The old all-host access gate is removed; each host acquires its actor and records its own outcome.
+
+The current recipe's primary retention declaration now describes the job dataset. Consumers subscribed specifically to inventory-observations must deliberately add/change their subscription to inventory-job-observations after reviewing its schema; wildcard Vault continues to handle both. Historical data is preserved and is not converted automatically. Pinned saved jobs must be reviewed and recreated when fingerprints change. Historical replay requires its saved definition or an explicitly reviewed matching historical definition, not today's descriptor.
+
+The dated sections below describe previous releases and must not be used as current invocation instructions.
+
+
 ## Readable Vault page paths and optional evidence
 
 Vault host content now lives under hosts/PRIMARY_GROUP/HOST/, selecting first membership or the distinct _ungrouped bucket. Full rebuild regenerates owned pages and all generated links at current locations. Unmanaged notes and old host README files remain unchanged at their original paths; move/link those deliberately. Authoritative retention layout and identity remain group-independent. Observation report names use YYYYMMDDHHMMSS-title.md without identifiers; equal-second/equal-title collisions fail publication without deleting retained history. Header-only host identification and one final metadata section replace the success banner and separate account block.
@@ -84,7 +93,7 @@ The complete bundled SSHScript snapshot moved from `.agents/skills/sshscript/` t
 
 ## Parameterized Python recipes (2026-10-13)
 
-run_recipe.py now accepts --var NAME=VALUE and a JSON --vars-file for inventory and general Python-session recipes. Invocation inputs overlay existing defaults/source/host values without rewriting configuration. Existing inventory descriptor/result 0.2.0, legacy collectors without effective vars, host/group selection and retention stay supported. Other IDs require descriptor 0.3.0, runner python-session 0.1.0 and execute(session, *, context, timeout); existing standalone main.py --host programs are not automatically adapted. Move only their operation into execute and declare inputs/results after reviewing the complete implementation. See [execution/migration](recipe-execution.md) and [authoring](recipe-authoring.md). Generic results save raw JSON with skipped inventory retention.
+opsfeast.py recipes run now accepts --var NAME=VALUE and a JSON --vars-file for inventory and general Python-session recipes. Invocation inputs overlay existing defaults/source/host values without rewriting configuration. Existing inventory descriptor/result 0.2.0, legacy collectors without effective vars, host/group selection and retention stay supported. Other IDs require descriptor 0.3.0, runner python-session 0.1.0 and execute(session, *, context, timeout); existing standalone main.py --host programs are not automatically adapted. Move only their operation into execute and declare inputs/results after reviewing the complete implementation. See [execution/migration](recipe-execution.md) and [authoring](recipe-authoring.md). Generic results save raw JSON with skipped inventory retention.
 
 ## Name mapping
 
@@ -145,7 +154,7 @@ Host recipes lists now accept strings or mappings with vars. Vars-bearing invent
 
 ## Inventory runner arguments
 
-The inventory runner now requires explicit recipe and target selection. Replace positional host/root arguments and --hosts with `run_recipe.py system/inventory/overview --host HOST ... --root ROOT`. Use --group for group names, or exclusive --all for every configured host. A positional recipe must come first; --recipe DIRECTORY may appear at any option position. Omitting the recipe no longer uses host YAML selectors. See the [runner reference](cli.md#toolsrun_recipepy-inventory-execution) for the complete interface, examples and result behavior. Existing YAML recipe selections, profiles and private data are preserved.
+The inventory runner now requires explicit recipe and target selection. Replace positional host/root arguments and --hosts with `opsfeast.py recipes run system/inventory/overview --host HOST ... --root ROOT`. Use --group for group names, or exclusive --all for every configured host. A positional recipe must come first; --recipe DIRECTORY may appear at any option position. Omitting the recipe no longer uses host YAML selectors. See the [runner reference](cli.md#operational-recipe-execution) for the complete interface, examples and result behavior. Existing YAML recipe selections, profiles and private data are preserved.
 
 ## Git and local integrations
 
@@ -233,4 +242,4 @@ Current selection groups each host by origin namespace, recipe-source qualifier 
 
 Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
 
-_Last modified: 2026-10-19 20:06:02_
+_Last modified: 2026-10-20 11:24:28_

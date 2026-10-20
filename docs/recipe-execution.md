@@ -6,22 +6,22 @@ New raw adds source_observation_id and execution_access_mode; general results al
 
 [Namespace-enabled profiles](retention.md) add opt-in typed host-values 0.2.0 retention with dataset/field descriptions and explicit units to general recipes. Write/unknown general recipes persist intent before connections/code and append outcome after cleanup. Missing access_mode means unknown; read skips the operation journal. Retention/audit failure yields explicit failure; content update has a separate receipt and never changes recipe status, and no automatic raw cleanup occurs. Profiles without namespace retain the legacy raw-only general-recipe behavior described below.
 
-Use `tools/run_recipe.py` to execute one explicitly selected recipe on explicitly selected hosts. It supports the existing inventory-system descriptor/result 0.2.0 and the Python-session contract 0.1.0 described here. The shared [recipes list/show/run surface](recipe-experience.md) adds discovery and delegates operation execution to this implementation; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
+Use `tools/opsfeast.py recipes run` to execute one explicitly selected recipe on explicitly selected hosts. Inventory uses descriptor 0.3.0 with inventory-jobs 0.1.0; general recipes use the Python-session/Core contracts described here. The [recipes list/show/run surface](recipe-experience.md) uses the internal recipe_runner module; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 5.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
 
-Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#toolsrun_recipepy-inventory-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
+Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#operational-recipe-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
 
 ## Select a recipe and provide inputs
 
 From the checkout, using the selected interpreter:
 
 ```sh
-python -B tools/run_recipe.py system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
-python -B tools/run_recipe.py :system/network/check/port --host rms3 --profile main --vars-file /path/to/inputs.json
-python -B tools/run_recipe.py company:system/network/check/port --group web --var port=443 --threads 2
-python -B tools/run_recipe.py system/inventory/overview --host rms3 --var command_timeout_seconds=10
+python -B tools/opsfeast.py recipes run system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/opsfeast.py recipes run :system/network/check/port --host rms3 --profile main --vars-file /path/to/inputs.json
+python -B tools/opsfeast.py recipes run company:system/network/check/port --group web --var port=443 --threads 2
+python -B tools/opsfeast.py recipes run system/inventory/overview --host rms3 --var command_timeout_seconds=10
 ```
 
-The second example requires a reviewed compatible recipe already present at the Feast's `recipes/system/network/check/port`; the third requires a registered reviewed company source. Source forms, enabled flags and host/group/all/exclude selection are shared with inventory. A recipe need not be listed under the host to be selected explicitly; the first matching host recipe selector supplies overrides. There is no fallback to another source or recipe. The internal `run(root, host, recipe=None)` compatibility API still selects inventory-system only; general recipes require an explicit selector.
+The second example requires a reviewed compatible recipe already present at the Feast's `recipes/system/network/check/port`; the third requires a registered reviewed company source. Source forms, enabled flags and host/group/all/exclude selection are shared with inventory. A recipe need not be listed under the host to be selected explicitly; the first matching host recipe selector supplies overrides. There is no fallback to another source or recipe. The internal recipe_runner.run(root, host, recipe=REFERENCE) requires an explicit recipe and routes inventory through inventory_jobs.collect_host; there is no snapshot fallback.
 
 `--var NAME=VALUE` may repeat with unique names. Declared string inputs are literal text, including empty text, `true`, leading zeros and additional equals signs. Other types use JSON syntax: `port=8888`, `enabled=false`, `scale=1.5`, `'items=[1,2]'`, `'options={"mode":"basic"}'`. Use shell quoting for spaces, arrays and objects. No shell interpolation is performed by the input parser. Duplicate --var names are errors; supply the final value once.
 
@@ -114,4 +114,10 @@ Terminal presentation does not change recipe return values or saved reports. See
 [compact execution summaries](cli.md#compact-execution-summaries) for unknown actors,
 retention/fallback outcomes and existing offline host-specific inspection.
 
-_Last modified: 2026-10-19 15:24:36_
+## Unified entrypoint verification (2026-10-20)
+
+The complete suite passed 763 tests on CPython 3.11.15, 3.13.13 and 3.14.4. test_recipe_runner.py verifies the removed standalone CLI, explicit recipe requirement, job delegation without a second access gate, rejection of snapshot/write inventory descriptors before connection, registered-path resolution, independent UTC filenames and durable raw preservation on receipt failure. Existing suites cover general Python-session/Core execution, concurrency/progress, reports, results, saved jobs, retention/replay and Vault.
+
+Native macOS with SSHScript 5.0.0 verified selective utility queries without profile writes and two independent saved observations with retention/Vault delivery. No remote SSH or native Linux/FreeBSD/ESXi/su/sudo result follows from this evidence. Wheel/sdist builds and installed-package tests are local checks, not publication. No private host was enabled for cron.
+
+_Last modified: 2026-10-20 14:34:31_

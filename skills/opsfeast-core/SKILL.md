@@ -3,6 +3,9 @@ name: opsfeast-core
 description: Use the bundled OpsFeast Python API for installation identity, profiles, runtime hosts loading, scoped sessions and Recipe root/su/sudo, or read-only instance inspection. Use for standalone agent programs and python-recipe authoring; logging and notification services remain unavailable.
 ---
 
+Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
+
+
 Human terminal tables automatically wrap headers and complete values to the current terminal cell width; narrow multi-column views become labeled records. Reuse the shared console_output.table helper for new checkout summaries. Use --json where supported for agent parsing; wrapped text is presentation, not a data contract. See [console output policy](../../docs/cli.md#terminal-tables-and-json) for width lookup, redirected output and limits.
 
 Top-level `opsfeast.py -h` groups setup/profiles, hosts/access, recipes/reports, retention/consumers and Vault for discovery. Reuse these task areas in any order; no extra command prefix or execution stage is introduced.
@@ -151,4 +154,4 @@ returns the full evidence within an authorized host scope. Human tables explain 
 root shell and show sudo already_root. Native evidence covers the two tested two-hop
 paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
-_Last modified: 2026-10-19 16:05:57_
+_Last modified: 2026-10-20 11:24:28_

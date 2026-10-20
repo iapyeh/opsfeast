@@ -23,7 +23,7 @@ import test_host_vault as vault_fixtures
 BUNDLED = {
     'system/network/check/port': ('check-port', '0.1.0'),
     'system/account/check/identity': ('check-identity', '0.1.0'),
-    'system/inventory/overview': ('inventory-system', '0.3.2'),
+    'system/inventory/overview': ('inventory-system', '0.4.0'),
     'feast/report/execution-summary': ('report-summary', '0.1.2'),
     'feast/report/retention-summary': ('report-retention', '0.1.0'),
 }
@@ -153,7 +153,7 @@ class RecipeTaxonomyTests(unittest.TestCase):
         store.retain(self.root, new)
         self.assertEqual((self.root / 'indexed-reference.txt').read_text(), 'system/inventory/overview')
         relations = catalog.choose(self.root, 'system/inventory/overview')['consumers']
-        self.assertEqual({i['id'] for i in relations}, {'vault', 'inventory-index'})
+        self.assertEqual({i['id'] for i in relations}, {'vault'})  # Old-contract subscription does not match the current job dataset.
 
 
 if __name__ == '__main__':

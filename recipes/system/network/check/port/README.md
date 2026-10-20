@@ -11,12 +11,12 @@ This recipe makes one TCP connection attempt **from the selected host** to an ex
 Use the selected Python interpreter from the OpsFeast checkout:
 
 ```sh
-python -B tools/run_recipe.py system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
-python -B tools/run_recipe.py system/network/check/port --host rms3 --var port=443 --var address=::1
-python -B tools/run_recipe.py system/network/check/port --group web --vars-file /path/to/port-inputs.json
+python -B tools/opsfeast.py recipes run system/network/check/port --host rms3 --root ~/Download/testops --var port=8888
+python -B tools/opsfeast.py recipes run system/network/check/port --host rms3 --var port=443 --var address=::1
+python -B tools/opsfeast.py recipes run system/network/check/port --group web --vars-file /path/to/port-inputs.json
 ```
 
-An example JSON input file is `{"port":8888,"address":"127.0.0.1","connect_timeout_seconds":3}`. The Feast must already have the selected hosts configured. Reading/configuration checks do not authorize connection or execution. Use `run_recipe.py`; main.py defines execute and has no standalone --host/--port CLI. See the [execution contract](../../../../../docs/recipe-execution.md) and [recipe skill](../../../../../skills/opsfeast-recipes/SKILL.md).
+An example JSON input file is `{"port":8888,"address":"127.0.0.1","connect_timeout_seconds":3}`. The Feast must already have the selected hosts configured. Reading/configuration checks do not authorize connection or execution. Use `opsfeast.py recipes run`; main.py defines execute and has no standalone --host/--port CLI. See the [execution contract](../../../../../docs/recipe-execution.md) and [recipe skill](../../../../../skills/opsfeast-recipes/SKILL.md).
 
 ## Dependencies, inputs and operations
 
@@ -45,4 +45,4 @@ SSHScript supplies local/SSH command execution through the runner's borrowed Ses
 
 [Public tests](../../../../../tests/test_general_recipes.py) cover open/refused/timeout/network error with synthetic sockets, invalid/truncated command output, runner inputs and failure states. No real target, SSH or local TCP probe has been performed. Review target prerequisites and the complete recipe before authorized use. No distribution license is currently declared by the repository.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-10-20 11:22:14_

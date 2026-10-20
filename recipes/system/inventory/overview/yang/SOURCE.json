@@ -1,0 +1,65 @@
+{
+  "description": "Unmodified public RFC YANG modules mirrored by YangModels; authoritative RFC references are in the catalog. Dependencies bundled for offline validation.",
+  "modules": [
+    {
+      "module": "iana-crypt-hash",
+      "revision": "2014-08-06",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/iana-crypt-hash@2014-08-06.yang",
+      "sha256": "fa9fde408ddec2c16bf2c6b9e4c2f80b813a2f9e48c127016f3fa96da346e02d"
+    },
+    {
+      "module": "iana-hardware",
+      "revision": "2018-03-13",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/iana-hardware@2018-03-13.yang",
+      "sha256": "58f3f0f191fab251c9d90b0afdefccd12b15e23e6694f66cfed8965c513ef1ac"
+    },
+    {
+      "module": "ietf-hardware",
+      "revision": "2018-03-13",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-hardware@2018-03-13.yang",
+      "sha256": "e14aad930e6c6466f5d1ecc12c5c4818e9553a357a9598b6d67f6bed587a6883"
+    },
+    {
+      "module": "ietf-inet-types",
+      "revision": "2013-07-15",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-inet-types@2013-07-15.yang",
+      "sha256": "12d98b0143a5ca5095b36420f9ebc1ffa61cfd2eaa850080244cadf01b86ddf9"
+    },
+    {
+      "module": "ietf-interfaces",
+      "revision": "2018-02-20",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-interfaces@2018-02-20.yang",
+      "sha256": "f6faea9938f0341ed48fda93dba9a69aa32ee7142c463342efec3d38f4eb3621"
+    },
+    {
+      "module": "ietf-ip",
+      "revision": "2018-02-22",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-ip@2018-02-22.yang",
+      "sha256": "b624c84a66c128ae69ab107a5179ca8e20e693fb57dbe5cb56c3db2ebb18c894"
+    },
+    {
+      "module": "ietf-netconf-acm",
+      "revision": "2018-02-14",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-netconf-acm@2018-02-14.yang",
+      "sha256": "e03f91317f9538a89296e99df3ff0c4003cdfea70bf517407643b3ec13c1ed25"
+    },
+    {
+      "module": "ietf-system",
+      "revision": "2014-08-06",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-system@2014-08-06.yang",
+      "sha256": "8a692ee2521b4ffe87a88303a61a103879ee26bff050c1b05a2027ae23205d3f"
+    },
+    {
+      "module": "ietf-yang-types",
+      "revision": "2013-07-15",
+      "source": "https://raw.githubusercontent.com/YangModels/yang/main/standard/ietf/RFC/ietf-yang-types@2013-07-15.yang",
+      "sha256": "a04cdcc875764a76e89b7a0200c6b9d800b10713978093acda7840c7c2907c3f"
+    },
+    {
+      "module": "iana-if-type",
+      "revision": "2026-03-17",
+      "source": "https://www.iana.org/assignments/yang-parameters/iana-if-type@2026-03-17.yang",
+      "sha256": "e7c480fb5c39a3e074605ae76919abfe376d7d82347855ace41c4695ef5e6d77"
+    }
+  ]
+}

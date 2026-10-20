@@ -156,7 +156,7 @@ def dns(text):
     return [{'address': row.split()[1]} for row in text.splitlines() if row.strip().startswith('nameserver ') and len(row.split()) >= 2]
 
 
-def collect(session, report, platform, timeout, *, budget=90):
+def collect(session, report, platform, timeout, *, budget=90, fields=None):
     data = empty()
     process = {'contract_version': VERSION, 'scope': 'environment-visible-to-effective-account',
                'started_at': datetime.now(timezone.utc).isoformat(), 'probes': [],
@@ -166,7 +166,10 @@ def collect(session, report, platform, timeout, *, budget=90):
         data['system'][field] = report['observations'][field]['value']
     deadline = time.monotonic() + budget
     def probe(section, field, command, parser=text_value):
+        if fields is not None and (section, field) not in fields:
+            return
         item = {'section': section, 'field': field, 'status': 'not_attempted', 'command': command,
+                'started_at': datetime.now(timezone.utc).isoformat(),
                 'observed_at': datetime.now(timezone.utc).isoformat()}
         process['probes'].append(item)
         remaining = deadline - time.monotonic()
@@ -205,6 +208,8 @@ def collect(session, report, platform, timeout, *, budget=90):
         except Exception as exc:
             item.update(status='failed', error_type=type(exc).__name__,
                         reason_code='parse_failed' if isinstance(exc, (ValueError, KeyError, TypeError)) else 'probe_execution_failed')
+        finally:
+            item['observed_at'] = datetime.now(timezone.utc).isoformat()
     probe('storage', 'filesystems', 'LC_ALL=C df -Pk', filesystems)
     probe('system', 'timezone', 'date +%Z')
     if platform == 'linux':

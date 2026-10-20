@@ -28,19 +28,21 @@ def environment(parser, checkout=False):
 
 
 def invocation(parser):
-    from run_recipe import TargetAction, positive_threads
+    parser.allow_abbrev = False
+    from recipe_runner import TargetAction, positive_threads
     parser.add_argument('recipe')
     parser.add_argument('--host', nargs='+', dest='targets', action=TargetAction)
     parser.add_argument('--group', nargs='+', dest='targets', action=TargetAction)
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--exclude', nargs='+')
-    parser.add_argument('--threads', type=positive_threads)
+    parser.add_argument('--threads', type=positive_threads, help='concurrent hosts; default min(8, logical CPU count), fallback 1')
     parser.add_argument('--timeout', type=positive_timeout, default=30)
     parser.add_argument('--var', action='append', default=[], dest='assignments')
     parser.add_argument('--vars-file', type=Path)
     parser.add_argument('--input', type=Path, action='append', default=[], help='explicit JSON report input; repeatable')
-    parser.add_argument('--verbose', action='store_true')
-    parser.add_argument('--quiet', action='store_true')
+    progress = parser.add_mutually_exclusive_group()
+    progress.add_argument('--verbose', action='store_true')
+    progress.add_argument('--quiet', action='store_true')
     parser.add_argument('--json', action='store_true')
 
 
@@ -78,7 +80,7 @@ def validate_invocation(root, item, inv):
             raise ConfigError('invalid all/target/exclusion combination')
 
 
-def execute(root, spec, *, dryrun=False, force=False, json_output=False):
+def execute(root, spec, *, json_output=False):
     prepare_console(json_output)
     item = choose(root, spec['recipe'])
     if not item['runnable']:
@@ -86,8 +88,6 @@ def execute(root, spec, *, dryrun=False, force=False, json_output=False):
     inv = spec['invocation']
     validate_invocation(root, item, inv)
     if item['kind'] == 'report':
-        if dryrun or force:
-            raise ConfigError('--dryrun/--force are inventory-only')
         values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
         report, path = run_report(root, item, [Path(p) for p in inv['inputs']], values,
                                   inv['assignments'], inv['timeout'])
@@ -97,21 +97,8 @@ def execute(root, spec, *, dryrun=False, force=False, json_output=False):
         return 0 if report['status'] == 'success' else 1
     if inv['inputs']:
         raise ConfigError('--input is for offline report recipes only')
-    from run_recipe import main as run
-    argv = [item['reference'], '--root', str(root), '--timeout', str(inv['timeout'])]
-    for kind, name in inv['targets']:
-        argv.extend(['--' + kind, name])
-    if inv['all']: argv.append('--all')
-    if inv['exclude']: argv.extend(['--exclude', *inv['exclude']])
-    if inv['threads']: argv.extend(['--threads', str(inv['threads'])])
-    for assignment in inv['assignments']: argv.extend(['--var', assignment])
-    if inv['vars_file']: argv.extend(['--vars-file', inv['vars_file']])
-    if inv['verbose']: argv.append('--verbose')
-    if inv['quiet']: argv.append('--quiet')
-    if json_output: argv.append('--json')
-    if dryrun: argv.append('--dryrun')
-    if force: argv.append('--force')
-    return run(argv)
+    from recipe_runner import execute_hosts
+    return execute_hosts(root, item['reference'], inv, json_output=json_output)
 
 
 def specification(args):
@@ -159,15 +146,11 @@ def main(argv=None):
         epilog=('Examples:\n'
                 '  opsfeast.py recipes run system/network/check/port --host node --var port=443\n'
                 '  opsfeast.py recipes run feast/report/retention-summary --profile main\n\n'
-                'Review the recipe with recipes show first. Inventory --dryrun makes real\n'
-                'connections and tests account access without collecting inventory.\n'
+                'Review the recipe with recipes show first. Use check-access for connection and privilege diagnostics.\n'
                 'See docs/cli.md for result and exit-code details.'),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     environment(run)
     invocation(run)
-    mode = run.add_mutually_exclusive_group()
-    mode.add_argument('--dryrun', action='store_true')
-    mode.add_argument('--force', action='store_true')
     result = commands.add_parser('results', help='browse saved execution results without running recipes',
         description=('Read previously saved operation/report results. list shows a filtered index, show emits the '
                      'original saved JSON, and detail includes result metadata and interpreted local timestamps. '
@@ -235,6 +218,12 @@ def main(argv=None):
         if action != 'list': job.add_argument('name')
         job.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
+    if args.command == 'run':
+        if args.all and args.targets:
+            parser.error('--all cannot be combined with --host or --group')
+        if args.exclude and not args.all:
+            parser.error('--exclude requires --all')
+
     try:
         raw = args.command in ('artifact', 'pack', 'unpack') or args.command == 'results' and args.action in ('show', 'detail') or bool(getattr(args, 'html', None))
         if not raw:
@@ -279,7 +268,7 @@ def main(argv=None):
                 print(item['availability_evidence'])
             return 0 if item['runnable'] else 1
         if args.command == 'run':
-            return execute(root, specification(args), dryrun=args.dryrun, force=args.force, json_output=args.json)
+            return execute(root, specification(args), json_output=args.json)
         if args.command == 'pack':
             item = choose(root, args.recipe)
             if not item['runnable']: raise ConfigError('only compatible reviewed recipes can be packed')
