@@ -158,7 +158,7 @@ def host_location(runtime, host):
 
 
 
-def with_contents(lines, report_link=None, *, report_label='Latest report — collection details and identity/coverage warnings', lead_section=None):
+def with_contents(lines, report_link=None, *, report_label='Latest report — collection details and identity/coverage warnings', lead_section=None, metadata_first=False):
     """Obsidian navigates heading text, rather than arbitrary HTML anchor IDs."""
     entries, rendered, used = [], [], {'contents'}
     disclosure = False
@@ -185,7 +185,11 @@ def with_contents(lines, report_link=None, *, report_label='Latest report — co
         end = next((i for i in range(start + 1, len(rendered)) if rendered[i].startswith('## ')), len(rendered))
         leading = rendered[start:end]
         rendered = rendered[:start] + rendered[end:]
-    prefix = [*lines[:2], *leading, '## Contents', '', *entries, '']
+    metadata=[]
+    if metadata_first:
+        end=next((i for i,line in enumerate(rendered) if line.startswith('## ')),len(rendered))
+        metadata,rendered=rendered[:end],rendered[end:]
+    prefix = [*lines[:2], *metadata, *leading, '## Contents', '', *entries, '']
     if report_link is not None:
         prefix += ['[' + report_label + '](' +
                    quote(report_link, safe='/') + ')', '']
@@ -520,6 +524,46 @@ def current_jobs(record, history_names=None):
     return lines
 
 
+def command_outputs(record):
+    """Read recorded streams only; include the source of each mixed-age probe."""
+    data=record['data']
+    groups=data.get('groups',[])
+    sources=[]
+    seen=set()
+    if groups and any('source_probes' in g for g in groups):
+        for group in groups:
+            for probe in group.get('source_probes',[]):
+                key=(group['source_record_id'],probe['id'])
+                if key not in seen:
+                    seen.add(key)
+                    sources.append((group['source_record_id'],probe))
+    else:
+        sources=[(record['record_id'],p) for p in data.get('probes',[]) if p.get('command')]
+    if not sources:
+        return []
+    lines=['## Command output','','Original captured streams; each command is collapsed by default.','']
+    for source,probe in sources:
+        command=probe.get('command')
+        if not command:
+            continue
+        lines += ['<details>', '<summary>'+html.escape(str(command))+'</summary>', '',
+                  'Observed: '+text(format_time(probe['observed_at']))+'; State: '+text(probe['status'])+
+                  '; Exit code: '+text(probe.get('exitcode') if probe.get('exitcode') is not None else 'Not recorded'),
+                  '', 'Source observation: '+text(source),'',
+                  '<pre><code>'+html.escape(str(command))+'</code></pre>','']
+        for stream in ('stdout','stderr'):
+            output=probe.get(stream)
+            lines += [stream+(': truncated at the capture limit' if probe.get(stream+'_truncated') else ''),'']
+            if output is None:
+                lines += ['Not recorded.','']
+            elif output=='':
+                lines += ['<pre><code>(empty)</code></pre>','']
+            else:
+                lines += ['<pre><code>'+html.escape(output)+'</code></pre>','']
+        lines += ['</details>','']
+    return lines
+
+
 def render_current(record, history_names=None, host_icon=None, attention_policy=None):
     """Readable current views; historical rendering remains complete and independent."""
     data = record['data']
@@ -537,6 +581,7 @@ def render_current(record, history_names=None, host_icon=None, attention_policy=
             lines += ['## Observations', ''] + markdown_table(['Field', 'Value', 'State'], rows) + ['']
     if not any(line.startswith('## ') and line != '## Attention' for line in lines):
         lines += ['No collected values are available in this view. See the full report.', '']
+    lines += command_outputs(record)
     report_link = source_report_link(record, history_names)
     return with_contents(lines, report_link, report_label='Source report — collection details and identity/coverage warnings', lead_section='Attention')
 
@@ -645,49 +690,65 @@ def render_observation(record, *, current=False, history_names=None, host_icon=N
 
 
 def run_pages(root, runtime, history_names, records):
-    """Publish explicit runs; policy/findings come from immutable execution evidence."""
-    from observation_runs import list_runs
-    runs = list_runs(root)
+    """Show the recorded command outcome without reinterpreting collection evidence."""
+    from observation_runs import list_runs, selection_text
+    runs=list_runs(root)
     if not runs:
         return {}
-    by_id = {record['record_id']:record for record in records}
-    entries, occupied = {}, set()
-    summary = ['# Observations', '', '| Started | Status | Hosts |', '| --- | --- | --- |']
+    by_id={record['record_id']:record for record in records}
+    entries,occupied={},set()
+    summary=['# Observations','','| Started | Status | Targets |','| --- | --- | --- |']
     for run in runs:
-        base = run['started_at'][:19].replace('-', '').replace(':', '').replace('T', '')
-        name, ordinal = base + '.md', 1
+        base=run['started_at'][:19].replace('-','').replace(':','').replace('T','')
+        name,ordinal=base+'.md',1
         while name in occupied:
-            ordinal += 1
-            name = base + '-' + str(ordinal) + '.md'
+            ordinal+=1
+            name=base+'-'+str(ordinal)+'.md'
         occupied.add(name)
-        lines = ['# Observation — ' + format_time(run['started_at']), '',
-                 'Status: ' + text(run['status']), '', 'Trigger: ' + text(run['trigger']), '',
-                 'Recipe: ' + text(run['recipe_reference']), '',
-                 'Completed: ' + format_time(run['completed_at']) if run['completed_at'] else 'Execution has not completed.', '',
-                 '## Hosts', '', '| Host | Status | Collection jobs | Retention | Source report |',
-                 '| --- | --- | --- | --- | --- |']
-        flags = []
+        execution=run.get('execution')
+        status=execution['status'] if execution else 'running' if run['status']=='running' else 'Not recorded'
+        selection=selection_text(run.get('selection'))
+        completed=execution['completed_at'] if execution else run['completed_at']
+        duration='In progress'
+        if completed:
+            seconds=max(0,int((datetime.fromisoformat(completed)-datetime.fromisoformat(run['started_at'])).total_seconds()))
+            duration=str(seconds)+(' second' if seconds==1 else ' seconds')
+        lines=['# Observation — '+format_time(run['started_at']),'',
+               'Status: '+text(status),'','Trigger: '+text(run['trigger']),'',
+               'Targets: '+text(selection),'','Recipe: '+text(run['recipe_reference']),'',
+               'Started: '+format_time(run['started_at']),'',
+               'Completed: '+format_time(completed) if completed else 'Execution has not completed.','',
+               'Duration: '+duration,'']
+        warnings=[]
         for target in run['targets']:
-            host = target['host_id']
-            jobs = ', '.join(str(j.get('title') or j['id']) + (' (' + j['status'] + ')' if j.get('status') else '') for j in target['jobs'])
-            record = by_id.get(target['record_id'])
-            link = ''
+            if target['retention_status']=='failed':
+                warnings.append('Data storage failed for '+target['host_id']+'.')
+            if target['record_id'] and target['record_id'] not in by_id:
+                warnings.append(target['host_id']+': Retained record no longer available.')
+        if execution and execution['content_status']=='failed':
+            warnings.append('Content publication failed during this execution; this page may have been rebuilt later.')
+        lines += ['> '+text(warning) for warning in warnings]+[''] if warnings else []
+        lines += ['## Hosts','','| Host | Status | Collection jobs |','| --- | --- | --- |']
+        flags=[]
+        for target in run['targets']:
+            host=target['host_id']
+            host_cell=text(((target.get('icon') or '')+' '+host).strip())
+            record=by_id.get(target['record_id'])
             if record:
-                path = '../' + host_location(runtime,host) + '/' + record['observed_at'][:4] + '/reports/' + history_names[record['record_id']]
-                link = '[Report](' + quote(path, safe='/') + ')'
-            elif target['record_id']:
-                link = 'Retained record no longer available'
-            status = target['status'] + (' / ' + target['reason_code'] if target.get('reason_code') else '')
-            lines.append('| ' + text((target.get('icon') or '') + ' ' + host) + ' | ' +
-                         ' | '.join([text(status), text(jobs), text(target['retention_status']), link]) + ' |')
-            evaluation = target.get('attention')
+                section='reports' if record['kind']=='observation' else 'operations'
+                path='../'+host_location(runtime,host)+'/'+record['observed_at'][:4]+'/'+section+'/'+history_names[record['record_id']]
+                host_cell='['+host_cell+']('+quote(path,safe='/')+')'
+            jobs=', '.join(str(j.get('title') or j['id'])+(' ('+j['status']+')' if j.get('status') else '') for j in target['jobs'])
+            state=target['status']+(' / '+target['reason_code'] if target.get('reason_code') else '')
+            lines.append('| '+host_cell+' | '+text(state)+' | '+text(jobs)+' |')
+            evaluation=target.get('attention')
             if evaluation and evaluation['findings']:
-                flags += ['### ' + text((target.get('icon') or '') + ' ' + host), ''] + render_attention(evaluation)[2:] + ['']
+                flags += ['### '+text(((target.get('icon') or '')+' '+host).strip()),'']+render_attention(evaluation)[2:]+['']
         if flags:
-            lines += ['', '## Attention', '', 'Findings and thresholds were saved for this execution.', ''] + flags
-        entries['Observations/' + name] = with_contents(lines)
-        summary.append('| [' + format_time(run['started_at']) + '](' + name + ') | ' + text(run['status']) + ' | ' + str(len(run['targets'])) + ' |')
-    entries['Observations/SUMMARY.md'] = '\n'.join(summary)
+            lines += ['','## Attention','','Findings and thresholds were saved for this execution.','']+flags
+        entries['Observations/'+name]=with_contents(lines,metadata_first=True)
+        summary.append('| ['+format_time(run['started_at'])+']('+name+') | '+text(status)+' | '+text(selection)+' |')
+    entries['Observations/SUMMARY.md']='\n'.join(summary)
     return entries
 
 
@@ -775,11 +836,16 @@ def build(root, runtime):
                            text(outcome['data']['status'] if outcome else 'unknown: outcome not recorded') +
                            ' / verification: ' + text(outcome['data']['verification'] if outcome else 'not_observed'))
         entries[folder + '/records/SUMMARY.md'] = with_contents(summary)
+        entries[folder + '/SUMMARY.md'] = '\n'.join([
+            host_heading(host,runtime.hosts.get(host,{}).get('icon')), '',
+            'Namespace: '+config['namespace'], '',
+            'Latest observation: '+format_time(max((r['observed_at'] for r in latest.values()),default='No observations')), '',
+            '[Current records](records/SUMMARY.md)', '', '[Notes](README.md)'])
         configured = runtime.hosts.get(host, {})
         inventory = next((r for r in reversed(items) if r['kind'] == 'observation' and r['recipe_id'] == 'inventory-system'), None)
         system = inventory['data'].get('observations',{}).get('system_name', {}).get('value') if inventory else None
         last = max(latest.values(), key=lambda r: (r['observed_at'], r['record_id'])) if latest else None
-        index.append('| [' + text(configured.get('label') or host) + '](' + quote(folder + '/README.md', safe='/') + ') | ' +
+        index.append('| [' + text(configured.get('label') or host) + '](' + quote(folder + '/SUMMARY.md', safe='/') + ') | ' +
                      ' | '.join(text(v) for v in (configured.get('enabled', True) if host in runtime.hosts else 'not configured',
                      ','.join(group_names(configured.get('group', []), 'host group')), system or 'unknown', format_time(last['observed_at']) if last else 'never',
                      last['data'].get('status', 'unknown') if last else 'no observations')) + ' |')

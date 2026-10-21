@@ -174,6 +174,13 @@ def _short_result_ids(identifiers):
     return short
 
 
+def result_short_ids(root):
+    """Map saved paths to the same collision-aware IDs used by results list."""
+    files=list(_result_files(root))
+    identifiers=_short_result_ids(identifier for identifier,_ in files)
+    return {str(path.resolve()):identifiers[identifier] for identifier,path in files if not path.is_symlink()}
+
+
 def collection_user(raw):
     """Return only a supported, observed collection actor; never guess from login."""
     if not isinstance(raw, dict) or not isinstance(raw.get('recipe'), dict) or raw['recipe'].get('id') != 'inventory-system':
@@ -212,6 +219,7 @@ def results(root, recipe=None, host=None, status=None):
             if not isinstance(meta, dict) or raw.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
                 raise ConfigError('unrecognized result envelope')
             row = {'result_id': identifier, 'short_id': short_ids[identifier],
+                   'observation_run_id': raw.get('observation_run_id'),
                    'recipe_id': meta.get('id'), 'recipe_version': meta.get('version'),
                    'recipe_reference': meta.get('reference'), 'recipe_source': meta.get('source_name'),
                    'host_id': raw.get('host_id'), 'status': raw['status'], 'reason_code': raw.get('reason_code'),

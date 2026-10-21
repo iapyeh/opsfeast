@@ -153,17 +153,18 @@ def main(argv=None):
     invocation(run)
     result = commands.add_parser('results', help='browse saved execution results without running recipes',
         description=('Read previously saved operation/report results. list shows a filtered index, show emits the '
-                     'original saved JSON, and detail includes result metadata and interpreted local timestamps. '
+                     'original saved JSON, detail includes full metadata, and diagnose shows bounded failure evidence. '
                      'No recipe is rerun; --html writes a local HTML page for list/show.'),
         epilog='Example: opsfeast.py recipes results list --profile main --json')
     environment(result)
-    result.add_argument('action', choices=('list', 'show', 'detail'))
+    result.add_argument('action', choices=('list', 'show', 'detail', 'diagnose'))
     result.add_argument('result_id', nargs='?')
     result.add_argument('--recipe-id')
     result.add_argument('--host')
     result.add_argument('--status', choices=('success', 'partial', 'failed', 'skipped', 'unsupported'))
     result.add_argument('--json', action='store_true')
     result.add_argument('--html', type=Path)
+    result.add_argument('--limit',type=int,help='diagnose only: maximum problems shown, 1–50 (default 5)')
     artifact = commands.add_parser('artifact', help='retrieve a verified saved report artifact',
         description=('Read one declared artifact from a saved report result after checking its recorded integrity '
                      'and safe path. Print JSON metadata including the verified absolute file path; this does not regenerate or stream the artifact.'),
@@ -275,6 +276,15 @@ def main(argv=None):
             output(pack(item, args.file, args.output))
             return 0
         if args.command == 'results':
+            if args.action == 'diagnose':
+                if not args.result_id or args.html or args.host or args.recipe_id or args.status:
+                    raise ConfigError('results diagnose requires RESULT_ID and accepts only --limit, --json and profile/root')
+                from result_diagnostics import diagnose, format_diagnosis
+                data=diagnose(root,args.result_id,limit=args.limit if args.limit is not None else 5)
+                output(data) if args.json else print(format_diagnosis(data))
+                return 0
+            if args.limit is not None:
+                raise ConfigError('--limit is only supported by results diagnose')
             if args.action == 'detail':
                 if args.html:
                     raise ConfigError('results detail does not support --html; use results list/show --html')

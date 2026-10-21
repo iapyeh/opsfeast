@@ -30,6 +30,10 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 ## Observation execution run contract
 
-[observation-run.schema.json](observation-run.schema.json) defines explicit batch membership, per-host outcomes, major job categories, source record/baseline links and saved Attention policy/findings. It is independent of recipe data contracts and ordinary retention selection/export. [Run lifecycle/storage/read APIs](../docs/observation-runs.md) define semantic validation and immutable completed runs beyond JSON Schema. Retention event/consumer schemas also accept retention.run.updated, whose record_id identifies a run rather than an observation.
+[observation-run.schema.json](observation-run.schema.json) defines explicit batch membership, per-host outcomes, major job categories, source record/baseline links and saved Attention policy/findings. It is independent of recipe data contracts and ordinary retention selection/export. [Run lifecycle/storage/read APIs](../docs/observation-runs.md) define semantic validation and immutable completed collection snapshots beyond JSON Schema. Optional selection preserves invocation selectors/exclusions; optional execution joins the latest separately journaled command receipt. Its success/failure and exit_code are distinct from collection status. Absent historical metadata remains unknown. Retention event/consumer schemas also accept retention.run.updated, whose record_id identifies a run rather than an observation.
 
-_Last modified: 2026-10-20 23:10:05_
+[result-diagnosis.schema.json](result-diagnosis.schema.json) defines read-only saved-result diagnosis projection 0.1.0: selected failure evidence with bounded excerpts and explicit issue/omission counts. It is independent of raw execution and retained-data contracts. See [selection, exit codes and interpretation limits](../docs/cli.md#diagnose-a-saved-failure).
+
+[observation-view.schema.json](observation-view.schema.json) defines compact batch index/host views 0.1.0 for the top-level observation CLI. This projection preserves whole-batch counts and exposes exact raw Result ID links independently of full observation-run objects. See [CLI and checkout helper semantics](../docs/cli.md#revisit-an-observation-batch).
+
+_Last modified: 2026-10-21 12:07:37_

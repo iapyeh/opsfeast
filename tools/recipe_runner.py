@@ -392,7 +392,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     config.load(config.root / 'hosts.yaml')
     omitted = [e for e in excluded if e['reason_code']=='host_disabled' and e['host'] not in hosts]
     planned = hosts + [e['host'] for e in omitted]
-    run_id = start(root, [{'host_id':h, 'icon':config.hosts[h].get('icon', '')} for h in planned], recipe) if retention_settings(root) else None
+    selection={'kind':'cli','all':inv['all'],'selectors':[list(item) for item in inv['targets']], 'exclude':list(inv['exclude'])}
+    run_id = start(root, [{'host_id':h, 'icon':config.hosts[h].get('icon', '')} for h in planned], recipe, selection=selection) if retention_settings(root) else None
     if run_id:
         for entry in omitted:
             record_result(root,run_id,entry['host'],{'status':'skipped','reason_code':'host_disabled'})
@@ -406,6 +407,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
                 report, path = run(root, host, inv['timeout'], recipe=recipe,
                                    cli_vars=values, assignments=inv['assignments'],
                                    explicit_host=host in explicit, observation_run_id=run_id)
+                if run_id:
+                    report['observation_run_id']=run_id
                 progress(f"completed: {report['status']} ({report.get('reason_code', 'unknown')})")
                 emit('result', host=host, status=report['status'], reason_code=report.get('reason_code'),
                      result_path=str(path) if path else None, retention=report.get('retention'),
@@ -427,6 +430,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
             record_result(root, run_id, host, report)
         finish(root, run_id)
         content = refresh_content(root)
+        from observation_runs import publish_execution
+        _,content = publish_execution(root,run_id,execution_exit_code([r for r,_ in results],content),content)
         for report, path in results:
             # A later batch refresh must not erase an earlier per-host failure.
             if report.get('content_update',{}).get('status') != 'failed':
@@ -446,8 +451,14 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     if excluded:
         result['excluded_hosts'] = excluded
     print_report(result, json_output=json_output, kind='execution', icons=icons,
-                 recipe=recipe, host=hosts[0] if len(hosts)==1 else None, ensure_ascii=True)
-    return 0 if (not run_id or content.get('status') != 'failed') and all(r['status']=='success' and
-        not (r.get('access') or {}).get('degraded') and
+                 recipe=recipe, host=hosts[0] if len(hosts)==1 else None, ensure_ascii=True, result_root=root)
+    return execution_exit_code(summaries, content if run_id else None)
+
+
+
+def execution_exit_code(reports, content=None):
+    """Recipe CLI outcome; threshold findings do not change successful collection."""
+    return 0 if (content or {}).get('status')!='failed' and all(
+        r['status']=='success' and not (r.get('access') or {}).get('degraded') and
         (r.get('retention') or {}).get('status')!='failed' and
-        (r.get('content_update') or {}).get('status')!='failed' for r in summaries) else 1
+        (r.get('content_update') or {}).get('status')!='failed' for r in reports) else 1

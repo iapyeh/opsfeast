@@ -124,15 +124,23 @@ Saving a job grants no future execution permission and establishes no scheduler.
 
 [Public synthetic tests](../tests/test_recipe_experience.py) cover source/ID selection, static discovery, HTML escaping, offline execution/inputs/status/quality/artifacts, paths, raw-result queries, bundle integrity/boundaries, independent Feast reuse and saved reruns/content drift. Existing operation tests remain applicable through the shared execution implementation. No real host or external scheduler was used. The [summary recipe](../recipes/feast/report/execution-summary/README.md) is an initial plain view; users' agents can author richer versioned report recipes with reviewed renderers and complete synthetic examples/tests. Keep new data/artifact/backends discoverable through canonical contracts and the recipe skill. UI/MCP/web integrations can consume these functions and JSON contracts but are not implemented by this CLI.
 
+## Revisit a complete execution batch
+
+Use `opsfeast.py observation` for batch history and `observation latest --status failed partial` for the latest batch's incomplete hosts. The command prints the actual Observation ID/time/recipe/selectors and full counts before filtered host/result rows. These read-only views are separate from recipes results list, which indexes individual host results. No saved membership or missing raw data is inferred. See [examples and precise selection rules](cli.md#revisit-an-observation-batch).
+
 ## Inspect details after a compact run
 
-Completed run/job TTY summaries show only host, collection identity and result. Full
+Completed run/job TTY summaries show host, collection identity, result and result id. Use the displayed short result id directly with results detail/show; unsaved/excluded targets show a dash. Full
 access/data/artifacts and result paths remain in --json and saved reports. For one
 host, use results list --host HOST (optionally --recipe-id inventory-system), then
 results show RESULT_ID with the same --root/--profile; each raw result names host_id.
 These existing read-only commands require no new connection or execution. See [the
 canonical output and viewing workflow](cli.md#compact-execution-summaries) for exact
 invocations, JSON/HTML options, unknown actors and failed/unsaved attempts.
+
+## Focus on a failed result
+
+Use `recipes results diagnose RESULT_ID --profile NAME` first for bounded failure evidence. --limit (default 5, range 1–50) selects more issues; --json returns a diagnosis projection rather than raw data. Successful probes and arbitrary payloads are omitted, unavailable root-cause details stay unknown, and saved failure status does not make the read fail. This performs no collection or writes. See [canonical syntax, evidence rules and limits](cli.md#diagnose-a-saved-failure); detail/show retain complete evidence.
 
 ## Vertical result browser
 
@@ -165,4 +173,4 @@ offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTM
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-20 23:10:05_
+_Last modified: 2026-10-21 12:07:37_

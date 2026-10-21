@@ -256,7 +256,7 @@ class ObservationRunTests(unittest.TestCase):
         result=self.acquire(Actor(),save=True,properties=['storage.filesystems.used_percent'])
         folder=self.root/'vault/Observations'
         page=next(p for p in folder.glob('*.md') if p.name!='SUMMARY.md')
-        link=re.search(r'\[Report\]\(([^)]+)\)',page.read_text()).group(1)
+        link=re.search(r'\[[^\]]*node\]\(([^)]+/reports/[^)]+)\)',page.read_text()).group(1)
         self.assertTrue((folder/unquote(link)).is_file())
         for page_path in (self.root/'vault').rglob('*.md'):
             for target in re.findall(r'\]\(([^)]+)\)',page_path.read_text()):

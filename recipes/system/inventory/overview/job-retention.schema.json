@@ -1713,7 +1713,29 @@
       "type": "array",
       "maxItems": 256,
       "items": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "stdout": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Original captured stdout, null when unavailable. UTF-8 byte bound enforced by semantic validator."
+          },
+          "stderr": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Original captured stderr, separated before any PTY stream merging."
+          },
+          "stdout_truncated": {
+            "type": "boolean"
+          },
+          "stderr_truncated": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "identity_warning": {
@@ -1731,5 +1753,6 @@
         "type": "object"
       }
     }
-  }
+  },
+  "$comment": "Last modified: 2026-10-21 11:19:57"
 }

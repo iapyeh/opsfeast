@@ -72,9 +72,9 @@ class VaultLayoutTests(unittest.TestCase):
         self.assertTrue((host/'README.md').is_file())
         for group in ('production', 'database'):
             page = self.root/f'vault/groups/{group}/node.md'
-            self.assertIn('../../hosts/production/node/README.md', page.read_text())
-        self.assertIn('(hosts/production/node/README.md)', (self.root/'vault/HOSTS.md').read_text())
-        self.assertIn('(../hosts/production/node/README.md)', (self.root/'vault/overview/README.md').read_text())
+            self.assertIn('../../hosts/production/node/SUMMARY.md', page.read_text())
+        self.assertIn('(hosts/production/node/SUMMARY.md)', (self.root/'vault/HOSTS.md').read_text())
+        self.assertIn('(../hosts/production/node/SUMMARY.md)', (self.root/'vault/overview/README.md').read_text())
         self.assertFalse((self.root/'vault/hosts/database/node').exists())
 
     def test_regrouping_moves_generated_views_without_rewriting_notes_or_retention(self):
@@ -89,7 +89,7 @@ class VaultLayoutTests(unittest.TestCase):
         self.assertEqual(list((old/'records').glob('*.md')), [])
         self.assertEqual((old/'README.md').read_text(), 'Human notes at their original location')
         self.assertEqual(before, {p:p.read_bytes() for p in before})
-        self.assertIn('../../hosts/database/node/README.md',
+        self.assertIn('../../hosts/database/node/SUMMARY.md',
                       (self.root/'vault/groups/production/node.md').read_text())
 
     def test_same_second_reports_use_ordinals_and_links_target_the_right_record(self):
@@ -127,7 +127,9 @@ class VaultLayoutTests(unittest.TestCase):
         self.assertFalse((host/'records/README.md').exists())
         self.assertIn('# 🖥 node',summary.read_text())
         self.assertIn('# 🖥 node',(host/'records'/content.latest_filename(record)).read_text())
-        self.assertIn('(records/SUMMARY.md)',(host/'README.md').read_text())
+        self.assertIn('(SUMMARY.md)',(host/'README.md').read_text())
+        self.assertIn('(records/SUMMARY.md)',(host/'SUMMARY.md').read_text())
+        self.assertIn('(README.md)',(host/'SUMMARY.md').read_text())
         (host/'README.md').write_text('Human notes remain intact.')
         vault.rebuild(self.root)
         self.assertEqual((host/'README.md').read_text(),'Human notes remain intact.')

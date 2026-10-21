@@ -61,10 +61,15 @@ def validate(data):
                 raise ConfigError('invalid probe time')
         if probe['observed_at'] < probe['started_at']:
             raise ConfigError('probe completion precedes start')
-        # Only bounded producer metadata survives; never raw output or credentials.
-        allowed = {'id','command','started_at','observed_at','status','reason_code','exitcode','error_type','window_started_at','input_source_ids','section','field'}
+        # Preserve bounded original command streams alongside producer metadata.
+        allowed = {'id','command','started_at','observed_at','status','reason_code','exitcode','error_type','window_started_at','input_source_ids','section','field','stdout','stderr','stdout_truncated','stderr_truncated'}
         if set(probe)-allowed:
             raise ConfigError('unexpected inventory probe fields')
+        for stream in ('stdout','stderr'):
+            if stream in probe and probe[stream] is not None and (not isinstance(probe[stream],str) or len(probe[stream].encode())>262144):
+                raise ConfigError('invalid bounded command output')
+            if stream+'_truncated' in probe and type(probe[stream+'_truncated']) is not bool:
+                raise ConfigError('invalid command truncation flag')
         sources[probe['id']] = probe
     for probe in sources.values():
         if 'input_source_ids' in probe and (not isinstance(probe['input_source_ids'],list) or any(s not in sources or s==probe['id'] for s in probe['input_source_ids'])):

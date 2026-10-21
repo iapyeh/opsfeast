@@ -1,4 +1,5 @@
 """Public synthetic inventory jobs, utility, schedules and retention regressions."""
+from inventory_output_fixture import framed
 from contextlib import contextmanager, redirect_stdout
 import copy
 import io
@@ -45,7 +46,7 @@ class Actor:
         elif '/proc/loadavg' in script:text='0.1 0.2 0.3 1/100 5\n'
         elif '/etc/os-release' in script:text='NAME="Synthetic Distribution"\nVERSION_ID="1.0"\n'
         else:text=''
-        return SimpleNamespace(stdout=text+f'\n__OPSFEAST_EXIT_{code}\n',stderr='',exitcode=0)
+        return SimpleNamespace(stdout=framed(script,text+f'\n__OPSFEAST_EXIT_{code}\n'),stderr='',exitcode=0)
 
 
 class InventoryJobTests(unittest.TestCase):
@@ -314,7 +315,7 @@ class InventoryJobTests(unittest.TestCase):
                 if 'cat /proc/stat' not in argv[-1]:return super().exec_command(argv,**kwargs)
                 self.reads+=1
                 text='cpu 1000 0 500 8000 500 0 0 0' if self.reads==1 else 'cpu 1010 0 510 8080 500 0 0 0'
-                return SimpleNamespace(stdout=text+'\n\n__OPSFEAST_EXIT_0\n',stderr='',exitcode=0)
+                return SimpleNamespace(stdout=framed(argv[-1],text+'\n\n__OPSFEAST_EXIT_0\n'),stderr='',exitcode=0)
         actor=CPUActor()
         with patch('time.sleep'):
             result=self.acquire(actor,properties=['metrics.cpu_utilization_percent'])
@@ -339,7 +340,7 @@ class InventoryJobTests(unittest.TestCase):
                 if '/proc/pressure/memory' in argv[-1]:text='some avg10=0.01 avg60=0.02 avg300=0.03 total=40\n'
                 elif '/proc/diskstats' in argv[-1]:text='8 0 synthetic-disk '+' '.join(str(v) for v in range(1,18))+'\n'
                 else:return super().exec_command(argv,**kwargs)
-                return SimpleNamespace(stdout=text+'\n__OPSFEAST_EXIT_0\n',stderr='',exitcode=0)
+                return SimpleNamespace(stdout=framed(argv[-1],text+'\n__OPSFEAST_EXIT_0\n'),stderr='',exitcode=0)
         result=self.acquire(MetricsActor(),properties=['metrics.memory_pressure','metrics.disk_counters'])
         values={s['property']:s['value'] for g in result['groups'] for s in g['samples']}
         self.assertEqual(values['metrics.memory_pressure'][0]['total_stall_microseconds'],40)

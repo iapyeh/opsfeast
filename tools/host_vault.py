@@ -95,7 +95,7 @@ def rebuild_unlocked(root):
     for host in hosts:
         path = vault_checked(root, *host_location(runtime, host).split('/'), 'README.md')
         if not path.exists():
-            atomic(path, '# ' + text(host) + '\n\n[Known state](records/SUMMARY.md)\n\nHuman notes may be added here.\n\n_Last modified: ' + format_time(now()) + '_\n')
+            atomic(path, '# ' + text(host) + '\n\n[Host summary](SUMMARY.md)\n\nHuman notes may be added here.\n\n_Last modified: ' + format_time(now()) + '_\n')
     landing = vault_checked(root, 'README.md')
     if not landing.exists():
         atomic(landing, '# Feast host vault\n\n[All hosts](HOSTS.md)\n\n[Groups](groups/README.md)\n\nHuman notes may be added here.\n\n_Last modified: ' + format_time(now()) + '_\n')
@@ -120,7 +120,7 @@ def refresh_groups(root):
             body = ['# ' + text(metadata.get('label', group)), '', 'Generated: ' + format_time(now()), '']
             for host in metadata['hosts']:
                 filename = component(host) + '.md'
-                target = '../../' + host_location(runtime, host) + '/README.md'
+                target = '../../' + host_location(runtime, host) + '/SUMMARY.md'
                 entries['groups/' + folder + '/' + filename] = '# ' + text(host) + '\n\n[Host](' + quote(target, safe='/') + ')'
                 body.append('- [' + text(host) + '](' + quote(filename) + ')')
             entries['groups/' + folder + '/README.md'] = '\n'.join(body)

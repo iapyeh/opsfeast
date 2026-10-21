@@ -1378,6 +1378,9 @@ def main(argv=None):
     if argv[:1] == ['recipes']:
         from recipe_cli import main as recipe_main
         return recipe_main(argv[1:])
+    if argv[:1] == ['observation']:
+        from observation_cli import main as observation_main
+        return observation_main(argv[1:])
     if argv[:1] == ['inventory']:
         from inventory_cli import main as inventory_main
         return inventory_main(argv[1:])
@@ -1403,6 +1406,7 @@ def main(argv=None):
         'Use COMMAND --help for details, or --tui on supported commands for an optional Textual display.')
     commands = parser.add_subparsers(dest='command', required=True, metavar='COMMAND', title='Commands by task')
     commands.help_groups = COMMAND_GROUPS
+    commands.add_parser('observation', help='list saved batches or inspect a batch/latest with host status filters')
     commands.add_parser('inventory', help='query inventory properties, save refreshes and manage opt-in collection schedules')
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')

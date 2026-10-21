@@ -40,7 +40,7 @@ The runner closes its Session, finalizes the report, atomically saves raw JSON, 
 
 Only operational `local`/`ssh` reports with status `success` or `partial` are retained. Mock/non-operational, failed, skipped and unsupported reports are excluded. Disabled hosts/sources still produce no raw inventory file. A partial report retains all seven fields, including null/missing states; it is never promoted to complete inventory. Identity fallback does not by itself fail otherwise successful collection. A failure to establish privilege-context cleanup fails execution and excludes that report from retained observations.
 
-Retained records omit commands, stdout/stderr, connection details, credentials, paths, error text, input values and raw report receipts. They retain recipe version, raw schema version, evidence kind, source/target identity, observation state and timestamp. Device identifiers are intentionally shareable business data, but may be sensitive; review the export before delivering it.
+The historical retained-observation contract described here omits commands, stdout/stderr, connection details, credentials, paths, error text, input values and raw report receipts. Current inventory-job-observations differs: new data.probes includes original command/stdout/stderr with explicit truncation flags and source times; use [inventory jobs](inventory-jobs.md) and the declared contract before interpreting or exporting it. They retain recipe version, raw schema version, evidence kind, source/target identity, observation state and timestamp. Device identifiers are intentionally shareable business data, but may be sensitive; review the export before delivering it.
 
 `observation_id` is `<source UUID>:<SHA-256 of canonical raw report excluding retention>`. Reprocessing identical raw content within its originating Feast does not duplicate it. Modifying raw content creates a new observation; this is not an authenticated audit ledger. If a raw file carries a successful source receipt, another source cannot re-ingest it as its own: use structured exchange instead. Old raw files without a receipt are attributed to the explicitly chosen local source, so do not use raw ingestion for sharing.
 
@@ -124,4 +124,4 @@ Use [observation runs 0.1.0](observation-runs.md) for actual batch membership an
 
 Current inventory-job-observations 0.1.0 preserves failed collection attempts and partial/null property gaps as valid recipe-owned data; older legacy inventory export/recovery eligibility rules below do not define this contract's success criteria. Read the [inventory job guide](inventory-jobs.md) before selecting, replaying or combining current job results. Current Vault pages may omit unknown/unreadable fields and single counters, while full reports and structured retention preserve detailed values/states/times; Markdown omission is not a successful absence or health check.
 
-_Last modified: 2026-10-20 23:29:18_
+_Last modified: 2026-10-21 11:19:57_

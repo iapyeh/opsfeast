@@ -1,4 +1,5 @@
 """Synthetic access gates and partitioned values; no native sudo or SSH."""
+from inventory_output_fixture import framed
 from recipe_test_support import recipe_main
 import contextlib
 import csv
@@ -60,7 +61,7 @@ class SyntheticSession:
         if argv[:1] == ['cat']:
             return result(code=1)
         if argv[:2] == ['/bin/sh', '-c'] and '__OPSFEAST_EXIT_' in argv[2]:
-            return result('\n__OPSFEAST_EXIT_127\n')
+            return result(framed(argv[2],'\n__OPSFEAST_EXIT_127\n'))
         return result('ID=synthetic\nNAME="Synthetic Linux"\nVERSION_ID=1\n')
 
     def __call__(self, command, **kwargs):
@@ -322,8 +323,8 @@ class ValuesTests(unittest.TestCase):
         def query(argv, **kwargs):
             for command, answer in answers.items():
                 if command in argv[2]:
-                    return result(answer + '\n__OPSFEAST_EXIT_0\n')
-            return result('\n__OPSFEAST_EXIT_127\n')
+                    return result(framed(argv[2],answer + '\n__OPSFEAST_EXIT_0\n'))
+            return result(framed(argv[2],'\n__OPSFEAST_EXIT_127\n'))
         session.exec_command.side_effect = query
         D['collect'](session, report, platform, 5)
         return report

@@ -1,5 +1,29 @@
 # Ops command-line reference
 
+## Revisit an observation batch
+
+An Observation ID identifies one explicit execution batch over selected hosts; a Result ID identifies one host's saved raw result. Use the same profile/root as the original execution:
+
+```sh
+python -B tools/opsfeast.py observation --profile main
+python -B tools/opsfeast.py observation latest --profile main
+python -B tools/opsfeast.py observation --status failed --profile main
+python -B tools/opsfeast.py observation latest --status failed partial --profile main
+python -B tools/opsfeast.py observation OBSERVATION_ID --profile main --json
+```
+
+No positional ID and no --status lists batches newest first. A full Observation UUID, unique hexadecimal UUID prefix of at least eight characters, or latest selects a batch. The list displays collision-aware UUID prefixes; they are independent of Result ID digests. --status always filters saved host collection states: pending, success, partial, failed or skipped. Values form a union and repeated --status is supported. With --status and no ID, the ID is implicitly latest. It does not list failed batches or search backwards for a matching host.
+
+latest means the most recently started batch in the selected profile, including scheduled, other-recipe and running batches. Equal start times use UUID ordering. Always check the displayed full Observation ID, start time, recipe and original selectors; use a fixed ID when investigating an earlier batch. Original selectors/outcomes absent from old records remain Not recorded.
+
+A selected batch displays whole-batch state counts, shown/total hosts, execution outcome separately from collection status, and a compact Host/Status/Reason/Result ID table. Filters do not change batch membership or counts. Retention/publication failures remain separate warnings, even when a host-state filter hides the associated row; command failure does not imply every host has collection status failed. Empty filters display No hosts match and return 0.
+
+Result IDs link only when a unique saved raw result explicitly names this observation_run_id and host. Missing/deleted raw files, unavailable old associations or multiple matching raw files show a dash; batch failure evidence remains visible. No timestamp or latest-host matching substitutes another execution. Invalid raw files are reported as excluded links. Follow a displayed Result ID with recipes results diagnose RESULT_ID; existing recipes results list remains a per-host result history, not a batch index. New general recipe batch outputs persist observation_run_id as inventory already does; old raw files are not modified. Index JSON adds this nullable metadata field.
+
+These are read-only views: no connections, initialization, consumer dispatch or files are changed. Success returns 0 independently of saved batch failure; missing/ambiguous IDs, no latest batch or storage/configuration errors return 1; syntax/invalid status options return 2. An empty batch index is a successful read. Terminal stdout displays compact text/tables; --json and non-TTY stdout return [observation view 0.1.0](../schemas/observation-view.schema.json). List contains observations summaries; selected views contain observation metadata, statuses, hosts and warnings. Complete immutable run data remains available through inventory runs list/show and Core/report retention.runs()/run().
+
+Checkout content authors can reuse observation_cli.query(root, identifier=None, *, statuses=None) and render(view), Python 3.11+ helpers over the existing retention/read-result services. The JSON view has separate schema/versioning and does not rewrite or filter the underlying observation-run contract. Public tests cover latest/running selection, exact membership, status unions, unknown metadata, missing/ambiguous raw links, UUID-prefix collisions, control escaping and byte-for-byte read-only behavior. No new live-host execution or automatic recovery is implied.
+
 ## Inventory property queries and periodic jobs
 
 Recipe 0.4.0 supplies `opsfeast.py inventory describe`, `query`, `run`, `configure`, `status`, `dispatch`, `latest`, `runs list/show` and `cron`. Read the [canonical inventory job guide](inventory-jobs.md) for exact selectors, examples, settings/override precedence, effects, outputs, source times, YANG mapping, platform limits and exit codes. `query` defaults to no storage; `--save` records an immediate comparison through retention/consumers without changing the schedule. `dispatch --dry-run` performs no host operations; ordinary dispatch requires inventory.yaml opt-in plus enabled host/source/resolved recipe policy, with no retries. `cron install` manages a marked current-user minute entry and enables no hosts. This scheduler differs from retention-consumer dispatch and saved invocation jobs. New job observations use a separate contract; old history is not converted or deleted.
@@ -14,7 +38,7 @@ Top-level `python -B tools/opsfeast.py -h` groups commands by task:
 | Profiles and setup | init, profiles, use, attach, detach, instance |
 | Hosts and access (hosts.yaml) | check, dump, test-connection, host-init, test-host, test-su, test-sudo, check-access |
 | Recipes and reports | inspect-recipe, recipes |
-| Retained data and consumers | retention, consumers |
+| Retained data and consumers | observation, retention, consumers |
 | Vault content | vault |
 
 After cloning and preparing dependencies, create a Feast with init or register an existing one with attach, then edit its hosts.yaml. These sections guide discovery; they are not mandatory sequential stages or additional subcommand levels. Revisit access diagnostics after changing hosts or investigating a recipe failure. Reports, consumers and Vault can reuse saved data without collecting again. Command paths, flags and parsing remain unchanged; for example, continue using recipes run and consumers dispatch directly.
@@ -95,7 +119,7 @@ Human console output uses the shared `tools/console_output.py` presentation laye
 | instance inspect/init/set/renew/relocate | Field/value tables with the same report values | --json |
 | inspect-recipe | Recipe/platform/static-status table; requested platform constraints/errors remain visible | --json; --details retains the full text view |
 | test-connection, host-init, test-host, test-su, test-sudo | Status/host/test/user/reason tables; facts and cache/source times when available | --json |
-| recipes run | Host, collection identity and result; use check-access for separate diagnostic tables | --json |
+| recipes run | Host, collection identity, result and result id; use check-access for separate diagnostic tables | --json |
 | recipes list/show/results list | Catalog/source, metadata or result-index tables | --json; --html retains its explicit export behavior |
 | recipes jobs list/show/save/run | Job list/details, save report or execution summary | --json; this presentation flag is not persisted in job invocation data |
 | check_environment.py / recipe_identity.py defaults / skill_bundle.py check or download | Field/value readiness, author or bundle reports | --json (place after the subcommand where applicable) |
@@ -398,7 +422,7 @@ Bulk/group recipe execution requires host, source and exact-reference recipe ena
 
 An all-skipped recipe batch still returns its independent content_update receipt; publication failure makes that invocation exit nonzero even when no host executed. Scheduled skipped targets retain their configured recipe reference.
 
-In namespace-enabled profiles, operational CLI execution returns observation_run_id and persists one batch covering target outcomes, including failures with no raw report. Read it with `inventory runs list --profile main --json` or `inventory runs show RUN_UUID --profile main --json`; both accept --root instead. Successful reads return 0 independently of saved run status. Dry runs, no-store queries, offline reports, replay and rebuild do not create runs. See [batch schema, storage and limits](observation-runs.md).
+In namespace-enabled profiles, operational CLI execution returns observation_run_id and persists one batch covering target outcomes, including failures with no raw report. Read it with `inventory runs list --profile main --json` or `inventory runs show RUN_UUID --profile main --json`; both accept --root instead. Successful reads return 0 independently of saved run status. New runs include selection (original CLI selectors/exclusions or scheduled host IDs) and a separately journaled execution receipt with actual command success/failure, exit_code, completed_at and content_status. Top-level status still describes collection, not the command result; missing old selection/execution is unknown. Vault shows selector Targets, integer-second duration and the recorded command outcome; retries do not change historical command failures. Dry runs, no-store queries, offline reports, replay and rebuild do not create runs. See [batch schema, storage and limits](observation-runs.md).
 
 For system/inventory/overview, recipes run, inventory run and scheduled dispatch all call the same [job collector](inventory-jobs.md). Use inventory query for property/job selection without storage, or add --save for a retained comparison. The former standalone runner entrypoint, --recipe alias, --dryrun/--force flags and snapshot collection path have been removed. Use check-access for explicitly authorized connection/privilege diagnostics, and inventory dispatch --dry-run for a schedule preview without connection. These are different scopes.
 
@@ -552,11 +576,11 @@ are needed. See [precise conditions and verification limits](host-diagnostics.md
 
 ## Compact execution summaries
 
-Completed recipe execution on a terminal prints one table with exactly three columns:
-`host`, `collection identity`, and `result`. This applies to opsfeast.py recipes run, recipes run
+Completed recipe execution on a terminal prints one table with four columns:
+`host`, `collection identity`, `result`, and `result id`. This applies to opsfeast.py recipes run, recipes run
 and saved-job execution, for both single and batch targets. It does not append field/value
 access, data, artifact, count or path tables. Excluded hosts appear as SKIP rows in the
-same table. Progress/errors remain on stderr; --quiet suppresses runner progress.
+same table. result id is the same collision-aware short ID used by results list; use it directly with recipes results detail/show. Unsaved or excluded targets display a dash. IDs are presentation only: JSON and saved reports are unchanged. A saved batch also prints its shared Observation ID after the table; revisit it with observation ID or observation latest --status failed. Progress/errors remain on stderr; --quiet suppresses runner progress.
 
 Collection identity uses access.actual_identity, for example root (uid=0) after sudo,
 not the login or pre-elevation shell. Missing evidence displays unknown; general recipes
@@ -619,6 +643,25 @@ host-identity quality change occurs. Synthetic tests cover root/user/fallback,
 precollection and malformed evidence, failed collections, generic/legacy unknowns,
 TTY/pipe/HTML rendering, preserved JSON/detail quality and unchanged raw files.
 
+## Diagnose a saved failure
+
+Start with the short result id from the completion table; full storage-relative IDs also work:
+
+```sh
+python -B tools/opsfeast.py recipes results diagnose RESULT_ID --profile main
+python -B tools/opsfeast.py recipes results diagnose RESULT_ID --profile main --limit 10 --json
+```
+
+Use the original --root/--profile. This reads one saved result without connections, collection, consumers or file rewrites. Successful reads return 0 even when the saved result failed; missing/unsafe/ambiguous IDs or invalid options return 1, syntax errors 2. RESULT_ID is required. Index filters and --html are rejected; --limit is supported only by diagnose and must be 1–50 (default 5).
+
+Human output prioritizes execution/cleanup errors, independent retention/content/operation failures, degraded access, failed probes and grouped sample gaps. It omits successful probe output and arbitrary recipe data. Unsupported/unattempted probes are counted separately; budget-exhausted probes remain problems. Acquisition placeholders do not duplicate a recorded outer error. Failed stdout/stderr excerpts contain at most four lines and 400 characters per stream; clipping and capture truncation are explicit. Additional problems are counted, with --limit to inspect more. Controls are escaped for terminal display.
+
+This is evidence selection, not an inferred root-cause engine. Missing exception messages, missing key names or source locations cannot be reconstructed; a non-success result without specific evidence says so. A success status with no recorded failures is not a complete health assessment. Generic recipes contribute only the known top-level execution/receipt fields and known probe structures; arbitrary data.error fields are not recursively guessed to be failures. Use results detail/show only for the complete evidence of a selected result.
+
+--json returns the bounded diagnosis projection 0.1.0 ([schema](../schemas/result-diagnosis.schema.json)): requested/full result IDs, host/stored status/reason, probe and unsupported counts, issue/shown/omitted counts, selected issues and interpretation notes. Stored status is separate from retention/content failures. JSON excerpts remain clipped and omitted_count remains explicit; it is not the complete raw payload. Existing list/detail/show and saved files retain their contracts. Source/state/reason fields are recorded evidence; no automatic retry or repair is authorized by this read.
+
+Public tests in tests/test_result_diagnostics.py cover bounded output, stage/receipt priority, deduplication, grouped gaps, unknown evidence, legacy source exits, JSON/limits/invalid flags and byte-for-byte read-only behavior. These are synthetic/offline checks; they add no real-host collection evidence.
+
 ## Vertical result details
 
 Use recipes results detail for long result IDs, similar to MySQL's vertical \G view.
@@ -651,7 +694,7 @@ option errors and operation without table dependencies.
 
 ## Short result IDs
 
-Human results list output (terminal, redirected text and HTML rows) uses short IDs,
+Human execution completion tables and results list output (terminal, redirected text and HTML rows) use short IDs,
 for example a73c91e2, instead of long storage-relative filenames. Use them directly:
 
 ```sh
@@ -691,6 +734,10 @@ Synthetic verification covers legacy/new-style paths, reports, full and short lo
 filter-independent prefix extension, ambiguous/missing IDs, complete digest collision,
 invalid files, symlinks, unchanged raw bytes and copies of management roots. This
 changes local indexing and presentation only, without new SSH or privilege behavior.
+
+## Original inventory command streams
+
+New inventory query/run and recipes run inventory results include bounded command/stdout/stderr in probes; query still writes nothing unless --save is used. Saved probes remain available through retention show RECORD_ID --profile NAME --json (record.data.probes) and Core profile.retention.show(RECORD_ID). Current Vault records append closed code disclosures. Empty/unavailable/truncated streams differ; see [capture semantics and limits](inventory-jobs.md#source-times-histories-and-latest-views). This is recipe-owned property-probe evidence, not a full SSH/login transcript. Rebuild cannot recover unrecorded historical output.
 
 ## Human time display policy
 
@@ -740,4 +787,4 @@ Current selection groups each host by origin namespace, recipe-source qualifier 
 
 Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
 
-_Last modified: 2026-10-20 23:32:54_
+_Last modified: 2026-10-21 12:11:20_

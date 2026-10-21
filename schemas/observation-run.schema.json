@@ -360,7 +360,97 @@
           }
         }
       }
+    },
+    "selection": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "all",
+            "selectors",
+            "exclude"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "cli",
+                "scheduled"
+              ]
+            },
+            "all": {
+              "type": "boolean"
+            },
+            "selectors": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "enum": [
+                      "host",
+                      "group"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                ],
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "exclude": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "exit_code",
+        "completed_at",
+        "content_status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "success",
+            "failure"
+          ]
+        },
+        "exit_code": {
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "content_status": {
+          "enum": [
+            "success",
+            "failed",
+            "skipped"
+          ]
+        }
+      }
     }
   },
-  "$comment": "Last modified: 2026-10-20 17:51:56"
+  "$comment": "Last modified: 2026-10-21 10:48:35"
 }

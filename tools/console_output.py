@@ -1,5 +1,6 @@
 """Checkout-level terminal presentation; structured data remains unchanged."""
 import json
+from pathlib import Path
 import shutil
 import sys
 from display_time import human_times
@@ -283,11 +284,15 @@ def diagnostic(report, test='', icons=None, user=None):
     return result
 
 
-def execution(report, icons=None, host=None, recipe=None):
+def execution(report, icons=None, host=None, recipe=None, result_root=None):
     if report.get('collection_started') is False:
         from access_check import format_summary
         return format_summary(report, icons)
     hosts = report.get('hosts', [report])
+    identifiers={}
+    if result_root is not None:
+        from recipe_reports import result_short_ids
+        identifiers=result_short_ids(result_root)
     rows = []
     for row in hosts:
         target = row.get('host', row.get('host_id', host))
@@ -306,17 +311,22 @@ def execution(report, icons=None, host=None, recipe=None):
             outcome = f'❌ FAIL (retention_failed; collection={outcome})'
         elif access.get('degraded'):
             outcome = ('PARTIAL' if row.get('status') == 'success' else outcome) + ' (fallback_user)'
-        rows.append([host_label(target, icons) if target else '-', actor_text, outcome])
-    rows.extend([host_label(item['host'], icons), '-', f"SKIP ({item['reason_code']})"]
+        saved=row.get('result_path')
+        identifier=identifiers.get(str(Path(saved).resolve()),'-') if saved and identifiers else '-'
+        rows.append([host_label(target, icons) if target else '-', actor_text, outcome, identifier])
+    rows.extend([host_label(item['host'], icons), '-', f"SKIP ({item['reason_code']})", '-']
                 for item in report.get('excluded_hosts', []))
-    return table(['host', 'collection identity', 'result'], rows)
+    rendered=table(['host', 'collection identity', 'result', 'result id'], rows)
+    if report.get('observation_run_id'):
+        rendered += '\nObservation ID: '+cell(report['observation_run_id'])
+    return rendered
 
 
 def print_report(value, *, json_output=False, kind='details', icons=None, test='', user=None, host=None, recipe=None,
-                 indent=2, ensure_ascii=False, allow_nan=True):
+                 indent=2, ensure_ascii=False, allow_nan=True, result_root=None):
     if human_output(json_output):
         rendered = diagnostic(value, test, icons, user) if kind == 'diagnostic' else (
-            execution(value, icons, host, recipe) if kind == 'execution' else details(value))
+            execution(value, icons, host, recipe, result_root) if kind == 'execution' else details(value))
         print(rendered)
     else:
         print(json.dumps(value, indent=indent, ensure_ascii=ensure_ascii, allow_nan=allow_nan))

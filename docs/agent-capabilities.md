@@ -7,7 +7,7 @@ Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed o
 
 Use [inventory jobs](inventory-jobs.md) and the recipe's [collection table](../recipes/system/inventory/overview/collection-plan.md) for property/job discovery, no-store utility queries, explicit saved refreshes, interval overrides and marked current-user cron management. `inventory describe/query/run/configure/status/dispatch/latest/cron` are implemented. `query` defaults to no OpsFeast writes; `--save` uses shared raw/retention/consumer infrastructure. Scheduling requires explicitly enabled inventory.yaml hosts and does not retry failures. This is a deterministic inventory scheduler, not a general job scheduler or AI heartbeat.
 
-Checkout helpers are `inventory_jobs.catalog()`, `collect_host(root, host, properties=["storage.filesystems.used_percent"], save=False)`, `dispatch(root, dry_run=True)` and `latest_groups(records)`. Core `profile.retention.query/show` supplies retained input. The recipe owns jobs.py, fixed public YANG/extension definitions and inventory-job-observations 0.1.0 normalization; storage and consumer delivery remain shared. Per-property source times, actor scope, explicit gaps and identity warnings survive manual/periodic collection. No-store queries connect and can use the existing privilege policy; inspection/dry-run/latest reads do not connect. Linux-specific new probes and native verification limits are explicit in the guide. Full YANG datastore conformance is not claimed.
+Checkout helpers are `inventory_jobs.catalog()`, `collect_host(root, host, properties=["storage.filesystems.used_percent"], save=False)`, `dispatch(root, dry_run=True)` and `latest_groups(records)`. Core `profile.retention.query/show` supplies retained input. The recipe owns jobs.py, details.py and capture.py for bounded original stream acquisition, plus fixed public YANG/extension definitions and inventory-job-observations 0.1.0 normalization; storage and consumer delivery remain shared. Per-property source times, actor scope, explicit gaps and identity warnings survive manual/periodic collection. New data.probes retains original stdout/stderr (262144 UTF-8 bytes per stream) with truncation flags; latest_groups attaches source_probes from the exact selected records and dependency probes. Read via retention query/show rather than scraping Markdown or reconnecting. Vault current pages show these in closed code disclosures; unavailable historical output stays unknown. No-store queries connect and can use the existing privilege policy; inspection/dry-run/latest reads do not connect. Linux-specific new probes and native verification limits are explicit in the guide. Full YANG datastore conformance is not claimed.
 
 
 Top-level `opsfeast.py -h` groups commands into setup/profiles, hosts/access, recipes/reports, retention/consumers and Vault. These are reusable task areas, not enforced sequential stages or new command prefixes.
@@ -205,15 +205,22 @@ shell_identity is the execution/restoration baseline. JSON and the identity tabl
 explain the accepted relationship. No flags, account rewrites or role inference are
 required. See [canonical model and examples](host-diagnostics.md#ssh-login-and-esxi-root-shell-identity).
 
+## Revisit observation batches
+
+Prefer `opsfeast.py observation --profile NAME` for the batch index and `observation latest --status failed partial --profile NAME` to recover failed/incomplete hosts after completion output scrolls away. ID/latest selects one batch; --status without ID selects latest. This is independent of recipes results list (individual raw results). Checkout observation_cli.query(root, identifier=None, *, statuses=None) and render(view) expose compact view 0.1.0; complete data remains observation_runs.list_runs/show or Core retention.runs/run. Exact batch/host raw associations supply Result IDs for recipes results diagnose, while missing/ambiguous links stay unavailable. Requires existing profile data and Python 3.11+, performs no collection/writes and returns read success independently of execution failure. [CLI selection/state semantics](cli.md#revisit-an-observation-batch) and [schema](../schemas/observation-view.schema.json) define latest, filters, counts, gaps and extension limits.
+
 ## Compact execution and host-specific result inspection
 
-Runner/recipes run/jobs run TTY completion shows only host, collection identity and
-result; full access/data/path details stay in JSON and saved results. Reuse
+Runner/recipes run/jobs run TTY completion shows host, collection identity, result and result id; full access/data/path details stay in JSON and saved results. Reuse
 `opsfeast.py recipes results list --host HOST --recipe-id inventory-system --root ROOT`,
 then `recipes results show RESULT_ID --root ROOT` for offline evidence with host_id.
 Use --json for agent-facing lists or runs. See [output semantics and the complete viewing workflow](cli.md#compact-execution-summaries),
 including unknown actors, failure/retention states and attempts with no saved result.
-These are existing checkout CLI capabilities, not a new Core API or collection authorization.
+The result id is a collision-aware short ID accepted by results show/detail; a dash means no saved result is available. Checkout recipe_reports.result_short_ids(root) maps saved result paths to the same IDs as results list without reading raw payloads; console_output reuses it only for human completion display. These are existing checkout CLI capabilities, not a new Core API or collection authorization.
+
+## Focused saved-result diagnosis
+
+Prefer `opsfeast.py recipes results diagnose RESULT_ID --profile NAME` for human failure triage, then detail/show for selected full evidence. Checkout `result_diagnostics.diagnose(root, identifier, limit=5)` returns diagnosis 0.1.0; `format_diagnosis(report)` renders escaped concise text. Requires Python 3.11+, a selected existing management root and a saved raw result. Reuses the checked short/full-ID resolver; no connection, execution, retention/content writes or arbitrary recipe-data inference. Execution/receipt failures precede probe failures; outputs, issue counts and grouped gaps are bounded/explicit. Missing exception message/source details remain unknown. --json provides the same projection; read exit status is independent of saved execution outcome. See [CLI rules](cli.md#diagnose-a-saved-failure) and [schema](../schemas/result-diagnosis.schema.json).
 
 ## Vertical saved-result inspection
 
@@ -260,7 +267,7 @@ Vault Contents links use Obsidian-native heading fragments: `[System](#System)` 
 | --- | --- | --- |
 | Resolve recipe policy without reparsing YAML | Trusted checkout Validator.load/check_connections, then recipe_options(host, reference) | Returns copied merged enabled/vars; absent enabled means false. [Three layers and prefixes](recipe-sources.md). Host snapshots' declared recipes are not a replacement for effective policy; runner recipes use their supplied vars. |
 | Read actual observation batches | inventory runs list/show; Core/report retention.runs()/run(run_id) | No connects/writes; exact UUID membership, immutable completed policy/findings. [Contract/schema/storage](observation-runs.md). |
-| Compose an authorized producer batch | observation_runs.start(root, targets, reference, trigger="manual"), record_result(root, run_id, host, result), finish(root, run_id) | Checkout services; initialize retention first, select/authorize explicit targets, reuse CLI/collector when possible and dispatch content after completion. No inferred/backfilled batches. |
+| Compose an authorized producer batch | observation_runs.start(root, targets, reference, trigger="manual", selection=None), record_result(root, run_id, host, result), finish(root, run_id), publish_execution(root, run_id, exit_code, content_receipt) | Checkout services; initialize retention first, select/authorize explicit targets, reuse CLI/collector when possible. After completion dispatch content, then journal/publish the actual command result via publish_execution; use its returned code/receipt. Readers expose optional selection/execution; absent metadata is unknown, and collection status differs from command success/failure. No inferred/backfilled batches. |
 | Reuse inventory threshold validation/evaluation | inventory_attention.resolve(value), evaluate(record, policy=None) | Inventory-owned pure checkout services returning resolved policy plus findings/assessed/disabled; finite samples and valid baselines required. Other recipes own their parameter/business validation. [Defaults/ranges](inventory-jobs.md#attention-thresholds). |
 | Regenerate current/report/batch pages | vault rebuild; host_vault.rebuild; vault_content.build | Offline read/owned output, no retention changes or new collection. Current pages use current policy, batch pages use stored findings; DGMO is optional. [Ownership/rendering](host-vault.md). |
 
@@ -268,4 +275,4 @@ Use the existing Core/report readers for input and the documented checkout workf
 
 Core/UI group catalogs apply the existing recognized-sensitive-field mask to nested recipe parameters. Explicit CLI dump remains raw. Do not reconstruct execution inputs from masked display snapshots; reuse resolved runner vars or authorized configuration services.
 
-_Last modified: 2026-10-20 23:35:59_
+_Last modified: 2026-10-21 12:11:20_

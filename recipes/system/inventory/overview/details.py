@@ -4,6 +4,8 @@ import csv
 import io
 import json
 import math
+from pathlib import Path
+import runpy
 import re
 import shlex
 import time
@@ -19,6 +21,7 @@ FIELDS = {
 }
 MAX_OUTPUT = 262144
 MAX_ITEMS = 2000
+CAPTURE = runpy.run_path(str(Path(__file__).with_name("capture.py")))
 
 
 def empty():
@@ -177,29 +180,16 @@ def collect(session, report, platform, timeout, *, budget=90, fields=None):
             item['reason_code'] = 'total_budget_exhausted'
             return
         try:
-            # Target-side byte bound. Producer exit code is saved through a
-            # bounded pipe; timeout still bounds producers blocked after head.
-            script = '( ' + command + '; printf "\\n__OPSFEAST_EXIT_%s\\n" "$?" ) 2>/dev/null | head -c ' + str(MAX_OUTPUT + 1)
-            result = session.exec_command(['/bin/sh', '-c', script], check=False, command_timeout=min(timeout, remaining))
-            output = result.stdout
-            if result.exitcode != 0:
-                item.update(status='failed', reason_code='probe_shell_failed', exitcode=result.exitcode)
+            output,reason = CAPTURE['capture'](session,command,min(timeout,remaining),item)
+            if reason:
+                item.update(status='truncated' if reason=='output_limit' else 'failed',
+                            reason_code='probe_shell_failed' if reason=='shell_failed' else reason)
                 return
-            if len(output.encode()) > MAX_OUTPUT or getattr(result, 'stdout_truncated', False):
-                item.update(status='truncated', reason_code='output_limit')
-                return
-            # Persistent PTY consoles use CRLF; preserve byte limits before normalization.
-            output = output.replace('\r\n', '\n')
-            match = re.search(r'\n__OPSFEAST_EXIT_(\d+)\n?$', output)
-            if match is None:
-                item.update(status='failed', reason_code='producer_marker_missing')
-                return
-            item['exitcode'] = int(match[1])
             if item['exitcode'] != 0:
                 item.update(status='unavailable', reason_code='command_not_found' if item['exitcode'] == 127
                             else 'command_not_executable' if item['exitcode'] == 126 else 'command_failed')
                 return
-            value = parser(output[:match.start()])
+            value = parser(output)
             if isinstance(value, list) and len(value) > MAX_ITEMS:
                 item.update(status='truncated', reason_code='item_limit')
                 return
@@ -255,7 +245,9 @@ def collect(session, report, platform, timeout, *, budget=90, fields=None):
     for section, fields in FIELDS.items():
         for field in fields:
             if (section, field) not in attempted and not (section == 'system' and field in FIELDS['system'][:7]):
-                process['probes'].append({'section': section, 'field': field, 'status': 'not_supported'})
+                stamp=datetime.now(timezone.utc).isoformat()
+                process['probes'].append({'section': section, 'field': field, 'status': 'not_supported',
+                    'started_at':stamp,'observed_at':stamp,'reason_code':'unsupported_platform_or_probe'})
     validate(data)
     process['finished_at'] = datetime.now(timezone.utc).isoformat()
     return data

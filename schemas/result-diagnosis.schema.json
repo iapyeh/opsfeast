@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Saved-result diagnosis projection 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "diagnosis_version",
+    "result_id",
+    "requested_id",
+    "host_id",
+    "status",
+    "reason_code",
+    "issues",
+    "notes",
+    "probe_count",
+    "unsupported_or_unattempted",
+    "issue_count",
+    "shown_count",
+    "omitted_count"
+  ],
+  "properties": {
+    "diagnosis_version": {
+      "const": "0.1.0"
+    },
+    "result_id": {
+      "type": "string"
+    },
+    "requested_id": {
+      "type": "string"
+    },
+    "host_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reason_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage",
+          "reason_code",
+          "error_type"
+        ],
+        "properties": {
+          "stage": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "command": {
+            "type": [
+              "string",
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "probe_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "consumer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exitcode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "stdout": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "text",
+              "clipped"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 400
+              },
+              "clipped": {
+                "type": "boolean"
+              }
+            }
+          },
+          "stderr": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "text",
+              "clipped"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 400
+              },
+              "clipped": {
+                "type": "boolean"
+              }
+            }
+          },
+          "stdout_truncated": {
+            "type": "boolean"
+          },
+          "stderr_truncated": {
+            "type": "boolean"
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "probe_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unsupported_or_unattempted": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "shown_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "omitted_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$comment": "Last modified: 2026-10-21 11:46:03"
+}

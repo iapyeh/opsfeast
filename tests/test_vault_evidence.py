@@ -1,4 +1,5 @@
 """Readable content names and bounded collector provenance; synthetic records only."""
+from inventory_output_fixture import framed
 import copy
 import json
 from pathlib import Path
@@ -166,7 +167,7 @@ class ProbeFramingTests(unittest.TestCase):
     def collect(self, response):
         report = {'observations': {field: {'value': 'synthetic'} for field in DETAILS['FIELDS']['system'][:7]}}
         session = Mock()
-        session.exec_command.side_effect = response if isinstance(response, Exception) else lambda *a, **k: SimpleNamespace(stdout=response, exitcode=0)
+        session.exec_command.side_effect = response if isinstance(response, Exception) else lambda *a, **k: SimpleNamespace(stdout=framed(a[0][-1],response), exitcode=0)
         DETAILS['collect'](session, report, 'linux', 2)
         return report
 
@@ -193,7 +194,7 @@ class ProbeFramingTests(unittest.TestCase):
             self.assertEqual(probe['reason_code'], reason)
 
     def test_raw_byte_limit_is_checked_before_crlf_normalization(self):
-        report = self.collect('\r\n' * (DETAILS['MAX_OUTPUT']//2) + '\r\n__OPSFEAST_EXIT_0\r\n')
+        report = self.collect('\r\n' * (DETAILS['MAX_OUTPUT']//2 + 1) + '\r\n__OPSFEAST_EXIT_0\r\n')
         self.assertEqual(report['collection_process']['probes'][0]['reason_code'], 'output_limit')
         self.assertIsNone(report['inventory']['network']['interfaces'])
 

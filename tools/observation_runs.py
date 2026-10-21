@@ -5,6 +5,7 @@ storage routing only; membership is the explicit targets list, never a time wind
 """
 import copy
 import json
+import shlex
 from uuid import uuid4
 from opsfeast import ConfigError
 from retention_store import archives, archive_path, canonical, database, locked, now, settings
@@ -12,13 +13,68 @@ from retention_store import archives, archive_path, canonical, database, locked,
 VERSION = '0.1.0'
 
 
+def validate_selection(selection):
+    if selection is None:
+        return
+    if not isinstance(selection,dict) or set(selection) != {'kind','all','selectors','exclude'}:
+        raise ConfigError('invalid run target selection')
+    if selection['kind'] not in ('cli','scheduled') or type(selection['all']) is not bool:
+        raise ConfigError('invalid run selection kind')
+    if not isinstance(selection['selectors'],list) or not isinstance(selection['exclude'],list):
+        raise ConfigError('invalid run selectors/exclusions')
+    for item in selection['selectors']:
+        if not isinstance(item,list) or len(item)!=2 or item[0] not in ('host','group') or not isinstance(item[1],str) or not item[1]:
+            raise ConfigError('invalid run selector')
+    if any(not isinstance(name,str) or not name for name in selection['exclude']):
+        raise ConfigError('invalid run exclusion')
+    if selection['all'] and selection['selectors'] or selection['exclude'] and not selection['all']:
+        raise ConfigError('conflicting run selectors')
+    if selection['kind']=='scheduled' and (selection['all'] or selection['exclude'] or any(kind!='host' for kind,_ in selection['selectors'])):
+        raise ConfigError('scheduled selection records actual host IDs')
+    if selection['kind']=='cli' and not selection['all'] and not selection['selectors']:
+        raise ConfigError('run selection must name targets')
+
+
+def selection_text(selection):
+    if selection is None:
+        return 'Not recorded'
+    validate_selection(selection)
+    if selection['kind']=='scheduled':
+        return 'Scheduled hosts: ' + ', '.join(name for _,name in selection['selectors'])
+    tokens=['--all'] if selection['all'] else []
+    previous=None
+    for kind,name in selection['selectors']:
+        if kind!=previous:
+            tokens.append('--'+kind)
+        tokens.append(name)
+        previous=kind
+    if selection['exclude']:
+        tokens += ['--exclude',*selection['exclude']]
+    return shlex.join(tokens)
+
+
+def validate_execution(execution, run):
+    from observation_store import timestamp
+    if not isinstance(execution,dict) or set(execution)!={'status','exit_code','completed_at','content_status'}:
+        raise ConfigError('invalid execution receipt')
+    if type(execution['exit_code']) is not int or execution['exit_code'] not in (0,1):
+        raise ConfigError('invalid execution exit code')
+    if execution['status'] != ('success' if execution['exit_code']==0 else 'failure') or execution['content_status'] not in ('success','failed','skipped'):
+        raise ConfigError('invalid execution outcome')
+    if run['completed_at'] is None or timestamp(execution['completed_at'])!=execution['completed_at'] or execution['completed_at']<run['completed_at']:
+        raise ConfigError('invalid execution completion time')
+
+
 def validate(run):
     from observation_store import uuid_text, timestamp
     try:
         fields = {'contract_version','run_id','namespace','anchor_host','recipe_reference','started_at',
                   'completed_at','status','trigger','targets'}
-        if not isinstance(run, dict) or set(run) != fields or run['contract_version'] != VERSION:
+        if not isinstance(run, dict) or not fields.issubset(run) or set(run)-fields-{'selection','execution'} or run['contract_version'] != VERSION:
             raise ConfigError('invalid observation run contract')
+        validate_selection(run.get('selection'))
+        if 'execution' in run:
+            validate_execution(run['execution'],run)
         uuid_text(run['run_id'])
         if timestamp(run['started_at']) != run['started_at'] or run['status'] not in ('running','success','partial','failed'):
             raise ConfigError('invalid observation run time/status')
@@ -63,6 +119,7 @@ def path_for(root, run):
 
 def _save(root, run):
     validate(run)
+    run={key:value for key,value in run.items() if key!='execution'}
     with database(path_for(root,run), True) as connection:
         connection.execute('CREATE TABLE IF NOT EXISTS observation_runs (run_id TEXT PRIMARY KEY, payload TEXT NOT NULL)')
         existing = connection.execute('SELECT payload FROM observation_runs WHERE run_id=?',(run['run_id'],)).fetchone()
@@ -90,6 +147,11 @@ def list_runs(root):
                 run=validate(json.loads(payload))
                 if run['namespace'] != namespace['namespace'] or path_for(root,run) != path:
                     raise ConfigError('observation run storage disagrees with identity')
+                if connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='observation_run_executions'").fetchone():
+                    execution=connection.execute('SELECT payload FROM observation_run_executions WHERE run_id=? ORDER BY sequence DESC LIMIT 1',(run['run_id'],)).fetchone()
+                    if execution:
+                        run['execution']=json.loads(execution[0])
+                        validate_execution(run['execution'],run)
                 result.append(run)
     if len({r['run_id'] for r in result}) != len(result):
         raise ConfigError('duplicate observation run ID')
@@ -105,7 +167,8 @@ def show(root, run_id):
     return run
 
 
-def start(root, targets, reference, *, trigger='manual'):
+def start(root, targets, reference, *, trigger='manual', selection=None):
+    validate_selection(selection)
     if not isinstance(targets,list) or not targets:
         raise ConfigError('observation run needs targets')
     config=settings(root)
@@ -113,7 +176,7 @@ def start(root, targets, reference, *, trigger='manual'):
         raise ConfigError('observation runs require initialized retention')
     run={'contract_version':VERSION,'run_id':str(uuid4()),'namespace':config['namespace'],
          'anchor_host':targets[0]['host_id'],'recipe_reference':reference,'started_at':now(),
-         'completed_at':None,'status':'running','trigger':trigger,'targets':[]}
+         'completed_at':None,'status':'running','trigger':trigger,'targets':[], 'selection':copy.deepcopy(selection)}
     for target in targets:
         run['targets'].append({'host_id':target['host_id'],'icon':target.get('icon',''),
             'jobs':copy.deepcopy(target.get('jobs',[])), 'requested_jobs':copy.deepcopy(target.get('jobs',[])),
@@ -176,3 +239,43 @@ def finish(root, run_id):
         run['completed_at']=now()
         _save(root,run)
     return run
+
+
+def record_execution(root, run_id, exit_code, content_status):
+    """Append command outcome separately from immutable collection/Attention data.
+
+    A failed final publication may append one success-to-failure correction.
+    Later consumer retries never change the recorded command outcome.
+    """
+    with locked(root):
+        run=show(root,run_id)
+        execution={'status':'success' if exit_code==0 else 'failure','exit_code':exit_code,
+                   'completed_at':now(),'content_status':content_status}
+        validate_execution(execution,run)
+        previous=run.get('execution')
+        if previous:
+            if previous['exit_code']==exit_code and previous['content_status']==content_status:
+                return previous
+            if not (previous['exit_code']==0 and exit_code==1 and content_status=='failed'):
+                raise ConfigError('recorded execution outcome cannot be rewritten')
+        with database(path_for(root,run),True) as connection:
+            connection.execute('CREATE TABLE IF NOT EXISTS observation_run_executions (sequence INTEGER PRIMARY KEY, run_id TEXT NOT NULL, payload TEXT NOT NULL)')
+            connection.execute('INSERT INTO observation_run_executions (run_id,payload) VALUES (?,?)',(run_id,canonical(execution)))
+            from retention_consumers import enqueue
+            enqueue(connection,{'kind':'run','record_id':run_id,'namespace':run['namespace'],
+                'host_id':run['anchor_host'],'recipe_reference':run['recipe_reference'],'observed_at':run['started_at'],
+                'retention_definition':{'contract':'observation-run','version':VERSION}},'updated')
+        return execution
+
+
+def publish_execution(root, run_id, exit_code, content):
+    """Record the command result, publish it, and preserve publication failures."""
+    from retention_store import refresh_content
+    if content['status']=='failed':
+        exit_code=1
+    record_execution(root,run_id,exit_code,content['status'])
+    published=refresh_content(root)
+    if published['status']=='failed':
+        record_execution(root,run_id,1,'failed')
+        return 1,published
+    return exit_code, content if content['status']=='failed' else published

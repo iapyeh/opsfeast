@@ -46,7 +46,7 @@ Historical inventory-observations 0.1.0 definitions in [retention.py](retention.
 
 ## Query evidence and human content
 
-New job records preserve probe IDs, commands, outcomes, errors, times, property definitions and implementation digests without retained command output or credentials. Vault renders independent histories and a mixed-age latest-attempt view per property. A manual note is context, not independent proof that remediation commands ran. Use structured retention APIs for trends.
+New job records preserve probe IDs, commands, outcomes, errors, times, property definitions and implementation digests with bounded original stdout/stderr for new probes. The original command, streams, states and source times are available in default-collapsed code blocks on current Vault records. Empty, unavailable and truncated streams remain distinct; no redaction is applied by this display. See [capture and retention semantics](../../../../docs/inventory-jobs.md) and [presentation](../../../../docs/host-vault.md#original-command-output). Vault renders independent histories and a mixed-age latest-attempt view per property. A manual note is context, not independent proof that remediation commands ran. Use structured retention APIs for trends.
 
 ## Retained data and identity
 
@@ -62,4 +62,4 @@ The optional attention object input defines enabled and thresholds for filesyste
 
 Saved manual execution joins one explicit batch; dispatch owns one batch for due work. Unsaved queries, dry runs, raw replay and content rebuild do not create batches or infer old membership. Read inventory runs list/show or Core retention.runs()/run(run_id) without connecting. Raw reports include observation_run_id and the validated nonsecret attention_policy outside the recipe-normalized payload, so existing registered normalizer/schema digests remain unchanged. Vault's [records/reports/batch views](../../../../docs/host-vault.md) are separate optional content over these contracts.
 
-_Last modified: 2026-10-20 23:27:35_
+_Last modified: 2026-10-21 11:19:57_

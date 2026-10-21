@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent
 CATALOG = runpy.run_path(str(ROOT / 'properties.py'))
 DETAILS = runpy.run_path(str(ROOT / 'details.py'))
 BASE = runpy.run_path(str(ROOT / 'main.py'))
+CAPTURE = runpy.run_path(str(ROOT / 'capture.py'))
 
 
 def now():
@@ -42,28 +43,17 @@ def collect(actor, host, jobs, properties=None, *, timeout=30, budget=90):
             if remaining <= 0:
                 item['reason_code'] = 'budget_exhausted'
             else:
-                script = '( ' + command + '; printf "\\n__OPSFEAST_EXIT_%s\\n" "$?" ) 2>/dev/null | head -c 262145'
-                result = actor.exec_command(['/bin/sh', '-c', script], check=False, command_timeout=min(timeout, remaining))
-                output = result.stdout
-                if len(output.encode()) > 262144 or getattr(result, 'stdout_truncated', False):
-                    item['reason_code'] = 'output_limit'
-                elif result.exitcode != 0:
-                    item.update(reason_code='shell_failed', exitcode=result.exitcode)
+                output,reason = CAPTURE['capture'](actor,command,min(timeout,remaining),item)
+                if reason:
+                    item['reason_code']=reason
+                elif item['exitcode']:
+                    item['reason_code']='command_not_found' if item['exitcode']==127 else 'command_failed'
                 else:
-                    output = output.replace('\r\n', '\n')
-                    trailer = re.search(r'\n__OPSFEAST_EXIT_(\d+)\n?$', output)
-                    if not trailer:
-                        item['reason_code'] = 'producer_marker_missing'
-                    else:
-                        item['exitcode'] = int(trailer[1])
-                        if item['exitcode']:
-                            item['reason_code'] = 'command_not_found' if item['exitcode'] == 127 else 'command_failed'
-                        else:
-                            value = parser(output[:trailer.start()])
-                            json.dumps(value, allow_nan=False)
-                            if isinstance(value, list) and len(value) > 2000:
-                                raise ValueError('item_limit')
-                            item['status'] = 'success'
+                    value = parser(output)
+                    json.dumps(value, allow_nan=False)
+                    if isinstance(value, list) and len(value) > 2000:
+                        raise ValueError('item_limit')
+                    item['status'] = 'success'
         except Exception as exc:
             item.update(reason_code='timeout' if isinstance(exc, TimeoutError) or type(exc).__name__ == 'CommandTimeoutError' else 'probe_or_parse_failed', error_type=type(exc).__name__)
         finally:
@@ -95,6 +85,7 @@ def collect(actor, host, jobs, properties=None, *, timeout=30, budget=90):
                     'observed_at': source['observed_at'], 'status': source['status'],
                     'reason_code': source.get('reason_code'), 'exitcode': source.get('exitcode'),
                     'error_type': source.get('error_type')}
+            item.update({key:source[key] for key in ('stdout','stderr','stdout_truncated','stderr_truncated') if key in source})
             report['probes'].append(item)
             extra_sources[pair] = item
     def unavailable(reason='unsupported_platform_or_probe'):

@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compact observation views 0.1.0",
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "short_id",
+        "recipe_reference",
+        "trigger",
+        "selection",
+        "started_at",
+        "completed_at",
+        "execution_status",
+        "collection_status",
+        "duration_seconds",
+        "counts",
+        "host_count"
+      ],
+      "properties": {
+        "observation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "short_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8,32}$"
+        },
+        "recipe_reference": {
+          "type": "string"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "selection": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "started_at": {
+          "type": "string"
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "execution_status": {
+          "enum": [
+            "success",
+            "failure",
+            "running",
+            null
+          ]
+        },
+        "collection_status": {
+          "enum": [
+            "running",
+            "success",
+            "partial",
+            "failed"
+          ]
+        },
+        "duration_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pending",
+            "success",
+            "partial",
+            "failed",
+            "skipped"
+          ],
+          "properties": {
+            "pending": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "success": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "partial": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "host_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host_id",
+        "icon",
+        "status",
+        "reason_code",
+        "retention_status",
+        "record_id",
+        "result_id",
+        "short_id"
+      ],
+      "properties": {
+        "host_id": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "success",
+            "partial",
+            "failed",
+            "skipped"
+          ]
+        },
+        "reason_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retention_status": {
+          "type": "string"
+        },
+        "record_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "result_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "short_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "view_version",
+        "observations"
+      ],
+      "properties": {
+        "view_version": {
+          "const": "0.1.0"
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/summary"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "view_version",
+        "observation",
+        "statuses",
+        "hosts",
+        "warnings"
+      ],
+      "properties": {
+        "view_version": {
+          "const": "0.1.0"
+        },
+        "observation": {
+          "$ref": "#/$defs/summary"
+        },
+        "statuses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "pending",
+              "success",
+              "partial",
+              "failed",
+              "skipped"
+            ]
+          }
+        },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/host"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "$comment": "Last modified: 2026-10-21 12:07:37"
+}

@@ -7,7 +7,7 @@ COMMAND_GROUPS = (
     ('Hosts and access (hosts.yaml)',
      ('check', 'dump', 'test-connection', 'host-init', 'test-host', 'test-su', 'test-sudo', 'check-access')),
     ('Recipes and reports', ('inspect-recipe', 'recipes', 'inventory')),
-    ('Retained data and consumers', ('retention', 'consumers')),
+    ('Retained data and consumers', ('observation', 'retention', 'consumers')),
     ('Vault content', ('vault',)),
 )
 

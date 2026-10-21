@@ -34,7 +34,8 @@ vault/
     SUMMARY.md                      # explicit execution-batch index
     YYYYMMDDHHMMSS.md                # UTC batch start, collisions use -2, -3...
   hosts/<encoded-primary-group>/<encoded-host-id>/
-    README.md                       # preserved human notes/entrypoint
+    SUMMARY.md                      # generated host entrypoint
+    README.md                       # preserved human notes
     records/SUMMARY.md               # generated host record index
     records/current-<title>.md       # readable current state
     <UTC-year>/reports/<YYYYMMDDHHMMSS>-<title>.md
@@ -49,7 +50,7 @@ The consumer title is independent of recipe path; inventory uses System inventor
 
 Primary group is the first resolved membership; secondary groups link to that one host tree. Ungrouped/archived hosts use `_ungrouped`; a real group with that name is encoded distinctly. Full rebuild routes all generated history/current pages and indexes to the current primary group and removes stale owned pages. Human README files and unmanaged notes stay at their original paths; relocate/link them deliberately. `groups` alone does not relocate host content.
 
-`records/SUMMARY.md` replaces the generated records/README index. It is a navigation page for current records and operation history, not an additional observation or human notebook. Missing host README stubs point to SUMMARY. Existing human README pages are preserved and may need their own link updates. Generated old names are removed only when manifest-owned; manual links are not migrated or aliased.
+`records/SUMMARY.md` replaces the generated records/README index. It is a navigation page for current records and operation history, not an additional observation or human notebook. Generated host/SUMMARY.md links to records/SUMMARY.md and human README notes; HOSTS.md and group navigation target host/SUMMARY.md. Missing host README stubs point to this host summary. Existing human README pages are preserved and may need their own link updates. Generated old names are removed only when manifest-owned; manual links are not migrated or aliased.
 
 Manifests track separate structure, bundled-content and group owners. Ownership authorizes replacing generated output even after editor/manual changes and removing stale owned paths. Removing the notice does not remove ownership. Unmanaged paths and other owners' files remain protected; collisions fail explicitly. Publication is atomic per file, not for the whole Vault; inspect an interrupted generation before retrying. Never store human notes inside owned pages.
 
@@ -78,6 +79,12 @@ y-label Used (%)
 
 Only valid reported percentages in 0–100 are plotted; absent percentages are not calculated or treated as zero. Interface graphs show grouping/addresses, not physical links or inferred operational health. Labels are escaped/sanitized against fence/line/diagram injection. Diagram support is optional and introduces no collection or network dependency.
 
+### Original command output
+
+Current inventory records append a Command output section. Each recorded command has a default-closed HTML details block; command, stdout and stderr use escaped pre/code elements so spacing and literal output remain readable. Source observation, sample time, state and exit code identify the actual evidence. Empty streams say (empty); unavailable or historical unrecorded streams say Not recorded. Truncation is explicit. The display does not redact or summarize recorded text.
+
+A mixed-age current view includes probes from the exact retained records supplying its latest property attempts, including CPU measurement dependencies. A shared probe appears once per source record; repeated commands from different observations remain separate. Rebuild reads retention only, never reconnects, reads raw files to fill missing output or fabricates old stdout. The [inventory stream contract](inventory-jobs.md#source-times-histories-and-latest-views) defines capture bounds and evidence limits. Other recipe contracts do not automatically gain this behavior. Tables and charts remain available above the output section; full structured probe evidence remains accessible through retention APIs.
+
 ### Reports: complete evidence
 
 Yearly reports prioritize completeness over compact display. Job reports retain every sample's property, entity, value, unit, state, sample time and source; full observations and collection metadata remain available, including null/unavailable values. Null, false, zero and empty collections are not interchangeable. Original precision is retained in structured data even when Markdown uses human units or local-second time display. Current-view omission/preview/deduplication does not remove stored or full-report data.
@@ -94,7 +101,7 @@ Contents links use native Obsidian heading fragments with preserved case and URL
 
 ## Observation batches and Attention
 
-[Execution runs](observation-runs.md) produce `Observations/SUMMARY.md` and timestamp-named batch pages. They list selected hosts, available major collection jobs, outcomes, retention state and source reports. Attention contains flagged hosts only. This directory is distinct from profile-root `observations/` raw JSON. Old nearby records are not fabricated into historical runs.
+[Execution runs](observation-runs.md) produce `Observations/SUMMARY.md` and timestamp-named batch pages. The index shows the recorded command success/failure and original Targets selectors. Per-run metadata precedes Contents and includes duration in whole seconds. Hosts tables contain Host (linked directly to its source report), Status and Collection jobs; storage/publication failures appear as warnings, without redundant Retention or Source report columns. Unrecorded historical selectors/outcomes remain Not recorded. Attention contains flagged hosts only. This directory is distinct from profile-root `observations/` raw JSON. Old nearby records are not fabricated into historical runs.
 
 Current inventory Attention uses the current resolved `recipes.REFERENCE.vars.attention` policy; a local rebuild applies changed thresholds without recollection. Batch pages display the saved policy/findings for that execution and do not reevaluate history using current settings/new samples. Disabling recipe execution preserves retained data/current pages; disabling `attention.enabled` suppresses current threshold evaluation independently. See [threshold definitions and limits](inventory-jobs.md#attention-thresholds).
 
@@ -110,4 +117,4 @@ Use `host_vault.rebuild/refresh_groups/publish` and Vault CLI for content. Use C
 
 Public synthetic tests cover current-view omission versus full reports, sorting, units, filesystem deduplication, I/O suppression, diagram-label safety, thresholds, batch snapshots, links, collisions, publication ownership, retention/replay and independent failure receipts. The local verification rendered 44 generated DGMO diagrams with @diagrammo/dgmo 0.85.0 without diagnostics; this is renderer evidence, not a universal editor/plugin compatibility guarantee. No new native SSH/privilege-policy evidence, hosting, transmission, whole-vault transaction or cryptographic authenticity claim is added.
 
-_Last modified: 2026-10-20 23:08:29_
+_Last modified: 2026-10-21 11:19:38_

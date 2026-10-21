@@ -95,7 +95,8 @@ def collect_host(root, host, **options):
             jobs = list(dict.fromkeys(catalog()['properties'][n]['job'] for n in options['properties'] if n in catalog()['properties']))
         run_id = start(root, [{'host_id':host, 'icon':config.hosts[host].get('icon',''),
                               'jobs':[{'id':j} for j in jobs]}],
-                       options.get('reference','system/inventory/overview'), trigger=options.get('trigger','manual'))
+                       options.get('reference','system/inventory/overview'), trigger=options.get('trigger','manual'),
+                       selection={'kind':'cli','all':False,'selectors':[['host',host]],'exclude':[]})
         options['observation_run_id'] = run_id
     result = None
     try:
@@ -111,6 +112,8 @@ def collect_host(root, host, **options):
         if own:
             finish(root, run_id)
             content = refresh_content(root)
+            from observation_runs import publish_execution
+            _,content = publish_execution(root,run_id,result_exit_code(result,content),content)
             if result is not None:
                 result['content_update'] = content
                 if result.get('result_path'):
@@ -285,7 +288,10 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
                               'jobs':[{'id':j} for j in selected]} for h,_,chosen,selected in tasks] +
                        [{'host_id':r['host_id'],'icon':config.hosts[r['host_id']].get('icon',''),
                          'recipe_reference':settings['hosts'][r['host_id']].get('recipe','system/inventory/overview')} for r in results],
-                       'system/inventory/overview', trigger='scheduled') if tasks else None
+                       'system/inventory/overview', trigger='scheduled', selection={
+                           'kind':'scheduled','all':False,
+                           'selectors':[['host',h] for h,_,_,_ in tasks]+[['host',r['host_id']] for r in results],
+                           'exclude':[]}) if tasks else None
         if run_id:
             for result in results:
                 record_result(root,run_id,result['host_id'],result)
@@ -327,6 +333,9 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
             finish(root,run_id)
             from retention_store import refresh_content
             content = refresh_content(root)
+            from observation_runs import publish_execution
+            code=1 if any(result_exit_code(r,content) for r in results) else 0
+            _,content = publish_execution(root,run_id,code,content)
             for result in results:
                 result['content_update'] = content
                 if result.get('result_path'):
@@ -366,8 +375,25 @@ def latest_groups(records):
         group['coverage'] = [s for s in group['coverage'] if s['property'] in names]
         group['source_record_id'] = record['record_id']
         group['source_actor'] = record['data']['actor']
+        used={s['source_id'] for s in group['samples']} | {c['source_id'] for c in group['coverage']}
+        probes={p['id']:p for p in record['data']['probes']}
+        pending=list(used)
+        while pending:
+            for source in probes[pending.pop()].get('input_source_ids',[]):
+                if source not in used:
+                    used.add(source);pending.append(source)
+        group['source_probes']=[copy.deepcopy(p) for p in record['data']['probes'] if p['id'] in used]
         group['property_definitions'] = {name:record['data']['property_definitions'][name] for name in names}
         group['definition_sha256'] = record['data']['definition_sha256']
         group['age_basis'] = 'original per-probe sample times; not view-generation time'
         result.append(group)
     return sorted(result,key=lambda g:(g['id'],g['observed_at'],g['source_record_id']))
+
+
+def result_exit_code(result, content=None):
+    """Single saved utility/dispatcher result, preserving independent storage errors."""
+    if result is None:
+        return 1
+    return 0 if result.get('status') in ('success','skipped','due') and (
+        result.get('retention') or {}).get('status')!='failed' and (
+        content or result.get('content_update') or {}).get('status')!='failed' else 1

@@ -329,7 +329,7 @@ hosts:
             run.assert_not_called()
         self.assertEqual(report, before)
 
-    def test_execution_summary_is_three_columns_with_verified_collection_actor(self):
+    def test_execution_summary_includes_result_id_and_verified_collection_actor(self):
         report = {'hosts': [
             {'host': 'h', 'status': 'success', 'result_path': '/private/long-result.json',
              'access': {'actual_identity': {'username': 'root', 'effective_uid': 0},
@@ -345,7 +345,7 @@ hosts:
         before = json.loads(json.dumps(report))
         with patch.object(console, 'table', wraps=console.table) as render:
             output = console.execution(report, {'h': '🐧'})
-        self.assertEqual(render.call_args.args[0], ['host', 'collection identity', 'result'])
+        self.assertEqual(render.call_args.args[0], ['host', 'collection identity', 'result', 'result id'])
         self.assertEqual(len(render.call_args.args[1]), 5)
         for value in ('🐧 h', 'root (uid=0)', 'operator (uid=1000)', 'PARTIAL (incomplete)',
                       'RuntimeError', 'unknown', 'SKIP (host_disabled)', 'fallback_user'):
@@ -358,6 +358,38 @@ hosts:
                 console.print_report(report, kind='execution', json_output=force)
             self.assertEqual(json.loads(stream.getvalue()), before)
         self.assertEqual(report, before)
+
+    def test_completion_ids_match_saved_browser_and_resolve_without_changing_json(self):
+        from recipe_reports import results, result_path
+        directory=self.root/'observations'
+        directory.mkdir()
+        path=directory/'synthetic.json'
+        path.write_text(json.dumps({'host_id':'h','status':'failed','recipe':{'id':'inventory-system'}}))
+        report={'hosts':[{'host':'h','status':'failed','reason_code':'collection_failed','result_path':str(path)},
+                         {'host':'unsaved','status':'failed'}],
+                'excluded_hosts':[{'host':'disabled','reason_code':'host_disabled'}]}
+        expected=results(self.root)['results'][0]['short_id']
+        before=json.loads(json.dumps(report))
+        with patch.object(console,'table',wraps=console.table) as render:
+            console.execution(report,result_root=self.root)
+        rows=render.call_args.args[1]
+        self.assertEqual([row[-1] for row in rows],[expected,'-','-'])
+        self.assertEqual(result_path(self.root,expected),path)
+        stream=io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            console.print_report(report,kind='execution',json_output=True,result_root=self.root)
+        self.assertEqual(json.loads(stream.getvalue()),before)
+        self.assertEqual(report,before)
+        raw=json.loads(path.read_text())
+        with patch.object(runner,'run',return_value=(raw,path)):
+            code,output=self.capture(ops.main,['recipes','run','system/inventory/overview',
+                                             '--host','h','--root',str(self.root)])
+        self.assertEqual(code,1)
+        self.assertIn('result id',output)
+        self.assertIn(expected,output)
+        code,output=self.capture(recipe_cli.main,['results','detail',expected,'--root',str(self.root)])
+        self.assertEqual(code,0)
+        self.assertIn('host_id: h',output)
 
     def test_saved_results_can_be_selected_by_host_then_viewed_offline(self):
         directory = self.root / 'observations'
