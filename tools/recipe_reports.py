@@ -205,16 +205,23 @@ def collection_user(raw):
     return name
 
 
-def results(root, recipe=None, host=None, status=None):
+def results(root, recipe=None, host=None, status=None, *, kind=None):
+    if kind not in (None,'operation','report'):
+        raise ConfigError('result kind must be operation or report')
     records, errors = [], []
     files = list(_result_files(root))
     short_ids = _short_result_ids(identifier for identifier, path in files)
     for identifier, path in files:
+        stored_kind='operation' if identifier.startswith('observations/') else 'report'
+        if kind is not None and stored_kind!=kind:
+            continue
         try:
             safe_directory(root, path.parent.relative_to(root))
             if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
                 raise ConfigError('result escapes storage root')
             raw = json_object(path)
+            if kind is not None:
+                check_result_kind(path,raw,kind)
             meta = raw.get('recipe', {})
             if not isinstance(meta, dict) or raw.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
                 raise ConfigError('unrecognized result envelope')
@@ -259,9 +266,22 @@ def result_path(root, identifier):
     return path
 
 
-def show_result(root, identifier):
+def check_result_kind(path, document, kind):
+    if kind not in ('operation','report'):
+        raise ConfigError('result kind must be operation or report')
+    is_report=path.name=='result.json' and path.parent.parent.name=='reports' and document.get('report_contract')==VERSION
+    is_host=path.parent.name=='observations' and 'report_contract' not in document
+    if kind=='operation' and not is_host:
+        raise ConfigError('Offline report results use recipes results; host results use observation result RESULT_ID')
+    if kind=='report' and not is_report:
+        raise ConfigError('Host results use observation result RESULT_ID; recipes results accepts offline reports only')
+
+
+def show_result(root, identifier, *, kind=None):
     path = result_path(root, identifier)
     document = json_object(path)
+    if kind is not None:
+        check_result_kind(path,document,kind)
     if not isinstance(document.get('recipe'), dict) or document.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
         raise ConfigError('unrecognized result envelope')
     return document

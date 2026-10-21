@@ -84,18 +84,18 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertEqual(record['collection_user'], 'root')
         self.assertEqual(record['identity_quality'], 'fallback')
         identifier = record['short_id']
-        code, text, _ = self.invoke('results', 'list')
+        code, text, _ = self.host_result()
         self.assertEqual(code, 0)
         self.assertIn('root', text)
         self.assertNotIn('fallback', text)
-        code, text, _ = self.invoke('results', 'list', '--json')
+        code, text, _ = self.host_result('--json')
         self.assertEqual(json.loads(text)['results'][0]['identity_quality'], 'fallback')
-        code, text, _ = self.invoke('results', 'detail')
+        code, text, _ = self.host_result('--detail')
         self.assertIn('identity_quality: fallback', text)
-        code, text, _ = self.invoke('results', 'detail', identifier)
+        code, text, _ = self.host_result(identifier, '--detail')
         self.assertIn('identity.quality: fallback', text)
         html = self.base / 'results.html'
-        self.invoke('results', 'list', '--html', str(html))
+        self.host_result('--html', str(html))
         self.assertIn('<th>User</th>', html.read_text())
         self.assertIn('<td>root</td>', html.read_text())
         self.assertNotIn('Identity quality', html.read_text())
@@ -108,7 +108,7 @@ class RecipeExperienceTests(unittest.TestCase):
         (directory / 'synthetic.json').write_text(json.dumps(raw))
         record, = reports.results(self.root)['results']
         self.assertIsNone(record['collection_user'])
-        code, text, _ = self.invoke('results', 'list')
+        code, text, _ = self.host_result()
         self.assertEqual(code, 0)
         self.assertIn('unknown', text)
         self.assertNotIn('operator', text)
@@ -118,6 +118,12 @@ class RecipeExperienceTests(unittest.TestCase):
         output,error=io.StringIO(),io.StringIO()
         with contextlib.redirect_stdout(output),contextlib.redirect_stderr(error):
             code=ops.main(['recipes',*args,'--root',str(self.root)])
+        return code,output.getvalue(),error.getvalue()
+
+    def host_result(self,*args):
+        output,error=io.StringIO(),io.StringIO()
+        with contextlib.redirect_stdout(output),contextlib.redirect_stderr(error):
+            code=ops.main(['observation','result',*args,'--root',str(self.root)])
         return code,output.getvalue(),error.getvalue()
 
     def selected(self):
@@ -334,14 +340,14 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertEqual(code,0,error)
         self.assertEqual(json.loads(out)['report_contract'],'0.1.0')
         target=self.base/'results.html'
-        self.assertEqual(self.invoke('results','list','--html',str(target))[0],1)
+        self.assertEqual(self.invoke('results','list','--html',str(target))[0],0)
         self.assertTrue(target.exists())
         for name in ('../hosts.yaml','hosts.yaml',str(path),'reports/../../hosts.yaml'):
             with self.assertRaises(ops.ConfigError): reports.show_result(self.root,name)
 
     def test_result_detail_filtered_index_empty_and_invalid_files(self):
         report, path = self.run_report()
-        code, out, error = self.invoke('results', 'detail', '--host', 'synthetic-host')
+        code, out, error = self.invoke('results', 'detail', '--recipe-id', 'missing')
         self.assertEqual(code, 0, error)
         self.assertIn('No saved results.', out)
         for flags in ([], ['--recipe-id', report['recipe']['id']]):
@@ -360,7 +366,7 @@ class RecipeExperienceTests(unittest.TestCase):
         report, path = self.run_report()
         identifier = path.relative_to(self.root).as_posix()
         for arguments in (['../hosts.yaml'], ['observations/missing.json'],
-                          [identifier, '--host', 'h'], [identifier, '--recipe-id', 'x'],
+                          [identifier, '--recipe-id', 'x'],
                           [identifier, '--status', 'success'], ['--html', str(self.base / 'detail.html')]):
             code, out, error = self.invoke('results', 'detail', *arguments)
             self.assertEqual(code, 1, arguments)
@@ -381,16 +387,16 @@ class RecipeExperienceTests(unittest.TestCase):
             self.assertRegex(short, r'^[0-9a-f]{8}$')
             self.assertEqual(reports.show_result(self.root, short), reports.show_result(self.root, identifier))
             self.assertEqual(reports.result_path(self.root, reports._result_key(identifier)), self.root / identifier)
-            code, out, error = self.invoke('results', 'show', short)
+            code, out, error = self.host_result(short, '--raw') if row['kind']=='operation' else self.invoke('results', 'show', short)
             self.assertEqual(code, 0, error)
             self.assertEqual(json.loads(out), reports.show_result(self.root, identifier))
-            code, out, error = self.invoke('results', 'detail', short)
+            code, out, error = self.host_result(short, '--detail') if row['kind']=='operation' else self.invoke('results', 'detail', short)
             self.assertEqual(code, 0, error)
             self.assertIn('result_id: ' + identifier, out)
         code, out, error = self.invoke('results', 'list')
         self.assertEqual(code, 0, error)
         for row in rows:
-            self.assertIn(row['short_id'], out)
+            self.assertEqual(row['short_id'] in out, row['kind']=='report')
             self.assertNotIn(row['result_id'], out)
         for file, content in before.items():
             self.assertEqual(file.read_bytes(), content)

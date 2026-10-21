@@ -17,7 +17,7 @@ import console_output as console
 import display_time as display
 import landing_ui
 import recipe_browser
-import recipe_cli
+import observation_results
 import recipe_reports
 
 
@@ -96,13 +96,13 @@ class DisplayTimeTests(unittest.TestCase):
             def invoke(arguments, tty):
                 output = Terminal() if tty else io.StringIO()
                 with contextlib.redirect_stdout(output):
-                    code = recipe_cli.main(['results', *arguments, '--root', str(root)])
+                    code = observation_results.main([*arguments, '--root', str(root)])
                 self.assertEqual(code, 0)
                 return output.getvalue()
             for tty in (True, False):
-                for arguments in (['list'], ['detail'], ['detail', 'observations/synthetic.json']):
+                for arguments in ([], ['--detail'], ['observations/synthetic.json', '--detail']):
                     output = invoke(arguments, tty)
-                    if tty and arguments == ['list']:
+                    if tty and arguments == []:
                         # The completed cell may wrap its date and time onto separate lines.
                         cells = [line.split('│')[5].strip() for line in output.split('├', 1)[1].splitlines()
                                  if line.startswith('│')]
@@ -110,14 +110,14 @@ class DisplayTimeTests(unittest.TestCase):
                     else:
                         self.assertIn('2026-10-15 04:34:56', output)
                     self.assertNotIn('.987654', output)
-                self.assertEqual(json.loads(invoke(['show', 'observations/synthetic.json'], tty)), document)
-                for action in ('list', 'detail'):
-                    indexed = json.loads(invoke([action, '--json'], tty))
+                self.assertEqual(json.loads(invoke(['observations/synthetic.json', '--raw'], tty)), document)
+                for action in ([], ['--detail']):
+                    indexed = json.loads(invoke([*action, '--json'], tty))
                     self.assertEqual(indexed['results'][0]['completed_at'], source)
-                self.assertEqual(json.loads(invoke(['detail', 'observations/synthetic.json', '--json'], tty)), document)
+                self.assertEqual(json.loads(invoke(['observations/synthetic.json', '--detail', '--json'], tty)), document)
             for action in ('list', 'show'):
                 exported = root / (action + '.html')
-                arguments = [action, 'observations/synthetic.json'] if action == 'show' else [action]
+                arguments = ['observations/synthetic.json', '--detail'] if action == 'show' else []
                 invoke([*arguments, '--html', str(exported)], False)
                 self.assertIn('2026-10-15 04:34:56', exported.read_text())
                 self.assertNotIn('.987654', exported.read_text())

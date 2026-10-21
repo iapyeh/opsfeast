@@ -75,17 +75,17 @@ The timeout is supplied to the report for bounded external work, not a forced wh
 
 ```sh
 python -B tools/opsfeast.py recipes results list --profile main --json
-python -B tools/opsfeast.py recipes results list --profile main --recipe-id check-port --host rms3 --status success
-python -B tools/opsfeast.py recipes results show observations/recipe-run-UUID.json --profile main
+python -B tools/opsfeast.py observation result --profile main --recipe-id check-port --host HOST --status success
+python -B tools/opsfeast.py observation result observations/recipe-run-UUID.json --raw --profile main
 python -B tools/opsfeast.py recipes results list --profile main --html /path/to/new-results.html
 python -B tools/opsfeast.py recipes artifact reports/RUN_ID/result.json summary.html --profile main
 ```
 
-Use returned result_id values, not literal placeholders. Results 0.1.0 is a read-only index built from current observations/*.json and reports/*/result.json, without duplicating datasets into a new database. It contains result_id, short_id, recipe ID/version, host ID, kind, status/reason, start/completion times, inventory identity quality/warnings and retention receipt. Entries sort newest first by start time, then result ID; --recipe-id/--host/--status filter records. Malformed files are preserved and listed in errors, with partial overall status and exit 1. No results is success with an empty list. The index also includes recipe_reference and recipe_source from raw recipe metadata (null when absent). The Recipes TUI matches both fields for source-separated history; it does not guess attribution from a shared ID. This is an execution index; use [retained inventory tools](result-data.md) for identity-aware observation analysis and exchange.
+Use returned result_id values, not literal placeholders. Results 0.1.0 is a read-only index: observation result reads observations/*.json, while recipes results reads offline reports/*/result.json, without duplicating datasets into a new database. It contains result_id, short_id, recipe ID/version, host ID, kind, status/reason, start/completion times, inventory identity quality/warnings and retention receipt. Entries sort newest first by start time, then result ID; --recipe-id/--status filter both indexes; --host filters host history only. The generic recipe_reports.results API defaults to both kinds; kind="operation" or "report" scopes the index and invalid-file errors before record filters. Malformed files are preserved and listed in errors, with partial overall status and exit 1. No results is success with an empty list. The index also includes recipe_reference and recipe_source from raw recipe metadata (null when absent). The Recipes TUI matches both fields for source-separated history; it does not guess attribution from a shared ID. This is an execution index; use [retained inventory tools](result-data.md) for identity-aware observation analysis and exchange.
 
-TTY results list omits the long identity-warnings column, while preserving status and identity quality. Use results list --json or an explicit detail/show/HTML view for complete warnings. Saved warnings, index JSON and redirected list text are unchanged.
+TTY host history omits the long identity-warnings column, while showing status and collection user; JSON preserves identity quality. Use observation result --json or an explicit --detail/--raw/HTML view for complete warnings. Saved warnings, index JSON and redirected list text are unchanged.
 
-results show returns the selected raw JSON; --html presents its fields as escaped text, retaining error/data/time/quality information. A result ID is a storage-relative path, with no absolute paths, traversal or symlink parents. artifact verifies a declared output's path, size and digest before returning its actual local path/title/media type; modified/missing/unlisted artifacts fail. Neither command launches a viewer or publishes/transmits data. Generated HTML from third-party recipes may contain active content: review the renderer before execution/viewing. This framework does not claim all user-provided artifacts are escaped; the bundled basic views and summary are escaped.
+recipes results show returns selected offline-report JSON; --html presents its fields as escaped text, retaining error/data/time/quality information. A result ID is a storage-relative path, with no absolute paths, traversal or symlink parents. artifact verifies a declared output's path, size and digest before returning its actual local path/title/media type; modified/missing/unlisted artifacts fail. Neither command launches a viewer or publishes/transmits data. Generated HTML from third-party recipes may contain active content: review the renderer before execution/viewing. This framework does not claim all user-provided artifacts are escaped; the bundled basic views and summary are escaped.
 
 ## Portable recipe bundles
 
@@ -126,38 +126,38 @@ Saving a job grants no future execution permission and establishes no scheduler.
 
 ## Revisit a complete execution batch
 
-Use `opsfeast.py observation` for batch history and `observation latest --status failed partial` for the latest batch's incomplete hosts. The command prints the actual Observation ID/time/recipe/selectors and full counts before filtered host/result rows. These read-only views are separate from recipes results list, which indexes individual host results. No saved membership or missing raw data is inferred. See [examples and precise selection rules](cli.md#revisit-an-observation-batch).
+Use `opsfeast.py observation` for batch history and `observation latest --status failed partial` for the latest batch's incomplete hosts. The command prints the actual Observation ID/time/recipe/selectors and full counts before filtered host/result rows. These read-only views are separate from observation result, which indexes individual host results. No saved membership or missing raw data is inferred. See [examples and precise selection rules](cli.md#revisit-an-observation-batch).
 
 ## Inspect details after a compact run
 
-Completed run/job TTY summaries show host, collection identity, result and result id. Use the displayed short result id directly with results detail/show; unsaved/excluded targets show a dash. Full
+Completed run/job TTY summaries show host, collection identity, result and result id. Use the displayed short result id directly with observation result RESULT_ID --detail/--raw; unsaved/excluded targets show a dash. Full
 access/data/artifacts and result paths remain in --json and saved reports. For one
-host, use results list --host HOST (optionally --recipe-id inventory-system), then
-results show RESULT_ID with the same --root/--profile; each raw result names host_id.
+host, use observation result --host HOST (optionally --recipe-id inventory-system), then
+observation result RESULT_ID --raw with the same --root/--profile; each raw result names host_id.
 These existing read-only commands require no new connection or execution. See [the
 canonical output and viewing workflow](cli.md#compact-execution-summaries) for exact
 invocations, JSON/HTML options, unknown actors and failed/unsaved attempts.
 
 ## Focus on a failed result
 
-Use `recipes results diagnose RESULT_ID --profile NAME` first for bounded failure evidence. --limit (default 5, range 1–50) selects more issues; --json returns a diagnosis projection rather than raw data. Successful probes and arbitrary payloads are omitted, unavailable root-cause details stay unknown, and saved failure status does not make the read fail. This performs no collection or writes. See [canonical syntax, evidence rules and limits](cli.md#diagnose-a-saved-failure); detail/show retain complete evidence.
+Use `observation result RESULT_ID --profile NAME` first for bounded failure evidence. --limit (default 5, range 1–50) selects more issues; --json returns a diagnosis projection rather than raw data. Successful probes and arbitrary payloads are omitted, unavailable root-cause details stay unknown, and saved failure status does not make the read fail. This performs no collection or writes. See [canonical syntax, evidence rules and limits](cli.md#diagnose-a-saved-failure); --detail/--raw retain complete evidence.
 
 ## Vertical result browser
 
-For long result filenames, use `recipes results detail --host HOST` with the original
+For long result filenames, use `observation result --detail --host HOST` with the original
 --root/--profile. It prints the same filtered newest-first index as list, one record
 at a time with one field: value per line. Select its complete result_id with
-`recipes results detail RESULT_ID` to display a single full raw result vertically.
+`observation result RESULT_ID --detail` to display a single full raw result vertically.
 Nested objects use dotted field names; arrays stay JSON values. detail stays vertical
-when redirected; --json retains complete result_id values and additive short_id metadata. show raw JSON remains unchanged. See [exact syntax, errors and limits](cli.md#vertical-result-details).
+when redirected; --json retains complete result_id values and additive short_id metadata. --raw JSON remains unchanged. See [exact syntax, errors and limits](cli.md#vertical-result-details).
 This is an offline read-only browser, with no connection or collection.
 
 ## Short IDs for result selection
 
-Human results list now displays a compact short ID, normally eight hexadecimal
-characters. Pass it directly to results show/detail (or artifact) in the same
+Human host/report indexes display a compact short ID, normally eight hexadecimal
+characters. Pass a host Result ID to observation result ID, or a report Result ID to recipes results show/detail (or recipes artifact) in the same
 --root/--profile. The index JSON retains complete result_id and adds short_id;
-vertical detail includes the complete resolved result_id. Existing raw result documents
+vertical detail includes the complete resolved result_id. The old recipes results host invocations are removed; update callers. Existing raw result documents
 and filenames are preserved. Short IDs are deterministic aliases derived from the
 storage-relative path, extended across the entire root on prefix collisions, before
 filters. Ambiguous/unknown prefixes fail; use full result_id for durable automation.
@@ -173,4 +173,4 @@ offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTM
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-21 12:07:37_
+_Last modified: 2026-10-21 12:30:58_

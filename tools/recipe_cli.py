@@ -151,16 +151,15 @@ def main(argv=None):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     environment(run)
     invocation(run)
-    result = commands.add_parser('results', help='browse saved execution results without running recipes',
-        description=('Read previously saved operation/report results. list shows a filtered index, show emits the '
+    result = commands.add_parser('results', help='browse offline report results without running recipes',
+        description=('Read previously saved offline report results. list shows a filtered index, show emits the '
                      'original saved JSON, detail includes full metadata, and diagnose shows bounded failure evidence. '
                      'No recipe is rerun; --html writes a local HTML page for list/show.'),
-        epilog='Example: opsfeast.py recipes results list --profile main --json')
+        epilog='Example: opsfeast.py recipes results list --profile main --json. Host results: opsfeast.py observation result [RESULT_ID].')
     environment(result)
     result.add_argument('action', choices=('list', 'show', 'detail', 'diagnose'))
     result.add_argument('result_id', nargs='?')
     result.add_argument('--recipe-id')
-    result.add_argument('--host')
     result.add_argument('--status', choices=('success', 'partial', 'failed', 'skipped', 'unsupported'))
     result.add_argument('--json', action='store_true')
     result.add_argument('--html', type=Path)
@@ -277,10 +276,10 @@ def main(argv=None):
             return 0
         if args.command == 'results':
             if args.action == 'diagnose':
-                if not args.result_id or args.html or args.host or args.recipe_id or args.status:
+                if not args.result_id or args.html or args.recipe_id or args.status:
                     raise ConfigError('results diagnose requires RESULT_ID and accepts only --limit, --json and profile/root')
                 from result_diagnostics import diagnose, format_diagnosis
-                data=diagnose(root,args.result_id,limit=args.limit if args.limit is not None else 5)
+                data=diagnose(root,args.result_id,limit=args.limit if args.limit is not None else 5,kind='report')
                 output(data) if args.json else print(format_diagnosis(data))
                 return 0
             if args.limit is not None:
@@ -289,16 +288,16 @@ def main(argv=None):
                 if args.html:
                     raise ConfigError('results detail does not support --html; use results list/show --html')
                 if args.result_id:
-                    if args.host or args.recipe_id or args.status:
+                    if args.recipe_id or args.status:
                         raise ConfigError('results detail RESULT_ID cannot be combined with index filters')
-                    data = show_result(root, args.result_id)
+                    data = show_result(root, args.result_id,kind='report')
                     if args.json:
                         output(data)
                     else:
                         identifier = result_path(root, args.result_id).relative_to(root).as_posix()
                         print(vertical({'result_id': identifier, **data}))
                     return 0
-                data = results(root, args.recipe_id, args.host, args.status)
+                data = results(root, args.recipe_id, status=args.status,kind='report')
                 if args.json:
                     output(data)
                 else:
@@ -314,13 +313,13 @@ def main(argv=None):
                 return 0 if data['status'] == 'success' else 1
             if args.action == 'show':
                 if not args.result_id: raise ConfigError('results show requires RESULT_ID')
-                data = show_result(root, args.result_id)
+                data = show_result(root, args.result_id,kind='report')
                 if args.html:
                     output({'html_path': export_html(args.html, page('OpsFeast result', ['Field', 'Value'], [[key, json.dumps(human_times(value), ensure_ascii=False)] for key,value in data.items()], 'Raw evidence; timestamps displayed in local time to seconds; check status, data and quality warnings.'))})
                 else: output(data)
                 return 0
             if args.result_id: raise ConfigError('results list does not accept RESULT_ID')
-            data = results(root, args.recipe_id, args.host, args.status)
+            data = results(root, args.recipe_id, status=args.status,kind='report')
             rows = [[r.get('short_id', r['result_id']), r['recipe_id'], r['host_id'], r['status'], format_time(r['completed_at']), r.get('collection_user') or 'unknown', json.dumps(r['identity_warnings'], ensure_ascii=False)] for r in data['results']]
             if args.html:
                 output({'html_path': export_html(args.html, page('OpsFeast results', ['Result ID', 'Recipe', 'Host', 'Status', 'Completed', 'User', 'Identity warnings'], rows,

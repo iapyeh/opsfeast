@@ -19,9 +19,10 @@ def child_arguments(script, argv):
     if script.name == 'opsfeast.py':
         allowed = {'check', 'inspect-recipe', 'test-connection', 'host-init', 'test-host', 'test-su', 'test-sudo'}
         recipe_allowed = len(args) > 1 and args[:1] == ['recipes'] and args[1] in {'list', 'show', 'results', 'run'}
-        if not args or (args[0] not in allowed and not recipe_allowed):
-            raise ValueError('--tui supports check, inspect-recipe, diagnostics and recipes list/show/results/run')
-        if args[0] == 'inspect-recipe' or recipe_allowed and args[1] in {'list', 'show', 'results'}:
+        observation_result_allowed=args[:2]==['observation','result']
+        if not args or (args[0] not in allowed and not recipe_allowed and not observation_result_allowed):
+            raise ValueError('--tui supports check, inspect-recipe, diagnostics, recipes list/show/results/run and observation result')
+        if args[0] == 'inspect-recipe' or observation_result_allowed or recipe_allowed and args[1] in {'list', 'show', 'results'}:
             if '--json' not in args:
                 args.append('--json')
         elif args[0] in allowed - {'check'} and not any(flag in args for flag in ('--verbose', '-v', '--quiet', '-q')):

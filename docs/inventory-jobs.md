@@ -178,6 +178,6 @@ Only successful finite samples and valid baselines are assessed; failed/unavaila
 
 Current pages use current merged settings, so `vault rebuild` can apply new thresholds without a host connection. Saved run targets preserve actual policy, findings and baseline/source IDs/times; rebuilding those pages does not reevaluate old runs with new thresholds or future observations. See [run storage/read API](observation-runs.md). The raw inventory report also records attention_policy and observation_run_id outside the recipe-normalized data contract; existing normalizer/schema digests remain unchanged.
 
-Unsupported field probes now retain the time when the collector determined the unsupported state. This prevents a missing observed_at KeyError during full non-Linux job conversion; unsupported fields remain unavailable gaps rather than discarding the entire collected result. Public synthetic Darwin tests cover full-job conversion; existing failed raw data is not rewritten and no real host is rerun. Diagnose saved failures with [results diagnose](cli.md#diagnose-a-saved-failure) before loading complete detail output.
+Unsupported field probes now retain the time when the collector determined the unsupported state. This prevents a missing observed_at KeyError during full non-Linux job conversion; unsupported fields remain unavailable gaps rather than discarding the entire collected result. Public synthetic Darwin tests cover full-job conversion; existing failed raw data is not rewritten and no real host is rerun. Diagnose saved failures with [observation result diagnosis](cli.md#diagnose-a-saved-failure) before loading complete detail output.
 
-_Last modified: 2026-10-21 11:46:03_
+_Last modified: 2026-10-21 12:30:58_

@@ -15,6 +15,7 @@ import opsfeast as ops
 import host_runtime as hr
 import access_check as access
 import recipe_cli
+import observation_results
 import recipe_runner as runner
 import check_environment
 import recipe_identity
@@ -269,8 +270,8 @@ hosts:
                    'recipes': [{'reference': 'demo', 'version': '1', 'kind': 'operation', 'title': 'Synthetic',
                                 'runnable': True, 'errors': []}]}
         result = {'status': 'success', 'errors': [], 'results': [{'result_id': 'r', 'recipe_id': 'demo',
-                  'host_id': 'h', 'status': 'partial', 'completed_at': 'synthetic-time',
-                  'collection_user': 'root', 'identity_quality': 'fallback', 'identity_warnings': ['synthetic warning']}]}
+                  'host_id': None, 'status': 'partial', 'completed_at': 'synthetic-time',
+                  'collection_user': None, 'identity_quality': None, 'identity_warnings': ['synthetic warning']}]}
         item = dict(catalog['recipes'][0], description='Synthetic description', contract='0.1', inputs={},
                     dependencies={}, verification={}, consumers=[], availability_evidence='static only', private_extra='must not expand text output')
         with patch.object(recipe_cli, 'resolve_root', return_value=self.root), \
@@ -285,9 +286,8 @@ hosts:
                         self.assertIn('╭', output)
                         self.assertNotIn('must not expand', output)
                         if args == ['results', 'list']:
-                            self.assertIn('🐧 h', output)
                             self.assertIn('partial', output)
-                            self.assertIn('root', output)
+                            self.assertIn('unknown', output)
                             self.assertNotIn('identity quality', output)
                             self.assertNotIn('fallback', output)
                             self.assertNotIn('warnings', output)
@@ -387,7 +387,7 @@ hosts:
         self.assertEqual(code,1)
         self.assertIn('result id',output)
         self.assertIn(expected,output)
-        code,output=self.capture(recipe_cli.main,['results','detail',expected,'--root',str(self.root)])
+        code,output=self.capture(observation_results.main,[expected,'--detail','--root',str(self.root)])
         self.assertEqual(code,0)
         self.assertIn('host_id: h',output)
 
@@ -398,12 +398,12 @@ hosts:
             document = {'host_id': host, 'status': 'success', 'recipe': {'id': 'inventory-system'},
                         'access': {'actual_identity': {'username': 'root', 'effective_uid': 0}}}
             (directory / (host + '.json')).write_text(json.dumps(document))
-        code, output = self.capture(recipe_cli.main, ['results', 'list', '--host', 'h',
+        code, output = self.capture(observation_results.main, ['--host', 'h',
                                    '--root', str(self.root), '--json'])
         self.assertEqual(code, 0)
         result, = json.loads(output)['results']
         self.assertEqual(result['host_id'], 'h')
-        code, output = self.capture(recipe_cli.main, ['results', 'show', result['result_id'],
+        code, output = self.capture(observation_results.main, [result['result_id'], '--raw',
                                    '--root', str(self.root)])
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(output)['host_id'], 'h')
@@ -420,7 +420,7 @@ hosts:
         with patch.object(console, 'table_formatter', side_effect=AssertionError('no tables needed')):
             for tty in (True, False):
                 for extra in ([], [identifier]):
-                    code, output = self.capture(recipe_cli.main, ['results', 'detail', *extra,
+                    code, output = self.capture(observation_results.main, ['--detail', *extra,
                                                '--root', str(self.root)], tty)
                     self.assertEqual(code, 0)
                     self.assertIn('result_id: ' + identifier, output)
@@ -432,7 +432,7 @@ hosts:
                         self.assertIn('leading: 001', output)
                         self.assertIn(r'text: line1\nline2\u001b[31m', output)
                         self.assertNotIn('\x1b', output)
-                code, output = self.capture(recipe_cli.main, ['results', 'detail', identifier,
+                code, output = self.capture(observation_results.main, [identifier, '--detail',
                                            '--root', str(self.root), '--json'], tty)
                 self.assertEqual(code, 0)
                 self.assertEqual(json.loads(output), document)

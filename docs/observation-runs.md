@@ -80,4 +80,8 @@ Generated batch pages follow the same [ownership policy](host-vault.md#directory
 
 Public synthetic tests in tests/test_recipe_policy_runs.py and tests/test_observation_presentation.py cover selector/exclusion preservation, unknown old metadata, binary command outcomes, integer duration, publication-failure correction/rollback, preserved human notes and isolated reads, single/multi-host batches, pre-collection failure, all-skipped selections, transaction rollback, immutable policy/findings, missing source records, same-second filenames and generated links. No new native SSH, privilege escalation or scheduling installation is performed by these tests.
 
-_Last modified: 2026-10-21 12:07:37_
+## Host results under observation
+
+Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](cli.md#host-result-history-and-modes).
+
+_Last modified: 2026-10-21 12:30:58_

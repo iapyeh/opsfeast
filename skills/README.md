@@ -65,4 +65,8 @@ These skills rely on the repository layout and can be read directly by any agent
 
 Start with the [getting-started guide](../docs/getting-started.md). The `tools/opsfeast.py` utility initializes and validates management configuration. [Skill download and update checks](../docs/skill-updates.md) use `tools/skill_bundle.py` to compare or stage complete public SSHScript bundles; they do not activate skills or install them into agent-specific locations. The Ops hosts skill above is updated with this repository. Read [recipe experience](../docs/recipe-experience.md) for shared catalog, offline reports/artifacts, basic views, bundles and saved reruns. Read [general execution](../docs/recipe-execution.md) for Python-session capabilities and --var/--vars-file; the inventory-specific flow is described in the [recipe guide](../recipes/system/inventory/overview/README.md).
 
-_Last modified: 2026-10-21 12:07:37_
+## Host results under observation
+
+Use `opsfeast.py observation result [RESULT_ID]` for individual host history/diagnosis, `--detail` for full vertical evidence and `--raw` for complete JSON. Use the original root/profile and --json for automation. `recipes results` is offline-report-only; update old host commands without moving data or changing IDs. These reads do not collect or retry. See [canonical modes and failure rules](../docs/cli.md#host-result-history-and-modes).
+
+_Last modified: 2026-10-21 12:30:58_

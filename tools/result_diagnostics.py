@@ -14,11 +14,11 @@ def excerpt(value):
     return {'text':text[:400],'clipped':clipped}
 
 
-def diagnose(root, identifier, *, limit=5):
+def diagnose(root, identifier, *, limit=5, kind=None):
     """Use known evidence fields, never search arbitrary payloads or reconnect."""
     if type(limit) is not int or not 1<=limit<=50:
         raise ConfigError('diagnosis limit must be between 1 and 50')
-    raw=show_result(root,identifier)
+    raw=show_result(root,identifier,kind=kind)
     resolved=result_path(root,identifier).relative_to(root).as_posix()
     issues=[]
     def add(stage,reason=None,error_type=None,**details):

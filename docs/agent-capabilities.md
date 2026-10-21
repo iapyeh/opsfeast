@@ -44,7 +44,7 @@ This guide is for **DevOps users and their agents** operating OpsFeast or author
 
 OpsFeast accumulates reusable operational knowledge and executable capabilities. Before writing a parser, connection wrapper, discovery scanner, result store, exporter or recurring script, look for an existing tool, recipe or module here. Start with the [skill index](../skills/README.md), select the relevant skill, then use the [CLI reference](cli.md) and the task's canonical guide. This reference describes the current checkout; it does not make every internal Python function a stable public SDK.
 
-Inventory raw files now use UTC start-second prefixes with UUIDs; old files remain valid. Reuse recipes results list/show or recipe_reports results/show_result, which read both naming formats and sort by stored timestamps, instead of writing a filename-specific scanner. See [raw result names](cli.md#compact-execution-summaries).
+Inventory raw files now use UTC start-second prefixes with UUIDs; old files remain valid. Reuse observation result or recipe_reports results/show_result, which read both naming formats and sort by stored timestamps, instead of writing a filename-specific scanner. See [raw result names](cli.md#compact-execution-summaries).
 
 Console presentation uses the checkout-level [console_output helpers](../tools/console_output.py): TTY tables, explicit --json precedence and preserved non-TTY/raw-data contracts. See [the command-specific policy](cli.md#terminal-tables-and-json) before choosing agent invocations. Rendering does not authorize operations, and is not a versioned Core API. Reuse console_output.table(headers, rows) for terminal-cell-aware wrapping of headers and values; no extra width flag is needed. Width is recalculated per render, and many-column views use labeled records when too narrow. Existing already escaped display rows can use render_table(headers, rows), as check-access does. JSON and non-TTY contracts remain unchanged; raw data must not be regenerated from wrapped text.
 
@@ -75,7 +75,7 @@ Commands below are command families, not permission grants or complete copyable 
 | Run an operation with inputs/targets | `opsfeast.py recipes run` | Existing selection, typed vars, sessions, cleanup and results; Inventory uses the job collector; independent check-access makes real diagnostic connections. [Execution](recipe-execution.md), [sources](recipe-sources.md) |
 | Author identity/license defaults | `tools/recipe_identity.py defaults`; `recipe_identity.defaults()` | Read installation-level defaults; reserved Bundle attribution remains protected. [Attribution](recipe-attribution.md) |
 | Generate offline reports/basic HTML | `opsfeast.py recipes run feast/report/execution-summary`, catalog/results `--html` | Local report execution writes artifacts; renderer code requires review. No dummy host needed. [Reports](recipe-experience.md#offline-report-contract) |
-| Find saved results/verify artifacts | `opsfeast.py recipes results list/show`, `recipes artifact` | Read-only lookup and digest/path checks; no viewer launch or publication. [Results](recipe-experience.md#results-and-artifacts) |
+| Find saved results/verify artifacts | `opsfeast.py observation result`, `recipes results list/show`, `recipes artifact` | Read-only lookup and digest/path checks; no viewer launch or publication. [Results](recipe-experience.md#results-and-artifacts) |
 | Recover/export/validate/combine observations | `tools/observation_store.py ingest/export/validate/combine` | Ingest writes; JSON/CSV export reads retained data; combination preserves history. No transmission or foreign raw ingestion. [Data contracts](result-data.md), [CSV](inventory-access.md) |
 | Package/review a portable recipe candidate | `opsfeast.py recipes pack/unpack` | Explicit allowlist and integrity/path checks; creates files/candidate, no installation or publisher authentication. [Bundles](recipe-experience.md#portable-recipe-bundles) |
 | Save/rerun reviewed work | `opsfeast.py recipes jobs save/list/show/run` | Private bindings and content verification; run executes again. No bundled scheduler. [Jobs](recipe-experience.md#saved-jobs-and-recurring-work) |
@@ -99,7 +99,7 @@ These modules live in `tools/` and use sibling imports. Put the selected trusted
 | `recipe_inspection.inspect_recipes(value=None, requested=())` | Static recipe/platform inspection report | Check report errors/coverage, not merely the presence of a descriptor. See [inspection](cli.md#inspect-recipes-and-platform-gaps). |
 | `recipe_inputs.cli_variables(metadata, values=None, assignments=())`; `prepare_vars(metadata, source_vars, host_vars, cli_vars=None)` | Parsed assignments and validated independent effective-vars dict | Preparation deep-merges defaults/source/resolved recipe settings/CLI; lists replace and caller passes the right layers. Runner already does this for recipes. `RecipeContext` has only `host_id` and `vars`. |
 | `recipe_identity.defaults(root=ROOT)` | Normalized author/contacts/license dict | `root` is the installation checkout, not the Feast. Preserve reserved attribution and packaging obligations. |
-| `recipe_reports.results(root, recipe=None, host=None, status=None)`; `show_result(root, identifier)`; `show_artifact(root, identifier, name)` | Result index (including nullable collection_user with preserved identity quality), raw document or verified artifact metadata/path | Inspect partial/errors and source times; obtain identifiers from the index. Artifact names are declared relative paths. These reads do not execute or publish. |
+| `recipe_reports.results(root, recipe=None, host=None, status=None, *, kind=None)`; `show_result(root, identifier, *, kind=None)`; `show_artifact(root, identifier, name)` | Result index (including nullable collection_user with preserved identity quality), raw document or verified artifact metadata/path | Inspect partial/errors and source times; obtain identifiers from the index. Artifact names are declared relative paths. These reads do not execute or publish. |
 | `observation_store.export(root, *, recipe=None, hosts=None, since=None, until=None)`; `validate_exchange(bundle)`; `combine(bundles)` | Exchange dict; validated record count; validated deduplicated union | Export reads the existing database, missing storage fails. Time filters use observation completion time. Preserve identity quality and conflicts. JSON values are input objects, not filenames. CSV is a CLI presentation surface. |
 | `management_view.masked(value)`; `hosts_snapshot()`; `profiles_snapshot()` | Masked local UI read models | Snapshots use this checkout's registry/default profile, not a supplied root. Inspect message/status fields; masking recognizes key names and is not a guarantee against arbitrary secret content. Do not substitute masked settings for execution configuration. |
 | `root_access.candidates(config, host, login)`; `root_actor(session, config, host, timeout, report, *, authenticated_user=None, preflight=None)` | Shared strict two-candidate root acquisition and verified restoration | Internal checkout helper; prefer public Recipe.root() for agent composition. Inventory's collection_actor adapter alone provides safe login fallback. See [selection/evidence](inventory-access.md#inventory-account-selection) and [public console API](core-api.md#automatic-root-console). |
@@ -207,25 +207,25 @@ required. See [canonical model and examples](host-diagnostics.md#ssh-login-and-e
 
 ## Revisit observation batches
 
-Prefer `opsfeast.py observation --profile NAME` for the batch index and `observation latest --status failed partial --profile NAME` to recover failed/incomplete hosts after completion output scrolls away. ID/latest selects one batch; --status without ID selects latest. This is independent of recipes results list (individual raw results). Checkout observation_cli.query(root, identifier=None, *, statuses=None) and render(view) expose compact view 0.1.0; complete data remains observation_runs.list_runs/show or Core retention.runs/run. Exact batch/host raw associations supply Result IDs for recipes results diagnose, while missing/ambiguous links stay unavailable. Requires existing profile data and Python 3.11+, performs no collection/writes and returns read success independently of execution failure. [CLI selection/state semantics](cli.md#revisit-an-observation-batch) and [schema](../schemas/observation-view.schema.json) define latest, filters, counts, gaps and extension limits.
+Prefer `opsfeast.py observation --profile NAME` for the batch index and `observation latest --status failed partial --profile NAME` to recover failed/incomplete hosts after completion output scrolls away. ID/latest selects one batch; --status without ID selects latest. This is independent of observation result (individual raw results). Checkout observation_cli.query(root, identifier=None, *, statuses=None) and render(view) expose compact view 0.1.0; complete data remains observation_runs.list_runs/show or Core retention.runs/run. Exact batch/host raw associations supply Result IDs for observation result, while missing/ambiguous links stay unavailable. Requires existing profile data and Python 3.11+, performs no collection/writes and returns read success independently of execution failure. [CLI selection/state semantics](cli.md#revisit-an-observation-batch) and [schema](../schemas/observation-view.schema.json) define latest, filters, counts, gaps and extension limits.
 
 ## Compact execution and host-specific result inspection
 
 Runner/recipes run/jobs run TTY completion shows host, collection identity, result and result id; full access/data/path details stay in JSON and saved results. Reuse
-`opsfeast.py recipes results list --host HOST --recipe-id inventory-system --root ROOT`,
-then `recipes results show RESULT_ID --root ROOT` for offline evidence with host_id.
+`opsfeast.py observation result --host HOST --recipe-id inventory-system --root ROOT`,
+then `observation result RESULT_ID --raw --root ROOT` for offline evidence with host_id.
 Use --json for agent-facing lists or runs. See [output semantics and the complete viewing workflow](cli.md#compact-execution-summaries),
 including unknown actors, failure/retention states and attempts with no saved result.
-The result id is a collision-aware short ID accepted by results show/detail; a dash means no saved result is available. Checkout recipe_reports.result_short_ids(root) maps saved result paths to the same IDs as results list without reading raw payloads; console_output reuses it only for human completion display. These are existing checkout CLI capabilities, not a new Core API or collection authorization.
+The result id is a collision-aware short ID accepted by observation result RESULT_ID; a dash means no saved result is available. Checkout recipe_reports.result_short_ids(root) maps saved result paths to the same IDs as results list without reading raw payloads; console_output reuses it only for human completion display. These are existing checkout CLI capabilities, not a new Core API or collection authorization.
 
 ## Focused saved-result diagnosis
 
-Prefer `opsfeast.py recipes results diagnose RESULT_ID --profile NAME` for human failure triage, then detail/show for selected full evidence. Checkout `result_diagnostics.diagnose(root, identifier, limit=5)` returns diagnosis 0.1.0; `format_diagnosis(report)` renders escaped concise text. Requires Python 3.11+, a selected existing management root and a saved raw result. Reuses the checked short/full-ID resolver; no connection, execution, retention/content writes or arbitrary recipe-data inference. Execution/receipt failures precede probe failures; outputs, issue counts and grouped gaps are bounded/explicit. Missing exception message/source details remain unknown. --json provides the same projection; read exit status is independent of saved execution outcome. See [CLI rules](cli.md#diagnose-a-saved-failure) and [schema](../schemas/result-diagnosis.schema.json).
+Prefer `opsfeast.py observation result RESULT_ID --profile NAME` for human failure triage, then --detail/--raw for selected full evidence. Checkout `result_diagnostics.diagnose(root, identifier, *, limit=5, kind=None)` returns diagnosis 0.1.0; `format_diagnosis(report)` renders escaped concise text. Requires Python 3.11+, a selected existing management root and a saved raw result. Reuses the checked short/full-ID resolver; no connection, execution, retention/content writes or arbitrary recipe-data inference. Execution/receipt failures precede probe failures; outputs, issue counts and grouped gaps are bounded/explicit. Missing exception message/source details remain unknown. --json provides the same projection; read exit status is independent of saved execution outcome. See [CLI rules](cli.md#diagnose-a-saved-failure) and [schema](../schemas/result-diagnosis.schema.json).
 
 ## Vertical saved-result inspection
 
-`opsfeast.py recipes results detail [RESULT_ID]` is a read-only vertical alternative
-to results list/show. Omit the ID for a newest-first index with --host/--recipe-id/--status;
+`opsfeast.py observation result [RESULT_ID] --detail` is a read-only vertical alternative
+to the host index/raw view. Omit the ID for a newest-first index with --host/--recipe-id/--status;
 provide the returned ID for one full raw result. Reuse --root/--profile and --json for
 automation (same index/raw contracts). Human output is field: value even through a
 pipe, without table dependencies. See [syntax, failures and verification limits](cli.md#vertical-result-details).
@@ -233,7 +233,7 @@ No new Core API, storage, remote operation or execution authorization is added.
 
 ## Resolve short saved-result IDs
 
-Human recipes results list now uses short IDs accepted by show/detail/artifact in the
+Human observation result now uses short IDs accepted by observation result RESULT_ID in the
 same root/profile. Reuse recipe_reports.results / show_result / result_path instead of
 truncating filenames or implementing a separate lookup. Index JSON adds short_id while
 retaining result_id; raw documents and their embedded UUIDs/paths are unchanged.
@@ -242,7 +242,7 @@ Use complete result_id for durable references. See [canonical examples and algor
 for alias lifetime, collision/symlink failures and synthetic verification limits. These
 remain checkout-level helpers, not a new versioned Core API or remote authorization.
 
-Human TTY results list hides the identity-warnings column only; execution status and identity quality remain visible. Use `recipes results list --json` or explicit detail/show for complete warnings. Reuse the [console policy](cli.md#terminal-tables-and-json); do not delete warnings from saved results to shorten the display.
+Human TTY observation result shows collection user and status, omitting identity warnings; --json preserves quality and warnings. Use `observation result --json` or explicit --detail/--raw for complete warnings. Reuse the [console policy](cli.md#terminal-tables-and-json); do not delete warnings from saved results to shorten the display.
 
 ## Human timestamps and preserved data
 
@@ -275,4 +275,10 @@ Use the existing Core/report readers for input and the documented checkout workf
 
 Core/UI group catalogs apply the existing recognized-sensitive-field mask to nested recipe parameters. Explicit CLI dump remains raw. Do not reconstruct execution inputs from masked display snapshots; reuse resolved runner vars or authorized configuration services.
 
-_Last modified: 2026-10-21 12:11:20_
+## Host results under observation
+
+Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](cli.md#host-result-history-and-modes).
+
+Checkout readers `recipe_reports.results(..., kind=None)`, `show_result(..., kind=None)` and `result_diagnostics.diagnose(..., kind=None)` accept keyword-only kind="operation" or "report" for scoped reads. Default None preserves the combined reader used by the recipe browser; kind filtering does not change globally resolved short IDs. These are checkout composition helpers, not a new versioned Core API. Artifact verification remains report-only. Public synthetic tests cover separation, ID collisions, filters, wrong-kind failures, modes, read-only behavior, HTML conflicts and TUI forwarding; no host was rerun for this CLI change.
+
+_Last modified: 2026-10-21 12:30:58_

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
-import recipe_cli
+import observation_results
 import recipe_reports
 import result_diagnostics as diagnostics
 import test_inventory_jobs as fixtures
@@ -37,7 +37,7 @@ class DiagnosisTests(unittest.TestCase):
     def invoke(self,*arguments):
         out=io.StringIO();err=io.StringIO()
         with redirect_stdout(out),redirect_stderr(err):
-            code=recipe_cli.main(['results',*arguments,'--root',str(self.root)])
+            code=observation_results.main([*arguments,'--root',str(self.root)])
         return code,out.getvalue(),err.getvalue()
 
     def test_outer_error_is_prioritized_and_acquisition_duplicates_and_payload_are_omitted(self):
@@ -45,7 +45,7 @@ class DiagnosisTests(unittest.TestCase):
             probes=[{'id':'acquisition','command':None,'status':'failed','reason_code':'collection_failed'}],
             data={'large_irrelevant_payload':'not-for-diagnosis'*10000})
         before={p:p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
-        code,out,_=self.invoke('diagnose',identifier)
+        code,out,_=self.invoke(identifier)
         self.assertEqual(code,0)
         self.assertIn('Problems: 1;',out)
         self.assertIn('collection / KeyError / collection_failed',out)
@@ -62,7 +62,7 @@ class DiagnosisTests(unittest.TestCase):
              'stderr':'permission denied\n\x1b[31mtext\n','stdout_truncated':True},
             {'id':'unsupported','status':'not_supported'},
             {'id':'budget','command':'not started','status':'not_attempted','reason_code':'total_budget_exhausted'}])
-        code,out,_=self.invoke('diagnose',identifier)
+        code,out,_=self.invoke(identifier)
         self.assertEqual(code,0)
         for expected in ('df -Pk','exitcode: 1','permission denied','output 0','unsupported/not attempted probes: 1','truncated'):
             self.assertIn(expected,out)
@@ -73,7 +73,7 @@ class DiagnosisTests(unittest.TestCase):
 
     def test_limit_and_json_report_omissions_and_keep_stored_status(self):
         identifier=self.save(probes=[{'id':str(i),'command':'probe '+str(i),'status':'failed'} for i in range(8)])
-        code,out,_=self.invoke('diagnose',identifier,'--limit','2','--json')
+        code,out,_=self.invoke(identifier,'--limit','2','--json')
         self.assertEqual(code,0)
         data=json.loads(out)
         self.assertEqual((data['issue_count'],data['shown_count'],data['omitted_count']),(8,2,6))
@@ -118,9 +118,9 @@ class DiagnosisTests(unittest.TestCase):
 
     def test_invalid_flags_ids_and_limits_are_read_errors(self):
         identifier=self.save()
-        for args in [('diagnose',),('diagnose',identifier,'--limit','0'),('diagnose',identifier,'--limit','51'),
-                     ('diagnose',identifier,'--host','node'),('diagnose',identifier,'--html','new.html'),
-                     ('diagnose','deadbeef'),('detail',identifier,'--limit','3')]:
+        for args in [('--raw',),(identifier,'--limit','0'),(identifier,'--limit','51'),
+                     (identifier,'--host','node'),(identifier,'--html','new.html'),
+                     ('deadbeef',),(identifier,'--detail','--limit','3')]:
             with self.subTest(args=args):self.assertEqual(self.invoke(*args)[0],1)
         self.assertFalse((self.root/'new.html').exists())
 

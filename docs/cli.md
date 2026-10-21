@@ -18,7 +18,7 @@ latest means the most recently started batch in the selected profile, including 
 
 A selected batch displays whole-batch state counts, shown/total hosts, execution outcome separately from collection status, and a compact Host/Status/Reason/Result ID table. Filters do not change batch membership or counts. Retention/publication failures remain separate warnings, even when a host-state filter hides the associated row; command failure does not imply every host has collection status failed. Empty filters display No hosts match and return 0.
 
-Result IDs link only when a unique saved raw result explicitly names this observation_run_id and host. Missing/deleted raw files, unavailable old associations or multiple matching raw files show a dash; batch failure evidence remains visible. No timestamp or latest-host matching substitutes another execution. Invalid raw files are reported as excluded links. Follow a displayed Result ID with recipes results diagnose RESULT_ID; existing recipes results list remains a per-host result history, not a batch index. New general recipe batch outputs persist observation_run_id as inventory already does; old raw files are not modified. Index JSON adds this nullable metadata field.
+Result IDs link only when a unique saved raw result explicitly names this observation_run_id and host. Missing/deleted raw files, unavailable old associations or multiple matching raw files show a dash; batch failure evidence remains visible. No timestamp or latest-host matching substitutes another execution. Invalid raw files are reported as excluded links. Follow a displayed Result ID with observation result RESULT_ID; observation result without an ID reads per-host result history, not a batch index. New general recipe batch outputs persist observation_run_id as inventory already does; old raw files are not modified. Index JSON adds this nullable metadata field.
 
 These are read-only views: no connections, initialization, consumer dispatch or files are changed. Success returns 0 independently of saved batch failure; missing/ambiguous IDs, no latest batch or storage/configuration errors return 1; syntax/invalid status options return 2. An empty batch index is a successful read. Terminal stdout displays compact text/tables; --json and non-TTY stdout return [observation view 0.1.0](../schemas/observation-view.schema.json). List contains observations summaries; selected views contain observation metadata, statuses, hosts and warnings. Complete immutable run data remains available through inventory runs list/show and Core/report retention.runs()/run().
 
@@ -124,9 +124,9 @@ Human console output uses the shared `tools/console_output.py` presentation laye
 | recipes jobs list/show/save/run | Job list/details, save report or execution summary | --json; this presentation flag is not persisted in job invocation data |
 | check_environment.py / recipe_identity.py defaults / skill_bundle.py check or download | Field/value readiness, author or bundle reports | --json (place after the subcommand where applicable) |
 
-Exceptions preserve data interfaces: dump, recipes results show, artifact, pack/unpack and observation-store JSON/CSV/export/validation/combination remain structured even on a terminal. Check-access preserves its existing default table even for non-TTY stdout; use --json for its full report. Textual Home/workbench/--tui keep their DataTable interfaces and pipe-based child streams. Execution TUI rows display separate Retention and Content cells while preserving the recipe status and process exit code. Help, prompts, simple confirmations, stderr progress/errors/debug and raw saved files are not converted into tables.
+Exceptions preserve data interfaces: dump, observation result --raw, recipes results show, artifact, pack/unpack and observation-store JSON/CSV/export/validation/combination remain structured even on a terminal. Check-access preserves its existing default table even for non-TTY stdout; use --json for its full report. Textual Home/workbench/--tui keep their DataTable interfaces and pipe-based child streams. Execution TUI rows display separate Retention and Content cells while preserving the recipe status and process exit code. Help, prompts, simple confirmations, stderr progress/errors/debug and raw saved files are not converted into tables.
 
-Human `recipes results list` replaces identity quality with the actual collection user (unknown when unsupported or unverified). TTY lists omit the long identity-warnings column; redirected list text and list HTML retain warnings. Identity quality and warnings remain available through --json and detail/show without changing saved evidence. See [the collection-user rules](#saved-result-collection-user).
+Human `observation result` replaces identity quality with the actual collection user (unknown when unsupported or unverified). TTY lists omit the long identity-warnings column; redirected list text and list HTML retain warnings. Identity quality and warnings remain available through --json and --detail/--raw without changing saved evidence. See [the collection-user rules](#saved-result-collection-user).
 
 Tables preserve failure/partial/skipped/unknown states; no missing evidence becomes PASS. Connection, prerequisite su, actor sudo, restoration and cleanup remain distinct where present. A successful collection with failed retention still returns nonzero. Host and diagnostic/access account labels include resolved icons (built-ins 🍎/👤; see [global precedence](hosts-yaml.md#global-and-account-icons)); historical result views use the default when current configuration is unavailable, without rewriting IDs/data. Unicode widths, leading-zero identifiers and escaped terminal control characters use the same renderer settings as check-access. Terminal tables wrap headers and values to fit the current terminal cell width, preserving complete values instead of truncating them. Existing JSON/report/SQLite schemas, observation times, execution scope and exit codes are unchanged.
 
@@ -371,9 +371,10 @@ The [canonical recipe experience reference](recipe-experience.md) defines catalo
 | recipes show RECIPE [--json] | Show identity, purpose, typed inputs, dependencies and verification. Exact references take precedence; ambiguous IDs fail. |
 | recipes run RECIPE [operation options] | Operations share opsfeast.py recipes run host/group/all/exclude/threads/timeout/--var/--vars-file/progress semantics. |
 | recipes run RECIPE [--input JSON_FILE ...] [--var NAME=VALUE ...] [--vars-file JSON_FILE] [--timeout SECONDS] | Offline python-report recipes receive selected JSON data and isolated parameters, no hosts/Sessions. Save new result/artifact files. |
-| recipes results list [--recipe-id ID] [--host HOST] [--status STATUS] [--json] [--html NEW_FILE] | Read ordered raw-run/report index; retain invalid-file errors and inventory quality/retention metadata. |
-| recipes results detail [RESULT_ID] [--recipe-id ID] [--host HOST] [--status STATUS] [--json] | Vertical field: value index entries or a selected full raw result; no table-width dependency. |
-| recipes results show RESULT_ID [--html NEW_FILE] | Return raw JSON or export an escaped field table. RESULT_ID is storage-relative, never an arbitrary path. |
+| recipes results list [--recipe-id ID] [--status STATUS] [--json] [--html NEW_FILE] | Read the ordered offline-report index, with explicit invalid-file errors. Host results use observation result. |
+| recipes results detail [RESULT_ID] [--recipe-id ID] [--status STATUS] [--json] | Offline-report vertical index entries or one complete report result; no table-width dependency. |
+| recipes results show RESULT_ID [--html NEW_FILE] | Return offline-report JSON or export an escaped field table. RESULT_ID is storage-relative, never an arbitrary path. |
+| recipes results diagnose RESULT_ID [--limit N] [--json] | Read bounded offline-report failure evidence; limit defaults to 5 (1–50). Use observation result RESULT_ID for host diagnosis. |
 | recipes artifact RESULT_ID NAME | Verify a declared report artifact's path/size/digest and print its local path; do not launch/publish. |
 | recipes pack RECIPE --file RELATIVE_FILE ... --output NEW_ZIP | Package one recipe from an explicit file allowlist with manifest/digests; exclude private/storage/hidden/link entries. |
 | recipes unpack ZIP --destination NEW_DIRECTORY | Verify exact bundle inventory/digests/bounds and extract a review candidate; no installation, registration or execution. |
@@ -416,7 +417,7 @@ RECIPE is a required positional reference: a checkout-relative path (omit recipe
 | --input FILE | Offline report input only; report recipes do not accept host selectors. |
 | --tui | Optional Textual display through opsfeast.py; same operation and authorization. |
 
-Unknown targets, an empty selection and invalid connection configuration fail before execution. Disabled explicit hosts/sources are skipped without connection. Host/group members are deduplicated in merged configuration order; groups do not inherit settings. Each host owns its Session and result. Per-host execution failures do not stop other selected hosts; JSON output preserves selection order. Recipe result, retention receipt and content_update are separate; failure/partial/skipped status or failed retention/content produces a nonzero exit. Saved raw results are under observations/ and can be inspected with recipes results list/show/detail without reconnecting.
+Unknown targets, an empty selection and invalid connection configuration fail before execution. Disabled explicit hosts/sources are skipped without connection. Host/group members are deduplicated in merged configuration order; groups do not inherit settings. Each host owns its Session and result. Per-host execution failures do not stop other selected hosts; JSON output preserves selection order. Recipe result, retention receipt and content_update are separate; failure/partial/skipped status or failed retention/content produces a nonzero exit. Saved raw results are under observations/ and can be inspected with observation result [RESULT_ID] without reconnecting.
 
 Bulk/group recipe execution requires host, source and exact-reference recipe enabled; default recipe state is false. New init enables bundled inventory in default.recipes. Explicit --host overrides the three enabled gates for that target, while disabled jump hosts and invalid recipe/vars/path checks still fail. Host diagnostics retain their own rules. An entirely disabled group/all selection may complete as a journaled all-skipped batch without execution; an entirely CLI-excluded selection still fails.
 
@@ -580,7 +581,7 @@ Completed recipe execution on a terminal prints one table with four columns:
 `host`, `collection identity`, `result`, and `result id`. This applies to opsfeast.py recipes run, recipes run
 and saved-job execution, for both single and batch targets. It does not append field/value
 access, data, artifact, count or path tables. Excluded hosts appear as SKIP rows in the
-same table. result id is the same collision-aware short ID used by results list; use it directly with recipes results detail/show. Unsaved or excluded targets display a dash. IDs are presentation only: JSON and saved reports are unchanged. A saved batch also prints its shared Observation ID after the table; revisit it with observation ID or observation latest --status failed. Progress/errors remain on stderr; --quiet suppresses runner progress.
+same table. result id is the same collision-aware short ID used by observation result; use it directly with observation result RESULT_ID. Unsaved or excluded targets display a dash. IDs are presentation only: JSON and saved reports are unchanged. A saved batch also prints its shared Observation ID after the table; revisit it with observation ID or observation latest --status failed. Progress/errors remain on stderr; --quiet suppresses runner progress.
 
 Collection identity uses access.actual_identity, for example root (uid=0) after sudo,
 not the login or pre-elevation shell. Missing evidence displays unknown; general recipes
@@ -596,15 +597,15 @@ start. Recipe-authored stdout is not suppressed by this formatter.
 Use the existing read-only result browser after a run:
 
 ```sh
-python -B tools/opsfeast.py recipes results list --host HOST --recipe-id inventory-system --root ROOT
-python -B tools/opsfeast.py recipes results show RESULT_ID --root ROOT
+python -B tools/opsfeast.py observation result --host HOST --recipe-id inventory-system --root ROOT
+python -B tools/opsfeast.py observation result RESULT_ID --raw --root ROOT
 ```
 
 Select a displayed short ID (or the complete JSON result_id) from the newest-first list; HOST and ROOT identify the
-original management environment. Each saved result contains host_id. show returns the
+original management environment. Each saved result contains host_id. --raw returns the
 complete raw JSON, including access/collection evidence and saved data. For a basic
-HTML view, add --html NEW_FILE; it writes a new escaped file without launching a viewer.
-Use --json with list for agent automation. These commands do not connect, recollect,
+HTML view, use observation result RESULT_ID --detail --html NEW_FILE; it creates an escaped file without launching a viewer.
+Use observation result --json for the machine-readable host index. These commands do not connect, recollect,
 change sudo state or infer a latest result from a filename. Missing/invalid results
 remain explicit errors. Source-disabled or blocked preflight attempts may have no saved
 result; inspect the original --json diagnostic output in that case.
@@ -615,14 +616,14 @@ by host without any Session. No remote recipe execution is needed for this displ
 
 ## Saved-result collection user
 
-Human `recipes results list` tables, redirected list text and list HTML show **user**
-in place of identity quality. Use --json or results detail/show to inspect preserved
+Human `observation result` tables, redirected list text and list HTML show **user**
+in place of identity quality. Use --json or observation result RESULT_ID --detail/--raw to inspect preserved
 identity_quality and identity warnings. Existing warning display remains unchanged:
 the compact TTY table omits warnings, while redirected text and list HTML retain them.
 
 The result index adds nullable `collection_user`; JSON consumers keep identity_quality
 and identity_warnings with their existing meanings. Index detail includes all three.
-Explicit raw-result detail/show and saved files are unchanged. Python consumers can
+Explicit --detail/--raw preserve the complete saved evidence. Python consumers can
 reuse `recipe_reports.collection_user(raw)` on an already loaded result, or obtain
 the value through `recipe_reports.results(root, ...)`; no host access is required.
 
@@ -643,39 +644,54 @@ host-identity quality change occurs. Synthetic tests cover root/user/fallback,
 precollection and malformed evidence, failed collections, generic/legacy unknowns,
 TTY/pipe/HTML rendering, preserved JSON/detail quality and unchanged raw files.
 
+## Host result history and modes
+
+```sh
+python -B tools/opsfeast.py observation result --profile main --host HOST --status failed
+python -B tools/opsfeast.py observation result RESULT_ID --profile main
+python -B tools/opsfeast.py observation result RESULT_ID --detail --profile main
+python -B tools/opsfeast.py observation result RESULT_ID --raw --profile main
+```
+
+`observation` browses batches; `observation result` browses individual host results, including older raw files with no batch association. Omit RESULT_ID for the newest-first host index, optionally filtered by --host, --recipe-id and one --status (success, partial, failed, skipped, unsupported). Include RESULT_ID for focused diagnosis by default. --detail gives full vertical evidence; --raw gives the original complete JSON. --json returns index/diagnosis JSON, or complete JSON with selected --detail. --raw requires an ID; selected IDs reject index filters. --limit applies only to selected diagnosis. Mutually exclusive --root/--profile select the original existing data location. These reads never collect or retry.
+
+Without --json, index output is a compact terminal table or pipe-delimited text when redirected; diagnosis and --detail remain text even through pipes. --raw always emits JSON. --html NEW_FILE explicitly creates an escaped HTML index, or a complete selected --detail view, and returns a JSON receipt. It rejects --raw and selected default diagnosis. Malformed host files remain explicit index errors (partial/exit 1); malformed reports do not contaminate host history. Missing/unsafe/wrong-kind/ambiguous IDs return 1; syntax errors return 2. A successful read, including an empty index or stored failed result, returns 0 independently of collection outcome.
+
+`recipes results list/show/detail/diagnose` now accepts offline report results only, with --recipe-id/--status index filters and existing artifact commands. It rejects host IDs and --host; no host compatibility alias is provided. Update scripts to the commands above. Saved paths, globally collision-aware Result IDs, raw files, index 0.1.0 and diagnosis 0.1.0 are unchanged. The Recipes workbench labels its report-only actions Browse report results/Inspect report result; the recipe browser still reads provenance-matched history through the generic read API.
+
 ## Diagnose a saved failure
 
 Start with the short result id from the completion table; full storage-relative IDs also work:
 
 ```sh
-python -B tools/opsfeast.py recipes results diagnose RESULT_ID --profile main
-python -B tools/opsfeast.py recipes results diagnose RESULT_ID --profile main --limit 10 --json
+python -B tools/opsfeast.py observation result RESULT_ID --profile main
+python -B tools/opsfeast.py observation result RESULT_ID --profile main --limit 10 --json
 ```
 
-Use the original --root/--profile. This reads one saved result without connections, collection, consumers or file rewrites. Successful reads return 0 even when the saved result failed; missing/unsafe/ambiguous IDs or invalid options return 1, syntax errors 2. RESULT_ID is required. Index filters and --html are rejected; --limit is supported only by diagnose and must be 1–50 (default 5).
+Use the original --root/--profile. This reads one saved result without connections, collection, consumers or file rewrites. Successful reads return 0 even when the saved result failed; missing/unsafe/ambiguous IDs or invalid options return 1, syntax errors 2. In this mode RESULT_ID is required. Index filters and --html are rejected; --limit is supported only by the default diagnosis and must be 1–50 (default 5).
 
 Human output prioritizes execution/cleanup errors, independent retention/content/operation failures, degraded access, failed probes and grouped sample gaps. It omits successful probe output and arbitrary recipe data. Unsupported/unattempted probes are counted separately; budget-exhausted probes remain problems. Acquisition placeholders do not duplicate a recorded outer error. Failed stdout/stderr excerpts contain at most four lines and 400 characters per stream; clipping and capture truncation are explicit. Additional problems are counted, with --limit to inspect more. Controls are escaped for terminal display.
 
-This is evidence selection, not an inferred root-cause engine. Missing exception messages, missing key names or source locations cannot be reconstructed; a non-success result without specific evidence says so. A success status with no recorded failures is not a complete health assessment. Generic recipes contribute only the known top-level execution/receipt fields and known probe structures; arbitrary data.error fields are not recursively guessed to be failures. Use results detail/show only for the complete evidence of a selected result.
+This is evidence selection, not an inferred root-cause engine. Missing exception messages, missing key names or source locations cannot be reconstructed; a non-success result without specific evidence says so. A success status with no recorded failures is not a complete health assessment. Generic recipes contribute only the known top-level execution/receipt fields and known probe structures; arbitrary data.error fields are not recursively guessed to be failures. Use observation result RESULT_ID --detail or --raw for the complete selected evidence.
 
---json returns the bounded diagnosis projection 0.1.0 ([schema](../schemas/result-diagnosis.schema.json)): requested/full result IDs, host/stored status/reason, probe and unsupported counts, issue/shown/omitted counts, selected issues and interpretation notes. Stored status is separate from retention/content failures. JSON excerpts remain clipped and omitted_count remains explicit; it is not the complete raw payload. Existing list/detail/show and saved files retain their contracts. Source/state/reason fields are recorded evidence; no automatic retry or repair is authorized by this read.
+--json returns the bounded diagnosis projection 0.1.0 ([schema](../schemas/result-diagnosis.schema.json)): requested/full result IDs, host/stored status/reason, probe and unsupported counts, issue/shown/omitted counts, selected issues and interpretation notes. Stored status is separate from retention/content failures. JSON excerpts remain clipped and omitted_count remains explicit; it is not the complete raw payload. The host index/raw schemas and saved files retain their contracts; the CLI namespace changes as described above. Source/state/reason fields are recorded evidence; no automatic retry or repair is authorized by this read.
 
 Public tests in tests/test_result_diagnostics.py cover bounded output, stage/receipt priority, deduplication, grouped gaps, unknown evidence, legacy source exits, JSON/limits/invalid flags and byte-for-byte read-only behavior. These are synthetic/offline checks; they add no real-host collection evidence.
 
 ## Vertical result details
 
-Use recipes results detail for long result IDs, similar to MySQL's vertical \G view.
-Without RESULT_ID, it reads the same newest-first index as results list and accepts
+Use observation result --detail for long result IDs, similar to MySQL's vertical \G view.
+Without RESULT_ID, it reads the same newest-first index as observation result and accepts
 --host, --recipe-id and --status. It prints a numbered record separator and one
 field: value line per index field, including the complete result_id and host_id.
 It does not load every result's full collection payload into the display.
 
 ```sh
-python -B tools/opsfeast.py recipes results detail --host HOST --recipe-id inventory-system --root ROOT
-python -B tools/opsfeast.py recipes results detail RESULT_ID --root ROOT
+python -B tools/opsfeast.py observation result --detail --host HOST --recipe-id inventory-system --root ROOT
+python -B tools/opsfeast.py observation result RESULT_ID --detail --root ROOT
 ```
 
-With RESULT_ID, detail reads one complete raw result. Nested object fields use dotted
+With RESULT_ID, --detail reads one complete raw result. Nested object fields use dotted
 names (for example access.actual_identity.username); arrays remain JSON values on a
 single line. Null/Boolean values remain explicit and strings retain leading zeroes.
 Newlines and terminal controls in keys/values are escaped. No value is truncated or
@@ -685,9 +701,9 @@ contract: add --json for the existing index envelope or complete raw-result JSON
 respectively. No new result schema or storage is introduced.
 
 No matches prints No saved results. and returns zero; malformed index files remain
-visible as invalid-result records and return one while preserving readable records.
+visible as invalid-result errors and return one while preserving readable records.
 Missing/unsafe result IDs return an error. RESULT_ID cannot be combined with index
-filters; --html is rejected (use results list/show --html instead). Existing show JSON is unchanged; list now uses the short IDs described below. Use the original --root or --profile; detail performs no host
+filters. --html NEW_FILE exports the index or a selected --detail view; existing files are never overwritten. --raw emits unchanged raw JSON; the index uses the short IDs described below. Use the original --root or --profile; detail performs no host
 connection, sudo, collection, file rewrite or viewer launch. Synthetic tests cover
 TTY/pipe/JSON, long names, escaped controls, filters, empty/partial indexes, unsafe IDs,
 option errors and operation without table dependencies.
@@ -698,17 +714,17 @@ Human execution completion tables and results list output (terminal, redirected 
 for example a73c91e2, instead of long storage-relative filenames. Use them directly:
 
 ```sh
-python -B tools/opsfeast.py recipes results list --host HOST --root ROOT
-python -B tools/opsfeast.py recipes results show a73c91e2 --root ROOT
-python -B tools/opsfeast.py recipes results detail a73c91e2 --root ROOT
+python -B tools/opsfeast.py observation result --host HOST --root ROOT
+python -B tools/opsfeast.py observation result a73c91e2 --raw --root ROOT
+python -B tools/opsfeast.py observation result a73c91e2 --detail --root ROOT
 ```
 
 The ID above is illustrative; use a displayed value from the same management root.
-Full storage-relative result IDs still work, and show JSON remains the unchanged raw
-document. detail displays the resolved complete result_id; detail without an ID shows
+Full storage-relative result IDs still work, and --raw JSON remains the unchanged raw
+document. --detail displays the resolved complete result_id; --detail without an ID shows
 both result_id and short_id vertically. Index JSON (results version 0.1.0) adds short_id
 to records and invalid-file errors while preserving the complete result_id. Use full
-result_id in durable automation and --json for machine parsing. Short IDs also work
+result_id in durable automation and --json for machine parsing. Report short IDs also work
 with the existing artifact selector through the same checked result resolver.
 
 The lookup key is the SHA-256 hexadecimal digest of the exact UTF-8 storage-relative
@@ -756,7 +772,7 @@ feast/report/execution-summary 0.1.2 renders both source/generation times in HTM
 time at generation, while its JSON artifact preserves the original timestamps. A static
 HTML artifact does not change timezone when opened on another computer.
 
-Formatting copies data at the view boundary. --json, raw results show JSON, TUI Original
+Formatting copies data at the view boundary. --json, observation result --raw JSON, TUI Original
 output, saved reports/receipts, JSON/CSV exports, SQLite, hash inputs, short IDs,
 filename UTC prefixes and ordering retain original precision/timezones. These are data
 interfaces, not human time views. Duration/measurement numbers and calendar-only dates
@@ -787,4 +803,4 @@ Current selection groups each host by origin namespace, recipe-source qualifier 
 
 Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
 
-_Last modified: 2026-10-21 12:11:20_
+_Last modified: 2026-10-21 12:30:58_

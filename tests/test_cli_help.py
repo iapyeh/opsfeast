@@ -109,7 +109,7 @@ class CommandHelpTests(unittest.TestCase):
         recipes = self.help(['recipes'])
         self.assertIn('host operations or offline reports', self.description(recipes))
         for meaning in ('discover available recipes', 'inspect one recipe', 'execute one host-operation',
-                        'browse saved execution', 'package explicitly', 'save and reuse'):
+                        'browse offline report', 'package explicitly', 'save and reuse'):
             self.assertIn(meaning, recipes)
         jobs = self.help(['recipes', 'jobs'])
         self.assertIn('does not execute it or create a schedule', self.description(jobs))

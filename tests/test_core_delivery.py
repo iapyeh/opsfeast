@@ -134,6 +134,7 @@ def execute(recipe):
             self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)
+            self.assertIn('_opsfeast_data/tools/observation_results.py', names)
             self.assertIn('_opsfeast_data/tools/cli_help.py', names)
             self.assertIn('_opsfeast_data/tools/collection_evidence.py', names)
             self.assertIn('_opsfeast_data/schemas/collection-evidence.schema.json', names)
@@ -188,6 +189,18 @@ raw = {'host_id':'node','status':'partial','evidence_kind':'local','completed_at
 receipt = retain_general(profile.root, raw, metadata, profile.root)
 assert receipt['status'] == 'stored' and receipt['content_update']['status'] == 'success'
 assert profile.retention.query()['records'][0]['data']['observations']['count']['value'] == 0
+from contextlib import redirect_stdout
+from io import StringIO
+from opsfeast import main
+import json
+raw_path = profile.root/'observations/synthetic.json'
+raw_path.write_text(json.dumps(raw))
+with redirect_stdout(StringIO()) as captured:
+    assert main(['observation','result','observations/synthetic.json','--raw','--root',str(profile.root)]) == 0
+assert json.loads(captured.getvalue()) == raw
+with redirect_stdout(StringIO()) as captured:
+    assert main(['recipes','results','list','--json','--root',str(profile.root)]) == 0
+assert json.loads(captured.getvalue())['results'] == []
 assert not list((profile.root/'vault').rglob('*.sqlite3'))
 report, path = run_report(profile.root, choose(profile.root, 'feast/report/retention-summary'), [])
 assert report['status'] == 'success' and len(report['artifacts']) == 2

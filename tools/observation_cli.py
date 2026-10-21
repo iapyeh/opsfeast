@@ -61,7 +61,7 @@ def query(root, identifier=None, *, statuses=None):
         run=matches[0]
     # Exact raw batch membership supplies result links; never match nearby times.
     from recipe_reports import results
-    indexed=results(root)
+    indexed=results(root,kind='operation')
     links={}
     for item in indexed['results']:
         if item.get('observation_run_id')==run['run_id']:
@@ -114,8 +114,12 @@ def render(view):
 
 
 def main(argv=None):
+    argv=list(sys.argv[1:] if argv is None else argv)
+    if argv[:1]==['result']:
+        from observation_results import main as result_main
+        return result_main(argv[1:])
     parser=argparse.ArgumentParser(prog='opsfeast.py observation',allow_abbrev=False,
-        description='Read saved batches. No ID lists batches; --status without an ID selects latest. No connections or writes.',
+        description='Read saved batches. No ID lists batches; --status without an ID selects latest. Use observation result [RESULT_ID] for host results. No connections or writes.',
         epilog='Example: opsfeast.py observation latest --status failed partial --profile main')
     parser.add_argument('observation_id',nargs='?',help='full UUID, unique hexadecimal prefix (8+), or latest')
     parser.add_argument('--status',choices=STATES,nargs='+',action='extend',default=None,help='filter host collection states; omitted ID means latest')

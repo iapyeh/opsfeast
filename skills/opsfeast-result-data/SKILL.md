@@ -43,7 +43,7 @@ Read [retention contracts](../../docs/retention.md), [offline replay/protection]
 
 Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly add `--json` to supported diagnostic, instance, profile/check, recipe/job execution and utility commands; non-TTY output retains existing contracts. Dump/raw results/artifacts/exports remain structured. Check-access retains its existing default table. Read [the command-specific output policy](../../docs/cli.md#terminal-tables-and-json); flags change presentation only, not authorization or saved-job inputs.
 
-Human `recipes results list` displays the actual inventory collection user instead of identity quality; missing or uncertain evidence displays unknown. Never infer the collector from SSH login or a selected intermediate account. TTY lists omit the long identity-warnings column. Select `--json` or detail/show for preserved identity quality and full warnings; the index adds nullable collection_user without rewriting saved data. Read [collector evidence and human output](../../docs/cli.md#saved-result-collection-user).
+Human `observation result` displays the actual inventory collection user instead of identity quality; missing or uncertain evidence displays unknown. Never infer the collector from SSH login or a selected intermediate account. TTY lists omit the long identity-warnings column. Select `--json` or --detail/--raw for preserved identity quality and full warnings; the index adds nullable collection_user without rewriting saved data. Read [collector evidence and human output](../../docs/cli.md#saved-result-collection-user).
 
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
 
@@ -63,7 +63,7 @@ Before writing operational code, consult the [tool and Python module capability 
 
 Use the existing retention adapter, export/validate/combine interfaces and JSON/CSV surfaces before creating storage or exchange code. For in-process analysis reuse `observation_store.export`, `validate_exchange` and `combine`; for saved raw results/artifacts reuse `recipe_reports` lookups. Author only recipient-specific queries/transforms/rendering not covered by existing contracts; do not read host credentials for offline data processing.
 
-Inventory raw result filenames use the UTC started_at second plus UUID (`YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`). Preserve older unprefixed files; reuse recipes results list/show or recipe_reports results/show_result rather than assuming one filename prefix. Name order is start-second order only; same-second UUID ordering is arbitrary. Use stored full-precision times for interpretation and retention/exchange, and the returned result_path/result_id for lookup. See [the result reference](../../docs/cli.md#compact-execution-summaries).
+Inventory raw result filenames use the UTC started_at second plus UUID (`YYYYMMDDTHHMMSSZ-inventory-system-UUID.json`). Preserve older unprefixed files; reuse observation result or recipe_reports results/show_result rather than assuming one filename prefix. Name order is start-second order only; same-second UUID ordering is arbitrary. Use stored full-precision times for interpretation and retention/exchange, and the returned result_path/result_id for lookup. See [the result reference](../../docs/cli.md#compact-execution-summaries).
 
 ## Inventory access and result capability 0.1.0
 
@@ -85,7 +85,7 @@ Read [the complete inventory access/results guide](../../docs/inventory-access.m
 | Shareable export | observation_store.py export; --format csv for presentation | JSON exchange 0.1.0 or fixed CSV columns, recipe/host/time selection; JSON is the exchange contract, no transmission |
 | Static exchange validation | observation_store.py validate FILE | Strict record/envelope checking; no database/profile required |
 | Exchange combination | observation_store.py combine FILE... | Validated union and ID deduplication; conflicts fail; no host reconciliation |
-| Saved-result lookup and artifact verification | opsfeast.py recipes results list/show; recipes artifact; recipe_reports module | Read saved raw/report evidence and verified paths; no new collection or transmission |
+| Saved-result lookup and artifact verification | opsfeast.py observation result; recipes results list/show; recipes artifact; recipe_reports module | Read saved raw/report evidence and verified paths; no new collection or transmission |
 | Offline analysis/reporting | feast/report/execution-summary or reviewed python-report recipe | Reuse local report/artifact contracts and basic views; richer renderers and recipient stores are user-selected, no bundled stage-4 database importer |
 
 Check the selected interpreter, available tool files and chosen profile/root first. Setup does not authorize collection or sudo. Reading/exporting existing data does not authorize sending it to others. Do not read hosts.yaml credentials merely to process retained results. A missing retained database is not a successful empty inventory; propose ingestion of specifically identified local results or authorized collection as appropriate.
@@ -115,23 +115,23 @@ Host identity_key, label and description are now supported. An explicit identity
 
 ## Inspect long result IDs vertically
 
-Reuse `python -B tools/opsfeast.py recipes results detail --host HOST --root ROOT`
+Reuse `python -B tools/opsfeast.py observation result --detail --host HOST --root ROOT`
 for a filtered saved-result index with one field: value per line, then
-`python -B tools/opsfeast.py recipes results detail RESULT_ID --root ROOT` for one
+`python -B tools/opsfeast.py observation result RESULT_ID --detail --root ROOT` for one
 complete raw result. This avoids wide filename tables without reconnecting. Nested
 object fields use dotted names, arrays remain JSON and controls are escaped.
 Explicit --json returns the unchanged index/raw data contract; human detail stays
 vertical even through pipes. Empty indexes, invalid files, unsafe/missing IDs and
 option conflicts retain explicit outcomes. Use [the canonical detail reference](../../docs/cli.md#vertical-result-details)
-for syntax and verification limits. Existing list/show and result files are unchanged;
+for syntax and verification limits. Result files and globally resolved IDs are unchanged; the old host CLI forms are removed;
 no remote authorization is required or expanded by these read-only commands.
 
 ## Select saved results by short ID
 
-Human `recipes results list --host HOST` displays short IDs; pass a displayed ID to
-`recipes results show SHORT_ID` or `recipes results detail SHORT_ID` using the same
---root/--profile. Artifact lookup accepts the same IDs. For automation use --json:
-index records/errors add short_id and preserve full result_id; raw show JSON and saved
+Human `observation result --host HOST` displays short IDs; pass a displayed ID to
+`observation result SHORT_ID --raw` or `observation result SHORT_ID --detail` using the same
+--root/--profile. Offline-report artifact lookup accepts report IDs from recipes results list. For automation use --json:
+index records/errors add short_id and preserve full result_id; --raw JSON and saved
 files are unchanged. Prefer complete result_id for durable stored references.
 Do not derive aliases by truncating filenames. Reuse the checked resolver: the alias
 is a SHA-256 path prefix, at least eight lowercase hexadecimal characters, extended
@@ -142,10 +142,10 @@ for copying/renaming, collision boundaries and synthetic verification evidence.
 
 ## Interpret human local timestamps
 
-Human CLI tables/results detail, HTML and TUI Details display OS-local time to seconds
+Human CLI tables/vertical details, HTML and TUI Details display OS-local time to seconds
 (YYYY-MM-DD HH:MM:SS). Reuse these views rather than rewriting saved data. feast/report/execution-summary
 0.1.2 HTML uses controller local time at generation; its portable implementation needs
-no checkout display-module import. --json, raw results show, Original output, JSON/CSV
+no checkout display-module import. --json, observation result --raw, Original output, JSON/CSV
 exports and saved data preserve original precision/offsets for analysis and hashing.
 Missing/unzoned instants do not acquire an invented timezone. Read [the canonical display
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
@@ -163,7 +163,7 @@ New inventory-job-observations data.probes includes command, stdout, stderr and 
 
 ## Recover batch results after terminal output scrolls away
 
-Use `python -B tools/opsfeast.py observation --profile NAME` to list explicit batches newest first. Use `observation latest --status failed partial --profile NAME` or a fixed full/unique-prefix Observation ID to show host status/reason/Result ID. --status alone implies latest and always filters host collection states; it never searches older batches for failed hosts. latest includes running/scheduled batches, so check displayed ID/time/recipe/selectors. Whole-batch counts/outcome remain visible after filtering; storage/publication failures remain separate warnings. Raw links require an exact batch/host match; absent/deleted/ambiguous links remain a dash. Follow Result IDs with recipes results diagnose. This read does not initialize, collect or write; use --json for view 0.1.0, and Core retention.runs/run for full data. Reuse checkout observation_cli.query/render when composing a viewer. See [canonical CLI rules](../../docs/cli.md#revisit-an-observation-batch) and [view schema](../../schemas/observation-view.schema.json).
+Use `python -B tools/opsfeast.py observation --profile NAME` to list explicit batches newest first. Use `observation latest --status failed partial --profile NAME` or a fixed full/unique-prefix Observation ID to show host status/reason/Result ID. --status alone implies latest and always filters host collection states; it never searches older batches for failed hosts. latest includes running/scheduled batches, so check displayed ID/time/recipe/selectors. Whole-batch counts/outcome remain visible after filtering; storage/publication failures remain separate warnings. Raw links require an exact batch/host match; absent/deleted/ambiguous links remain a dash. Follow Result IDs with observation result. This read does not initialize, collect or write; use --json for view 0.1.0, and Core retention.runs/run for full data. Reuse checkout observation_cli.query/render when composing a viewer. See [canonical CLI rules](../../docs/cli.md#revisit-an-observation-batch) and [view schema](../../schemas/observation-view.schema.json).
 
 ## Read execution-batch evidence
 
@@ -171,6 +171,10 @@ Use `python -B tools/opsfeast.py inventory runs list --profile NAME --json`, the
 
 Preserve actual selected hosts/icons, major jobs, skipped/preflight-failed targets, retention states, source/baseline IDs and stored policy/findings. Completed collection snapshots are immutable; optional selection preserves original invocation selectors and execution joins the actual command success/failure receipt. Absent old metadata stays unknown; never derive command success from collection status. Publication-failure receipts survive later rebuilds. Generated host/SUMMARY.md is the navigation entrypoint; README.md remains preserved human notes. Later settings/new observations affect current pages only. A running/pending batch can reflect interrupted persistence, and success with all targets skipped is not successful collection. A failed source record link cannot be filled from another observation. No automatic batch backfill, resume/reconciliation, pruning or import is supplied. Rebuild regenerates owned pages without modifying retention/run data or reconnecting. Read [Vault current/report/batch separation](../../docs/host-vault.md) before interpreting omissions or authoring a content consumer.
 
-For a failed/partial saved result, prefer `python -B tools/opsfeast.py recipes results diagnose RESULT_ID --profile NAME` before full detail/show. Use the completion-table ID and the original profile/root. This read-only diagnosis shows execution/receipt errors and relevant failed-probe excerpts; successful output and arbitrary data are omitted. --limit defaults 5 (1–50); --json returns projection 0.1.0 with explicit clipped/omitted counts. Read success returns 0 independently of collection outcome. Missing key/message/source evidence remains unknown, not an inferred root cause. See [diagnosis syntax and evidence rules](../../docs/cli.md#diagnose-a-saved-failure); reuse checkout result_diagnostics.diagnose/format_diagnosis when composing a viewer. No retry, collection or mutation is implied.
+For a failed/partial saved result, prefer `python -B tools/opsfeast.py observation result RESULT_ID --profile NAME` before --detail/--raw. Use the completion-table ID and the original profile/root. This read-only diagnosis shows execution/receipt errors and relevant failed-probe excerpts; successful output and arbitrary data are omitted. --limit defaults 5 (1–50); --json returns projection 0.1.0 with explicit clipped/omitted counts. Read success returns 0 independently of collection outcome. Missing key/message/source evidence remains unknown, not an inferred root cause. See [diagnosis syntax and evidence rules](../../docs/cli.md#diagnose-a-saved-failure); reuse checkout result_diagnostics.diagnose/format_diagnosis when composing a viewer. No retry, collection or mutation is implied.
 
-_Last modified: 2026-10-21 12:07:37_
+## Host results under observation
+
+Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](../../docs/cli.md#host-result-history-and-modes).
+
+_Last modified: 2026-10-21 12:30:58_
