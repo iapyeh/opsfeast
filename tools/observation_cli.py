@@ -8,9 +8,11 @@ import re
 import sys
 
 from opsfeast import ConfigError, resolve_root
-from console_output import cell, table, prepare, ConsoleDependencyError
+from console_output import cell, table, prepare, execution_identity, execution_result, ConsoleDependencyError
 from display_time import format_time
 import observation_runs
+
+VERSION='0.2.0'
 
 STATES=('pending','success','partial','failed','skipped')
 
@@ -38,14 +40,14 @@ def summary(run, short_id):
 
 
 def query(root, identifier=None, *, statuses=None):
-    """Return view 0.1.0 without altering full observation-run objects."""
+    """Return view 0.2.0 without altering full observation-run objects."""
     if statuses is not None and (not isinstance(statuses,list) or not statuses or any(s not in STATES for s in statuses)):
         raise ConfigError('status must name one or more host states')
     root=Path(root).resolve()
     runs=observation_runs.list_runs(root)
     ids=short_ids(runs)
     if identifier is None and not statuses:
-        return {'view_version':'0.1.0','observations':[summary(r,ids[r['run_id']]) for r in reversed(runs)]}
+        return {'view_version':VERSION,'observations':[summary(r,ids[r['run_id']]) for r in reversed(runs)]}
     if identifier is None:
         identifier='latest'
     if identifier=='latest':
@@ -60,7 +62,7 @@ def query(root, identifier=None, *, statuses=None):
             raise ConfigError('ambiguous observation ID' if matches else 'observation not found')
         run=matches[0]
     # Exact raw batch membership supplies result links; never match nearby times.
-    from recipe_reports import results
+    from recipe_reports import results, show_result
     indexed=results(root,kind='operation')
     links={}
     for item in indexed['results']:
@@ -68,25 +70,54 @@ def query(root, identifier=None, *, statuses=None):
             links.setdefault(item['host_id'],[]).append(item)
     hosts=[]
     warnings=[]
+    missing_raw=0
     for target in run['targets']:
         if target['retention_status']=='failed':
             warnings.append('Data storage failed for '+target['host_id']+'.')
-        if statuses and target['status'] not in statuses:
-            continue
         candidates=links.get(target['host_id'],[])
         linked=candidates[0] if len(candidates)==1 else None
         if len(candidates)>1:
             warnings.append('Multiple raw results match '+target['host_id']+'; result link is unavailable.')
-        hosts.append({'host_id':target['host_id'],'icon':target.get('icon',''),'status':target['status'],
+        raw=None
+        if linked:
+            try:
+                raw=show_result(root,linked['result_id'],kind='operation')
+            except (ConfigError,OSError,ValueError):
+                warnings.append('Raw result became unavailable for '+target['host_id']+'.')
+                linked=None
+        access=raw.get('access') if raw and isinstance(raw.get('access'),dict) else {}
+        actor=access.get('actual_identity') if isinstance(access.get('actual_identity'),dict) else {}
+        identity=({'username':actor['username'],'effective_uid':actor['effective_uid']}
+            if isinstance(actor.get('username'),str) and actor['username'] and type(actor.get('effective_uid')) is int else None)
+        item={'host_id':target['host_id'],'icon':target.get('icon',''),'status':target['status'],
             'reason_code':target.get('reason_code'),'retention_status':target['retention_status'],
+            'collection_identity':identity,'access_degraded':bool(access.get('degraded')) if raw else None,
+            'content_status':raw['content_update'].get('status') if raw and isinstance(raw.get('content_update'),dict) else None,
             'record_id':target['record_id'],'result_id':linked['result_id'] if linked else None,
-            'short_id':linked['short_id'] if linked else None})
+            'short_id':linked['short_id'] if linked else None}
+        item['result_status']=execution_result(execution_row(item))['status']
+        if raw is None:
+            missing_raw+=1
+        hosts.append(item)
+    result_counts=Counter(h['result_status'] for h in hosts)
+    hosts=[h for h in hosts if not statuses or h['result_status'] in statuses]
     if indexed['errors']:
         warnings.append(str(len(indexed['errors']))+' invalid raw result files were excluded from result links.')
+    if missing_raw:
+        warnings.append('Raw details unavailable for '+str(missing_raw)+' hosts; their identity/access/content are unknown. Those results use saved collection and retention evidence only.')
     if (run.get('execution') or {}).get('content_status')=='failed':
         warnings.append('Content publication failed during this execution.')
-    return {'view_version':'0.1.0','observation':summary(run,ids[run['run_id']]),
-            'statuses':list(dict.fromkeys(statuses or [])),'hosts':hosts,'warnings':warnings}
+    return {'view_version':VERSION,'observation':summary(run,ids[run['run_id']]),
+            'statuses':list(dict.fromkeys(statuses or [])),'hosts':hosts,'warnings':warnings,
+            'result_counts':{state:result_counts[state] for state in STATES}}
+
+
+def execution_row(host):
+    """Reconstruct only recorded presentation evidence, without borrowing batch receipts."""
+    return {'status':host['status'],'reason_code':host['reason_code'],
+            'retention':{'status':host['retention_status']},
+            'content_update':{'status':host['content_status']},
+            'access':{'actual_identity':host['collection_identity'],'degraded':host['access_degraded']}}
 
 
 def render(view):
@@ -99,15 +130,17 @@ def render(view):
     lines=['Observation: '+run['observation_id'],'Started: '+format_time(run['started_at']),
            'Recipe: '+cell(run['recipe_reference']),'Targets: '+cell(observation_runs.selection_text(run['selection'])),
            'Outcome: '+(run['execution_status'] or 'Not recorded')+'; collection: '+run['collection_status'],
-           'Hosts: '+str(run['host_count'])+' — '+counts,
+           'Hosts: '+str(run['host_count'])+' — collection: '+counts,
+           'Results: '+', '.join(state+': '+str(view['result_counts'][state]) for state in STATES if view['result_counts'][state]),
            'Showing: '+str(len(view['hosts']))+'/'+str(run['host_count'])+
            (' ('+', '.join(view['statuses'])+')' if view['statuses'] else '')]
     if run['duration_seconds'] is not None:
         lines += ['Duration: '+str(run['duration_seconds'])+' seconds']
     lines += ['Warning: '+cell(warning) for warning in view['warnings']]
     if view['hosts']:
-        lines += ['',table(['host','status','reason','result id'],[
-            [((h['icon'] or '')+' '+h['host_id']).strip(),h['status'],h['reason_code'] or '-',h['short_id'] or '-'] for h in view['hosts']])]
+        lines += ['',table(['host','collection identity','result','result id'],[
+            [((h['icon'] or '')+' '+h['host_id']).strip(),execution_identity(execution_row(h)),
+             execution_result(execution_row(h))['text'],h['short_id'] or '-'] for h in view['hosts']])]
     else:
         lines += ['','No hosts match the selected statuses.']
     return '\n'.join(lines)
@@ -122,7 +155,7 @@ def main(argv=None):
         description='Read saved batches. No ID lists batches; --status without an ID selects latest. Use observation result [RESULT_ID] for host results. No connections or writes.',
         epilog='Example: opsfeast.py observation latest --status failed partial --profile main')
     parser.add_argument('observation_id',nargs='?',help='full UUID, unique hexadecimal prefix (8+), or latest')
-    parser.add_argument('--status',choices=STATES,nargs='+',action='extend',default=None,help='filter host collection states; omitted ID means latest')
+    parser.add_argument('--status',choices=STATES,nargs='+',action='extend',default=None,help='filter displayed host results, including retention/content failures; omitted ID means latest')
     environment=parser.add_mutually_exclusive_group()
     environment.add_argument('--root',type=Path)
     environment.add_argument('--profile')

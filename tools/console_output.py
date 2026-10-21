@@ -284,6 +284,34 @@ def diagnostic(report, test='', icons=None, user=None):
     return result
 
 
+def execution_identity(row):
+    actor = (row.get('access') or {}).get('actual_identity') or {}
+    name, uid = actor.get('username'), actor.get('effective_uid')
+    return f'{name} (uid={uid})' if name and type(uid) is int else 'unknown'
+
+
+def execution_result(row):
+    """Shared completion/history outcome; keep collection and receipt failures distinct."""
+    access = row.get('access') or {}
+    state = row.get('status', 'unknown')
+    outcome = status(row)
+    if state != 'success':
+        reason = row.get('reason_code') or row.get('error')
+        if reason:
+            outcome += f' ({reason})'
+    if (row.get('content_update') or {}).get('status') == 'failed':
+        outcome = f'❌ FAIL (content_update_failed; collection={outcome})'
+        state = 'failed'
+    if (row.get('retention') or {}).get('status') == 'failed':
+        outcome = f'❌ FAIL (retention_failed; collection={outcome})'
+        state = 'failed'
+    elif access.get('degraded'):
+        outcome = ('PARTIAL' if state == 'success' else outcome) + ' (fallback_user)'
+        if state == 'success':
+            state = 'partial'
+    return {'status': state, 'text': outcome}
+
+
 def execution(report, icons=None, host=None, recipe=None, result_root=None):
     if report.get('collection_started') is False:
         from access_check import format_summary
@@ -296,21 +324,8 @@ def execution(report, icons=None, host=None, recipe=None, result_root=None):
     rows = []
     for row in hosts:
         target = row.get('host', row.get('host_id', host))
-        access = row.get('access') or {}
-        actor = access.get('actual_identity') or {}
-        name, uid = actor.get('username'), actor.get('effective_uid')
-        actor_text = f'{name} (uid={uid})' if name and type(uid) is int else 'unknown'
-        outcome = status(row)
-        if row.get('status') != 'success':
-            reason = row.get('reason_code') or row.get('error')
-            if reason:
-                outcome += f' ({reason})'
-        if (row.get('content_update') or {}).get('status') == 'failed':
-            outcome = f'❌ FAIL (content_update_failed; collection={outcome})'
-        if (row.get('retention') or {}).get('status') == 'failed':
-            outcome = f'❌ FAIL (retention_failed; collection={outcome})'
-        elif access.get('degraded'):
-            outcome = ('PARTIAL' if row.get('status') == 'success' else outcome) + ' (fallback_user)'
+        actor_text = execution_identity(row)
+        outcome = execution_result(row)['text']
         saved=row.get('result_path')
         identifier=identifiers.get(str(Path(saved).resolve()),'-') if saved and identifiers else '-'
         rows.append([host_label(target, icons) if target else '-', actor_text, outcome, identifier])

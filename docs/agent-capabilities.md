@@ -207,7 +207,7 @@ required. See [canonical model and examples](host-diagnostics.md#ssh-login-and-e
 
 ## Revisit observation batches
 
-Prefer `opsfeast.py observation --profile NAME` for the batch index and `observation latest --status failed partial --profile NAME` to recover failed/incomplete hosts after completion output scrolls away. ID/latest selects one batch; --status without ID selects latest. This is independent of observation result (individual raw results). Checkout observation_cli.query(root, identifier=None, *, statuses=None) and render(view) expose compact view 0.1.0; complete data remains observation_runs.list_runs/show or Core retention.runs/run. Exact batch/host raw associations supply Result IDs for observation result, while missing/ambiguous links stay unavailable. Requires existing profile data and Python 3.11+, performs no collection/writes and returns read success independently of execution failure. [CLI selection/state semantics](cli.md#revisit-an-observation-batch) and [schema](../schemas/observation-view.schema.json) define latest, filters, counts, gaps and extension limits.
+Prefer `opsfeast.py observation --profile NAME` for the batch index and `observation latest --status failed partial --profile NAME` to recover failed/incomplete hosts after completion output scrolls away. ID/latest selects one batch; --status without ID selects latest. This is independent of observation result (individual raw results). Checkout observation_cli.query(root, identifier=None, *, statuses=None) and render(view) expose compact view 0.2.0; complete data remains observation_runs.list_runs/show or Core retention.runs/run. Exact batch/host raw associations supply Result IDs for observation result, while missing/ambiguous links stay unavailable. Requires existing profile data and Python 3.11+, performs no collection/writes and returns read success independently of execution failure. [CLI selection/state semantics](cli.md#revisit-an-observation-batch) and [schema](../schemas/observation-view.schema.json) define latest, filters, counts, gaps and extension limits.
 
 ## Compact execution and host-specific result inspection
 
@@ -275,10 +275,16 @@ Use the existing Core/report readers for input and the documented checkout workf
 
 Core/UI group catalogs apply the existing recognized-sensitive-field mask to nested recipe parameters. Explicit CLI dump remains raw. Do not reconstruct execution inputs from masked display snapshots; reuse resolved runner vars or authorized configuration services.
 
+## Consistent batch completion results
+
+`observation_cli.query` view 0.2.0 exposes effective host result_status and pre-filter result_counts alongside original host status/observation.counts (collection states). --status filters the effective result; known retention/content failures override collection and degraded access makes an otherwise successful result partial. Exact raw associations supply nullable collection_identity/access_degraded/content_status; missing/ambiguous raw files are explicit gaps, never another batch's actor or host state. Batch-only publication failures remain warnings. Existing immutable run storage is unchanged.
+
+Checkout `console_output.execution_result(row)` returns `{status, text}` for known collection/retention/content/access fields; `execution_identity(row)` formats recorded access.actual_identity or unknown. Python 3.11+ CLI composition helpers are reused by completion and batch history, with no host execution or storage. Rendering tables still needs the standard console dependency. Use these helpers instead of rebuilding competing status rules; tests cover shared table rows, receipt failures, fallback, unknown evidence and read-only behavior. See [canonical view and filter rules](cli.md#revisit-an-observation-batch).
+
 ## Host results under observation
 
 Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](cli.md#host-result-history-and-modes).
 
 Checkout readers `recipe_reports.results(..., kind=None)`, `show_result(..., kind=None)` and `result_diagnostics.diagnose(..., kind=None)` accept keyword-only kind="operation" or "report" for scoped reads. Default None preserves the combined reader used by the recipe browser; kind filtering does not change globally resolved short IDs. These are checkout composition helpers, not a new versioned Core API. Artifact verification remains report-only. Public synthetic tests cover separation, ID collisions, filters, wrong-kind failures, modes, read-only behavior, HTML conflicts and TUI forwarding; no host was rerun for this CLI change.
 
-_Last modified: 2026-10-21 12:30:58_
+_Last modified: 2026-10-21 18:12:20_

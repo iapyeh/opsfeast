@@ -34,6 +34,6 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [result-diagnosis.schema.json](result-diagnosis.schema.json) defines read-only saved-result diagnosis projection 0.1.0: selected failure evidence with bounded excerpts and explicit issue/omission counts. It is independent of raw execution and retained-data contracts. See [selection, exit codes and interpretation limits](../docs/cli.md#diagnose-a-saved-failure).
 
-[observation-view.schema.json](observation-view.schema.json) defines compact batch index/host views 0.1.0 for the top-level observation CLI. This projection preserves whole-batch counts and exposes exact raw Result ID links independently of full observation-run objects. See [CLI and checkout helper semantics](../docs/cli.md#revisit-an-observation-batch).
+[observation-view.schema.json](observation-view.schema.json) defines compact batch index/host views 0.2.0 for the top-level observation CLI. This projection separates whole-batch collection/result counts, effective result_status, nullable actor/access/content evidence and exact raw Result ID links independently of full observation-run objects. See [CLI and checkout helper semantics](../docs/cli.md#revisit-an-observation-batch).
 
-_Last modified: 2026-10-21 12:07:37_
+_Last modified: 2026-10-21 18:12:20_

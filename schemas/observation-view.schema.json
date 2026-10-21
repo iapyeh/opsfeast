@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Compact observation views 0.1.0",
+  "title": "Compact observation views 0.2.0",
   "$defs": {
     "summary": {
       "type": "object",
@@ -122,7 +122,11 @@
         "retention_status",
         "record_id",
         "result_id",
-        "short_id"
+        "short_id",
+        "result_status",
+        "collection_identity",
+        "content_status",
+        "access_degraded"
       ],
       "properties": {
         "host_id": {
@@ -166,6 +170,51 @@
             "string",
             "null"
           ]
+        },
+        "result_status": {
+          "enum": [
+            "pending",
+            "success",
+            "partial",
+            "failed",
+            "skipped"
+          ]
+        },
+        "collection_identity": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "username",
+                "effective_uid"
+              ],
+              "properties": {
+                "username": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "effective_uid": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        "content_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "access_degraded": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     }
@@ -180,7 +229,7 @@
       ],
       "properties": {
         "view_version": {
-          "const": "0.1.0"
+          "const": "0.2.0"
         },
         "observations": {
           "type": "array",
@@ -198,11 +247,12 @@
         "observation",
         "statuses",
         "hosts",
-        "warnings"
+        "warnings",
+        "result_counts"
       ],
       "properties": {
         "view_version": {
-          "const": "0.1.0"
+          "const": "0.2.0"
         },
         "observation": {
           "$ref": "#/$defs/summary"
@@ -231,9 +281,42 @@
           "items": {
             "type": "string"
           }
+        },
+        "result_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pending",
+            "success",
+            "partial",
+            "failed",
+            "skipped"
+          ],
+          "properties": {
+            "pending": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "success": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "partial": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-21 12:07:37"
+  "$comment": "Last modified: 2026-10-21 18:12:20"
 }

@@ -126,7 +126,7 @@ Saving a job grants no future execution permission and establishes no scheduler.
 
 ## Revisit a complete execution batch
 
-Use `opsfeast.py observation` for batch history and `observation latest --status failed partial` for the latest batch's incomplete hosts. The command prints the actual Observation ID/time/recipe/selectors and full counts before filtered host/result rows. These read-only views are separate from observation result, which indexes individual host results. No saved membership or missing raw data is inferred. See [examples and precise selection rules](cli.md#revisit-an-observation-batch).
+Use `opsfeast.py observation` for batch history and `observation latest --status failed partial` for the latest batch's incomplete hosts. The command prints the actual Observation ID/time/recipe/selectors and full collection/result counts before filtered host/result rows. The table matches completion output (Host/Collection identity/Result/Result ID); --status filters effective results, including retention/content failures. Collection status remains independent in view 0.2.0 JSON. These read-only views are separate from observation result, which indexes individual host results. No saved membership or missing raw data is inferred. See [examples and precise selection rules](cli.md#revisit-an-observation-batch).
 
 ## Inspect details after a compact run
 
@@ -173,4 +173,4 @@ offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTM
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-21 12:30:58_
+_Last modified: 2026-10-21 18:12:20_

@@ -264,4 +264,8 @@ The new top-level observation CLI provides compact batch views; inventory runs l
 
 Host raw result lookup moves from recipes results to `observation result` without aliases. Replace recipes results list with observation result, detail [ID] with observation result [ID] --detail, show ID with observation result ID --raw, and diagnose ID with observation result ID. Keep --host/--recipe-id/--status on the new host index; selected diagnosis supports --limit and --json. Recipes results now reads offline reports only and rejects host IDs/--host. Existing artifacts remain under recipes artifact. Update operator scripts and saved commands; no data move, re-collection or historical rewrite is required, and Result IDs are unchanged. See [complete modes and validation](cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 12:30:58_
+## Observation batch view 0.2.0
+
+`observation ID/latest --status` now filters the effective result shown by recipes run completion, including retention/content failures and degraded access; it previously filtered only collection status. Selected tables now use Host/Collection identity/Result/Result ID. Update JSON consumers for view_version 0.2.0 and the added host result_status/collection_identity/access_degraded/content_status plus top-level result_counts. Existing host status/reason_code and observation.counts still describe collection; result_counts describes all host results before filtering. Batch-index field shapes remain the same but use view_version 0.2.0. Immutable observation-run 0.1.0 storage, raw files and Result IDs are unchanged; no migration or collection is needed. Missing raw details remain unknown, and batch-only publication failures are not attributed to individual hosts. See [view schema and filter rules](cli.md#revisit-an-observation-batch).
+
+_Last modified: 2026-10-21 18:12:20_

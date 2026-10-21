@@ -127,7 +127,7 @@ class ObservationCLITests(unittest.TestCase):
                 code,out,_=self.invoke(*arguments,tty=tty)
                 self.assertEqual(code,0)
                 view=json.loads(out)
-                self.assertEqual(view['view_version'],'0.1.0')
+                self.assertEqual(view['view_version'],'0.2.0')
                 self.assertEqual(view['observation']['observation_id'],identity)
         self.assertEqual(before,{p:p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
 
@@ -170,12 +170,78 @@ class ObservationCLITests(unittest.TestCase):
         runs.finish(self.root,identity)
         runs.record_execution(self.root,identity,1,'failed')
         view=cli.query(self.root,identity,statuses=['failed'])
-        self.assertEqual(view['hosts'],[])
+        self.assertEqual([h['host_id'] for h in view['hosts']],['node'])
+        self.assertEqual(view['hosts'][0]['result_status'],'failed')
         self.assertEqual(view['observation']['counts']['success'],1)
+        self.assertEqual(view['result_counts']['failed'],1)
         self.assertEqual(view['observation']['execution_status'],'failure')
         rendered=cli.render(view)
         self.assertIn('Data storage failed for node',rendered)
         self.assertIn('Content publication failed',rendered)
+
+    def test_saved_table_matches_live_identity_and_receipt_failures(self):
+        self.enable()
+        identity=runs.start(self.root,[{'host_id':h,'icon':'🖥'} for h in ('node','other')],'synthetic/recipe')
+        raws=[]
+        for host,receipt in [('node',{'status':'failed'}),('other',{'status':'not_stored'})]:
+            raw={'host_id':host,'status':'partial','reason_code':'synthetic_partial','recipe':{'id':'example'},
+                 'observation_run_id':identity,'retention':receipt,
+                 'access':{'actual_identity':{'username':'collector','effective_uid':1000}},
+                 'content_update':{'status':'success'}}
+            path=self.raw(identity,host,host);path.write_text(json.dumps(raw))
+            runs.record_result(self.root,identity,host,raw)
+            raw['result_path']=str(path);raws.append(raw)
+        runs.finish(self.root,identity)
+        view=cli.query(self.root,identity)
+        with patch.object(cli,'table',return_value='table') as saved:
+            cli.render(view)
+        with patch.object(console_output,'table',return_value='table') as live:
+            console_output.execution({'hosts':raws},icons={'node':'🖥','other':'🖥'},result_root=self.root)
+        self.assertEqual(saved.call_args.args,live.call_args.args)
+        self.assertEqual([h['result_status'] for h in view['hosts']],['failed','partial'])
+        self.assertEqual(view['hosts'][0]['status'],'partial')
+        self.assertEqual(view['hosts'][0]['collection_identity'],{'username':'collector','effective_uid':1000})
+        self.assertEqual(view['observation']['counts']['partial'],2)
+        self.assertEqual(view['result_counts']['failed'],1)
+        self.assertEqual([h['host_id'] for h in cli.query(self.root,identity,statuses=['failed'])['hosts']],['node'])
+        self.assertEqual([h['host_id'] for h in cli.query(self.root,identity,statuses=['partial'])['hosts']],['other'])
+
+    def test_content_failure_survives_fallback_and_filters_match_display(self):
+        self.enable()
+        identity=runs.start(self.root,[{'host_id':h} for h in ('node','other')],'synthetic/recipe')
+        for host,content in [('node','failed'),('other','success')]:
+            raw={'host_id':host,'status':'success','recipe':{'id':'example'},'observation_run_id':identity,
+                 'content_update':{'status':content},'access':{'degraded':True,
+                 'actual_identity':{'username':'operator','effective_uid':1000}}}
+            path=self.raw(identity,host,host);path.write_text(json.dumps(raw))
+            runs.record_result(self.root,identity,host,raw)
+        runs.finish(self.root,identity)
+        view=cli.query(self.root,identity,statuses=['failed'])
+        host,=view['hosts']
+        self.assertEqual(host['host_id'],'node')
+        self.assertEqual(host['status'],'success')
+        self.assertEqual(view['result_counts']['partial'],1)
+        text=console_output.execution_result(cli.execution_row(host))['text']
+        self.assertIn('❌ FAIL',text)
+        self.assertIn('content_update_failed',text)
+        self.assertIn('fallback_user',text)
+        other,=cli.query(self.root,identity,statuses=['partial'])['hosts']
+        self.assertEqual(other['host_id'],'other')
+
+    def test_missing_raw_keeps_known_failure_and_does_not_borrow_batch_content(self):
+        self.enable()
+        identity=runs.start(self.root,[{'host_id':'node'}],'synthetic/recipe')
+        runs.record_result(self.root,identity,'node',{'status':'success'})
+        runs.finish(self.root,identity);runs.record_execution(self.root,identity,1,'failed')
+        view=cli.query(self.root,identity)
+        host,=view['hosts']
+        self.assertEqual(host['result_status'],'success')
+        for key in ('collection_identity','access_degraded','content_status','result_id'):
+            self.assertIsNone(host[key])
+        self.assertTrue(any('Raw details unavailable' in w for w in view['warnings']))
+        self.assertTrue(any('Content publication failed' in w for w in view['warnings']))
+        # A batch publication failure has no evidence identifying a failed host.
+        self.assertEqual(cli.query(self.root,identity,statuses=['failed'])['hosts'],[])
 
     def test_human_output_escapes_terminal_controls(self):
         identity=self.make()

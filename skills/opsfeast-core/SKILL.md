@@ -156,7 +156,7 @@ paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
 ## Recover batch results after terminal output scrolls away
 
-Use `python -B tools/opsfeast.py observation --profile NAME` to list explicit batches newest first. Use `observation latest --status failed partial --profile NAME` or a fixed full/unique-prefix Observation ID to show host status/reason/Result ID. --status alone implies latest and always filters host collection states; it never searches older batches for failed hosts. latest includes running/scheduled batches, so check displayed ID/time/recipe/selectors. Whole-batch counts/outcome remain visible after filtering; storage/publication failures remain separate warnings. Raw links require an exact batch/host match; absent/deleted/ambiguous links remain a dash. Follow Result IDs with observation result. This read does not initialize, collect or write; use --json for view 0.1.0, and Core retention.runs/run for full data. Reuse checkout observation_cli.query/render when composing a viewer. See [canonical CLI rules](../../docs/cli.md#revisit-an-observation-batch) and [view schema](../../schemas/observation-view.schema.json).
+Use `python -B tools/opsfeast.py observation --profile NAME` to list explicit batches newest first. Use `observation latest --status failed partial --profile NAME` or a fixed full/unique-prefix Observation ID to show host/collection identity/result/Result ID. --status alone implies latest and always filters displayed host results, including retention/content failures; it never searches older batches for failed hosts. latest includes running/scheduled batches, so check displayed ID/time/recipe/selectors. Whole-batch counts/outcome remain visible after filtering; storage/publication failures remain separate warnings. Raw links require an exact batch/host match; absent/deleted/ambiguous links remain a dash. Follow Result IDs with observation result. This read does not initialize, collect or write; use --json for view 0.2.0, and Core retention.runs/run for full data. Reuse checkout observation_cli.query/render when composing a viewer. See [canonical CLI rules](../../docs/cli.md#revisit-an-observation-batch) and [view schema](../../schemas/observation-view.schema.json).
 
 ## Read execution-batch evidence
 
@@ -170,4 +170,4 @@ Group catalogs include configured recipe policy; Core/UI snapshots mask recogniz
 
 Use `opsfeast.py observation result [RESULT_ID]` for individual host history/diagnosis, `--detail` for full vertical evidence and `--raw` for complete JSON. Use the original root/profile and --json for automation. `recipes results` is offline-report-only; update old host commands without moving data or changing IDs. These reads do not collect or retry. See [canonical modes and failure rules](../../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 12:30:58_
+_Last modified: 2026-10-21 18:12:20_
