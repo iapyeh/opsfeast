@@ -105,7 +105,7 @@ Read the [CLI reference](../../docs/cli.md) when choosing, explaining or running
 
 ## Host initialization and account diagnostics
 
-For connection/platform/account checks, read [host diagnostics](../../docs/host-diagnostics.md). New diagnostics require matching SSHScript import/distribution 5.0.0. Read the bundled public SSHScript skill, Agent Guide and authenticated-console API sections before privilege tests; reuse already-read applicable material. Setup/configuration requests alone do not authorize connections, proxies, su/sudo or recipe execution. Apply the user's existing authorization without asking again.
+For connection/platform/account checks, read [host diagnostics](../../docs/host-diagnostics.md). New diagnostics require matching SSHScript import/distribution 6.0.0. Read the bundled public SSHScript skill, Agent Guide and authenticated-console API sections before privilege tests; reuse already-read applicable material. Setup/configuration requests alone do not authorize connections, proxies, su/sudo or recipe execution. Apply the user's existing authorization without asking again.
 
 Choose the narrowest command that satisfies the request:
 
@@ -285,4 +285,4 @@ paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
 Group recipes can carry private inputs. Core/UI catalog snapshots mask recognized sensitive fields, while explicit dump remains raw. Do not use a masked display snapshot as executable input or assume arbitrary values are safe to publish.
 
-_Last modified: 2026-10-20 23:35:59_
+_Last modified: 2026-10-23 08:11:44_

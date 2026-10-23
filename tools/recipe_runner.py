@@ -101,8 +101,8 @@ def reporting(enabled, label, host=None):
 def load_runtime():
     import sshscript
     installed = version('sshscript')
-    if installed != sshscript.__version__ or installed != '5.0.0':
-        raise ConfigError('runner requires matching SSHScript import/distribution 5.0.0; no automatic upgrade')
+    if installed != sshscript.__version__ or installed != '6.0.0':
+        raise ConfigError('runner requires matching SSHScript import/distribution 6.0.0; no automatic upgrade')
     return sshscript.Session, {'python': sys.version.split()[0], 'interpreter': sys.executable,
                                'sshscript_import': sshscript.__version__, 'sshscript_distribution': installed}
 

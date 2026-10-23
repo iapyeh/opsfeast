@@ -23,7 +23,7 @@ python -B tools/opsfeast.py recipes show feast/report/execution-summary --profil
 python -B tools/opsfeast.py recipes list --profile main --html /path/to/new-catalog.html
 ```
 
-Catalog/show/pack can use --checkout-only on a fresh clone without reading a Feast. Otherwise specify --root/--profile or use the selected profile. These three environment choices are mutually exclusive. Other recipe commands require a Feast except unpack, which only reads a selected archive and creates a candidate. Python 3.11+ and PyYAML are needed; offline reports and metadata commands do not import or require SSHScript. Initialization dependency scope expects PyYAML 6.0.3; operation execution retains its SSHScript 5.0.0 requirement. Inspect actual prerequisites with check_environment.py and the selected recipe's dependencies; do not install or upgrade automatically.
+Catalog/show/pack can use --checkout-only on a fresh clone without reading a Feast. Otherwise specify --root/--profile or use the selected profile. These three environment choices are mutually exclusive. Other recipe commands require a Feast except unpack, which only reads a selected archive and creates a candidate. Python 3.11+ and PyYAML are needed; offline reports and metadata commands do not import or require SSHScript. Initialization dependency scope expects PyYAML 6.0.3; operation execution retains its SSHScript 6.0.0 requirement. Inspect actual prerequisites with check_environment.py and the selected recipe's dependencies; do not install or upgrade automatically.
 
 Catalog reads source registrations from entry hosts.yaml and lists checkout (repository), Feast recipes/ (profile) and named external sources. Reference syntax is shared with opsfeast.py recipes run: bare path, :path and source:path. No symlink escape from a source is allowed. An optional absent profile recipes/ directory is normal; missing external roots are unavailable. Disabled sources are reported but their contents are not read. Inspection parses descriptors, versions and entrypoint signatures without importing recipe code, host discovery or connections; it does not check passwords, target dependencies or data applicability.
 
@@ -173,4 +173,4 @@ offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTM
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-_Last modified: 2026-10-21 18:12:20_
+_Last modified: 2026-10-23 08:11:44_

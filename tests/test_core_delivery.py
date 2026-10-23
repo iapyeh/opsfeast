@@ -131,6 +131,8 @@ def execute(recipe):
             names = archive.namelist()
             metadata = archive.read(next(name for name in names if name.endswith('.dist-info/METADATA'))).decode()
             self.assertIn('Requires-Dist: tabulate[widechars]==0.10.0\n', metadata)
+            self.assertIn('Requires-Dist: sshscript==6.0.0; extra == "execution"', metadata)
+            self.assertIn('sshscript==6.0.0', archive.read('_opsfeast_data/requirements.txt').decode())
             self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)

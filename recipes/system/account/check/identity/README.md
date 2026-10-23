@@ -8,7 +8,7 @@ This minimal Core example uses descriptor 0.3.0 and python-recipe 0.1.0. The run
 
 ## Prerequisites and invocation
 
-Use Python 3.11+, PyYAML 6.0.3, matching SSHScript import/distribution 5.0.0 and a configured enabled host with POSIX id. Within authorized connection/command scope, from the trusted checkout:
+Use Python 3.11+, PyYAML 6.0.3, matching SSHScript import/distribution 6.0.0 and a configured enabled host with POSIX id. Within authorized connection/command scope, from the trusted checkout:
 
 ```sh
 python -B tools/opsfeast.py inspect-recipe system/account/check/identity --json
@@ -23,8 +23,8 @@ Success data.account is the observed nonempty single-line account name, not proo
 
 ## Implementation choice and extension
 
-[main.py](main.py) uses SSHScript 5.0.0 through the Core facade for one argv command. Core supplies connection planning/lifecycle and a default finite command budget. This fits the existing execution foundation without another backend. See [Core API](../../../../../docs/core-api.md), [recipes skill](../../../../../skills/opsfeast-recipes/SKILL.md), and [public tests](../../../../../tests/test_core_delivery.py). For privileged recipes use explicit Recipe sudo/su scopes and document authorized accounts/effects; do not simply run sudo inside a command string.
+[main.py](main.py) uses SSHScript 6.0.0 through the Core facade for one argv command. Core supplies connection planning/lifecycle and a default finite command budget. This fits the existing execution foundation without another backend. See [Core API](../../../../../docs/core-api.md), [recipes skill](../../../../../skills/opsfeast-recipes/SKILL.md), and [public tests](../../../../../tests/test_core_delivery.py). For privileged recipes use explicit Recipe sudo/su scopes and document authorized accounts/effects; do not simply run sudo inside a command string.
 
 Synthetic runner/result tests and a temporary local credential-free execution are validation evidence. Remote SSH and native su/sudo are unverified; listed platforms are declared applicability, not all-platform execution evidence. Attribution is Bundle, MIT; include LICENSE when packaging.
 
-_Last modified: 2026-10-20 11:22:14_
+_Last modified: 2026-10-23 08:11:44_

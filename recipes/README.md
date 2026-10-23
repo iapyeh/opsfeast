@@ -19,7 +19,7 @@ Use [domain/subdomains/action/name](../docs/recipe-taxonomy.md) for new recipes.
 
 | Reference | Stable ID / version | Purpose | Runtime/platform | Verification evidence | Invocation |
 | --- | --- | --- | --- | --- | --- |
-| [system/inventory/overview](system/inventory/overview/README.md) | inventory-system / 0.4.0 | Common system facts plus hardware, storage, network, software and services sections | SSHScript 5.0.0; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | opsfeast.py recipes run system/inventory/overview --host HOST |
+| [system/inventory/overview](system/inventory/overview/README.md) | inventory-system / 0.4.0 | Common system facts plus hardware, storage, network, software and services sections | SSHScript 6.0.0; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | opsfeast.py recipes run system/inventory/overview --host HOST |
 | [system/network/check/port](system/network/check/port/README.md) | check-port / 0.1.0 | One bounded TCP connection from the selected host | SSHScript Session plus target Python socket; Linux, FreeBSD, macOS | Synthetic; no native target/SSH verification | opsfeast.py recipes run system/network/check/port --host HOST --var port=8888 |
 | [system/account/check/identity](system/account/check/identity/README.md) | check-identity / 0.1.0 | Observe the supplied session's effective account without escalation | Core Recipe and SSHScript; Linux, FreeBSD, macOS | Synthetic and earlier local Core evidence; remote applicability unverified | opsfeast.py recipes run system/account/check/identity --host HOST |
 | [feast/report/execution-summary](feast/report/execution-summary/README.md) | report-summary / 0.1.2 | Render selected saved execution results as HTML and JSON | Offline controller Python; python-report 0.1.0 | Synthetic and isolated local report generation | opsfeast.py recipes run feast/report/execution-summary --input RESULT.json |
@@ -48,4 +48,4 @@ The first result contract and synthetic example live with inventory-system. Inve
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 
-_Last modified: 2026-10-20 11:22:14_
+_Last modified: 2026-10-23 08:11:44_

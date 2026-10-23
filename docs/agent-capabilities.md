@@ -89,7 +89,7 @@ Prefer [Core API 0.1.0](core-api.md) and the [Core skill](../skills/opsfeast-cor
 
 ## Python reuse map
 
-These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 5.0.0. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
+These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 6.0.0. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
 
 | Module and current interface | Reusable result or behavior | Caller responsibility |
 | --- | --- | --- |
@@ -107,6 +107,8 @@ These modules live in `tools/` and use sibling imports. Put the selected trusted
 | `recipe_jobs.listing(root)`; `load(root, name, verify=True)` | Saved names/definition with default content verification | `verify=False` is inspection only, not permission to execute changed content. Use CLI jobs save/run for invocation preparation and execution. |
 
 For writes and host operations, prefer the complete CLI/runner workflow: `opsfeast.py recipes run`, `recipe_reports.run_report`, `recipe_packages.pack/unpack`, `recipe_jobs.save`, `observation_store.retain`, `host_runtime` and `access_check` are implementation owners, not interchangeable task shortcuts. Direct composition must preserve their prerequisites, caller preparation, target selection, enabled flags, cleanup, storage and failure rules. For example, CLI ingest validates an eligible batch before a transaction; calling `retain` in a loop does not provide that batch guarantee. Do not bypass the workflow merely to import a lower-level function. Use the canonical task contracts and public synthetic tests before proposing a new adapter.
+
+For package/knowledge refresh, reuse the [SSHScript update prompt and procedure](skill-updates.md#update-sshscript-with-one-prompt), plus `check_environment.py` and `skill_bundle.py check/download`. They inspect readiness and stage complete public bundles; they do not install packages or apply updates automatically. The agent must honor the trusted checkout's exact supported version and learn matching references before using a new contract.
 
 ## Minimal read-only composition example
 
@@ -287,4 +289,4 @@ Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `ob
 
 Checkout readers `recipe_reports.results(..., kind=None)`, `show_result(..., kind=None)` and `result_diagnostics.diagnose(..., kind=None)` accept keyword-only kind="operation" or "report" for scoped reads. Default None preserves the combined reader used by the recipe browser; kind filtering does not change globally resolved short IDs. These are checkout composition helpers, not a new versioned Core API. Artifact verification remains report-only. Public synthetic tests cover separation, ID collisions, filters, wrong-kind failures, modes, read-only behavior, HTML conflicts and TUI forwarding; no host was rerun for this CLI change.
 
-_Last modified: 2026-10-21 18:12:20_
+_Last modified: 2026-10-23 08:11:44_

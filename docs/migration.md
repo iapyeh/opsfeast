@@ -268,4 +268,10 @@ Host raw result lookup moves from recipes results to `observation result` withou
 
 `observation ID/latest --status` now filters the effective result shown by recipes run completion, including retention/content failures and degraded access; it previously filtered only collection status. Selected tables now use Host/Collection identity/Result/Result ID. Update JSON consumers for view_version 0.2.0 and the added host result_status/collection_identity/access_degraded/content_status plus top-level result_counts. Existing host status/reason_code and observation.counts still describe collection; result_counts describes all host results before filtering. Batch-index field shapes remain the same but use view_version 0.2.0. Immutable observation-run 0.1.0 storage, raw files and Result IDs are unchanged; no migration or collection is needed. Missing raw details remain unknown, and batch-only publication failures are not attributed to individual hosts. See [view schema and filter rules](cli.md#revisit-an-observation-batch).
 
-_Last modified: 2026-10-21 18:12:20_
+## SSHScript 6.0 execution dependency
+
+Execution now requires matching SSHScript import/distribution 6.0.0 and the complete bundled 6.0.0 skill. Existing 5.0.0 environments must update the selected interpreter before host diagnostics or recipe execution; initialization and offline metadata/report scopes keep their existing dependency rules. Follow [the package/skill update procedure](skill-updates.md#update-sshscript-with-one-prompt). Do not bypass exact runtime checks or update other environments by assumption.
+
+Custom scripts using $.exit(), $.break(), Session/wrapper exit(), SSHScriptExit or SSHScriptBreak must adopt the public 6.0 migration contract before execution. Review ScriptResult consumers too. OpsFeast does not rewrite private recipes, settings, historical observations or retained data. No data migration or legacy compatibility path is added. The new interactive console is available from the SSHScript CLI; OpsFeast does not automatically enter it or change its runner to a retained console.
+
+_Last modified: 2026-10-23 08:11:44_

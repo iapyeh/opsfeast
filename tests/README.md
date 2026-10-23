@@ -284,4 +284,26 @@ Obsidian Contents verification (2026-10-19): Python 3.11.15, 3.13.13 and 3.14.4 
 
 Use test_recipe_runner.py for the single public entrypoint, current job delegation, snapshot rejection, path/source resolution, result naming and receipt-write failure checks. Shared selection, progress and concurrency remain covered by test_host_selection.py; general execution, Core scopes, reports, replay and Vault retain their independent suites. Obsolete snapshot-runner and dryrun/force integration assertions were removed; pure historical parser/data fixtures remain for saved-data interpretation. No real SSH/su/sudo execution is implied.
 
-_Last modified: 2026-10-20 14:32:24_
+## SSHScript 6.0 update verification
+
+The execution dependency, runtime/diagnostic guards, full-environment readiness and official skill contract now require 6.0.0 together. `test_sshscript_update.py` covers supported execution, old/newer rejection, import/distribution mismatch and package-versus-skill mismatch before Session creation. `test_setup_tools.py` checks matching/newer bundle contracts, complete staging, read-only comparisons, preservation, network failures, invalid archives and the required 6.x console reference. `test_core_delivery.py` checks the exact wheel execution dependency and bundled requirements as well as public package resources.
+
+Run the public regression suite with the selected interpreter:
+
+```sh
+python -B -m unittest discover -s tests -p 'test_*.py'
+python -B tools/check_environment.py --json
+python -m pip check
+```
+
+On 2026-10-23, Python 3.11.15, 3.13.13 and 3.14.4 each passed 856 tests. The older interpreters reused the selected environment's dependencies; this is regression/grammar evidence, not independently installed native dependency validation on those interpreters. The selected OpsFeast .venv uses SSHScript import/distribution/CLI 6.0.0, and full readiness plus pip dependency checks passed. The shared maintenance environment was not changed.
+
+Credential-free native macOS checks using the published wheel passed exact argv/stdin, retained Bash state, ScriptResult/stop metadata and strict cleanup. A piped invocation of the actual console retained Python variables across a dollar command and quit successfully. The bundled identity recipe passed through the actual runner/Core with an isolated temporary local profile. No private management root, SSH, proxy command, su/sudo, inventory schedule or managed-host recipe execution was used. These local checks do not establish remote authentication, privilege policy or Linux/FreeBSD/ESXi behavior with 6.0. Historical evidence explicitly labeled 5.0.0 remains historical.
+
+The official wheel SHA-256 is b3c62588f50608d6ce8a8028216759224f3cc4c2a0b552a6208c2002198dd8ca, verified against PyPI metadata. Complete skill ZIP SHA-256 is 60f032a57e812df831aab79354cdd3045f8acd200aa10c7e792ca29a7b4984ea; the replacement preserves upstream bytes and records provenance in SOURCE.json. Public release commit e70d56e2bb1856acdb555d7d63922e85dd538bbd supplied supplementary changelog/console reading. See [the user/agent update workflow and documentation gaps](../docs/skill-updates.md#update-sshscript-with-one-prompt).
+
+Wheel/sdist builds, temporary no-index/no-dependency installation and 68 installed-library/setup/recipe tests passed. Actual identity execution through the installed wheel also passed outside the checkout. One source-oriented CLI test fails if transplanted into the wheel because it expects checkout tools/package paths; it is covered by the passing source suite and excluded from the installed-library count, consistent with the documented checkout-CLI boundary. New local links, skill frontmatter, structured files, Python 3.11 grammar, footer rules and exact bundle integrity checks passed.
+
+Human/agent documentation, capability routing, recipe dependency declarations and relevant skills are updated together. The reusable user interface is a README prompt plus an existing-tool procedure; no automatic updater or reload service is claimed. No retention schema or stored-data migration is required. No commit, push or release is included.
+
+_Last modified: 2026-10-23 08:11:44_

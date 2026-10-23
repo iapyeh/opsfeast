@@ -5,6 +5,8 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
 
+For an execution-library upgrade, follow the [SSHScript package and complete-skill update procedure](../../docs/skill-updates.md#update-sshscript-with-one-prompt). Learn version-matched migration/API references and inspect custom recipes for removed interfaces before execution; a newer PyPI release alone does not establish OpsFeast support.
+
 ## Exact-reference recipe policy
 
 Before editing execution settings, read [recipe sources and policy](../../docs/recipe-sources.md). Use default/group/host recipes mappings keyed by exact filesystem references, with enabled/vars; bare PATH and bundle:PATH are the same bundle key, :PATH is profile-only, NAME:PATH is a registered source. Do not flatten paths or substitute descriptor IDs. Discover references with `python -B tools/opsfeast.py recipes list --profile NAME --json`. Mappings merge by leaf; lists replace, explicit false wins and the first resolved group wins overlapping leaves. Recipes default disabled; new init enables bundled inventory explicitly, preserving existing configs.
@@ -142,7 +144,7 @@ Read [recipe experience](../../docs/recipe-experience.md) before selecting these
 | Capability | Usable interface | Availability and limits |
 | --- | --- | --- |
 | Unified local recipe catalog | recipes list/show, --json, query/kind filters | Checkout, Feast and registered sources; static metadata/signatures only, disabled/error states explicit, ambiguous IDs fail |
-| Operation execution | recipes run with host/group/all and --var/--vars-file | Same opsfeast.py recipes run logic, SSHScript 5.0.0 runtime and existing scope/cleanup/result semantics |
+| Operation execution | recipes run with host/group/all and --var/--vars-file | Same opsfeast.py recipes run logic, SSHScript 6.0.0 runtime and existing scope/cleanup/result semantics |
 | Offline report generation | recipes run with --input JSON and python-report entrypoint | Python/PyYAML only; execute(*, context, timeout), declared artifacts; no host/Session, optional renderer dependencies belong to the recipe |
 | Raw results and basic views | observation result, recipes results list/show, catalog/index --html | Read existing execution/report files, preserve partial/invalid/quality/time evidence; escaped plain HTML export; optional Textual source/directory browser with provenance-matched execution history |
 | Verified artifacts | recipes artifact RESULT_ID NAME | Return path after manifest/path/size/digest checks; no publication or viewer launch |
@@ -174,7 +176,7 @@ Share portable report code/templates and synthetic examples through [report shar
 
 ## Execute or author general Python recipes
 
-Read [the Python-session capability contract](../../docs/recipe-execution.md) before using or authoring this interface. Supported versions are descriptor 0.3.0, python-session 0.1.0 and SSHScript 5.0.0; inventory keeps descriptor/result 0.2.0. Check the selected Feast/configuration, interpreter and actual dependencies, inspect the descriptor and entrypoint without executing, and review operations within the user's scope. No installer or compatibility declaration establishes target availability.
+Read [the Python-session capability contract](../../docs/recipe-execution.md) before using or authoring this interface. Supported versions are descriptor 0.3.0, python-session 0.1.0 and SSHScript 6.0.0; inventory keeps descriptor/result 0.2.0. Check the selected Feast/configuration, interpreter and actual dependencies, inspect the descriptor and entrypoint without executing, and review operations within the user's scope. No installer or compatibility declaration establishes target availability.
 
 Use `python -B tools/opsfeast.py recipes run system/network/check/port --host HOST --var port=8888` for the bundled [host-origin TCP check](../../recipes/system/network/check/port/README.md), or use the selected compatible recipe's own input names. --vars-file accepts a JSON object; --var uses literal strings or JSON for other declared types. Preparation merges defaults → source → resolved default/group/host recipe vars → invocation values, with nested mappings merged and lists replaced. --var replaces the same variable from --vars-file before that merge. Invalid effective inputs fail before that host's Session is created. Read the canonical contract for batch independence, disabled skips, parsing and secret handling.
 
@@ -363,4 +365,4 @@ For a failed/partial saved result, prefer `python -B tools/opsfeast.py observati
 
 Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](../../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 18:12:20_
+_Last modified: 2026-10-23 08:11:44_

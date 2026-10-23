@@ -36,7 +36,7 @@ Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly
 
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
 
-Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 5.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
+Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 6.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
 
 ## Identify the instance and scope
 
@@ -170,4 +170,4 @@ Group catalogs include configured recipe policy; Core/UI snapshots mask recogniz
 
 Use `opsfeast.py observation result [RESULT_ID]` for individual host history/diagnosis, `--detail` for full vertical evidence and `--raw` for complete JSON. Use the original root/profile and --json for automation. `recipes results` is offline-report-only; update old host commands without moving data or changing IDs. These reads do not collect or retry. See [canonical modes and failure rules](../../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 18:12:20_
+_Last modified: 2026-10-23 08:11:44_

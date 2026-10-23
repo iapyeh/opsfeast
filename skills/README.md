@@ -30,6 +30,8 @@ For complete tool syntax, defaults, behavior, output and exit codes, see the [CL
 
 For an existing instance received from a colleague, route to the [handover prompt](../README.md#take-over-an-existing-opsfeast-instance): identify the tool checkout and inherited management roots, read skills and check readiness without init or host operations. For a later release check and authorized update, use the [update/skill-refresh prompt](../README.md#update-opsfeast-and-refresh-your-agents-skills). A workspace containing only Feast data is not automatically a Git checkout. These prompts explain actual knowledge reading versus platform-supported installed-skill refresh.
 
+For a SSHScript package/knowledge upgrade, use the [short SSHScript update prompt](../README.md#update-sshscript-and-learn-its-new-skill) and [canonical procedure](../docs/skill-updates.md#update-sshscript-with-one-prompt). Check the selected interpreter, OpsFeast requirements and complete official skill together; a newly published major version is not automatically supported. This is separate from an OpsFeast release update.
+
 For first use, the [single-prompt walkthrough](../docs/first-use.md) lets an agent clone or reuse OpsFeast in the active workspace, explicitly read the acquired guidance, and propose setup. Follow [checkout bootstrap](../docs/getting-started.md#agent-led-checkout-bootstrap) for empty/nonempty directories, repository verification and failure handling. Clone-only authorization stops before software installation and initialization; the agent offers to execute the concrete local plan after the user agrees.
 
 ## Discover and reuse existing capabilities first
@@ -69,4 +71,4 @@ Start with the [getting-started guide](../docs/getting-started.md). The `tools/o
 
 Use `opsfeast.py observation result [RESULT_ID]` for individual host history/diagnosis, `--detail` for full vertical evidence and `--raw` for complete JSON. Use the original root/profile and --json for automation. `recipes results` is offline-report-only; update old host commands without moving data or changing IDs. These reads do not collect or retry. See [canonical modes and failure rules](../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 18:12:20_
+_Last modified: 2026-10-23 08:11:44_

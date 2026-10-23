@@ -20,7 +20,7 @@ An example JSON input file is `{"port":8888,"address":"127.0.0.1","connect_timeo
 
 ## Dependencies, inputs and operations
 
-Controller: Python 3.11+, PyYAML 6.0.3 and SSHScript 5.0.0. Target: python3 on PATH with the standard library. Declared Linux/FreeBSD/macOS coverage is implementation intent, with synthetic tests only; targets without python3 are unsupported by this implementation and report command/execution failure. No installation, sudo or su is attempted.
+Controller: Python 3.11+, PyYAML 6.0.3 and SSHScript 6.0.0. Target: python3 on PATH with the standard library. Declared Linux/FreeBSD/macOS coverage is implementation intent, with synthetic tests only; targets without python3 are unsupported by this implementation and report command/execution failure. No installation, sudo or su is attempted.
 
 port is a required integer from 1 to 65535. address is an IPv4/IPv6 literal string, default 127.0.0.1; hostnames are rejected by recipe code to avoid unbounded DNS lookup. connect_timeout_seconds is positive, at most 60, default 3; the actual socket budget is min(input, runner timeout). The SSHScript total command budget is the runner timeout, including Python startup. Invalid IP text fails execution before a probe command, but after the runner establishes its Session.
 
@@ -41,8 +41,8 @@ Schema 0.1.0 data includes probe_from (host ID), address, port, protocol tcp, st
 
 ## Implementation choice and verification
 
-SSHScript supplies local/SSH command execution through the runner's borrowed Session, argv handling, finite command budgets and retained CommandResult. Python's socket standard library handles the probe without depending on platform-specific nc flags. See [implementation](main.py), the bundled [public SSHScript skill](../../../../../skills/sshscript/SKILL.md) and its [API contract](../../../../../skills/sshscript/references/api-guide.md). Documentation contract and runtime requirement are 5.0.0; [SOURCE.json](../../../../../skills/sshscript/SOURCE.json) preserves provenance.
+SSHScript supplies local/SSH command execution through the runner's borrowed Session, argv handling, finite command budgets and retained CommandResult. Python's socket standard library handles the probe without depending on platform-specific nc flags. See [implementation](main.py), the bundled [public SSHScript skill](../../../../../skills/sshscript/SKILL.md) and its [API contract](../../../../../skills/sshscript/references/api-guide.md). Documentation contract and runtime requirement are 6.0.0; [SOURCE.json](../../../../../skills/sshscript/SOURCE.json) preserves provenance.
 
 [Public tests](../../../../../tests/test_general_recipes.py) cover open/refused/timeout/network error with synthetic sockets, invalid/truncated command output, runner inputs and failure states. No real target, SSH or local TCP probe has been performed. Review target prerequisites and the complete recipe before authorized use. No distribution license is currently declared by the repository.
 
-_Last modified: 2026-10-20 11:22:14_
+_Last modified: 2026-10-23 08:11:44_

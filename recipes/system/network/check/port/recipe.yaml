@@ -24,7 +24,7 @@ platforms:
   tested: []
   planned: []
 dependencies:
-  controller: [Python 3.11+, PyYAML 6.0.3, SSHScript 5.0.0]
+  controller: [Python 3.11+, PyYAML 6.0.3, SSHScript 6.0.0]
   target: [python3 on PATH with standard library]
 permissions: {sudo: false, su: false}
 side_effects:
@@ -41,4 +41,4 @@ verification:
   synthetic: tested
   local: not-tested
   ssh: not-tested
-# Last modified: 2026-10-19 15:20:06
+# Last modified: 2026-10-23 08:11:44

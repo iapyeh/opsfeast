@@ -69,6 +69,8 @@ def inspect_bundle(content):
     guide_contract = re.search(r'Documentation contract: SSHScript (\d+\.\d+\.\d+)', guide)
     if not skill_contract or not guide_contract or skill_contract[1] != guide_contract[1]:
         raise BundleError('cannot establish a consistent documentation contract')
+    if skill_contract[1].startswith('6.') and 'references/console.md' not in files:
+        raise BundleError('SSHScript 6.x bundle is missing the console guide')
     return files, skill_contract[1]
 
 
@@ -83,7 +85,7 @@ def check(content, installed=None):
             'installed_contract': source['documentation_contract'], 'candidate_contract': contract,
             'bundle_sha256': digest, 'bundle_changed': digest != source['bundle_sha256'],
             'local_matches_candidate': local == files,
-            'contract_matches_runner': contract == '5.0.0',
+            'contract_matches_runner': contract == '6.0.0',
             'status': 'unchanged' if digest == source['bundle_sha256'] and local == files else 'review_required'}
 
 

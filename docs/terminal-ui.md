@@ -95,7 +95,7 @@ python -B tools/check_environment.py
 python -B -c "from importlib.metadata import version; print(version('textual'))"
 ```
 
-Install only within the user's authorized environment; do not replace or upgrade an existing environment automatically. This integration is tested with Textual 8.2.8. `check_environment.py` checks the base environment and SSHScript bundle, not optional Textual availability. Initialization/configuration-only users can install `requirements-init.txt` plus `requirements-tui.txt`; host operations still require SSHScript 5.0.0.
+Install only within the user's authorized environment; do not replace or upgrade an existing environment automatically. This integration is tested with Textual 8.2.8. `check_environment.py` checks the base environment and SSHScript bundle, not optional Textual availability. Initialization/configuration-only users can install `requirements-init.txt` plus `requirements-tui.txt`; host operations still require SSHScript 6.0.0.
 
 The UI requires terminal stdin and stdout. Missing Textual returns 1 before starting the command. A pipe, redirected stdout, unsupported command or repeated `--tui` returns 2 before execution. There is no silent fallback that could execute an operation after a UI prerequisite failure. Omit `--tui` for AI agents, scripts, JSON pipelines and noninteractive use. Ordinary commands do not import or require Textual.
 
@@ -165,4 +165,4 @@ Original output and JSON exports retain the original timezone/precision. The his
 heading still names its offset(s). See [the shared time policy](cli.md#human-time-display-policy)
 for DST, invalid/unzoned timestamps, HTML generation and machine-data exceptions.
 
-_Last modified: 2026-10-21 12:30:58_
+_Last modified: 2026-10-23 08:11:44_

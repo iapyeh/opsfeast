@@ -70,9 +70,9 @@ def runtime_class():
     try:
         import sshscript
     except ImportError:
-        raise ConfigError('host diagnostics require SSHScript 5.0.0 in this interpreter') from None
-    if sshscript.__version__ != '5.0.0' or version('sshscript') != '5.0.0':
-        raise ConfigError('host diagnostics require matching SSHScript import/distribution 5.0.0')
+        raise ConfigError('host diagnostics require SSHScript 6.0.0 in this interpreter') from None
+    if sshscript.__version__ != '6.0.0' or version('sshscript') != '6.0.0':
+        raise ConfigError('host diagnostics require matching SSHScript import/distribution 6.0.0')
     return sshscript.Session
 
 

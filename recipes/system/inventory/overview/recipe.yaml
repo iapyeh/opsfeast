@@ -25,13 +25,13 @@ platforms:
   tested:
   - macos
 compatibility:
-  sshscript: ==5.0.0
-  note: Public 5.0.0 skill snapshot; exact runtime version checked before connection.
+  sshscript: ==6.0.0
+  note: Public 6.0.0 skill snapshot; exact runtime version checked before connection.
 dependencies:
   controller:
   - Python >=3.11
   - PyYAML
-  - SSHScript ==5.0.0
+  - SSHScript ==6.0.0
   target:
   - /bin/sh
   - uname
@@ -101,4 +101,4 @@ runner:
   contract: inventory-jobs
   version: 0.1.0
   entrypoint: jobs.py
-# Last modified: 2026-10-20 17:51:56
+# Last modified: 2026-10-23 08:11:44

@@ -154,6 +154,16 @@ Finish with a concise report to me: update/no-update/blocked status; release ver
 
 Skill refresh is an agent procedure using the existing integration or direct Markdown reading; OpsFeast has no universal skill installer/reloader. See [complete skill updates](docs/skill-updates.md) and [source/conflict handling](docs/agent-guidance.md#skill-storage-and-conflict-resolution). For repeated checks, separately choose and authorize a schedule on your agent platform.
 
+## Update SSHScript and learn its new skill
+
+When SSHScript releases a new version, paste this into your agent's existing OpsFeast project:
+
+```text
+Update this OpsFeast environment to the latest stable SSHScript version supported by its trusted OpsFeast checkout, and learn the matching complete official skill. Follow docs/skill-updates.md under "Update SSHScript with one prompt". I authorize this local package and skill update, its candidate downloads, backups and credential-free local checks. Preserve local changes and private data. Report any newer unsupported release and what support is missing.
+```
+
+The agent checks the published package, OpsFeast's exact dependency/runtime requirements and the complete skill together. It uses the selected OpsFeast interpreter and reports what it learned. If a newer release needs an OpsFeast update, it reports that prerequisite; this prompt does not authorize changing runtime guards, pulling OpsFeast, updating unrelated environments or connecting to hosts. See [the complete procedure and 6.0 migration](docs/skill-updates.md#update-sshscript-with-one-prompt).
+
 ## For AI agents
 
 Read the [skill index](skills/README.md) first, select the relevant skills and check task-relevant integration conflicts as described in [agent guidance](docs/agent-guidance.md#skill-storage-and-conflict-resolution). Start here when a user asks you to use OpsFeast. Read the linked Markdown directly if your agent does not automatically discover project guidance or skills; no particular agent product or skill loader is required.
@@ -290,4 +300,4 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-20 23:10:05_
+_Last modified: 2026-10-23 08:11:44_

@@ -76,7 +76,7 @@ Once settings pass, paste:
 
 ## 3. Practical cases: choose only what you need
 
-Each YAML block is a complete alternative example, not a fragment to append to another `hosts:` mapping. Replace synthetic values locally. Run the same check and connection test before advancing. The full environment expects SSHScript 5.0.0; use [environment checks](getting-started.md) before diagnostics.
+Each YAML block is a complete alternative example, not a fragment to append to another `hosts:` mapping. Replace synthetic values locally. Run the same check and connection test before advancing. The full environment expects SSHScript 6.0.0; use [environment checks](getting-started.md) before diagnostics.
 
 ### Reuse an existing SSH config alias
 
@@ -202,4 +202,4 @@ Agent prompt:
 
 Documentation examples are synthetic. Configuration validation and automated mock tests do not prove native SSH, su or sudo behavior on your host.
 
-_Last modified: 2026-10-20 11:22:14_
+_Last modified: 2026-10-23 08:11:44_

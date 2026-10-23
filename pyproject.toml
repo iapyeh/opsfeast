@@ -11,5 +11,5 @@ requires-python = ">=3.11"
 dependencies = ["PyYAML==6.0.3", "tabulate[widechars]==0.10.0"]
 
 [project.optional-dependencies]
-execution = ["sshscript==5.0.0"]
+execution = ["sshscript==6.0.0"]
 tui = ["textual==8.2.8"]

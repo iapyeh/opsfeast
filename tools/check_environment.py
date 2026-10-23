@@ -28,12 +28,13 @@ def inspect_environment(scope='full'):
                 'tabulate': inspect_package('tabulate', '0.10.0'),
                 'wcwidth': inspect_package('wcwidth')}
     if scope == 'full':
-        packages['sshscript'] = inspect_package('sshscript', '5.0.0')
+        packages['sshscript'] = inspect_package('sshscript', '6.0.0')
     try:
         source = json.loads((ROOT / 'skills/sshscript/SOURCE.json').read_text(encoding='utf-8'))
         skill = {'documentation_contract': source['documentation_contract'],
-                 'ready': source['documentation_contract'] == '5.0.0'}
-        for relative in ('SKILL.md', 'references/agent-guide.md', 'references/api-guide.md', 'references/versioning.md'):
+                 'ready': source['documentation_contract'] == '6.0.0'}
+        for relative in ('SKILL.md', 'references/agent-guide.md', 'references/api-guide.md',
+                         'references/versioning.md', 'references/console.md'):
             if not (ROOT / 'skills/sshscript' / relative).is_file():
                 skill['ready'] = False
     except (OSError, ValueError, KeyError, TypeError) as exc:
