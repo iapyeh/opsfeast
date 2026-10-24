@@ -284,10 +284,50 @@ def diagnostic(report, test='', icons=None, user=None):
     return result
 
 
-def execution_identity(row):
+def execution_identities(row):
+    """Project recorded identities by role; never read configured credentials/users."""
+    def name(value):
+        return (isinstance(value, str) and bool(value.strip()) and len(value) <= 256
+                and all(ord(c) >= 32 and ord(c) != 127 for c in value))
+    if isinstance(row.get('identity_evidence'), list):
+        # Only the read-only batch projection supplies this precomputed evidence.
+        return row['identity_evidence']
+    identities = []
     actor = (row.get('access') or {}).get('actual_identity') or {}
-    name, uid = actor.get('username'), actor.get('effective_uid')
-    return f'{name} (uid={uid})' if name and type(uid) is int else 'unknown'
+    username, uid = actor.get('username'), actor.get('effective_uid')
+    if name(username) and type(uid) is int and uid >= 0:
+        identities.append({'role': 'os', 'username': username, 'effective_uid': uid})
+    if (row.get('recipe') or {}).get('id') == 'mysql-replication':
+        instances = (row.get('data') or {}).get('instances')
+        if isinstance(instances, list):
+            for instance in instances:
+                if not isinstance(instance, dict) or not name(instance.get('instance')):
+                    continue
+                server = instance.get('server') or {}
+                username = server.get('authenticated_user') if isinstance(server, dict) else None
+                identities.append({'role': 'database', 'instance': instance['instance'],
+                                   'username': username if name(username) else None,
+                                   'source': 'CURRENT_USER()' if name(username) else None})
+    login = row.get('login_identity') or {}
+    if (row.get('connected') is True and isinstance(login, dict)
+            and login.get('source') == 'ssh_connection' and name(login.get('username'))):
+        identities.append({'role': 'ssh', 'username': login['username'], 'source': 'ssh_connection'})
+    return identities
+
+
+def execution_identity(row):
+    identities = execution_identities(row)
+    os_actors = [i for i in identities if i.get('role') == 'os']
+    databases = [i for i in identities if i.get('role') == 'database']
+    logins = [i for i in identities if i.get('role') == 'ssh']
+    labels = []
+    if any(i.get('username') for i in databases):
+        labels.extend(f"DB {i['instance']}: {i.get('username') or 'unknown'}" for i in databases)
+    if os_actors:
+        labels.extend(f"{i['username']} (uid={i['effective_uid']})" for i in os_actors)
+    elif logins:
+        labels.extend(f"SSH: {i['username']}" for i in logins)
+    return '; '.join(labels) or 'unknown'
 
 
 def execution_result(row):
@@ -312,6 +352,53 @@ def execution_result(row):
     return {'status': state, 'text': outcome}
 
 
+def execution_locations(report, result_root=None, host=None):
+    """Human completion destinations. JSON and execution/storage receipts stay unchanged."""
+    hosts = report.get('hosts', [report])
+    if not hosts:
+        return ''
+    lines = []
+    saved = [Path(row['result_path']) for row in hosts if row.get('result_path') and Path(row['result_path']).is_file()]
+    if len(hosts) == 1:
+        missing = 'saved file unavailable' if hosts[0].get('result_path') else 'not saved'
+        lines.append('Raw JSON: ' + (cell(str(saved[0].resolve())) if saved else missing))
+    elif saved:
+        lines.extend('Raw results directory: ' + cell(str(path)) for path in sorted({p.resolve().parent for p in saved}))
+    elif any(row.get('result_path') for row in hosts):
+        lines.append('Raw JSON: saved files unavailable')
+    else:
+        lines.append('Raw JSON: no result files saved')
+    receipts = [row.get('content_update') or {} for row in hosts]
+    successful_vault = any(any(
+        consumer.get('status') == 'success' and consumer.get('consumer') == 'vault'
+        and consumer.get('source') == 'builtin:vault' for consumer in receipt.get('consumers', [])) for receipt in receipts)
+    if successful_vault and result_root is not None:
+        try:
+            from host_vault import result_locations
+            row = hosts[0]
+            target = row.get('host', row.get('host_id', host)) if len(hosts) == 1 else None
+            locations = result_locations(result_root, host=target,
+                                         record_id=(row.get('retention') or {}).get('record_id') if len(hosts) == 1 else None)
+            if locations.get('current'):
+                lines.append('Vault current (latest state): ' + cell(locations['current']))
+            elif locations.get('host'):
+                lines.append('Vault host results: ' + cell(locations['host']))
+            elif locations.get('index'):
+                lines.append('Vault index: ' + cell(locations['index']))
+            else:
+                lines.append('Vault: publication succeeded; entrypoint unavailable')
+        except Exception as exc:
+            # Result lookup must not replace a valid execution outcome or disclose config errors.
+            lines.append('Vault: publication succeeded; entrypoint unavailable (' + type(exc).__name__ + ')')
+    elif successful_vault:
+        lines.append('Vault: publication succeeded; result root unavailable')
+    elif any(receipt.get('status') == 'failed' for receipt in receipts):
+        lines.append('Vault: not confirmed for this run (content update failed)')
+    elif receipts:
+        lines.append('Vault: no successful publication recorded for this run')
+    return '\n'.join(lines)
+
+
 def execution(report, icons=None, host=None, recipe=None, result_root=None):
     if report.get('collection_started') is False:
         from access_check import format_summary
@@ -334,6 +421,9 @@ def execution(report, icons=None, host=None, recipe=None, result_root=None):
     rendered=table(['host', 'collection identity', 'result', 'result id'], rows)
     if report.get('observation_run_id'):
         rendered += '\nObservation ID: '+cell(report['observation_run_id'])
+    destinations = execution_locations(report, result_root, host)
+    if destinations:
+        rendered += '\n\n' + destinations
     return rendered
 
 

@@ -495,12 +495,12 @@ def retain_general(root, report, metadata, directory, *, saved_snapshot=None, dr
     if selected['recipe_id'] != report.get('recipe', {}).get('id', selected['recipe_id']):
         raise ConfigError('retention snapshot recipe ID mismatch')
     declaration = selected['retention']
-    if declaration is not None and declaration['contract'] != 'host-values':
-        raise ConfigError('scalar retention requires host-values; use retain for registered structured data')
     if declaration is None or settings(root) is None:
         return {'status': 'skipped', 'reason_code': 'no_retention_adapter'}
     if report['status'] not in ('success', 'partial') or report['evidence_kind'] not in ('local', 'ssh'):
         return {'status': 'skipped', 'reason_code': 'result_not_retained'}
+    if declaration['contract'] != 'host-values':
+        return retain(root, report, saved_snapshot=selected, dry_run=dry_run)
     fields = {}
     for name, spec in declaration['fields'].items():
         value = report['data'].get(name)

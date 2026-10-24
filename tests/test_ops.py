@@ -3,6 +3,7 @@ import sys
 import contextlib
 import io
 import json
+import shlex
 from pathlib import Path
 import tempfile
 import unittest
@@ -134,7 +135,7 @@ class OpsTests(unittest.TestCase):
                          '{glob: "recipes/**/overview"}'):
             with self.subTest(selector=selector):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/system/inventory/overview}}]}}}}')
-                expected = (sorted([ops.REPOSITORY_RECIPES / 'system/account/check/identity', ops.REPOSITORY_RECIPES / 'system/network/check/port', ops.REPOSITORY_RECIPES / 'system/inventory/overview', ops.REPOSITORY_RECIPES / 'feast/report/retention-summary', ops.REPOSITORY_RECIPES / 'feast/report/execution-summary'])
+                expected = (sorted([ops.REPOSITORY_RECIPES / 'database/mysql/check/replication', ops.REPOSITORY_RECIPES / 'system/account/check/identity', ops.REPOSITORY_RECIPES / 'system/network/check/port', ops.REPOSITORY_RECIPES / 'system/inventory/overview', ops.REPOSITORY_RECIPES / 'feast/report/retention-summary', ops.REPOSITORY_RECIPES / 'feast/report/execution-summary'])
                             if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
                 self.assertEqual(self.check().selected['web'], expected)
 
@@ -370,12 +371,22 @@ class OpsTests(unittest.TestCase):
         target = Mock()
         target.exec_command.side_effect = [('test-host\n', '', 0), ('test-date\n', '', 0)]
         jump.connect.return_value = target
+        proxy_argv = []
+        def capture_proxy(*args, **kwargs):
+            argv = shlex.split(kwargs['proxy_command'])
+            if '-I' in argv:
+                material = Path(argv[-1])
+                proxy_argv.extend(json.loads(material.read_text())['argv'])
+            else:
+                proxy_argv.extend(argv)
+            return jump
+        local.connect.side_effect = capture_proxy
         code, output, errors = self.connection_cli('target', session_class)
         self.assertEqual(code, 0)
         self.assertEqual(local.connect.call_args.kwargs['password'], 'jump-password')
-        self.assertEqual(local.connect.call_args.kwargs['proxyCommand'], 'nc jump.example 22')
+        self.assertEqual(proxy_argv, ['nc', 'jump.example', '22'])
         self.assertEqual(jump.connect.call_args.kwargs['password'], 'target-password')
-        self.assertEqual(jump.connect.call_args.kwargs['pkey_path'], 'keys/id_rsa')
+        self.assertEqual(jump.connect.call_args.kwargs['parent_key_filename'], 'keys/id_rsa')
         self.assertNotIn('key_filename', jump.connect.call_args.kwargs)
         self.assertIs(jump.connect.call_args.kwargs['look_for_keys'], False)
         self.assertIs(jump.connect.call_args.kwargs['allow_agent'], False)
@@ -388,7 +399,7 @@ class OpsTests(unittest.TestCase):
                 session_class, local, remote = self.session_double()
                 code, output, errors = self.connection_cli('target', session_class)
                 self.assertEqual(code, 0)
-                self.assertEqual(local.connect.call_args.kwargs['pkey_path'], path)
+                self.assertEqual(local.connect.call_args.kwargs['parent_key_filename'], path)
                 self.assertNotIn('key_filename', local.connect.call_args.kwargs)
 
     def test_connection_alias_proxy_conflict_before_connect(self):
@@ -396,7 +407,7 @@ class OpsTests(unittest.TestCase):
         session_class, local, remote = self.session_double()
         session_class.resolve_connection.side_effect = [
             {'hostname': 'jump', 'username': 'jumper', 'port': 22},
-            {'hostname': 'target', 'username': 'operator', 'port': 22, 'proxyCommand': 'proxy SECRET'},
+            {'hostname': 'target', 'username': 'operator', 'port': 22, 'proxy_command': 'proxy SECRET'},
         ]
         code, output, errors = self.connection_cli('a', session_class)
         self.assertEqual(code, 1)

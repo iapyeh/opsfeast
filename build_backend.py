@@ -32,7 +32,7 @@ def _metadata():
     return (f'Metadata-Version: 2.3\nName: {NAME}\nVersion: {VERSION}\n'
             'Summary: OpsFeast bundled Core Python API\nRequires-Python: >=3.11\n'
             'Requires-Dist: PyYAML==6.0.3\nRequires-Dist: tabulate[widechars]==0.10.0\nProvides-Extra: execution\n'
-            'Requires-Dist: sshscript==6.0.0; extra == "execution"\nProvides-Extra: tui\n'
+            'Requires-Dist: sshscript @ https://github.com/iapyeh/sshscript/archive/7a3b43594eca50cf1600d4f8a1dc67cb266df19e.tar.gz ; extra == "execution"\nProvides-Extra: tui\n'
             'Requires-Dist: textual==8.2.8; extra == "tui"\n')
 
 

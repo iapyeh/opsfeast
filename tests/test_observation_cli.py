@@ -206,6 +206,24 @@ class ObservationCLITests(unittest.TestCase):
         self.assertEqual([h['host_id'] for h in cli.query(self.root,identity,statuses=['failed'])['hosts']],['node'])
         self.assertEqual([h['host_id'] for h in cli.query(self.root,identity,statuses=['partial'])['hosts']],['other'])
 
+    def test_database_identity_matches_live_completion_without_rewriting_raw(self):
+        self.enable()
+        identity = runs.start(self.root, [{'host_id': 'node'}], 'database/mysql/check/replication')
+        raw = {'host_id': 'node', 'status': 'success', 'recipe': {'id': 'mysql-replication'},
+               'observation_run_id': identity, 'connected': True,
+               'login_identity': {'username': 'operator', 'source': 'ssh_connection'},
+               'data': {'instances': [{'instance': 'main', 'server': {'authenticated_user': 'monitor@localhost'}}]}}
+        path = self.raw(identity, 'node', 'database')
+        path.write_text(json.dumps(raw));before = path.read_bytes()
+        runs.record_result(self.root, identity, 'node', raw);runs.finish(self.root, identity)
+        view = cli.query(self.root, identity)
+        self.assertIsNone(view['hosts'][0]['collection_identity'])
+        self.assertEqual(view['hosts'][0]['identity_evidence'][0]['username'], 'monitor@localhost')
+        self.assertEqual(console_output.execution_identity(cli.execution_row(view['hosts'][0])),
+                         console_output.execution_identity(raw))
+        self.assertIn('monitor@localhost', cli.render(view))
+        self.assertEqual(path.read_bytes(), before)
+
     def test_content_failure_survives_fallback_and_filters_match_display(self):
         self.enable()
         identity=runs.start(self.root,[{'host_id':h} for h in ('node','other')],'synthetic/recipe')

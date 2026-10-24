@@ -126,4 +126,18 @@ Declare every input in inputs.variables and validate recipe-specific nested fiel
 
 Offline reports consuming batches use context.retention.runs()/run(run_id); do not group observations by approximate time or reevaluate saved historical findings using current config. Preserve actual membership, partial/failed/skipped states and missing-source references. Use [run producer services](observation-runs.md#checkout-interfaces-and-verification) only when implementing an authorized collector lifecycle; ordinary users should rerun existing CLI workflows. Generated charts belong to content/report programs and remain optional; retain complete structured/report data when current views omit uncollected fields.
 
-_Last modified: 2026-10-20 23:29:18_
+## Turn interactive discovery into repeatable operations
+
+Follow the [agent workflow](../skills/opsfeast-recipes/references/exploration-to-recipe.md) for transparent exploration, risk/authorization decisions, deterministic recipe and config, retained data and consumers. The [database replication example](../recipes/database/mysql/check/replication/README.md) implements the full path without requiring a persistent Console during routine runs. Show calls before executing; preserve sanitized input/output and cleanup evidence. Prefer failure to destructive guesses. Existing authorization applies only to its concrete scope; reads do not authorize repair or extra source hosts.
+
+## Current SSHScript source contract
+
+New recipes use [the pinned 7.0.0 source contract](sshscript-7.md) through their
+supplied Recipe/Session. Review custom Python connection code for removed aliases,
+keyword-only arguments, key ownership and source identity before authorized use.
+The MySQL replication recipe uses argv, stdin and command_timeout/structured
+results unchanged; its database/retention schema is not migrated by this upgrade.
+The runner owns connection acquisition/cleanup; do not reconnect or modify the
+Session to compensate for an unsupported runtime.
+
+*Last modified: 2026-10-24 22:24:58*

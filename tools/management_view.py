@@ -10,7 +10,10 @@ def masked(value):
         for key, item in value.items():
             normalized = re.sub(r'[^a-z0-9]', '', str(key).lower())
             secret = any(word in normalized for word in ('password', 'passwd', 'passphrase', 'secret', 'token')) or normalized in {'apikey', 'privatekey'}
-            result[key] = MASK if secret else masked(item)
+            if normalized == 'proxyenvironment' and isinstance(item, dict):
+                result[key] = {name: None if value is None else MASK for name, value in item.items()}
+            else:
+                result[key] = MASK if secret else masked(item)
         return result
     if isinstance(value, list):
         return [masked(item) for item in value]

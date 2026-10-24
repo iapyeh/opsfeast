@@ -76,7 +76,7 @@ Once settings pass, paste:
 
 ## 3. Practical cases: choose only what you need
 
-Each YAML block is a complete alternative example, not a fragment to append to another `hosts:` mapping. Replace synthetic values locally. Run the same check and connection test before advancing. The full environment expects SSHScript 6.0.0; use [environment checks](getting-started.md) before diagnostics.
+Each YAML block is a complete alternative example, not a fragment to append to another `hosts:` mapping. Replace synthetic values locally. Run the same check and connection test before advancing. The full environment expects SSHScript 7.0.0; use [environment checks](getting-started.md) before diagnostics.
 
 ### Reuse an existing SSH config alias
 
@@ -100,7 +100,7 @@ hosts:
       identity_file: /home/local-user/.ssh/server_rsa
 ```
 
-Use the actual absolute path on the computer running OpsFeast. This field uses SSHScript pkey_path and loads an RSA key; do not assume arbitrary key formats or encrypted-key passphrases are supported. It does not expand `~`. Prefer an existing working SSH config/agent when that better fits your authentication. See [identity_file limitations](hosts-yaml.md).
+Use the actual absolute path on the computer running OpsFeast. This field uses SSHScript parent_key_filename and loads an RSA key; do not assume arbitrary key formats or encrypted-key passphrases are supported. It does not expand `~`. Prefer an existing working SSH config/agent when that better fits your authentication. See [identity_file limitations](hosts-yaml.md).
 
 ### Connect through a jump host
 
@@ -202,4 +202,4 @@ Agent prompt:
 
 Documentation examples are synthetic. Configuration validation and automated mock tests do not prove native SSH, su or sudo behavior on your host.
 
-_Last modified: 2026-10-23 08:11:44_
+*Last modified: 2026-10-24 22:22:19*

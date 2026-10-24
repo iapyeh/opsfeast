@@ -116,6 +116,8 @@ def dataset_lines(dataset, level=2, *, compact=False, limit=12):
 def page_title(record):
     """The content author owns titles, independently of executable recipe paths."""
     definition = record.get('retention_definition', {})
+    if definition.get('contract') == 'mysql-replication':
+        return 'MySQL replication'
     if definition.get('contract') == 'inventory-observations' or record['recipe_id'] == 'inventory-system':
         return 'System inventory'
     return label(record['recipe_id'])
@@ -564,13 +566,121 @@ def command_outputs(record):
     return lines
 
 
+REPLICATION_STATES = {
+    'healthy': ('✅ HEALTHY', 'success'),
+    'unhealthy': ('🔴 UNHEALTHY', 'danger'),
+    'unknown': ('⚠️ UNKNOWN', 'warning'),
+    'not_configured': ('⚪ NOT CONFIGURED', 'warning'),
+    'attention': ('⚠️ NEEDS ATTENTION', 'warning'),
+}
+
+
+def replication_status(data):
+    """Summarize saved findings, without new thresholds or live-health inference."""
+    instances = data['instances']
+    states = [i['health'] for i in instances]
+    if 'unhealthy' in states:
+        return 'unhealthy'
+    if (not states or 'unknown' in states or any(i['cleanup'] != 'confirmed' for i in instances)):
+        return 'unknown'
+    if all(state == 'not_configured' for state in states):
+        return 'not_configured'
+    if 'not_configured' in states:
+        return 'attention'
+    return 'healthy' if data.get('status') == 'success' and all(s == 'healthy' for s in states) else 'unknown'
+
+
+def replication_reason(reason):
+    explanations = {
+        'replica_side_healthy': 'All reported channels passed the saved replica-side checks.',
+        'channel_unhealthy': 'One or more channels failed the saved replica-side checks.',
+        'channel_unknown': 'Channel status could not be fully confirmed.',
+        'thread_not_running': 'An I/O or SQL replication thread is not running.',
+        'replication_error': 'The server reported a replication error.',
+        'unexpected_source': 'The reported source does not match the configured expectation.',
+        'delay_exceeded': 'Reported delay exceeded the saved limit.',
+        'incomplete_status': 'Required channel status was not reported.',
+        'expected_channel_missing': 'An expected replication channel was not returned.',
+        'no_replication_channels': 'No replication channel was returned.',
+        'query_failed': 'The database query did not produce a confirmed result.',
+        'timeout': 'The collection command timed out.',
+        'client_unavailable': 'No supported database client was available.',
+        'credential_cleanup_failed': 'Credential-file cleanup could not be confirmed.',
+        'unsupported_server_version': 'The database server version is unsupported.',
+    }
+    return explanations.get(reason, label(reason))
+
+
+def replication_summary(data):
+    state = replication_status(data)
+    badge, callout = REPLICATION_STATES[state]
+    counts = {key: sum(i['health'] == key for i in data['instances'])
+              for key in ('healthy', 'unhealthy', 'unknown', 'not_configured')}
+    lines = ['## Replication status', '', '### ' + badge, '',
+             '> [!' + callout + '] ' + badge,
+             '> **' + ' · '.join(str(counts[key]) + ' ' + key.replace('_', ' ') for key in counts) + '**',
+             '> Saved replica-side findings only; this is not a live status check.', '']
+    lines += markdown_table(['Instance', 'Status'],
+                            [(i['instance'], REPLICATION_STATES[i['health']][0]) for i in data['instances']]) + ['']
+    if state != 'healthy':
+        lines += ['**Attention required:** inspect the highlighted instance/channel findings below. '
+                  'Unknown, missing configuration and cleanup uncertainty do not establish healthy replication.', '']
+    return lines
+
+
+def replication_lines(data, *, current=False):
+    """Consume only declared retained data; never connect or reinterpret saved findings."""
+    lines = replication_summary(data) + ['## Database replication', '',
+             'Replica-side status only. Source catch-up and row consistency were not verified.', '',
+             'Maximum reported delay: ' + text(data['policy']['max_delay_seconds']) + ' seconds.', '']
+    for instance in data['instances']:
+        badge, callout = REPLICATION_STATES[instance['health']]
+        lines += ['### ' + text(instance['instance']), '', '#### ' + badge, '']
+        if instance['health'] != 'healthy' or instance['cleanup'] != 'confirmed':
+            lines += ['> [!' + ('danger' if instance['health'] == 'unhealthy' else 'warning') + '] Attention: ' + text(instance['instance']),
+                      '> ' + text(replication_reason(instance['reason'])), '']
+        rows = [('Finding', replication_reason(instance['reason'])),
+                ('Saved reason', instance['reason']),
+                ('Observed', format_time(instance['observed_at'])),
+                ('Credential cleanup', '✅ Confirmed' if instance['cleanup'] == 'confirmed' else '⚠️ UNKNOWN — not confirmed')]
+        server = instance['server']
+        if server:
+            rows += [('Database', server['product'] + ' ' + server['version']),
+                     ('Server', server['hostname']), ('Database account', server['authenticated_user'])]
+        lines += markdown_table(['Detail', 'Value'], rows) + ['']
+        if instance['channels']:
+            for channel in instance['channels']:
+                badge, callout = REPLICATION_STATES[channel['health']]
+                lines += ['#### Channel: ' + text(channel['channel'] or '(default)'), '', '**' + badge + '**', '']
+                if channel['health'] != 'healthy':
+                    lines += ['> [!' + callout + '] ' + badge]
+                    lines += ['> - ' + text(replication_reason(reason)) for reason in channel['reasons']]
+                    lines += ['']
+                lines += markdown_table(['Check', 'Result'], [
+                    ('Source', channel['source_host'] if channel['source_host'] is not None else 'Not reported'),
+                    ('I/O thread', channel['io_running'] if channel['io_running'] is not None else 'Not reported'),
+                    ('SQL thread', channel['sql_running'] if channel['sql_running'] is not None else 'Not reported'),
+                    ('Reported delay', str(channel['delay_seconds']) + ' seconds' if channel['delay_seconds'] is not None else 'Not reported'),
+                    ('Saved reasons', ', '.join(channel['reasons']) or 'None reported')]) + ['']
+        else:
+            lines += ['No replication channel was returned; inspect the reason above.', '']
+        if not current:
+            lines += ['Full sanitized evidence (positions, GTIDs, filters, fixed SQL and client results):', '',
+                      '<pre><code>' + html.escape(json.dumps(instance, ensure_ascii=False, indent=2)) + '</code></pre>', '']
+    return lines
+
+
 def render_current(record, history_names=None, host_icon=None, attention_policy=None):
     """Readable current views; historical rendering remains complete and independent."""
     data = record['data']
+    replication = (record.get('retention_definition') or {}).get('contract') == 'mysql-replication'
     lines = [host_heading(record['host_id'], host_icon), '', *attention_lines(record, attention_policy),
              'Observed: ' + text(format_time(record['observed_at'])), '']
-    lines += current_warnings(record)
-    if 'groups' in data:
+    if not replication:
+        lines += current_warnings(record)
+    if replication:
+        lines += replication_lines(data, current=True)
+    elif 'groups' in data:
         lines += current_jobs(record, history_names)
     elif data.get('inventory'):
         lines += current_inventory(record)
@@ -583,7 +693,9 @@ def render_current(record, history_names=None, host_icon=None, attention_policy=
         lines += ['No collected values are available in this view. See the full report.', '']
     lines += command_outputs(record)
     report_link = source_report_link(record, history_names)
-    return with_contents(lines, report_link, report_label='Source report — collection details and identity/coverage warnings', lead_section='Attention')
+    lead = 'Replication status' if replication else 'Attention'
+    return with_contents(lines, report_link, report_label='Source report — collection details and identity/coverage warnings',
+                         lead_section=lead, metadata_first=replication)
 
 
 def render_observation(record, *, current=False, history_names=None, host_icon=None, attention_policy=None):
@@ -594,7 +706,9 @@ def render_observation(record, *, current=False, history_names=None, host_icon=N
     lines = ['# ' + text(record['host_id']), '']
     observations = data.get('observations', {})
     inventory = data.get('inventory')
-    if 'groups' in data:
+    if (record.get('retention_definition') or {}).get('contract') == 'mysql-replication':
+        lines += replication_lines(data)
+    elif 'groups' in data:
         lines += ['## Inventory jobs', '', 'Each group retains its own source times. Missing samples are gaps, not carried-forward measurements.', '']
         for group in data['groups']:
             lines += ['### '+text(group['title']), '', 'State: '+text(group['status'])+'; collected: '+text(group['observed_at']), '']

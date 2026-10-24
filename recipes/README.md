@@ -19,13 +19,14 @@ Use [domain/subdomains/action/name](../docs/recipe-taxonomy.md) for new recipes.
 
 | Reference | Stable ID / version | Purpose | Runtime/platform | Verification evidence | Invocation |
 | --- | --- | --- | --- | --- | --- |
-| [system/inventory/overview](system/inventory/overview/README.md) | inventory-system / 0.4.0 | Common system facts plus hardware, storage, network, software and services sections | SSHScript 6.0.0; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | opsfeast.py recipes run system/inventory/overview --host HOST |
+| [database/mysql/check/replication](database/mysql/check/replication/README.md) | mysql-replication / 0.1.0 | MySQL/MariaDB replica state across instances/channels, safe query evidence, retention and Vault | Core Recipe, SSHScript 7.0.0, target Python/client | Synthetic/local protocol fixtures and Linux SSH MySQL 8.0.46; MariaDB/TLS native unverified | opsfeast.py recipes run database/mysql/check/replication --host HOST --profile NAME --json |
+| [system/inventory/overview](system/inventory/overview/README.md) | inventory-system / 0.4.0 | Common system facts plus hardware, storage, network, software and services sections | SSHScript 7.0.0; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | opsfeast.py recipes run system/inventory/overview --host HOST |
 | [system/network/check/port](system/network/check/port/README.md) | check-port / 0.1.0 | One bounded TCP connection from the selected host | SSHScript Session plus target Python socket; Linux, FreeBSD, macOS | Synthetic; no native target/SSH verification | opsfeast.py recipes run system/network/check/port --host HOST --var port=8888 |
 | [system/account/check/identity](system/account/check/identity/README.md) | check-identity / 0.1.0 | Observe the supplied session's effective account without escalation | Core Recipe and SSHScript; Linux, FreeBSD, macOS | Synthetic and earlier local Core evidence; remote applicability unverified | opsfeast.py recipes run system/account/check/identity --host HOST |
 | [feast/report/execution-summary](feast/report/execution-summary/README.md) | report-summary / 0.1.2 | Render selected saved execution results as HTML and JSON | Offline controller Python; python-report 0.1.0 | Synthetic and isolated local report generation | opsfeast.py recipes run feast/report/execution-summary --input RESULT.json |
 | [feast/report/retention-summary](feast/report/retention-summary/README.md) | report-retention / 0.1.0 | Combine retained observations as Markdown and HTML | Offline controller Python; python-report 0.1.0 | Synthetic and installed-wheel retention/report tests | opsfeast.py recipes run feast/report/retention-summary --profile NAME --json |
 
-This checkout ships these five recipes. Catalog discovery also includes enabled profile and registered external sources; publisher trust, dependencies and host applicability remain separate evidence. No live exchange or automatic third-party installer is implemented. Update this catalog with actual coverage and verification when adding recipes.
+This checkout ships these six recipes. Catalog discovery also includes enabled profile and registered external sources; publisher trust, dependencies and host applicability remain separate evidence. No live exchange or automatic third-party installer is implemented. Update this catalog with actual coverage and verification when adding recipes.
 
 ## Custom and third-party content
 
@@ -48,4 +49,4 @@ The first result contract and synthetic example live with inventory-system. Inve
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 
-_Last modified: 2026-10-23 08:11:44_
+*Last modified: 2026-10-24 22:22:19*

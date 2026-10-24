@@ -1,7 +1,14 @@
 ---
 name: opsfeast-recipes
-description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
+description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for turning interactive discovery into repeatable recipe/config/retention/consumer workflows, recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
 ---
+
+## Interactive exploration to a complete reusable workflow
+
+When a user wants to turn exploration into repeatable operations, follow [the exploration-to-recipe workflow](references/exploration-to-recipe.md). Show commands/calls before execution, retain sanitized input/output evidence and prefer explicit failure to destructive guesses. Dangerous changes require concrete authorization. Deliver config, retention and the requested consumer alongside the recipe, using current contracts rather than reconstructing infrastructure. Finish the handoff: apply authorized target-specific private settings from exploration, supply the actual copy/paste invocation and point to this execution's raw/readable results; do not leave known facts as user homework. TTY completion supplies saved result/Vault entrypoints; JSON remains unchanged.
+
+For database replica checks, discover [database/mysql/check/replication](../../recipes/database/mysql/check/replication/README.md) before writing SQL automation. It supports MySQL 5.7+/MariaDB 10.2+, multiple configured instances/channels, explicit socket/TCP/TLS, expected sources and lag policy through `recipes.REFERENCE.vars.instances`. Use `opsfeast.py recipes run database/mysql/check/replication --profile NAME --host HOST --json`. Target python3 and a database client/monitoring privileges are required; missing credentials fail explicitly. It saves sanitized fixed-query evidence and mysql-replication 0.1.0 retention consumed by builtin:vault. Source-host correlation, repairs, PostgreSQL and native MariaDB/TLS validation remain outside this delivery. The recipe README is the canonical configuration/result/extension catalog entry.
+
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
 
@@ -144,7 +151,7 @@ Read [recipe experience](../../docs/recipe-experience.md) before selecting these
 | Capability | Usable interface | Availability and limits |
 | --- | --- | --- |
 | Unified local recipe catalog | recipes list/show, --json, query/kind filters | Checkout, Feast and registered sources; static metadata/signatures only, disabled/error states explicit, ambiguous IDs fail |
-| Operation execution | recipes run with host/group/all and --var/--vars-file | Same opsfeast.py recipes run logic, SSHScript 6.0.0 runtime and existing scope/cleanup/result semantics |
+| Operation execution | recipes run with host/group/all and --var/--vars-file | Same opsfeast.py recipes run logic, SSHScript 7.0.0 runtime and existing scope/cleanup/result semantics |
 | Offline report generation | recipes run with --input JSON and python-report entrypoint | Python/PyYAML only; execute(*, context, timeout), declared artifacts; no host/Session, optional renderer dependencies belong to the recipe |
 | Raw results and basic views | observation result, recipes results list/show, catalog/index --html | Read existing execution/report files, preserve partial/invalid/quality/time evidence; escaped plain HTML export; optional Textual source/directory browser with provenance-matched execution history |
 | Verified artifacts | recipes artifact RESULT_ID NAME | Return path after manifest/path/size/digest checks; no publication or viewer launch |
@@ -176,7 +183,7 @@ Share portable report code/templates and synthetic examples through [report shar
 
 ## Execute or author general Python recipes
 
-Read [the Python-session capability contract](../../docs/recipe-execution.md) before using or authoring this interface. Supported versions are descriptor 0.3.0, python-session 0.1.0 and SSHScript 6.0.0; inventory keeps descriptor/result 0.2.0. Check the selected Feast/configuration, interpreter and actual dependencies, inspect the descriptor and entrypoint without executing, and review operations within the user's scope. No installer or compatibility declaration establishes target availability.
+Read [the Python-session capability contract](../../docs/recipe-execution.md) before using or authoring this interface. Supported versions are descriptor 0.3.0, python-session 0.1.0 and SSHScript 7.0.0; inventory keeps descriptor/result 0.2.0. Check the selected Feast/configuration, interpreter and actual dependencies, inspect the descriptor and entrypoint without executing, and review operations within the user's scope. No installer or compatibility declaration establishes target availability.
 
 Use `python -B tools/opsfeast.py recipes run system/network/check/port --host HOST --var port=8888` for the bundled [host-origin TCP check](../../recipes/system/network/check/port/README.md), or use the selected compatible recipe's own input names. --vars-file accepts a JSON object; --var uses literal strings or JSON for other declared types. Preparation merges defaults → source → resolved default/group/host recipe vars → invocation values, with nested mappings merged and lists replaced. --var replaces the same variable from --vars-file before that merge. Invalid effective inputs fail before that host's Session is created. Read the canonical contract for batch independence, disabled skips, parsing and secret handling.
 
@@ -365,4 +372,50 @@ For a failed/partial saved result, prefer `python -B tools/opsfeast.py observati
 
 Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](../../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-23 08:11:44_
+## Inherited environments and proxy commands
+
+Use the supplied Recipe/Session and [shared proxy environment support](../../docs/process-environment.md)
+for agent/terminal/cron/CI differences. Do not embed NO_COLOR=true in every recipe
+or mutate global os.environ. OpsFeast normalizes inherited NO_COLOR only for local
+proxies; explicit per-hop connection.proxy_environment can set/remove variables.
+Readiness shows value-free presence/actions; raw hop evidence records the actual
+selected policy and failure state. Recipe-specific subprocess or remote-shell
+requirements still need explicit code, configuration and tests. Preserve sanitized
+inputs/results and authorization for actual environment/configuration changes.
+
+## SSHScript 7.0 source requirement
+
+Use [the pinned source contract](../../docs/sshscript-7.md), matching bundled SSHScript
+skill and normal Recipe/Session ownership. Operational execution requires the reviewed
+7.0.0 source SHA and 32 module/type hashes; identical version text is insufficient.
+Do not fetch a same-version PyPI build or bypass the guard. Custom connection code
+must adopt 7.0 names and keyword-only arguments; host YAML and recipe result/retention
+schemas stay unchanged. The bundled replication recipe uses unchanged argv/stdin
+APIs and is covered by local integration; real SSH/MySQL evidence must be revalidated
+separately within authorization. Recheck Console entered-program exit behavior;
+leave without an exit sequence may intentionally retain waiting_input.
+
+## Display database and transport identity accurately
+
+Follow [role-aware completion/history identity](../../docs/cli.md#role-aware-collection-identity).
+The bundled replication recipe already retains CURRENT_USER() for each instance;
+completion and observation views now display DB INSTANCE: ACCOUNT plus observed
+OS identity or explicitly labeled SSH login fallback. Do not claim that a database
+root account is OS root, or that login is the effective collector. Reuse the shared
+console_output identity projection; unknown/missing evidence must remain visible.
+Other service recipes need a reviewed authenticated-identity contract/extractor,
+not inference from credentials or configured usernames. No additional host probe
+or stored snapshot rewrite is authorized by a display correction.
+
+## Make retained replication health easy to assess
+
+The bundled Vault consumer now shows [prominent replication status](../../docs/host-vault.md#replication-status-must-be-visible-first)
+before Contents, then per-instance/channel status and vertical detail tables.
+Unhealthy findings use danger callouts with explicit text, unknown and absent
+configuration remain distinct, and original reason codes/full evidence stay
+available. Reuse the existing creator-to-retention-to-consumer flow; presentation
+does not change recipe SQL, health rules, retention schema/normalizer or authorization.
+A user-requested appearance fix can regenerate owned views from retained data;
+it does not authorize new host queries or global reader-setting changes.
+
+*Last modified: 2026-10-24 23:07:17*

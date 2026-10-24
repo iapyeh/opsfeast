@@ -1,8 +1,24 @@
-# Version policy and 6.0 migration
+# Version policy and major differences
+
+> **Development status: not stable.** SSHScript is under active development.
+> APIs, CLI options, configuration and data formats may change incompatibly
+> without a deprecation period. Pin the exact version or source revision,
+> review changes before upgrading, and validate your automation again.
 
 SSHScript aims to let engineers and AI reliably execute, understand, and take
 over automation. A version identifies a public execution contract, not a
 claim that a command or deployment is safe or successful.
+
+## Current development policy
+
+SSHScript is still in development. Unless the maintainer explicitly requests
+backward compatibility, changes do not need to preserve older APIs, CLI behavior,
+configuration or data formats. Do not add compatibility layers, legacy aliases,
+or fallback/migration tools solely for old versions. Provide only brief notes on
+major differences and any necessary caller changes. Historical version and
+migration notes below record earlier contracts; they do not impose compatibility
+requirements on current development. Version selection and publication still
+require their existing authorization.
 
 ## Current contracts
 
@@ -10,8 +26,10 @@ claim that a command or deployment is safe or successful.
 | --- | --- |
 | 3.1.5 | Published baseline described in API_GUIDE.md; one-shot Session commands return CommandResult, but persistent console calls return two live buffers. |
 | 4.0.2 | Previous production contract: completed console results, settings, managed jobs and authenticated-console handshakes; incompatible with parts of 3.1.5. |
-| 5.0.0 | Latest published contract: calling-host trust by default, explicit local/chain strategies and strict known_hosts file errors; preserves the 4.0 command execution contract. |
-| 6.0.0 | Current source contract: interactive Python/dollar console, normal script completion with stop(), ScriptResult metadata, and removal of old exit/break APIs and control exceptions. Package publication is separate from source promotion. |
+| 5.0.0 | Previous published contract: calling-host trust by default, explicit local/chain strategies and strict known_hosts file errors; preserves the 4.0 command execution contract. |
+| 6.0.0 | Previous release contract: interactive Python/dollar console, normal script completion with stop(), ScriptResult metadata, and removal of old exit/break APIs and control exceptions. |
+| 7.0.0 | Current source contract: renamed, keyword-only connection options without aliases; hidden program input, console exit controls, diagnostics and terminal output defaults. Source publication does not publish a GitHub Release/PyPI package. |
+| 6.1.0 | Public Console(existing_session), host/agent updates, credential hooks, explicit ownership and cleanup/reuse status; unified CLI and corrected program Ctrl-C readiness. |
 
 Version 4.0.1 introduced the published 4.0 contract after release validation.
 Version 4.0.2 is a documentation and link maintenance patch with the same public
@@ -19,11 +37,56 @@ execution contract. Native-system validation limits remain documented.
 Use the normal Python Session API as the canonical entry point; optional .spy
 syntax follows the same versioned execution contract.
 
+## 7.0.0 connection parameter changes
+
+These changes define the 7.0.0 source contract. The previously published 6.1.0
+package uses the old names. A source push does not publish a new package.
+Old names are rejected immediately; there are no compatibility aliases or
+migration tools. Update scripts, connection dictionaries and Session settings.
+
+| Previous name | Current name |
+| --- | --- |
+| `host` parameter | `hostname` |
+| `pkey_path` | `parent_key_filename` |
+| `proxyCommand` / `proxyJump` | `proxy_command` / `proxy_jump` |
+| `policy` | `missing_host_key_policy` |
+| `known_hosts` strategy | `known_hosts_source` |
+| `--pkey-path` | `--parent-key-filename` |
+| `--known-hosts` | `--known-hosts-source` |
+
+Only hostname may be positional. Replace `connect("user@host", "password")`
+with `connect("user@host", password="password")`. Explicit username takes
+precedence over the embedded username and is never interpreted as a password.
+`key_filename` still reads local Python-host files; `parent_key_filename` reads
+an RSA key from the calling Session's host. Supply passphrase to decrypt it;
+password is the fallback when passphrase is omitted. Do not combine the latter
+with pkey or key_filename. Explicit sock is incompatible with nested/proxy
+connections. `known_hosts_path` remains a Session setting and is not renamed.
+
+Use the same new policy/source names in `set()`, `get()` and Session properties.
+CLI proxy options are `--proxy-command` and `--proxy-jump`; OpenSSH config files
+still use their standard `ProxyCommand` and `ProxyJump` directives.
+The historical sections below retain the names used by those releases.
+
+## 7.0.0 console changes
+
+The working checkout adds console-only `$.exit()` alongside `exit` and `exit()`.
+For entered programs, `$.exit("command")` supplies the exit sequence on departure;
+without an explicit or configured sequence, the program stays open with a reminder.
+Script-mode `$.exit()`, `Session.exit()` and wrapper `.exit()` remain unavailable.
+Script CLI output now defaults to each stream's TTY status, with mutually exclusive
+`--quiet`, `--verbose` and `--stderr` overrides. Scripts that also print captured
+output may display it twice on a terminal; use `--quiet` when printing it yourself.
+Hidden program replies use `$.input(secret=True)`; recognized password prompts
+select hidden input in terminal interaction. These are 7.0.0 source changes; the
+following migration table is historical.
+
 ## 6.0 console and script completion migration
 
 6.0.0 is an incompatible major version, approved for the new execution contract.
 A source push and successful CI do not create a GitHub Release, tag or PyPI upload.
-The latest published 5.0.0 package remains a separate artifact.
+The 6.0.0 package was published separately; this historical section records its
+script-completion changes. The current source contract is 7.0.0.
 
 | Previous use | 6.0 replacement |
 | --- | --- |
@@ -63,29 +126,46 @@ This default and the strict file-error behavior are incompatible with 4.0.2,
 so they are introduced in a new major version. Explicit `known_hosts="local"`
 preserves the previous source location, while still requiring a readable file.
 
+## 6.1.0 public Console integration
+
+The public `Console` and CLI share one implementation. Compatibility with earlier
+6.0 CLI behavior is intentionally not maintained: the internal InteractiveConsole
+class, open()/execute() startup API, :help/:quit aliases, mode-specific error text
+and silent failed-layer removal are gone. Use Console(session), submit(line), the
+Python help/quit helpers and explicit cleanup/reuse status. Session SSH/SFTP and
+command contracts keep their existing responsibilities.
+
+The maintainer selected 6.1.0 for this feature release under the current
+development policy. It includes the above incompatible console changes, without
+compatibility aliases. Read [the integration contract](embedded-console.md).
+
+The maintainer selected **7.0.0** for the new connection contract because old
+connection arguments, settings and CLI flags are rejected directly.
+
 ## Numbering and compatibility
 
-Versions follow PEP 440 with major.minor.patch compatibility semantics.
-Propose and discuss a major-version promotion with the maintainer before
-changing the version; a request to publish does not itself choose a major bump:
+Versions follow PEP 440. During active development, major/minor labels organize
+feature releases and do not promise backward compatibility. The maintainer selects
+and explicitly approves the release version; do not invent an automatic major bump
+or preserve old behavior solely because the selected release is minor.
 
-- Major: incompatible public return types/unpacking, input data, exceptions,
-  lifecycle/cleanup guarantees, authentication or accepted command templates.
-- Minor: additive public features that preserve existing execution contracts.
-- Patch: compatible fixes. A security fix may require an incompatible restriction;
-  release notes must identify that exception, its impact and migration.
+- Major: a maintainer-selected major milestone or broad contract redesign.
+- Minor: a feature release; may include incompatible changes during development.
+- Patch: focused corrections or documentation updates; identify any behavior change.
+
 - Development: NEXT.devN; increment N when distributing a changed development
   contract. Do not reuse an artifact version for different distributed inputs.
 - Candidates: NEXTaN, NEXTbN or NEXTrcN identify prerelease artifacts. This project's
   current production pipeline accepts only stable versions; prereleases use local
   artifacts/TestPyPI until a separate public prerelease channel is authorized.
 
-Old forms may remain temporarily for migration, but new examples use the
-canonical API. Deprecations require an explicit warning and replacement guidance;
-removal normally waits for a major release. If security or data correctness
-requires an earlier restriction, document it explicitly. Compatibility covers
-both Python and .spy entry points. Do not reinterpret a timeout or transport
-failure as command success, or channel closure as confirmed remote termination.
+During the current development phase, older forms may be removed without a
+compatibility layer, deprecation period or migration implementation unless the
+maintainer explicitly requests those. Briefly note major differences for both
+Python and .spy callers. The numbering rules describe release labels, not a
+requirement to maintain old behavior during development. Do not reinterpret a
+timeout or transport failure as command success, or channel closure as confirmed
+remote termination.
 
 Only _version.py owns the package version. Edit it in the designated
 working_branch directory on branch working_branch. Imports, CLI, wheel/sdist
@@ -156,4 +236,4 @@ Consult that artifact's version-labelled API guide before generating examples.
 Production gates reject prerelease/local versions before uploading; they never
 silently relabel development builds as stable.
 
-*Last modified: 2026-10-22 23:25:30*
+*Last modified: 2026-10-24 16:35:46*

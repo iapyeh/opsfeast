@@ -1,8 +1,9 @@
 {
-  "source_url": "https://iapyeh.github.io/sshscript/v3a/ai-agents/downloads/sshscript-skill.zip",
-  "saved_date": "2026-10-23",
-  "saved_at_utc": "2026-10-23T00:03:03.163813+00:00",
-  "documentation_contract": "6.0.0",
-  "bundle_sha256": "60f032a57e812df831aab79354cdd3045f8acd200aa10c7e792ca29a7b4984ea",
-  "update_policy": "Check only when requested or on an authorized schedule; apply updates only with authorization."
+  "source_url": "https://github.com/iapyeh/sshscript/tree/7a3b43594eca50cf1600d4f8a1dc67cb266df19e",
+  "source_commit": "7a3b43594eca50cf1600d4f8a1dc67cb266df19e",
+  "generator": "tools/sync_ai_docs.py outputs() from the same source commit",
+  "saved_at_utc": "2026-10-24T12:34:31+00:00",
+  "documentation_contract": "7.0.0",
+  "bundle_sha256": "943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f",
+  "update_policy": "Pinned local test snapshot; only update or switch back to release when requested; pin the full source SHA and update package, documents and complete skill together."
 }

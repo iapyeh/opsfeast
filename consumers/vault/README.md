@@ -28,4 +28,21 @@ Rendering/ownership failures preserve committed retention/run data and produce a
 
 For another content application, declare a separate reviewed consumer, source and output owner, then explicitly enable it. Use context.retention.query/show for records and runs()/run(run_id) for execution batches; a run event's record_id is a run UUID. Do not add application-specific branches to runner or storage. Synthetic tests verify dispatch/rollback, read-only inputs, policy snapshots, ownership, collisions, links and current-view rendering. Native SSH/privilege-policy behavior, external hosting and universal editor compatibility are not established by these tests.
 
-_Last modified: 2026-10-21 11:19:57_
+## Database replication views
+
+Builtin Vault also consumes the registered mysql-replication 0.1.0 dataset from [database/mysql/check/replication](../../recipes/database/mysql/check/replication/README.md). Current MySQL replication pages show every configured instance/channel with saved health, lag, source and cleanup uncertainty. Full historical reports include all sanitized retained fields and fixed-query evidence, without credentials or arbitrary SQL/error text. Rebuild uses saved findings and public retention input only; it does not inspect databases or verify source catch-up. Existing activation, manifests, deletion and human-note protection apply.
+
+## Read existing result entrypoints
+
+The checkout helper host_vault.result_locations(root, host=..., record_id=...) returns existing manifest-owned index/host/current paths without publication, database writes or host connections. Current pages are latest views, not proof of the supplied historical attempt. Callers first inspect delivery receipts; completion does not expose stale pages as a successful failed/disabled delivery. Missing pages are omitted; unsafe paths and invalid config/record lookups can raise. recipes run uses these destinations only in human TTY completion, preserving JSON/pipe contracts.
+
+## Replication status presentation
+
+MySQL/MariaDB current pages place [role-specific replication health](../../docs/host-vault.md#replication-status-must-be-visible-first)
+before Contents, with an explicit status heading, Obsidian success/danger/warning
+callout, counts and per-instance badges. Instance/channel detail tables have only
+two columns. Unhealthy findings are prominent; unknown/not-configured/cleanup
+uncertainty stay distinct and never imply success. Reports keep the complete
+sanitized payload. Rendering does not rerun probes or modify retention policy/data.
+
+*Last modified: 2026-10-24 23:07:17*

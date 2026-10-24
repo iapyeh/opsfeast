@@ -124,4 +124,8 @@ Use [observation runs 0.1.0](observation-runs.md) for actual batch membership an
 
 Current inventory-job-observations 0.1.0 preserves failed collection attempts and partial/null property gaps as valid recipe-owned data; older legacy inventory export/recovery eligibility rules below do not define this contract's success criteria. Read the [inventory job guide](inventory-jobs.md) before selecting, replaying or combining current job results. Current Vault pages may omit unknown/unreadable fields and single counters, while full reports and structured retention preserve detailed values/states/times; Markdown omission is not a successful absence or health check.
 
-_Last modified: 2026-10-21 11:19:57_
+## General database replication datasets
+
+[mysql-replication 0.1.0](../recipes/database/mysql/check/replication/retention.schema.json) is a registered general structured dataset owned by [database/mysql/check/replication](../recipes/database/mysql/check/replication/README.md). Use retention list/show/export or Core profile.retention.query/show; inventory observation exchange and its parser/ingest remain inventory-specific. Preserve instance/channel relations, source times, saved lag/source policy findings, unknown/partial/cleanup state and source_verification=not_performed. Sanitized probes expose fixed SQL and safe results, not arbitrary error text or credentials. Builtin Vault reads retention independently of collection. Follow the recipe guide for config/execution and [the authoring workflow](../skills/opsfeast-recipes/references/exploration-to-recipe.md) for new datasets.
+
+*Last modified: 2026-10-24 10:01:56*

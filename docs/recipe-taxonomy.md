@@ -4,6 +4,8 @@ Recipes use **domain → optional subdomains → action → recipe name**. There
 
 ```text
 recipes/
+  database/
+    mysql/check/replication/
   system/
     account/check/identity/
     inventory/overview/
@@ -34,7 +36,7 @@ Use lowercase directory names and hyphens for multiword names. Add a subdomain w
 | backup | Backup platforms, repositories and restore verification | backup/restic/check/repository |
 | feast | Feast's retained data, execution records and management work | feast/report/execution-summary |
 
-Only the five recipes in the [bundle catalog](../recipes/README.md) are currently shipped. Other paths above are classification examples, not runnable or planned-delivery promises. Inventory overview spans several host domains and belongs under system/inventory. Host TCP reachability belongs under system/network; router configuration belongs under network. Product-specific backups belong with their product, while backup-platform operations belong under backup. Product-specific security checks/hardening stay with that product (for example database/mysql/audit/security-baseline); security contains work spanning products. Multi-OS implementations normally share one recipe rather than being copied into separate OS category trees.
+The six recipes in the [bundle catalog](../recipes/README.md) are currently shipped, including database/mysql/check/replication. Other illustrative paths above are classification examples, not runnable or planned-delivery promises. Inventory overview spans several host domains and belongs under system/inventory. Host TCP reachability belongs under system/network; router configuration belongs under network. Product-specific backups belong with their product, while backup-platform operations belong under backup. Product-specific security checks/hardening stay with that product (for example database/mysql/audit/security-baseline); security contains work spanning products. Multi-OS implementations normally share one recipe rather than being copied into separate OS category trees.
 
 ## Actions
 
@@ -87,4 +89,4 @@ The inventory normalizer and retention schema are moved byte-for-byte so existin
 
 Use stable descriptor IDs across classification-only moves. Update product registries, public examples, consumers/report filters, shared schema references, skills and installed-package resources together. Rebase relative document/schema links and test deep source selection, symlink boundaries, static discovery, package contents, offline replay and preserved historical references. A future general move command is not implemented by this directory reorganization; use a separately reviewed change with explicit affected references and no automatic user-data rewrite.
 
-_Last modified: 2026-10-19 15:24:36_
+*Last modified: 2026-10-24 10:01:56*

@@ -177,4 +177,30 @@ For a failed/partial saved result, prefer `python -B tools/opsfeast.py observati
 
 Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](../../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 18:12:20_
+## Database replication observations
+
+For [database/mysql/check/replication](../../recipes/database/mysql/check/replication/README.md), read the registered [mysql-replication 0.1.0 schema](../../recipes/database/mysql/check/replication/retention.schema.json), then use `opsfeast.py retention list --profile NAME --recipe database/mysql/check/replication --host HOST --json` or profile.retention.query/show. Data lives in instances with independent timestamps, server identities, channels, saved lag/source findings and sanitized probes. It is a general structured recipe dataset, not inventory exchange input; do not send it to inventory-only ingest/parsers. Credentials and arbitrary database error/SQL-row text are excluded. Null lag, unknown cleanup and not_configured are not healthy/zero. Source verification is explicitly not performed. Vault current/full pages consume the same retained data; rebuild does not connect or reevaluate saved policy. Sharing/export never authorizes transmission. Use the [exploration workflow](../opsfeast-recipes/references/exploration-to-recipe.md) when turning a new question into a complete recipe/config/retention/consumer delivery.
+
+## Distinguish service accounts from OS collection accounts
+
+Completion and compact observation views now share [role-aware identity display](../../docs/cli.md#role-aware-collection-identity).
+For MySQL replication, DB INSTANCE labels the recorded CURRENT_USER() account;
+SSH labels the successful final-hop login when no observed OS actor is available.
+Neither supplies a missing effective UID. View 0.2.0 adds identity_evidence while
+collection_identity and result-index collection_user retain OS-only semantics.
+Old raw results are interpreted read-only; missing raw evidence stays unknown.
+Use the original observation ID for comparison and do not reconnect merely to fill
+identity columns. Service/hardware identity_quality meanings are not interchanged.
+
+## Replication health is the primary reading cue
+
+Read [the Vault replication presentation policy](../../docs/host-vault.md#replication-status-must-be-visible-first).
+Current pages place a visible status before Contents, with instance counts and
+separate status/findings per instance/channel. Symbols plus HEALTHY/UNHEALTHY/
+UNKNOWN/NOT CONFIGURED words work without color; Obsidian callouts highlight danger.
+Summary is based on saved findings, not live checks or recomputed delay policy.
+Unknown cleanup/partial evidence cannot establish healthy replication. Use existing
+retention readers and authorized vault rebuild rather than reconnecting or editing
+owned Markdown by hand; raw/retention and human notes must remain unchanged.
+
+*Last modified: 2026-10-24 23:07:17*

@@ -114,6 +114,56 @@
               "const": "retention.schema.json"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contract",
+            "version",
+            "description",
+            "schema"
+          ],
+          "properties": {
+            "contract": {
+              "const": "inventory-job-observations"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "schema": {
+              "const": "job-retention.schema.json"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contract",
+            "version",
+            "description",
+            "schema"
+          ],
+          "properties": {
+            "contract": {
+              "const": "mysql-replication"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "schema": {
+              "const": "retention.schema.json"
+            }
+          }
         }
       ]
     },
@@ -138,7 +188,11 @@
             "type": "object",
             "properties": {
               "contract": {
-                "const": "inventory-observations"
+                "enum": [
+                  "inventory-observations",
+                  "inventory-job-observations",
+                  "mysql-replication"
+                ]
               }
             },
             "required": [
@@ -171,5 +225,5 @@
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-19 11:57:21"
+  "$comment": "Last modified: 2026-10-24 23:13:34"
 }

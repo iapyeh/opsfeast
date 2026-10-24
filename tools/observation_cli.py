@@ -8,7 +8,7 @@ import re
 import sys
 
 from opsfeast import ConfigError, resolve_root
-from console_output import cell, table, prepare, execution_identity, execution_result, ConsoleDependencyError
+from console_output import cell, table, prepare, execution_identity, execution_identities, execution_result, ConsoleDependencyError
 from display_time import format_time
 import observation_runs
 
@@ -91,7 +91,8 @@ def query(root, identifier=None, *, statuses=None):
             if isinstance(actor.get('username'),str) and actor['username'] and type(actor.get('effective_uid')) is int else None)
         item={'host_id':target['host_id'],'icon':target.get('icon',''),'status':target['status'],
             'reason_code':target.get('reason_code'),'retention_status':target['retention_status'],
-            'collection_identity':identity,'access_degraded':bool(access.get('degraded')) if raw else None,
+            'collection_identity':identity,'identity_evidence':execution_identities(raw) if raw else [],
+            'access_degraded':bool(access.get('degraded')) if raw else None,
             'content_status':raw['content_update'].get('status') if raw and isinstance(raw.get('content_update'),dict) else None,
             'record_id':target['record_id'],'result_id':linked['result_id'] if linked else None,
             'short_id':linked['short_id'] if linked else None}
@@ -115,6 +116,7 @@ def query(root, identifier=None, *, statuses=None):
 def execution_row(host):
     """Reconstruct only recorded presentation evidence, without borrowing batch receipts."""
     return {'status':host['status'],'reason_code':host['reason_code'],
+            **({'identity_evidence':host['identity_evidence']} if 'identity_evidence' in host else {}),
             'retention':{'status':host['retention_status']},
             'content_update':{'status':host['content_status']},
             'access':{'actual_identity':host['collection_identity'],'degraded':host['access_degraded']}}

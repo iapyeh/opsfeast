@@ -1,0 +1,32 @@
+# Synthetic example only. Never copy real credentials into a shared recipe bundle.
+default:
+  recipes:
+    database/mysql/check/replication:
+      enabled: false
+      vars:
+        max_delay_seconds: 60
+        command_timeout_seconds: 20
+hosts:
+  replica-example:
+    connection: {hostname: replica.example.invalid, user: operator, identity_file: ~/.ssh/id_ed25519}
+    recipes:
+      database/mysql/check/replication:
+        vars:
+          instances:
+            main:
+              client: auto
+              transport: socket
+              user: replication_monitor
+              password: "REPLACE_IN_PRIVATE_CONFIGURATION"
+              expected_source: source.example.invalid
+            second:
+              client: mariadb
+              transport: tcp
+              host: db.example.invalid
+              port: 3306
+              option_file: /home/operator/.config/opsfeast/replication.cnf
+              tls: {ca: /etc/ssl/certs/private-database-ca.pem}
+              expected_sources:
+                west: west-source.example.invalid
+                east: east-source.example.invalid
+# Last modified: 2026-10-24 09:42:57

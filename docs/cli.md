@@ -157,10 +157,10 @@ Run examples from the repository checkout. `python` means the interpreter select
 | Operation | Controller requirements |
 | --- | --- |
 | Profiles, init, attach, detach, use, check, dump, inspect-recipe, recipes metadata/results/packages/jobs and offline reports | Python 3.11+ and PyYAML; no SSHScript Session |
-| Standalone test-connection | Python 3.11+, PyYAML and the supported SSHScript command contract (documented minimum 4.0.1) |
-| Host-init, test-host, test-su, test-sudo, test-connection --host-init, opsfeast.py recipes run | Python 3.11+, PyYAML and matching SSHScript import/distribution **6.0.0** |
+| Standalone test-connection | Python 3.11+, PyYAML and the pinned SSHScript 7.0.0 source contract (same guard as Core/runner) |
+| Host-init, test-host, test-su, test-sudo, test-connection --host-init, opsfeast.py recipes run | Python 3.11+, PyYAML and matching SSHScript import/distribution **7.0.0** |
 
-Both environment-check scopes require PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth); the full check additionally requires SSHScript 6.0.0:
+Both environment-check scopes require PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth); the full check additionally requires SSHScript 7.0.0:
 
 ```sh
 python -B tools/check_environment.py
@@ -363,7 +363,7 @@ Its JSON contains host, overall status, and tests keyed by test-connection, host
 
 ## tools/opsfeast.py recipes: shared recipe interfaces
 
-The [canonical recipe experience reference](recipe-experience.md) defines catalog/report/artifact/bundle/job versions, JSON fields, source/ID selection, validation, storage, dependencies, outputs, errors and verification. All these commands use the selected interpreter and read/write only within the requested scope; static discovery never executes candidates. --root/--profile select a Feast, mutually exclusively. List/show/pack also accept --checkout-only instead. Metadata and offline report use require Python 3.11+ and PyYAML; operation execution retains matching SSHScript 6.0.0.
+The [canonical recipe experience reference](recipe-experience.md) defines catalog/report/artifact/bundle/job versions, JSON fields, source/ID selection, validation, storage, dependencies, outputs, errors and verification. All these commands use the selected interpreter and read/write only within the requested scope; static discovery never executes candidates. --root/--profile select a Feast, mutually exclusively. List/show/pack also accept --checkout-only instead. Metadata and offline report use require Python 3.11+ and PyYAML; operation execution retains matching SSHScript 7.0.0.
 
 | Command | Interface and effects |
 | --- | --- |
@@ -459,7 +459,7 @@ Synthetic tests cover configuration, dispatch, cache, account transitions, batch
 
 ## Retained observations and exchange
 
-All commands require Python 3.11+ and PyYAML; only runner execution additionally requires matching SSHScript 6.0.0. SQLite is included with Python; JSON SQL functions must be available. See the [canonical contract and identity workflow](result-data.md) and [agent skill](../skills/opsfeast-result-data/SKILL.md).
+All commands require Python 3.11+ and PyYAML; only runner execution additionally requires matching SSHScript 7.0.0. SQLite is included with Python; JSON SQL functions must be available. See the [canonical contract and identity workflow](result-data.md) and [agent skill](../skills/opsfeast-result-data/SKILL.md).
 
 ```sh
 python -B tools/observation_store.py ingest FILE [FILE ...] [--root ROOT | --profile NAME]
@@ -803,4 +803,43 @@ Current selection groups each host by origin namespace, recipe-source qualifier 
 
 Vault Contents links use Obsidian-native heading fragments: `[System](#System)` and `[Collection metadata](#Collection%20metadata)`. Heading case is preserved and spaces/non-ASCII text are URL-encoded; arbitrary HTML anchor IDs are not used. Repeated headings are given unique readable titles (for example Services details) so each link reaches one section. In Obsidian Reading view, click a Contents link; in Live Preview, use the normal follow-link gesture (Cmd-click on macOS or Ctrl-click on Windows/Linux). Other Markdown readers can use different heading-fragment conventions; this is not a universal reader-compatibility guarantee. Rebuild regenerates current and historical observation pages plus the records index from retention, without recollection. See [Obsidian internal links](https://obsidian.md/help/links).
 
-_Last modified: 2026-10-23 08:11:44_
+## Check database replica status
+
+Inspect `recipes show database/mysql/check/replication --profile NAME --json`, then within authorized database-read scope use `recipes run database/mysql/check/replication --profile NAME --host HOST --json`. Configure required `instances` under exact-reference recipe vars; do not put secrets in CLI --var arguments. The [recipe guide](../recipes/database/mysql/check/replication/README.md) documents socket/TCP/TLS, option files, expected sources and lag thresholds. Success requires healthy replica-side observations with confirmed cleanup; partial/unhealthy/unknown returns exit 1 and may still retain valid observations. Inspect retention and content receipts separately. No source query or repair occurs.
+
+## Recipe completion result locations
+
+Human TTY completion retains the host/identity/outcome/Result ID summary and Observation ID, then shows existing saved raw JSON and a Vault entrypoint. One host uses the matching latest-state page when its retained record and owned page are available, otherwise the host summary/index. Batches use raw result directories and the Vault index. Current pages can represent a newer observation; raw files/Result IDs identify the exact attempt. Missing/deleted files are unavailable, not invented paths. Vault links require a successful builtin:vault receipt for this run; failed/disabled Vault delivery does not label old pages as newly published. Another consumer failing does not hide a confirmed successful Vault entrypoint; the aggregate outcome still reports that failure. Lookup errors report a safe exception type without replacing the execution result. --json and non-TTY output are unchanged, and result lookup never initializes, writes, rebuilds or connects.
+
+## Diagnose inherited proxy environments
+
+`python -B tools/check_environment.py --json` reports proxy_environment policy and
+watched variable presence without values, profile access or connections. It does
+not identify the original ancestor process that set a variable. Authorized
+`test-connection HOST --profile NAME --json --debug` records the selected per-hop
+policy on stdout JSON and value-free debug on stderr, including failed attempts.
+Operational raw recipe results preserve the same hop evidence. See [proxy process
+environments](process-environment.md) for NO_COLOR normalization, explicit overrides,
+configuration validation, child ownership and verification limits. Ordinary recipe
+commands do not need a NO_COLOR shell prefix for OpsFeast-managed proxies.
+
+## Role-aware collection identity
+
+Recipe completion and `observation OBSERVATION_ID` use the same recorded identity
+projection. An observed OS actor remains `name (uid=N)`. MySQL/MariaDB replication
+results additionally show `DB INSTANCE: CURRENT_USER_ACCOUNT`, independently for
+each instance. If an OS actor is unavailable, a successful recorded connection
+can show `SSH: LOGIN` as explicitly labeled transport identity. SSH login does not
+establish the effective OS execution account; the database grant account does not
+establish either SSH or OS identity. Missing instance evidence stays unknown;
+configuration users/passwords, intermediate jump accounts and stale values are
+never substitutes. No extra host query is performed just to fill this column.
+
+Observation view 0.2.0 JSON adds optional `identity_evidence`, an array with role,
+username and role-specific instance/effective_uid/source. Existing collection_identity
+continues to mean observed OS username/UID, and collection_user result-index fields
+keep their existing OS-actor semantics. Historical raw results are read without
+rewriting them; unavailable raw results have no identity evidence. Forced JSON from
+recipes run preserves its existing raw result structure. See [view schema](../schemas/observation-view.schema.json).
+
+*Last modified: 2026-10-24 22:54:22*

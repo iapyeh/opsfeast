@@ -6,7 +6,7 @@ New raw adds source_observation_id and execution_access_mode; general results al
 
 [Namespace-enabled profiles](retention.md) add opt-in typed host-values 0.2.0 retention with dataset/field descriptions and explicit units to general recipes. Write/unknown general recipes persist intent before connections/code and append outcome after cleanup. Missing access_mode means unknown; read skips the operation journal. Retention/audit failure yields explicit failure; content update has a separate receipt and never changes recipe status, and no automatic raw cleanup occurs. Profiles without namespace retain the legacy raw-only general-recipe behavior described below.
 
-Use `tools/opsfeast.py recipes run` to execute one explicitly selected recipe on explicitly selected hosts. Inventory uses descriptor 0.3.0 with inventory-jobs 0.1.0; general recipes use the Python-session/Core contracts described here. The [recipes list/show/run surface](recipe-experience.md) uses the internal recipe_runner module; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 6.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
+Use `tools/opsfeast.py recipes run` to execute one explicitly selected recipe on explicitly selected hosts. Inventory uses descriptor 0.3.0 with inventory-jobs 0.1.0; general recipes use the Python-session/Core contracts described here. The [recipes list/show/run surface](recipe-experience.md) uses the internal recipe_runner module; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 7.0.0. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
 
 Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#operational-recipe-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
 
@@ -120,4 +120,38 @@ The complete suite passed 763 tests on CPython 3.11.15, 3.13.13 and 3.14.4. test
 
 Native macOS with SSHScript 5.0.0 verified selective utility queries without profile writes and two independent saved observations with retention/Vault delivery. No remote SSH or native Linux/FreeBSD/ESXi/su/sudo result follows from this evidence. Wheel/sdist builds and installed-package tests are local checks, not publication. No private host was enabled for cron.
 
-_Last modified: 2026-10-23 08:11:44_
+## Registered structured output from general recipes
+
+General recipes may declare a supported registry-bound structured retention contract as well as scalar host-values. `retain_general` dispatches to existing structured normalization/storage after checking operational success/partial and namespace availability. Snapshots bind schema and normalizer digests; unknown contracts or candidate/schema drift fail explicitly. The [MySQL replication recipe](../recipes/database/mysql/check/replication/README.md) supplies mysql-replication 0.1.0, multiple instances/channels, safe execution evidence and the builtin Vault consumer. No database-specific runner branch or data migration is required.
+
+## Human completion and agent handoff
+
+TTY completion includes existing raw JSON and successfully published Vault entrypoints in addition to Result/Observation IDs. Latest-state pages and exact-attempt raw files remain distinct; missing or failed content is reported explicitly. JSON/non-TTY reports keep their existing schema. Read [the completion location rules](cli.md#recipe-completion-result-locations). When creating a recipe for a user, complete the [private configuration, copy/paste invocation and results handoff](../skills/opsfeast-recipes/references/exploration-to-recipe.md#finish-the-user-handoff-not-just-the-program), applying already-authorized known settings rather than making the user reconstruct them.
+
+## Proxy environment evidence
+
+The shared connection adapter applies [proxy environment policy 0.1.0](process-environment.md)
+for local proxies, including first jumps and SSH config proxies. Inherited NO_COLOR
+is normalized for the proxy; explicit per-connection string/null overrides are
+available. Raw report hops retain value-free policy/source/action/presence metadata
+for attempted connections. This is not remote-shell environment configuration and
+does not change recipe variables, retained dataset schemas or execution outcome
+interpretation. Reuse the runner-owned Session rather than modifying os.environ
+or reconnecting. Failed proxy startup/cleanup remains failure; no automatic retry
+with the original environment is performed.
+
+## Display observed identities by role
+
+Completion no longer requires an OS UID to display any known account. Shared
+console_output.execution_identities(raw)/execution_identity(raw) project supported
+recorded evidence: actual OS actor, MySQL replication instance CURRENT_USER()
+grant account, and final-hop authenticated SSH login. Database identities are
+labeled DB INSTANCE; login fallback is labeled SSH and never described as the
+OS collector. Multiple instances preserve unknown entries independently. Recipes
+should preserve service-authenticated identity in their reviewed data contract;
+this is not a generic instruction to expose vars, credentials or arbitrary data.
+The current service extractor supports mysql-replication only. Adding another
+service requires a reviewed identity source and tests. No connection, schema/
+normalizer migration or old-data rewrite is needed for this presentation change.
+
+*Last modified: 2026-10-24 22:54:22*

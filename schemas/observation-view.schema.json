@@ -215,6 +215,46 @@
             "boolean",
             "null"
           ]
+        },
+        "identity_evidence": {
+          "type": "array",
+          "description": "Recorded identities separated by OS execution, authenticated database grant account, or SSH login; never inferred from configuration.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "role",
+              "username"
+            ],
+            "properties": {
+              "role": {
+                "enum": [
+                  "os",
+                  "database",
+                  "ssh"
+                ]
+              },
+              "username": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "effective_uid": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "instance": {
+                "type": "string"
+              },
+              "source": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
         }
       }
     }
@@ -318,5 +358,5 @@
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-21 18:12:20"
+  "$comment": "Last modified: 2026-10-24 23:13:34"
 }

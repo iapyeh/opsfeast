@@ -294,4 +294,16 @@ capability routing and public reproducible tests are included in this delivery.
 
 Group catalogs can now contain recipe policy mappings. Core hosts.groups()/profile inspection and UI read models mask recognized sensitive fields in these nested parameters using the same rules as host snapshots. This is name-based masking, not a guarantee that arbitrary custom input values are nonsecret. Explicit CLI dump remains raw and must not be logged or shared inadvertently.
 
-_Last modified: 2026-10-20 23:35:59_
+## Local proxy environments
+
+Core session acquisition shares [proxy environment policy 0.1.0](process-environment.md)
+with CLI diagnostics and recipe/inventory connections. Configure per-hop
+connection.proxy_environment through the existing host schema; keep using
+profile.sessions.connect(host_id). Successful acquisition exposes value-free per-hop policy/source/action evidence
+through connection.report. Failed acquisition yields no connection; CLI/raw
+execution reports retain the attempted policy and failure evidence.
+Parent environment and remote shells are unchanged. Normal hosts snapshots mask
+all non-null override values. No new Core method, ownership rule or contract version
+is introduced; use the canonical policy guide for compatibility and verified limits.
+
+*Last modified: 2026-10-24 10:50:19*

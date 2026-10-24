@@ -84,4 +84,16 @@ Public synthetic tests in tests/test_recipe_policy_runs.py and tests/test_observ
 
 Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `observation result RESULT_ID --detail` for full vertical evidence, and `--raw` for the original complete JSON. No ID lists host history with --host/--recipe-id/--status filters; --json returns structured index/diagnosis (selected --detail returns complete JSON). Use the original root/profile; successful reads return 0 independently of saved failure. Explicit --html exports a new index or selected --detail file without overwriting. These commands perform no collection or retry. `recipes results` is now offline-report-only; old host forms and --host are removed. Files and Result IDs remain unchanged. See [canonical modes, failures and verification limits](cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-21 18:12:20_
+## Service and transport identities in batch views
+
+Compact observation views reuse the live completion identity projection. View
+0.2.0 includes optional identity_evidence with explicit os/database/ssh roles;
+collection_identity remains the OS username/UID object and may still be null when
+only database or SSH identity is known. MySQL replication uses each recorded
+CURRENT_USER() account, not configured client user. The human column labels DB
+instance and SSH fallback explicitly. Missing/ambiguous raw linkage still produces
+no identity evidence. This is a read-only projection of the original batch's exact
+raw result; it does not alter run membership, stored collection evidence, status,
+raw files or retention. See [the CLI identity policy](cli.md#role-aware-collection-identity).
+
+*Last modified: 2026-10-24 22:54:22*

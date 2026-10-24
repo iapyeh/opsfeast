@@ -36,7 +36,7 @@ Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly
 
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
 
-Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 6.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
+Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 7.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
 
 ## Identify the instance and scope
 
@@ -170,4 +170,24 @@ Group catalogs include configured recipe policy; Core/UI snapshots mask recogniz
 
 Use `opsfeast.py observation result [RESULT_ID]` for individual host history/diagnosis, `--detail` for full vertical evidence and `--raw` for complete JSON. Use the original root/profile and --json for automation. `recipes results` is offline-report-only; update old host commands without moving data or changing IDs. These reads do not collect or retry. See [canonical modes and failure rules](../../docs/cli.md#host-result-history-and-modes).
 
-_Last modified: 2026-10-23 08:11:44_
+## Proxy subprocess environment policy
+
+Core sessions share [OpsFeast proxy environment handling](../../docs/process-environment.md)
+with the CLI and runner. Reuse profile.sessions.connect and inspect connection.report
+hop proxy_environment evidence; do not change os.environ, construct a second proxy
+or reconnect to apply settings. Host connection.proxy_environment accepts quoted
+strings/null, masks every non-null value in normal snapshots, and overrides default
+NO_COLOR normalization only in the local proxy. There is no remote-shell or arbitrary
+subprocess environment policy implied by this support. No new Core method is needed.
+
+## SSHScript 7.0 source migration
+
+Read [the exact source contract](../../docs/sshscript-7.md) before operational work.
+This checkout supports only 7.0.0 source commit 7a3b43594eca50cf1600d4f8a1dc67cb266df19e;
+Core/runner/diagnostics require matching module/type bytes, not just version text.
+Reuse existing Core sessions and host YAML identity_file/proxy_command. New Python
+interfaces use parent_key_filename/proxy_command/proxy_jump, missing_host_key_policy
+and known_hosts_source; only hostname is positional. No compatibility aliases,
+automatic install or real-host authorization follows from this migration.
+
+*Last modified: 2026-10-24 22:24:58*

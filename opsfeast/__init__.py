@@ -700,8 +700,13 @@ class Validator:
             return [target]
         alias = 'ssh_config_alias' in value
         allowed = {'ssh_config_alias', 'via'} if alias else {'hostname', 'port', 'user', 'identity_file', 'via', 'proxy_command'}
-        allowed |= {'allow_agent', 'look_for_keys'}
+        allowed |= {'allow_agent', 'look_for_keys', 'proxy_environment'}
         mapping(value, where, allowed)
+        if 'proxy_environment' in value:
+            from process_environment import validate
+            validate(value['proxy_environment'], where + '.proxy_environment')
+            if not alias and 'proxy_command' not in value:
+                raise ConfigError(f'{where}: proxy_environment requires proxy_command or an SSH config proxy')
         for field in ('allow_agent', 'look_for_keys'):
             if field in value and type(value[field]) is not bool:
                 raise ConfigError(f'{where}.{field}: must be a Boolean')
@@ -1012,7 +1017,7 @@ hosts:
   #     allow_agent: false  # Set true to use the local Python process's SSH agent.
   #     look_for_keys: false  # Set true to discover local default private-key files.
   #     # For a target reached via a jump host, the key file is on that jump host.
-  #     # Paths are passed literally to pkey_path; prefer absolute paths.
+  #     # Paths are passed literally to parent_key_filename; prefer absolute paths.
   #     # For key login, users.operator.password may be omitted.
   #     # Optional proxy command, instead of via; use literal destination values:
   #     # proxy_command: "ssh -W host.example:22 jump-user@jump.example"
@@ -1111,11 +1116,8 @@ def initialize(root, *, quiet=False, profile=None, namespace=None):
 
 
 def load_session_class():
-    try:
-        from sshscript import Session
-    except ImportError:
-        raise ConfigError('test-connection requires SSHScript >=4.0.1 installed in this Python environment') from None
-    return Session
+    from host_runtime import runtime_class
+    return runtime_class()
 
 
 def connection_plan(config, host, session_class, contexts=None):
@@ -1131,9 +1133,9 @@ def connection_plan(config, host, session_class, contexts=None):
         hops = expand(connection['via'], {}, source, f'{host_id}.via') if 'via' in connection else []
         options = {}
         if 'identity_file' in connection:
-            options['pkey_path'] = connection['identity_file']
+            options['parent_key_filename'] = connection['identity_file']
         if 'proxy_command' in connection:
-            options['proxyCommand'] = connection['proxy_command']
+            options['proxy_command'] = connection['proxy_command']
         alias = 'ssh_config_alias' in connection
         settings = session_class.resolve_connection(
             connection['ssh_config_alias' if alias else 'hostname'],
@@ -1144,8 +1146,12 @@ def connection_plan(config, host, session_class, contexts=None):
         # config resolution so it cannot override the management configuration.
         for field in ('allow_agent', 'look_for_keys'):
             settings[field] = connection.get(field, False)
-        if hops and settings.get('proxyCommand'):
+        if hops and settings.get('proxy_command'):
             raise ConfigError('SSH config proxy or proxy_command conflicts with YAML via')
+        if 'proxy_environment' in connection:
+            if not settings.get('proxy_command'):
+                raise ConfigError('proxy_environment requires a resolved proxy command')
+            settings['proxy_environment'] = dict(connection['proxy_environment'])
         if settings.get('username') is None:
             settings['username'] = getpass.getuser()
         account = owner.get('users', {}).get(settings['username'], {})
@@ -1153,7 +1159,7 @@ def connection_plan(config, host, session_class, contexts=None):
             settings['password'] = account['password']
         if ('password' not in settings
                 and not any(settings.get(field) for field in
-                            ('pkey', 'pkey_path', 'key_filename', 'allow_agent', 'look_for_keys'))):
+                            ('pkey', 'parent_key_filename', 'key_filename', 'allow_agent', 'look_for_keys'))):
             raise _MissingAuthenticationSource(
                 f'{host_id}.connection: no SSH authentication source configured; '
                 'provide a login password or identity_file (SSH config IdentityFile '
@@ -1237,25 +1243,30 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
         parent = 'localhost'
         for index, (settings, context) in enumerate(zip(plan, contexts), 1):
             current_hop = dict(context, hop=index, parent=parent, connected=False)
-            if settings.get('pkey_path'):
+            if settings.get('parent_key_filename'):
                 current_hop['key_source'] = parent
             report['hops'].append(current_hop)
             progress(f'[{index}/{len(plan)}] {parent} -> {context["host"]}: connecting')
             if debug:
                 details = dict(current_hop, timeout=timeout,
-                               proxy_command=bool(settings.get('proxyCommand')),
+                               proxy_command=bool(settings.get('proxy_command')),
                                password_supplied='password' in settings,
-                               identity_file=bool(settings.get('pkey_path')),
+                               identity_file=bool(settings.get('parent_key_filename')),
                                local_key_filename=bool(settings.get('key_filename')),
                                allow_agent=settings.get('allow_agent', False),
                                look_for_keys=settings.get('look_for_keys', False))
                 print('DEBUG ' + json.dumps(details, ensure_ascii=False), file=sys.stderr)
             options = dict(settings)
             hostname = options.pop('hostname')
-            session = session.connect(
-                hostname, ssh_config=False, timeout=timeout,
-                banner_timeout=timeout, auth_timeout=timeout, **options,
-            )
+            from process_environment import proxy_options
+            with proxy_options(options, current_hop) as prepared:
+                if debug and 'proxy_environment' in current_hop:
+                    print('DEBUG ' + json.dumps({'proxy_environment': current_hop['proxy_environment']},
+                                               ensure_ascii=False), file=sys.stderr)
+                session = session.connect(
+                    hostname, ssh_config=False, timeout=timeout,
+                    banner_timeout=timeout, auth_timeout=timeout, **prepared,
+                )
             current_hop['connected'] = True
             progress(f'[{index}/{len(plan)}] {context["host"]}: connected')
             parent = context['host']

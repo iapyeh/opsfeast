@@ -300,4 +300,14 @@ Inventory execution automatically saves operational success/partial observations
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
-_Last modified: 2026-10-23 08:11:44_
+
+## Development SSHScript source contract
+
+This checkout currently targets an explicitly pinned, unreleased SSHScript 7.0.0
+source revision. Follow [the dependency and migration guide](docs/sshscript-7.md)
+for the exact SHA, installation identity, source guards and verification limits.
+Do not substitute a same-version PyPI package or a different latest skill bundle.
+The stable-release update prompt above does not authorize switching a source-test
+environment to another revision or downgrading it.
+
+*Last modified: 2026-10-24 22:26:13*

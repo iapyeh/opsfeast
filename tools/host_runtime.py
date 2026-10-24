@@ -1,4 +1,4 @@
-"""Shared, read-only host discovery and authenticated diagnostics (SSHScript 5.0)."""
+"""Shared, read-only host discovery and authenticated diagnostics (pinned SSHScript 7.0 source)."""
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
@@ -70,9 +70,11 @@ def runtime_class():
     try:
         import sshscript
     except ImportError:
-        raise ConfigError('host diagnostics require SSHScript 6.0.0 in this interpreter') from None
-    if sshscript.__version__ != '6.0.0' or version('sshscript') != '6.0.0':
-        raise ConfigError('host diagnostics require matching SSHScript import/distribution 6.0.0')
+        raise ConfigError('host diagnostics require SSHScript 7.0.0 in this interpreter') from None
+    if sshscript.__version__ != '7.0.0' or version('sshscript') != '7.0.0':
+        raise ConfigError('host diagnostics require matching SSHScript import/distribution 7.0.0')
+    from sshscript_runtime import require_source
+    require_source(sshscript)
     return sshscript.Session
 
 
@@ -92,10 +94,14 @@ def connected(config, host, session_class, timeout, report):
             hostname = options.pop('hostname')
             progress(f'connection hop {index}', hop=index, hostname=hostname,
                      user=options.get('username'), password_supplied='password' in options,
-                     identity_file=bool(options.get('pkey_path')),
-                     proxy_command=bool(options.get('proxyCommand')))
-            session = session.connect(hostname, ssh_config=False, timeout=timeout,
-                                      banner_timeout=timeout, auth_timeout=timeout, **options)
+                     identity_file=bool(options.get('parent_key_filename')),
+                     proxy_command=bool(options.get('proxy_command')))
+            from process_environment import proxy_options
+            with proxy_options(options, hop) as prepared:
+                if 'proxy_environment' in hop:
+                    progress('proxy environment policy', **hop['proxy_environment'])
+                session = session.connect(hostname, ssh_config=False, timeout=timeout,
+                                          banner_timeout=timeout, auth_timeout=timeout, **prepared)
             hop['connected'] = True
         if plan:
             report['login_identity'] = {'username': plan[-1]['username'], 'source': 'ssh_connection'}

@@ -1,0 +1,553 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MySQL and MariaDB replication observations 0.1.0",
+  "type": "object",
+  "description": "Replica-side evidence only. No credentials or rendered content.",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "source_id",
+    "observation_id",
+    "recipe_id",
+    "recipe_version",
+    "observed_at",
+    "status",
+    "instances",
+    "policy",
+    "source_verification"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0",
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "UUID identifying the retention producer source.",
+      "unit": ""
+    },
+    "observation_id": {
+      "type": "string",
+      "description": "Source UUID plus deterministic hash of the raw execution observation identity.",
+      "unit": ""
+    },
+    "recipe_id": {
+      "type": "string",
+      "description": "Stable producing recipe ID, independent of its filesystem reference.",
+      "unit": ""
+    },
+    "recipe_version": {
+      "type": "string",
+      "description": "Executed recipe version, preserved for interpretation.",
+      "unit": ""
+    },
+    "observed_at": {
+      "type": "string",
+      "description": "Controller UTC timestamp after the probe response; not a database transaction timestamp.",
+      "unit": ""
+    },
+    "status": {
+      "type": "string",
+      "description": "Recipe execution classification.",
+      "unit": "",
+      "enum": [
+        "success",
+        "partial"
+      ]
+    },
+    "instances": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/instance"
+      }
+    },
+    "policy": {
+      "type": "object",
+      "description": "Policy used for this observation.",
+      "additionalProperties": false,
+      "required": [
+        "max_delay_seconds"
+      ],
+      "properties": {
+        "max_delay_seconds": {
+          "type": "number",
+          "description": "Maximum accepted replica-reported delay. Zero requires zero delay.",
+          "unit": "seconds",
+          "minimum": 0
+        }
+      }
+    },
+    "source_verification": {
+      "type": "string",
+      "const": "not_performed",
+      "description": "No source-side connection, GTID coverage or data checksum was performed."
+    }
+  },
+  "$defs": {
+    "server": {
+      "type": "object",
+      "description": "Authenticated database identity; independent of SSH account.",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "version_comment",
+        "hostname",
+        "server_id",
+        "authenticated_user",
+        "product"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Server-reported database version, not the client version.",
+          "unit": ""
+        },
+        "version_comment": {
+          "type": "string",
+          "description": "Server-reported product/build comment used with version to identify the dialect.",
+          "unit": ""
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Database-server hostname reported by @@hostname; not verification of SSH or DNS identity.",
+          "unit": ""
+        },
+        "server_id": {
+          "type": "string",
+          "description": "Database server identifier returned as XML text; not the source server identifier.",
+          "unit": ""
+        },
+        "authenticated_user": {
+          "type": "string",
+          "description": "CURRENT_USER() database grant identity; distinct from SSH/effective OS account.",
+          "unit": ""
+        },
+        "product": {
+          "type": "string",
+          "description": "Detected server product.",
+          "unit": "",
+          "enum": [
+            "mysql",
+            "mariadb"
+          ]
+        }
+      }
+    },
+    "channel": {
+      "type": "object",
+      "description": "One replication channel with source coordinates and filtering evidence.",
+      "additionalProperties": false,
+      "required": [
+        "source_host",
+        "expected_source",
+        "io_running",
+        "sql_running",
+        "error_text",
+        "source_log_file",
+        "executed_source_log_file",
+        "retrieved_gtid_set",
+        "executed_gtid_set",
+        "mariadb_gtid_io_pos",
+        "mariadb_using_gtid",
+        "replicate_do_db",
+        "replicate_ignore_db",
+        "replicate_do_table",
+        "replicate_ignore_table",
+        "replicate_wild_do_table",
+        "replicate_wild_ignore_table",
+        "source_port",
+        "delay_seconds",
+        "configured_delay_seconds",
+        "last_io_errno",
+        "last_sql_errno",
+        "read_source_log_pos",
+        "exec_source_log_pos",
+        "channel",
+        "health",
+        "reasons"
+      ],
+      "properties": {
+        "source_host": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Replica-reported source hostname; no alias/DNS equivalence inference.",
+          "unit": ""
+        },
+        "expected_source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Saved exact source-host expectation for this channel, or null if no comparison was configured.",
+          "unit": ""
+        },
+        "io_running": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Receiver thread state as reported by the server, including Yes, No or Connecting; null if unavailable.",
+          "unit": ""
+        },
+        "sql_running": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Applier thread state as reported by the server; null if unavailable.",
+          "unit": ""
+        },
+        "error_text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Redaction marker when an error message was present. Original error SQL/row text is never retained.",
+          "unit": ""
+        },
+        "source_log_file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Source binlog file read by the receiver.",
+          "unit": ""
+        },
+        "executed_source_log_file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Source binlog file currently referenced by the applier.",
+          "unit": ""
+        },
+        "retrieved_gtid_set": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "MySQL retrieved GTID set as server text; null when unavailable or not applicable.",
+          "unit": ""
+        },
+        "executed_gtid_set": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "MySQL executed GTID set as server text; no cross-server subset assertion is made.",
+          "unit": ""
+        },
+        "mariadb_gtid_io_pos": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "MariaDB Gtid_IO_Pos text; not interpreted using MySQL GTID semantics.",
+          "unit": ""
+        },
+        "mariadb_using_gtid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "MariaDB Using_Gtid mode as server text.",
+          "unit": ""
+        },
+        "replicate_do_db": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reported database allow filter; empty string means no such filter was reported.",
+          "unit": ""
+        },
+        "replicate_ignore_db": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reported database exclusion filter.",
+          "unit": ""
+        },
+        "replicate_do_table": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reported exact-table allow filter.",
+          "unit": ""
+        },
+        "replicate_ignore_table": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reported exact-table exclusion filter.",
+          "unit": ""
+        },
+        "replicate_wild_do_table": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reported wildcard table allow filter.",
+          "unit": ""
+        },
+        "replicate_wild_ignore_table": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reported wildcard table exclusion filter.",
+          "unit": ""
+        },
+        "source_port": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Replica-reported source TCP port; null if unavailable.",
+          "unit": "",
+          "minimum": 0
+        },
+        "delay_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Replica-reported Seconds_Behind_Source/Master, not a source-side catch-up or data-equality measurement. Null is unknown.",
+          "unit": "seconds",
+          "minimum": 0
+        },
+        "configured_delay_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Configured SQL_Delay. Deliberate delay is not automatically subtracted from the health threshold.",
+          "unit": "seconds",
+          "minimum": 0
+        },
+        "last_io_errno": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Last receiver error number; zero means no error reported, null means unavailable.",
+          "unit": "",
+          "minimum": 0
+        },
+        "last_sql_errno": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Last applier error number; zero means no error reported, null means unavailable.",
+          "unit": "",
+          "minimum": 0
+        },
+        "read_source_log_pos": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Receiver position within source_log_file; not an absolute byte counter across binlog rotations.",
+          "unit": "bytes within the named binlog file; not across rotations",
+          "minimum": 0
+        },
+        "exec_source_log_pos": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Applier position within executed_source_log_file; equality with receiver position does not verify source catch-up.",
+          "unit": "bytes within the named binlog file; not across rotations",
+          "minimum": 0
+        },
+        "channel": {
+          "type": "string",
+          "description": "Replication connection name; empty string denotes the default channel.",
+          "unit": ""
+        },
+        "health": {
+          "type": "string",
+          "description": "Observed replica-side health; not source or row consistency.",
+          "unit": "",
+          "enum": [
+            "healthy",
+            "unhealthy",
+            "unknown",
+            "not_configured"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Text observed by the probe.",
+            "unit": ""
+          },
+          "description": "Saved policy findings; not reevaluated on rebuild."
+        }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "description": "Sanitized command/input/output evidence. Raw stderr and database error text are excluded.",
+      "additionalProperties": false,
+      "required": [
+        "operation",
+        "input",
+        "sql",
+        "exitcode",
+        "stdout",
+        "error"
+      ],
+      "properties": {
+        "operation": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Text observed by the probe.",
+              "unit": ""
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Text observed by the probe.",
+                "unit": ""
+              }
+            }
+          ],
+          "description": "Executed client argv with protected option-file path masked, or the reviewed remote-helper invocation description."
+        },
+        "input": {
+          "type": "string",
+          "description": "Sanitized stdin/transmission description, including safe saved expectations; never credential values.",
+          "unit": ""
+        },
+        "sql": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Exact fixed query or null if the remote helper failed."
+        },
+        "exitcode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Client exit code; null means unavailable."
+        },
+        "stdout": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/server"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/channel"
+              }
+            },
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "description": "Bounded local client version output; no credential input."
+            }
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Safe error type/category or numeric database error category; arbitrary exception/stderr text is excluded.",
+          "unit": ""
+        }
+      }
+    },
+    "instance": {
+      "type": "object",
+      "description": "One configured database instance and its independently timed observation.",
+      "additionalProperties": false,
+      "required": [
+        "instance",
+        "observed_at",
+        "health",
+        "reason",
+        "server",
+        "channels",
+        "probes",
+        "cleanup"
+      ],
+      "properties": {
+        "instance": {
+          "type": "string",
+          "description": "Operator-selected instance label scoped to this recipe execution on the host.",
+          "unit": ""
+        },
+        "observed_at": {
+          "type": "string",
+          "description": "Controller UTC timestamp after the probe response; not a database transaction timestamp.",
+          "unit": ""
+        },
+        "health": {
+          "type": "string",
+          "description": "Observed replica-side health; not source or row consistency.",
+          "unit": "",
+          "enum": [
+            "healthy",
+            "unhealthy",
+            "unknown",
+            "not_configured"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Stable collection/health reason for this instance, including missing expected channel or cleanup uncertainty.",
+          "unit": ""
+        },
+        "server": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/server"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/channel"
+          }
+        },
+        "probes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/probe"
+          }
+        },
+        "cleanup": {
+          "type": "string",
+          "description": "Whether protected temporary credential cleanup is confirmed.",
+          "unit": "",
+          "enum": [
+            "confirmed",
+            "unknown"
+          ]
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-24 09:59:34"
+}

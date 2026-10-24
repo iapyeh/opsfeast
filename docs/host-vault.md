@@ -117,4 +117,33 @@ Use `host_vault.rebuild/refresh_groups/publish` and Vault CLI for content. Use C
 
 Public synthetic tests cover current-view omission versus full reports, sorting, units, filesystem deduplication, I/O suppression, diagram-label safety, thresholds, batch snapshots, links, collisions, publication ownership, retention/replay and independent failure receipts. The local verification rendered 44 generated DGMO diagrams with @diagrammo/dgmo 0.85.0 without diagnostics; this is renderer evidence, not a universal editor/plugin compatibility guarantee. No new native SSH/privilege-policy evidence, hosting, transmission, whole-vault transaction or cryptographic authenticity claim is added.
 
-_Last modified: 2026-10-21 11:19:38_
+## Database replication content
+
+The existing builtin:vault consumer renders registered mysql-replication 0.1.0 observations from [the MySQL/MariaDB recipe](../recipes/database/mysql/check/replication/README.md). Under the normal host location, `records/current-mysql-replication.md` shows every instance/channel with database identity, source, lag, health and credential-cleanup uncertainty. `YEAR/reports/TIMESTAMP-mysql-replication.md` preserves all sanitized retained details, including filters, coordinates/GTIDs and fixed-query evidence. Current views link their source report. No database connection or policy reevaluation occurs during rebuild; ordinary ownership/activation and separate delivery receipts apply. Raw error text and credentials are intentionally absent rather than reconstructed from raw reports.
+
+## Replication status must be visible first
+
+MySQL/MariaDB current records show observed time, then a Replication status section
+before Contents. Large HEALTHY/UNHEALTHY/UNKNOWN/NOT CONFIGURED (or mixed NEEDS
+ATTENTION) labels combine symbols and words; native Obsidian success/danger/warning
+callouts add color without making color the sole signal. Instance summaries remain
+separate, so a healthy instance cannot hide another unhealthy or unknown one.
+
+Instance details and each channel use two-column vertical tables instead of a
+semicolon-dense paragraph or a wide seven-column channel table. Unhealthy instance/
+channel findings get explicit danger callouts with explanations and original saved
+reason codes. Missing delay/source/thread evidence says Not reported; zero seconds
+remains an observed zero. Cleanup uncertainty and a partial record with only healthy
+instances cannot produce a healthy overall banner. Unhealthy takes precedence when
+it is observed alongside unknowns; counts still disclose both states.
+
+This summarizes saved health labels/cleanup/collection state, without rerunning SQL,
+recalculating thresholds, verifying source catch-up or claiming live health. An
+unhealthy but fully collected result is not automatically described as missing data.
+Historical reports retain full sanitized evidence after the readable sections.
+Callout-unaware Markdown readers still show explicit status text and tables. Rebuild
+uses retained data only, preserves raw/retention and unmanaged human notes, and
+updates owned generated views through the existing publisher; no CSS/plugin or
+application-wide font setting is required.
+
+*Last modified: 2026-10-24 23:07:17*

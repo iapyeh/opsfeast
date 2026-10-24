@@ -217,7 +217,7 @@ python tools/opsfeast.py test-connection rms4 /srv/feasts/main --debug --traceba
 
 - 明確 hostname 模式使用 YAML 連線資料，不自動混入 SSH config；省略的 user 使用目前本機帳號，省略 port 使用 22。
 - Use `users.<login-account>.password` for the SSH login password. Both automatic authentication sources default to false; explicitly configure `connection.allow_agent` or `connection.look_for_keys` to enable them. See [authentication sources](#ssh-authentication-sources).
-- `identity_file` 對應 SSHScript 的 `pkey_path`，讀取呼叫 connect 的 parent Session 所在主機上的 RSA 私鑰。直連時從 localhost 讀取；經由跳板連線時從前一跳主機透過 SFTP 讀取。路徑原樣傳入，不以 YAML 目錄為基準、不在 localhost 展開 `~`；建議使用該 parent 主機上的絕對路徑。它不受 include／recipe 的管理目錄邊界限制。
+- `identity_file` 對應 SSHScript 的 `parent_key_filename`，讀取呼叫 connect 的 parent Session 所在主機上的 RSA 私鑰。直連時從 localhost 讀取；經由跳板連線時從前一跳主機透過 SFTP 讀取。路徑原樣傳入，不以 YAML 目錄為基準、不在 localhost 展開 `~`；建議使用該 parent 主機上的絕對路徑。它不受 include／recipe 的管理目錄邊界限制。
 - `via.host` 使用所引用主機自己的 connection 與 users 密碼；inline via 可用私鑰或 agent，不借用目標主機 users 的密碼。多層 via 依序建立巢狀 Session。
 - `proxy_command` 在本機啟動；SSH config alias 先解析為有效連線與帳號，再查 users。若 alias 解析出代理且同時使用 YAML via，於連線前拒絕衝突，不默默忽略。
 - 保持 SSHScript 預設的主機金鑰驗證，未知或變更的主機金鑰會失敗；使用者需先以可信方式確認並加入標準 known_hosts。
@@ -290,7 +290,7 @@ hosts:
     recipes: {}
 ```
 
-命令提供通往目標 SSH server 的標準輸入／輸出資料流。YAML 使用 snake_case 的 `proxy_command`；將來 runner 對應 SSHScript `Session.connect(..., proxyCommand=...)`。`check` 只檢查字串和欄位衝突，不啟動命令；`test-connection` 才會啟動代理並驗證連線與兩個固定指令。
+命令提供通往目標 SSH server 的標準輸入／輸出資料流。YAML 使用 snake_case 的 `proxy_command`；runner 對應 SSHScript `Session.connect(..., proxy_command=...)`。`check` 只檢查字串和欄位衝突，不啟動命令；`test-connection` 才會啟動代理並驗證連線與兩個固定指令。
 
 `proxy_command` 與 SSH 登入帳密各自處理不同階段，可以同時設定：代理命令建立通往目標主機的資料通道，`connection.user` 與同一 host 的 `users.<帳號>.password` 用於目標主機的 SSH 驗證。上例使用代理通道後，以 `operator` 和 `users.operator.password` 登入 `target.internal`，不會因設定了 proxy_command 而忽略 SSH 密碼。
 
@@ -401,9 +401,9 @@ hosts:
 
 `iapdev.connection.identity_file` 在 localhost 讀取，用來登入 iapdev；`rms4.connection.identity_file` 在 iapdev 讀取，用來登入 rms4。多層跳板遵循相同規則。ProxyCommand 只提供資料通道，不把呼叫 Session 變成代理主機；沒有 YAML via 的 proxy 連線仍從 localhost 讀取 identity_file。
 
-工具將路徑原文交給 `pkey_path`。`iap/.ssh/id_rsa` 是相對路徑，不代表 `~iap/`：本機 pkey 使用 Python 檔案開啟的工作目錄，遠端 pkey 使用 SFTP 相對路徑的基準目錄；不能套用 YAML 或 recipe 路徑規則。工具與公開 pkey 實作都不替這個欄位展開 `~`／`~iap`，請使用明確絕對路徑。
+工具將路徑原文交給 `parent_key_filename`。`iap/.ssh/id_rsa` 是相對路徑，不代表 `~iap/`：本機 pkey 使用 Python 檔案開啟的工作目錄，遠端 pkey 使用 SFTP 相對路徑的基準目錄；不能套用 YAML 或 recipe 路徑規則。工具與公開 pkey 實作都不替這個欄位展開 `~`／`~iap`，請使用明確絕對路徑。
 
-SSHScript 的 pkey_path 載入 RSA 私鑰，與 Paramiko 的 key_filename 始終從 localhost 讀取且支援其他格式的行為不同。本工具的 identity_file 採 pkey_path 語意，不提供 key_filename 的隱式替代。pkey_path 不將 users.password 當作私鑰解密 passphrase；加密 RSA key 的明確解密流程目前未納入此 YAML 格式。
+SSHScript 7.0 parent_key_filename reads an RSA key from the calling Session host; key_filename reads from the local Python host. OpsFeast identity_file uses the former and never silently changes key source. SSHScript uses password as the key-decryption fallback when passphrase is omitted. This YAML connection schema does not expose an independent passphrase field: do not assume it can represent an encrypted key whose passphrase differs from the selected login password. Use a separately authorized supported authentication configuration instead.
 
 遠端 pkey 透過 SFTP，以前一跳的原始 SSH 登入帳號讀取。su／sudo 不改變 SFTP 身分，因此登入帳號必須有讀取權限；工具不自動提權讀取私鑰。
 
@@ -783,4 +783,13 @@ existing contracts. See [the CLI's exact display rules](cli.md#human-check-overv
 
 Group recipe parameters follow the existing Core/UI sensitive-field masking rules in catalog snapshots. Explicit dump groups remains a raw configuration read and can expose private values; use the effective runner vars for execution and preserve private bindings.
 
-_Last modified: 2026-10-20 23:35:59_
+## Local proxy environment policy
+
+`connection.proxy_environment` optionally maps variable names to quoted strings
+(set) or null (remove) on a proxy connection, including SSH config aliases.
+OpsFeast preserves inherited variables and normalizes inherited nonempty NO_COLOR
+to "true" for local proxies only; empty inherited NO_COLOR is removed. Explicit
+settings win. Core/UI snapshots mask all values. See [configuration, safe diagnostics,
+lifecycle and limits](process-environment.md) before changing process settings.
+
+*Last modified: 2026-10-24 22:26:13*

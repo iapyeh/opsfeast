@@ -21,6 +21,7 @@ import retention_store as store
 import test_host_vault as vault_fixtures
 
 BUNDLED = {
+    'database/mysql/check/replication': ('mysql-replication', '0.1.0'),
     'system/network/check/port': ('check-port', '0.1.0'),
     'system/account/check/identity': ('check-identity', '0.1.0'),
     'system/inventory/overview': ('inventory-system', '0.4.0'),
@@ -33,7 +34,7 @@ class RecipeTaxonomyTests(unittest.TestCase):
     setUp = vault_fixtures.VaultTests.setUp
     enable = vault_fixtures.VaultTests.enable
 
-    def test_bundle_catalog_keeps_ids_versions_and_has_five_classified_leaves(self):
+    def test_bundle_catalog_keeps_ids_versions_and_has_six_classified_leaves(self):
         result = catalog.catalog()
         self.assertEqual(result['status'], 'success', result)
         self.assertEqual({r['reference']: (r['id'], r['version']) for r in result['recipes']}, BUNDLED)
@@ -43,7 +44,7 @@ class RecipeTaxonomyTests(unittest.TestCase):
             self.assertFalse(any(parent in leaves for parent in leaf.parents))
             self.assertTrue((leaf / 'README.md').is_file())
             self.assertTrue((leaf / 'LICENSE').is_file())
-        self.assertEqual(len(leaves), 5)
+        self.assertEqual(len(leaves), 6)
 
     def test_old_bundle_paths_are_not_aliases_but_ids_remain_selectable(self):
         for old in ('check/port', 'check/identity', 'inventory/system', 'report/summary', 'report/retention'):
@@ -56,7 +57,7 @@ class RecipeTaxonomyTests(unittest.TestCase):
         with patch('runpy.run_path', side_effect=AssertionError('no execution')):
             result = inspection.inspect_recipes()
             self.assertEqual(result['status'], 'success', result)
-            self.assertEqual(len(result['recipes']), 5)
+            self.assertEqual(len(result['recipes']), 6)
             for reference in BUNDLED:
                 self.assertEqual(inspection.inspect_recipes(reference)['status'], 'success')
                 output = io.StringIO()

@@ -1,5 +1,10 @@
 # Reuse OpsFeast tools and Python modules
 
+## MySQL and MariaDB replica checks
+
+Prefer [database/mysql/check/replication](../recipes/database/mysql/check/replication/README.md) for repeated replica-status checks. `opsfeast.py recipes run database/mysql/check/replication --profile NAME --host HOST --json` uses the supplied Core session, target python3 and mysql/mariadb batch clients. Configure instances, socket/TCP/TLS, protected credentials, expected source/channel mappings and delay policy through exact-reference recipe vars. It returns sanitized query/input/output/exit evidence, preserves unknown cleanup and defines registered mysql-replication 0.1.0 retention with builtin:vault current/full views. No extra SDK, native privilege escalation, source-host connection or database writes are used. Read the README for supported versions, permissions, failures, public tests and native verification limits. For new needs start with [exploration to reusable artifacts](../skills/opsfeast-recipes/references/exploration-to-recipe.md).
+
+
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](recipe-execution.md).
 
 
@@ -14,7 +19,7 @@ Top-level `opsfeast.py -h` groups commands into setup/profiles, hosts/access, re
 
 For command discovery, use `opsfeast.py COMMAND --help` or `opsfeast.py recipes SUBCOMMAND --help`: command purpose, local/remote effects, saved outputs and relevant examples precede parameter details. `recipes run` distinguishes host execution from offline reports, and jobs save/run distinguishes definition storage from execution. Reading help needs no selected profile and performs no operations. The [CLI reference](cli.md#read-what-a-command-does) remains the complete behavior/contract guide; no invocation or Core API changed in this help improvement.
 
-Recipe discovery/selection supports variable-depth classified paths. Start with [taxonomy and relocation](recipe-taxonomy.md) and the [five bundled recipes](../recipes/README.md); reuse the selected profile's recipes/ for user work and registered sources for shared work. Classification-only moves retain descriptor IDs and saved retention/event references. Exact path selectors and consumer subscriptions must use reviewed current references; no move command, path aliases or automatic private-data migration is implemented.
+Recipe discovery/selection supports variable-depth classified paths. Start with [taxonomy and relocation](recipe-taxonomy.md) and the [bundled recipes](../recipes/README.md); reuse the selected profile's recipes/ for user work and registered sources for shared work. Classification-only moves retain descriptor IDs and saved retention/event references. Exact path selectors and consumer subscriptions must use reviewed current references; no move command, path aliases or automatic private-data migration is implemented.
 
 ## Retention consumers
 
@@ -89,7 +94,7 @@ Prefer [Core API 0.1.0](core-api.md) and the [Core skill](../skills/opsfeast-cor
 
 ## Python reuse map
 
-These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 6.0.0. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
+These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 7.0.0. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
 
 | Module and current interface | Reusable result or behavior | Caller responsibility |
 | --- | --- | --- |
@@ -289,4 +294,55 @@ Use `opsfeast.py observation result [RESULT_ID]` for host history/diagnosis, `ob
 
 Checkout readers `recipe_reports.results(..., kind=None)`, `show_result(..., kind=None)` and `result_diagnostics.diagnose(..., kind=None)` accept keyword-only kind="operation" or "report" for scoped reads. Default None preserves the combined reader used by the recipe browser; kind filtering does not change globally resolved short IDs. These are checkout composition helpers, not a new versioned Core API. Artifact verification remains report-only. Public synthetic tests cover separation, ID collisions, filters, wrong-kind failures, modes, read-only behavior, HTML conflicts and TUI forwarding; no host was rerun for this CLI change.
 
-_Last modified: 2026-10-23 08:11:44_
+## Readable execution handoff
+
+`recipes run` human TTY completion now supplies saved raw paths and successful readable Vault entrypoints after its compact ID table. JSON and pipe contracts remain unchanged. For agent-side composition use the checkout helper `host_vault.result_locations(profile.root, host=HOST_ID, record_id=RETAINED_RECORD_ID)` after checking the publication receipt. It returns existing manifest-owned index/host/current paths, with missing pages omitted; current means latest state. It performs read-only config/retention/manifest access, never rebuilds or connects, and rejects unsafe/symlink paths. Invalid configuration or record lookup can raise ConfigError/OSError; presentation must preserve the original execution outcome. This is a checkout module interface, not a new Core method. Follow [the handoff workflow](../skills/opsfeast-recipes/references/exploration-to-recipe.md#finish-the-user-handoff-not-just-the-program) to apply authorized private settings and provide actual copy/paste commands and result locations.
+
+## Reuse proxy subprocess environment support
+
+For differences between terminal, agent, cron and CI environments, start with
+`tools/check_environment.py --json` and the [proxy environment guide](process-environment.md).
+Configure connection.proxy_environment instead of mutating global os.environ or
+rebuilding connection loops. Shared test-connection/Core/runner paths apply the
+same child-only policy. Checkout process_environment.proxy_policy(overrides=None,
+environ=...) returns explicit changes and value-free evidence; proxy_options is
+the connection adapter. These are checkout interfaces, not versioned Core APIs.
+Do not apply this proxy policy to remote shells or arbitrary recipe programs by
+assumption. Synthetic/local process evidence does not prove real SSH connectivity.
+
+## SSHScript 7.0 pinned runtime support
+
+Use [the source contract and migration guide](sshscript-7.md) for current operational
+support. Core/runner/test-connection share the exact 7.0.0 source requirement and
+32-file validation; the version label alone is insufficient. Checkout
+sshscript_runtime.source_identity() returns value-free source evidence without
+network/Session creation; require_source(module) is the internal execution guard.
+Do not recreate connection resolvers or bypass the guard to support another build.
+Use parent_key_filename/proxy_command in Python; host YAML retains identity_file
+and proxy_command. Public Console, command results and ownership remain library
+interfaces, with native local checks and explicit real-host verification limits.
+
+## Read collection accounts across service boundaries
+
+Reuse checkout console_output.execution_identities(raw) for role-tagged evidence,
+and execution_identity(raw) for the shared completion/history label. Supported
+sources are access.actual_identity, mysql-replication data.instances[].server.
+authenticated_user (CURRENT_USER()), and connected/login_identity with source
+ssh_connection. The latter is a transport login, not an OS execution identity.
+Observation view 0.2.0 adds identity_evidence while preserving OS-only
+collection_identity. See [CLI semantics](cli.md#role-aware-collection-identity).
+Do not infer service identities from input vars, configured users or SSH accounts,
+or reconnect solely to replace an unknown display value.
+
+## Render replication health without obscuring failures
+
+Reuse vault_content.replication_summary/replication_lines through the existing
+Vault renderer and authorized vault rebuild. [Current replication views](host-vault.md#replication-status-must-be-visible-first)
+put an overall status before Contents, display every instance independently, and
+use explicit text/icons plus native callout colors. Details/channels use vertical
+two-column tables. Saved health, cleanup and incomplete-record state determine the
+summary; do not invent new thresholds, turn unknown into healthy or treat unhealthy
+as missing collection. No additional SQL, retention/schema migration or global
+reader settings are needed. Full sanitized evidence remains in historical reports.
+
+*Last modified: 2026-10-24 23:07:17*

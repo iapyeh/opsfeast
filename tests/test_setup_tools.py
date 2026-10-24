@@ -18,7 +18,7 @@ import check_environment as environment
 import skill_bundle as bundle
 
 
-def archive_bytes(extra=(), contract='6.0.0', omitted=()):
+def archive_bytes(extra=(), contract='7.0.0', omitted=()):
     stream = io.BytesIO()
     files = {
         'SKILL.md': f'SSHScript {contract} contract',
@@ -26,6 +26,7 @@ def archive_bytes(extra=(), contract='6.0.0', omitted=()):
         'references/api-guide.md': 'synthetic API',
         'references/versioning.md': 'synthetic policy',
         'references/console.md': 'synthetic console',
+        'references/embedded-console.md': 'synthetic embedded console',
     }
     with zipfile.ZipFile(stream, 'w') as archive:
         for name, data in files.items():
@@ -50,7 +51,7 @@ class BundleTests(unittest.TestCase):
         self.assertEqual((self.candidate / 'sshscript-skill.zip').read_bytes(), self.content)
         source = json.loads((self.installed / 'SOURCE.json').read_text())
         self.assertEqual(source['bundle_sha256'], hashlib.sha256(self.content).hexdigest())
-        self.assertEqual(source['documentation_contract'], '6.0.0')
+        self.assertEqual(source['documentation_contract'], '7.0.0')
         self.assertEqual((self.installed / 'assets/extra.txt').read_text(), 'complete bundle')
 
     def test_check_is_read_only_and_detects_local_modifications(self):
@@ -77,11 +78,11 @@ class BundleTests(unittest.TestCase):
                 bundle.check(self.content)
 
     def test_changed_contract_reported_without_replacement(self):
-        report = bundle.check(archive_bytes(contract='7.0.0'), self.installed)
+        report = bundle.check(archive_bytes(contract='8.0.0'), self.installed)
         self.assertTrue(report['bundle_changed'])
         self.assertFalse(report['contract_matches_runner'])
-        self.assertEqual(report['installed_contract'], '6.0.0')
-        self.assertEqual(report['candidate_contract'], '7.0.0')
+        self.assertEqual(report['installed_contract'], '7.0.0')
+        self.assertEqual(report['candidate_contract'], '8.0.0')
 
     def test_existing_destination_not_overwritten(self):
         with self.assertRaises(FileExistsError):
@@ -90,7 +91,8 @@ class BundleTests(unittest.TestCase):
 
     def test_invalid_archive_rejected_before_creating_destination(self):
         cases = [b'not a zip', archive_bytes(omitted=['references/api-guide.md']),
-                 archive_bytes(omitted=['references/console.md'])]
+                 archive_bytes(omitted=['references/console.md']),
+                 archive_bytes(omitted=['references/embedded-console.md'])]
         for path in ('../escape', 'sshscript/../escape', '/sshscript/absolute',
                      'other/SKILL.md', 'sshscript/SOURCE.json', 'sshscript/./file', 'sshscript\\file'):
             cases.append(archive_bytes(extra=[(path, 'invalid')]))
@@ -144,6 +146,12 @@ class EnvironmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             root = Path(root)
             bundle.stage(archive_bytes(), root / 'skills')
+            import sshscript_runtime
+            source_file = root / 'skills/sshscript/SOURCE.json'
+            source = json.loads(source_file.read_text())
+            source.update(source_commit=sshscript_runtime.SOURCE_COMMIT,
+                          bundle_sha256=sshscript_runtime.CONTRACT['skill_bundle_sha256'])
+            source_file.write_text(json.dumps(source))
             with patch.object(environment, 'ROOT', root), \
                     patch.object(environment, 'inspect_package', return_value={'ready': True}):
                 self.assertTrue(environment.inspect_environment()['ready'])
@@ -151,6 +159,9 @@ class EnvironmentTests(unittest.TestCase):
                 self.assertFalse(environment.inspect_environment()['skill']['ready'])
                 (root / 'skills/sshscript/references/api-guide.md').write_text('synthetic API')
                 (root / 'skills/sshscript/references/console.md').unlink()
+                self.assertFalse(environment.inspect_environment()['skill']['ready'])
+                (root / 'skills/sshscript/references/console.md').write_text('synthetic console')
+                (root / 'skills/sshscript/references/embedded-console.md').unlink()
                 self.assertFalse(environment.inspect_environment()['skill']['ready'])
 
     def test_agent_copy_does_not_replace_missing_source(self):

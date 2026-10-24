@@ -137,4 +137,8 @@ Retention/content delivery verification (2026-10-19): Python 3.11.15, 3.13.13 an
 
 Operational CLI batches, saved inventory collections and due-work dispatch persist [observation-run 0.1.0](observation-runs.md), anchored in the first target's annual archive beside retained records. Run identity/membership, outcomes and saved Attention policy/findings are separate from recipe-owned normalized data. No normalizer/schema digest or old observation is rewritten. Use Core/report-reader runs()/run(run_id), checkout observation_runs.list_runs/show or inventory runs list/show. Ordinary query/export does not include these objects. Completed runs are immutable; read stored snapshots for historical evaluation and current settings only for current views. Updates emit retention.run.updated atomically; the [consumer contract](retention-consumers.md) distinguishes run IDs from observation record IDs. Missing/deleted source data does not erase saved batch evidence or authorize recollection.
 
-_Last modified: 2026-10-20 23:10:05_
+## MySQL replication structured observations
+
+The bundled [database/mysql/check/replication](../recipes/database/mysql/check/replication/README.md) owns registered `mysql-replication` 0.1.0, including its schema and pure reviewed normalizer. General operational recipes now route declared structured data through the same registry/storage/replay path, without runner-specific database branches or dynamic candidate adapters. It retains per-instance/channel status, safe fixed-query evidence, positions/GTIDs/filters, lag policy, sample times and explicit source-side verification limits. Valid adverse/unknown observations are partial and retainable; wholly failed attempts remain raw evidence. Credentials and arbitrary database error text are excluded. Builtin Vault renders current/all-channel summaries and complete sanitized historical data from retention; it never re-queries databases.
+
+*Last modified: 2026-10-24 09:45:07*

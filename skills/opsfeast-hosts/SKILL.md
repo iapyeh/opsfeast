@@ -105,7 +105,7 @@ Read the [CLI reference](../../docs/cli.md) when choosing, explaining or running
 
 ## Host initialization and account diagnostics
 
-For connection/platform/account checks, read [host diagnostics](../../docs/host-diagnostics.md). New diagnostics require matching SSHScript import/distribution 6.0.0. Read the bundled public SSHScript skill, Agent Guide and authenticated-console API sections before privilege tests; reuse already-read applicable material. Setup/configuration requests alone do not authorize connections, proxies, su/sudo or recipe execution. Apply the user's existing authorization without asking again.
+For connection/platform/account checks, read [host diagnostics](../../docs/host-diagnostics.md). New diagnostics require matching SSHScript import/distribution 7.0.0. Read the bundled public SSHScript skill, Agent Guide and authenticated-console API sections before privilege tests; reuse already-read applicable material. Setup/configuration requests alone do not authorize connections, proxies, su/sudo or recipe execution. Apply the user's existing authorization without asking again.
 
 Choose the narrowest command that satisfies the request:
 
@@ -168,7 +168,7 @@ Include 的相對路徑以**宣告它的 YAML 所在目錄**為基準。Recipe �
 
 Include 與自訂 recipe 以管理根目錄為邊界；repository recipe 以工具所在 checkout 的 recipes 目錄為邊界。 Registered named sources permit external recipe roots, but never widen include/output boundaries; profile :paths remain inside profile recipes/.解析相對路徑、`..` 與符號連結後，實際路徑必須仍在各自邊界內；recipe 的絕對路徑可位於這兩個邊界內。不可因此放寬 include 或結果輸出的邊界。用路徑元件而非字串前綴檢查。Glob 或遞迴選取不能先搜尋外部再過濾，每個結果也需檢查邊界。新設定優先用相對路徑。
 
-這個邊界不適用於目標主機的變數值。`identity_file` 是連線層設定，test-connection 將 identity_file 原樣傳給 SSHScript pkey_path，從呼叫 connect 的 parent Session 所在主機讀取 RSA 私鑰：直連讀 localhost，經由跳板時讀前一跳主機（SFTP 原始登入帳號）。不以 YAML 目錄解析相對路徑、不展開 ~，建議 parent 主機上的絕對路徑；不能將它替換成始終在 localhost 讀取的 key_filename。
+這個邊界不適用於目標主機的變數值。`identity_file` 是連線層設定，test-connection 將 identity_file 原樣傳給 SSHScript parent_key_filename，從呼叫 connect 的 parent Session 所在主機讀取 RSA 私鑰：直連讀 localhost，經由跳板時讀前一跳主機（SFTP 原始登入帳號）。不以 YAML 目錄解析相對路徑、不展開 ~，建議 parent 主機上的絕對路徑；不能將它替換成始終在 localhost 讀取的 key_filename。
 
 全部設定載入後，檢查 `via.host` 是否存在、跳板圖是否循環，以及選取的 recipes 是否存在。錯誤指出來源檔案、主機 ID 或欄位與引用鏈；不要為修正錯誤自行編造主機、密碼或 recipe。
 
@@ -285,4 +285,27 @@ paths; additional ESXi releases, role assignments and su/sudo remain unverified.
 
 Group recipes can carry private inputs. Core/UI catalog snapshots mask recognized sensitive fields, while explicit dump remains raw. Do not use a masked display snapshot as executable input or assume arbitrary values are safe to publish.
 
-_Last modified: 2026-10-23 08:11:44_
+## Proxy environment differences
+
+Read [the process environment contract](../../docs/process-environment.md) when
+terminal/agent/cron/CI execution differs. Inspect with tools/check_environment.py
+--json; use connection.proxy_environment for per-proxy string/null overrides.
+Inherited nonempty NO_COLOR becomes "true" for proxies; empty is removed; explicit
+overrides win. Never mutate process-global environment for a temporary fix or
+copy an entire environment into hosts.yaml. Explain and authorize concrete config
+changes, mask all values, retain failed-attempt/cleanup evidence and do not retry
+authentication with alternate settings. Presence/source diagnostics cannot identify
+which ancestor originally injected a value. Configuration checking does not connect.
+
+## SSHScript 7.0 connection parameters
+
+Read [the pinned source migration](../../docs/sshscript-7.md). Host YAML identity_file,
+proxy_command and proxy_environment stay unchanged; the shared resolver passes
+parent_key_filename and proxy_command to SSHScript 7.0. Source/version mismatches
+fail before Session creation, including standalone test-connection. Do not install
+another same-version artifact or change authentication candidates to work around a
+runtime mismatch. Parent-key locality and account/authorization policies remain.
+The YAML schema has no independent private-key passphrase field; SSHScript 7 uses
+the selected password as its fallback when no explicit passphrase is supplied.
+
+*Last modified: 2026-10-24 22:24:58*

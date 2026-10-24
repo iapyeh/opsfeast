@@ -306,4 +306,155 @@ Wheel/sdist builds, temporary no-index/no-dependency installation and 68 install
 
 Human/agent documentation, capability routing, recipe dependency declarations and relevant skills are updated together. The reusable user interface is a README prompt plus an existing-tool procedure; no automatic updater or reload service is claimed. No retention schema or stored-data migration is required. No commit, push or release is included.
 
-_Last modified: 2026-10-23 08:11:44_
+## SSHScript 6.1 update verification
+
+On 2026-10-24, Python 3.11.15, 3.13.13 and 3.14.4 each passed all 856 public tests with the 6.1.0 dependency/skill contract. The older interpreters reused the selected environment's dependencies; these runs do not establish independently installed native dependencies on those interpreters. Final focused setup/update checks also passed after adding missing embedded-console reference coverage. Version guards reject 6.0.0, unsupported releases and import/distribution mismatches before Session creation.
+
+The selected checkout .venv now imports published SSHScript 6.1.0. All 31 installed Python/type files match the verified PyPI wheel byte for byte; all eight official skill files match the complete downloaded ZIP. The previous skill was backed up outside the checkout. Wheel SHA-256: `5c05857bc2ab62d76a84f8599294f7b1f5b6b03e4b31f5ee74b7b2848708d4a5`; skill ZIP SHA-256: `db59dbe1a8c6e7af049a759f03e4b21766ecf34751d44fe85b87e4c3dcf4987b`. Sources: [PyPI](https://pypi.org/project/sshscript/6.1.0/), [public v6.1.0 changelog](https://github.com/iapyeh/sshscript/blob/v6.1.0/CHANGELOG.md) and bundled SOURCE.json.
+
+Credential-free local macOS PTY checks passed exact argv/stdin, retained Python variables and shell cwd/environment, actual nonzero command exit status (failed/7), borrowed close with session_reuse=confirmed and original-owner command reuse. An initial smoke probe incorrectly used shell `exit 7`, which exits the retained shell itself and produced unknown cleanup; the corrected command uses a child `sh -c 'exit 7'`. Both logs were preserved. No SSHScript changes or state workarounds were used.
+
+Wheel/sdist builds from a staging copy containing only tracked files and the complete new skill, plus a temporary no-index/no-dependency wheel install outside the checkout, passed. Installed imports and embedded-console resources were verified. Full readiness and pip check passed. Human guides, capability routing, skills and recipe dependency declarations were updated together; no data/schema migration or persistent OpsFeast Console adapter is included. Existing profile data, shared environments and unrelated files were preserved. No real SSH/jump/su/sudo, credentials, commit, push or publication were involved. These checks do not repeat the prototype browser acceptance or prove remote privilege behavior.
+
+## MySQL/MariaDB recipe and exploration workflow verification
+
+On 2026-10-24, CPython 3.11.15, 3.13.13 and 3.14.4 each passed 870 public tests. The 3.11/3.13 runs used separate temporary QA environments with their own installed native dependencies. Initial cross-ABI dependency reuse failed the new local integration test; those failures are not passing native evidence. The selected 3.14 environment and both QA environments passed pip check.
+
+`test_mysql_replication.py` supplies 14 public test methods covering MySQL/MariaDB/version syntax, multiple channels/instances, missing/stopped/lagged/wrong-source status, zero thresholds, missing credentials, malformed XML, socket/TCP/TLS client flags, option-file ownership/permissions/escaping, timeout, nonzero/truncated helper output, credential redaction, cleanup uncertainty, recipe-var inheritance, structured retention/dedup/schema validation and Vault. A real local SSHScript process executes a synthetic client protocol fixture through the public CLI and saves raw → retention → Vault. This is not a real local MySQL/MariaDB server. Native MariaDB, TLS and least-privilege account integration remain unverified.
+
+Native SSH against a Linux target running MySQL 8.0.46 also passed repeated actual recipe runs: fixed identity/status SQL, inline database credentials transmitted through SSH stdin/protected temporary option file, healthy replica-side findings, confirmed credential cleanup, stored retention and successful builtin:vault delivery. No source-host connection, OS su/sudo, database repair/write or private hosts.yaml change occurred. The earlier exploratory Console was closed with borrowed Session reuse confirmed and owner cleanup. A final audit found no supplied database password in the checked public files, raw result, retained record, generated database pages or captured process streams. This records observed behavior, not a general sandbox/secret-scanning guarantee.
+
+Wheel/sdist builds used an explicit staging copy that excludes unrelated untracked scripts and the old Console prototype. A temporary no-index/no-dependency install outside the checkout passed all 14 new tests after explicitly importing the installed package before test fixtures add tools/ to sys.path. Invoking the source-oriented test loader without that import exposed the existing tools/opsfeast.py shadowing boundary; no product patch was used to hide it. Package contents include the recipe, schema/normalizer, safe config example and exploration workflow. Source tests cover packaged-resource discovery as well.
+
+Human recipe/config/retention/CLI/Vault guides, capability routing and the recipes skill were updated together. The [exploration-to-recipe workflow](../skills/opsfeast-recipes/references/exploration-to-recipe.md) includes transparent calls/evidence, explicit authorization for destructive effects and a failure-over-damage stopping rule. Skill format, changed Python 3.11 grammar, JSON/YAML, local document link paths, footers and diff whitespace were checked. No independent agent blind evaluation or remote CI/commit/push/publication is claimed. Permanent private recipe configuration is a separately reviewable change, not silently installed by these tests.
+
+## Configuration and readable execution handoff
+
+On 2026-10-24, Python 3.11.15, 3.13.13 and 3.14.4 each passed 876 public tests, with independent native-dependency QA environments for 3.11/3.13. The six new test_execution_handoff cases use real synthetic retention/Vault publication to verify single-host raw/latest links, shared batch destinations, failed/disabled publication versus stale pages, independent consumer success/failure, missing/deleted/unowned/symlink paths, read-only lookup and unchanged JSON/pipe reports. Existing console output tests also passed. A temporary installed wheel outside the checkout passed 20 related handoff/database tests.
+
+An explicitly authorized private configuration update preserved other host/settings data, created a protected backup, saved database settings with bulk disabled and set the source YAML to 0600. An initial temporary-entry validation failed because entry hosts.yaml and included filenames have distinct policies; the original was unchanged. Typed-input prevalidation plus canonical-entry validation/rollback completed successfully. No entry/include policy or product validation was bypassed. Credentials were not printed or placed in the public bundle.
+
+A real SSH/MySQL read check then ran directly from saved configuration, without a password argument or temporary vars file. Actual TTY completion displayed PASS, Result/Observation IDs, the existing raw JSON path and matching Vault latest-state path. Read-back checks confirmed unrelated settings preserved, protected file/backup modes and no supplied password in checked public files, raw/retained output, readable pages or TTY transcript. The helper host_vault.result_locations performs only read access; a display lookup failure cannot replace the actual execution outcome. Current paths mean latest state, not exact historical content.
+
+Human CLI/execution/Vault documentation, capability routing and the recipes skill now require the full handoff: apply authorized known private settings, provide an actual copy/paste command and identify saved/readable results. Schema/normalizer, database operations and JSON contracts did not change in this handoff update. Native MariaDB/TLS, independent agent blind evaluation and remote CI were not added. No commit/push/publication occurred.
+
+## Proxy subprocess environment verification
+
+On 2026-10-24, Python 3.11.15, 3.13.13 and 3.14.4 each passed all 889 public tests.
+The 13 new test_process_environment cases exercise real local launcher children,
+NO_COLOR absent/empty/1/true/0/unexpected values, explicit overrides/removals, PATH,
+stdin/stdout/PID continuity, concurrent isolation, private-file permissions/removal,
+start/connect/termination failures, redacted receipts, aliases/first-hop ownership,
+Core/UI masking and shared diagnostic/runtime connection boundaries. An actual
+SSHScript 6.1.0 Session uses a local failing-handshake proxy fixture and strict
+cleanup verifies that its child is gone. This is no real SSH/authentication proof.
+
+The first full matrix exposed one outdated raw-proxy-string assertion. It was
+updated to inspect the original argv preserved in the launcher payload while
+retaining the jump/password/key assertions; the final full matrix passed. Running
+test_ops.py alone also exposes the existing discovery-order/bootstrap dependency;
+no product workaround was added. Full discovery covers it successfully. A staged
+wheel/sdist build and isolated installed wheel passed all 13 new tests outside the
+checkout. Dependencies for Python 3.11/3.13 are in separate temporary QA environments;
+the installed-wheel check reuses selected-environment dependencies through a local
+.pth without modifying that environment. Readiness, pip check, Python 3.11 grammar,
+changed documentation links/footers and whitespace checks passed.
+
+The [policy guide](../docs/process-environment.md) documents config, defaults,
+compatibility, privacy and limits. Human guides, capability routing and hosts/Core/
+recipes skills were updated together. Core methods and retention schemas are
+unchanged. No real host/proxy, credentials, SSHScript source, private profile,
+global environment, schedule, commit, push or publication was changed. Remote CI
+was not executed and no CI workflow is configured in this checkout.
+
+
+## Pinned SSHScript 7.0.0 compatibility verification
+
+On 2026-10-24, Python 3.11.15, 3.13.13 and 3.14.4 each passed all 894 public tests
+against source commit 7a3b43594eca50cf1600d4f8a1dc67cb266df19e (unreleased 7.0.0).
+The selected 3.14 runtime's 32 package/type files match the untouched public source;
+the rebuilt wheel from a temporary copy matches those same hashes. Independent
+3.11/3.13 QA environments installed that wheel with no dependency upgrades; all
+three full readiness checks and pip check passed. Initial build isolation could
+not fetch setuptools under sandbox networking; the authorized retry downloaded
+only the exact source-declared build dependency to temporary isolation and built
+successfully. No SSHScript source or shared environment was edited.
+
+Connection dictionaries and the environment adapter now use parent_key_filename
+and proxy_command, retaining key locality and proxy child ownership. The new source
+manifest/guard rejects same-version drift before Session creation in Core, runner
+and standalone test-connection. Nine runtime tests cover supported/rejected versions,
+source/module/type drift, real 7.0 resolver names and rejected old names, exact source
+requirements/metadata, and native local borrowed Console state/job/close/reuse.
+Existing local proxy and MySQL fake-client/retention/Vault tests run against 7.0.
+
+Wheel/sdist builds used a public allowlist staging copy, excluding private profiles,
+agent-installed copies, unrelated scripts and the old Console prototype. An isolated
+wheel install outside the checkout passed 41 related tests: eight runtime/identity
+cases, 13 environment cases, 14 database cases and six result handoff cases. The
+checkout-only dependency-surface test needs pyproject.toml/build_backend.py and is
+covered by full source discovery rather than transplanted into wheel resources.
+Python 3.11 grammar, YAML/JSON, four Ops skill frontmatters, changed Markdown local
+links/footers, public artifact contents and diff whitespace passed. Both SSHScript
+skill copies still match the original complete pinned-source ZIP; upstream bytes
+were not rewritten to describe OpsFeast support.
+
+The [migration guide](../docs/sshscript-7.md) and runtime manifest document exact
+identity, setup, current names, private-key decryption limits, no legacy aliases
+and local/synthetic versus real-host evidence. Existing host YAML/result/retention
+schemas and stored data are unchanged. Historical 6.1.0 native MySQL evidence is
+explicitly historical. No real SSH/wstunnel, jump/su/sudo, credentials, private host
+configuration, schedules, commit, push or release were performed. The prototype
+browser UI was not revalidated; remote CI was not executed.
+
+
+## Role-aware execution identity verification
+
+On 2026-10-24, Python 3.11.15, 3.13.13 and 3.14.4 each passed 901 public tests.
+Six new test_execution_identity cases cover database versus SSH/OS roles, multiple
+instances with independent unknowns, configured-account exclusion, unconfirmed
+login, unrelated services, control characters, read-only projection and completion
+rendering. A new observation integration case verifies identical live/history
+labels, preserved null OS collection_identity, additive identity_evidence and
+unchanged raw bytes. An isolated installed wheel outside the checkout passed 48
+related tests, including the new identity cases and existing database, environment,
+source guard and result-location checks. The checkout-only metadata case remains
+covered by source discovery.
+
+Actual local PTY rendering of an existing authorized database observation showed
+both recorded database grant identity and final-hop SSH login with explicit role
+labels; it did not reconnect or rerun a recipe. Wheel/sdist public staging, Python
+3.11 grammar, JSON, two updated skill frontmatters, local documentation links/footer
+checks and whitespace passed. Human guides, capability routing, recipe docs and
+recipe/result-data skills document the change. Observation view 0.2.0 adds optional
+identity_evidence; existing OS identity fields and result-index collection_user keep
+their meanings. Raw/retention schemas, normalizer digests, stored data and operation
+outcomes are unchanged. No real-host execution, private configuration, credentials,
+commit, push or release occurred. Remote CI was not run.
+
+
+## Prominent replication health verification
+
+On 2026-10-24, Python 3.11.15, 3.13.13 and 3.14.4 each passed 908 public tests.
+Seven new test_replication_readability cases cover status-before-Contents, explicit
+healthy/unhealthy/unknown/not-configured/mixed labels, cleanup/partial uncertainty,
+per-instance/channel findings, two-column tables, zero versus unavailable delay,
+complete historical evidence and immutable retained input. The existing database,
+Vault and identity tests passed. An isolated installed wheel passed 55 related tests;
+public source staging, wheel/sdist, Python 3.11 grammar, JSON, two skill frontmatters,
+changed documentation targets/footers and whitespace checks passed.
+
+Actual Obsidian 1.14.4 Reading view verified both a healthy green callout and an
+unhealthy red status before Contents. Following the main Contents link showed its
+independent status, readable two-column instance details and highlighted channel
+findings. No app theme, global font setting, CSS or plugin was changed. Plain
+Markdown keeps explicit status text even without callout support.
+
+The user-requested Vault refresh succeeded for the selected private profile using
+retention only. All 187 existing protected observation/retention files and 31 human
+Markdown notes retained identical bytes; owned views were backed up before rebuild.
+No host/SQL query, retention/schema/normalizer rewrite, private configuration change,
+commit or push occurred. Human/agent docs and consumer/recipe presentation guidance
+were updated. Remote CI was not run; native UI proof is for this installed reader.
+
+*Last modified: 2026-10-24 23:09:04*

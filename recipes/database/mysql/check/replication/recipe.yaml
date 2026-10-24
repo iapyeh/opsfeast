@@ -1,0 +1,34 @@
+descriptor_version: 0.3.0
+author: {name: Bundle, contacts: [Bundle]}
+license: MIT
+id: mysql-replication
+version: 0.1.0
+title: Check MySQL and MariaDB replication
+description: Read replica-side status for configured database instances and all replication channels; no source connection or repair.
+access_mode: read
+retention:
+  contract: mysql-replication
+  version: 0.1.0
+  description: Replica-side observations and policy findings; zero lag is not proof of source catch-up or row consistency.
+  schema: retention.schema.json
+runner: {contract: python-recipe, version: 0.1.0, entrypoint: main.py}
+platforms:
+  implemented: [linux, freebsd, macos]
+  tested: [linux]
+  planned: []
+dependencies:
+  controller: [Python 3.11+, SSHScript 7.0.0, OpsFeast mysql-replication retention 0.1.0]
+  target: [python3, mysql or mariadb client, MySQL 5.7+ or MariaDB 10.2+]
+permissions: {sudo: false, su: false}
+side_effects:
+  - Opens database connections and executes fixed read-only identity and replication-status SQL.
+  - Creates and removes a mode-0600 temporary client option file when inline credentials are supplied.
+  - Database connections may generate server audit records; controller stores sanitized evidence, retention and enabled consumer output.
+inputs:
+  variables:
+    instances: {type: object, required: true}
+    max_delay_seconds: {type: number, default: 60, minimum: 0}
+    command_timeout_seconds: {type: number, default: 20, minimum: 1, maximum: 120}
+output: {schema_version: 0.1.0}
+verification: {synthetic: tested, local: tested, ssh: tested}
+# Last modified: 2026-10-24 22:22:19

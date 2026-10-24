@@ -18,6 +18,49 @@ def vault_checked(root, *parts):
     return checked(root, 'vault', *parts)
 
 
+def result_locations(root, *, host=None, record_id=None):
+    """Read existing manifest-owned entrypoints; never build, connect or create state.
+
+    A current page is a latest-state view, not necessarily the supplied historical
+    record. The caller must interpret this execution's publication receipt first.
+    """
+    root = Path(root)
+    result = {}
+
+    def published(owner, relative):
+        manifest = vault_checked(root, '.content-' + owner + '.json')
+        if not manifest.is_file():
+            return None
+        entries = json.loads(manifest.read_text())
+        if not isinstance(entries, dict):
+            raise ConfigError('invalid content ownership manifest')
+        if relative not in entries:
+            return None
+        path = vault_checked(root, *relative.split('/'))
+        return str(path) if path.is_file() else None
+
+    index = published('structure', 'HOSTS.md')
+    if index:
+        result['index'] = index
+    if host is None:
+        return result
+    runtime = Validator(root)
+    runtime.load(root / 'hosts.yaml')
+    folder = host_location(runtime, host)
+    summary = published('bundled-retention', folder + '/SUMMARY.md')
+    if summary:
+        result['host'] = summary
+    if record_id:
+        from retention_store import show
+        from vault_content import latest_filename
+        record = show(root, record_id)
+        if record['host_id'] == host and record['kind'] == 'observation':
+            current = published('bundled-retention', folder + '/records/' + latest_filename(record))
+            if current:
+                result['current'] = current
+    return result
+
+
 @contextmanager
 def locked(root):
     import fcntl
