@@ -329,6 +329,48 @@ hosts:
             run.assert_not_called()
         self.assertEqual(report, before)
 
+    def test_recipes_run_preserves_role_identity_through_compact_summary(self):
+        report = {'host_id': 'h', 'status': 'success', 'reason_code': 'replication_healthy',
+                  'recipe': {'id': 'mysql-replication'}, 'connected': True,
+                  'login_identity': {'username': 'operator', 'source': 'ssh_connection'},
+                  'private_connection_extra': 'synthetic-do-not-display',
+                  'data': {'instances': [{'instance': 'main',
+                           'server': {'authenticated_user': 'monitor@localhost'}}]}}
+        before = json.loads(json.dumps(report))
+        for selector in (['--host', 'h'], ['--all']):
+            for tty, flags in ((True, []), (True, ['--json']), (False, [])):
+                with self.subTest(selector=selector, tty=tty, flags=flags), \
+                        patch.object(runner, 'run', return_value=(report, None)):
+                    code, output = self.capture(ops.main, ['recipes', 'run',
+                        'database/mysql/check/replication', '--root', str(self.root),
+                        *selector, *flags], tty=tty)
+                self.assertEqual(code, 0)
+                self.assertNotIn('synthetic-do-not-display', output)
+                if tty and not flags:
+                    self.assertIn('monitor@localhost', output)
+                    self.assertIn('DB main:', output)
+                    self.assertIn('operator', output)
+                else:
+                    row = json.loads(output)
+                    if 'hosts' in row: row = row['hosts'][0]
+                    self.assertEqual(row['identity_evidence'], console.execution_identities(report))
+                    self.assertNotIn('recipe', row)
+                self.assertEqual(report, before)
+
+    def test_recipes_run_login_fallback_and_unknown_without_recorded_identity(self):
+        report = {'status': 'failed', 'reason_code': 'query_failed',
+                  'recipe': {'id': 'mysql-replication'}, 'connected': True,
+                  'login_identity': {'username': 'operator', 'source': 'ssh_connection'},
+                  'data': {'instances': [{'instance': 'main', 'server': None}]}}
+        for connected in (True, False):
+            report['connected'] = connected
+            with patch.object(runner, 'run', return_value=(report, None)):
+                code, output = self.capture(ops.main, ['recipes', 'run',
+                    'database/mysql/check/replication', '--root', str(self.root), '--host', 'h'])
+            self.assertEqual(code, 1)
+            self.assertIn('operator' if connected else 'unknown', output)
+            self.assertNotIn('DB main:', output)
+
     def test_execution_summary_includes_result_id_and_verified_collection_actor(self):
         report = {'hosts': [
             {'host': 'h', 'status': 'success', 'result_path': '/private/long-result.json',

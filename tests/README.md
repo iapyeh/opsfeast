@@ -457,4 +457,27 @@ No host/SQL query, retention/schema/normalizer rewrite, private configuration ch
 commit or push occurred. Human/agent docs and consumer/recipe presentation guidance
 were updated. Remote CI was not run; native UI proof is for this installed reader.
 
-*Last modified: 2026-10-24 23:09:04*
+## Live recipe summary identity regression
+
+The raw renderer and saved observation tests missed metadata discarded by the
+runner's compact live summary. The runner now projects role-aware identity evidence
+from the complete report before reducing it. Two public CLI regression tests cover
+single-host and batch execution, terminal, explicit JSON and piped output, confirmed
+SSH fallback, missing identity, omitted private metadata and unchanged raw input.
+The backend is synthetic; these tests do not connect to hosts.
+
+Python 3.11.15, 3.13.13 and 3.14.4 each passed 910 public tests. Wheel/sdist
+builds passed; 28 CLI/identity tests passed against the installed wheel outside the
+checkout. Python 3.11 grammar, Markdown links/footers, skill metadata and diff
+whitespace checks passed. A real local PTY
+replayed an existing saved database result through the public recipes run entrypoint
+with the backend replaced by that saved report. Completion displayed both database
+and SSH roles. This is offline CLI evidence, not a new database or SSH check. The
+independent fixture has no Vault entrypoint, so its copied historical publication
+receipt cannot resolve a content path there. No profile or saved raw result was
+rewritten. Compact JSON gains identity_evidence; retained/raw schemas are unchanged.
+Human CLI/execution docs, the capability map and recipe skill now cover this path
+and require verification through the public completion boundary. Remote CI and
+real-host execution were not performed for this correction.
+
+*Last modified: 2026-10-24 23:23:00*

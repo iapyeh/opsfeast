@@ -54,4 +54,14 @@ When use reveals a repeated decision failure, update this workflow or its canoni
 
 The [MySQL/MariaDB replication recipe](../../../recipes/database/mysql/check/replication/README.md) is a worked implementation: interactive discovery became fixed SQL, per-instance private configuration, mysql-replication 0.1.0 retention and builtin:vault views. It is an example, not a mandatory database dependency or a complete cross-product validation claim.
 
-*Last modified: 2026-10-24 10:24:52*
+## Verify the actual completion path
+
+For completion/output changes, test the actual public CLI entrypoint through its
+runner, compact-summary projection and terminal renderer, plus forced JSON and
+non-TTY output. A renderer test fed the full saved raw report can hide fields lost
+by an intermediate summary. Compare fresh completion and history with the same
+recorded identity evidence; never repair a display gap by guessing configured
+accounts or reconnecting. Keep synthetic backend boundaries explicit when testing
+the real CLI so tests cannot accidentally execute a managed-host operation.
+
+*Last modified: 2026-10-24 23:19:57*

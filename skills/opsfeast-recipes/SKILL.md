@@ -400,7 +400,9 @@ leave without an exit sequence may intentionally retain waiting_input.
 Follow [role-aware completion/history identity](../../docs/cli.md#role-aware-collection-identity).
 The bundled replication recipe already retains CURRENT_USER() for each instance;
 completion and observation views now display DB INSTANCE: ACCOUNT plus observed
-OS identity or explicitly labeled SSH login fallback. Do not claim that a database
+OS identity or explicitly labeled SSH login fallback. The runner preserves identity_evidence in compact TTY/JSON/pipe summaries before
+dropping recipe/connection metadata. Verify identity through the actual recipes run
+entrypoint, not only by directly rendering a saved raw report. Do not claim that a database
 root account is OS root, or that login is the effective collector. Reuse the shared
 console_output identity projection; unknown/missing evidence must remain visible.
 Other service recipes need a reviewed authenticated-identity contract/extractor,
@@ -418,4 +420,4 @@ does not change recipe SQL, health rules, retention schema/normalizer or authori
 A user-requested appearance fix can regenerate owned views from retained data;
 it does not authorize new host queries or global reader-setting changes.
 
-*Last modified: 2026-10-24 23:07:17*
+*Last modified: 2026-10-24 23:19:57*

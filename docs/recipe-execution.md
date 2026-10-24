@@ -150,8 +150,11 @@ labeled DB INSTANCE; login fallback is labeled SSH and never described as the
 OS collector. Multiple instances preserve unknown entries independently. Recipes
 should preserve service-authenticated identity in their reviewed data contract;
 this is not a generic instruction to expose vars, credentials or arbitrary data.
-The current service extractor supports mysql-replication only. Adding another
+Before dropping recipe/connection metadata, the runner projects identity_evidence
+from the complete report into each compact completion summary, including JSON and
+non-TTY output. Rendering a full raw report alone is not an end-to-end test of
+recipes run. The current service extractor supports mysql-replication only. Adding another
 service requires a reviewed identity source and tests. No connection, schema/
 normalizer migration or old-data rewrite is needed for this presentation change.
 
-*Last modified: 2026-10-24 22:54:22*
+*Last modified: 2026-10-24 23:19:57*

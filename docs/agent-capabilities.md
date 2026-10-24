@@ -331,6 +331,8 @@ authenticated_user (CURRENT_USER()), and connected/login_identity with source
 ssh_connection. The latter is a transport login, not an OS execution identity.
 Observation view 0.2.0 adds identity_evidence while preserving OS-only
 collection_identity. See [CLI semantics](cli.md#role-aware-collection-identity).
+recipes run includes projected identity_evidence in compact single/batch summaries
+before it removes full recipe/connection metadata, preserving live/history parity.
 Do not infer service identities from input vars, configured users or SSH accounts,
 or reconnect solely to replace an unknown display value.
 
@@ -345,4 +347,4 @@ summary; do not invent new thresholds, turn unknown into healthy or treat unheal
 as missing collection. No additional SQL, retention/schema migration or global
 reader settings are needed. Full sanitized evidence remains in historical reports.
 
-*Last modified: 2026-10-24 23:07:17*
+*Last modified: 2026-10-24 23:19:57*

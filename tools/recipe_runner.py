@@ -442,8 +442,13 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
             if path:
                 save_receipt(path,report)
     summaries = []
+    from console_output import execution_identities
     for host, (report, path) in zip(hosts, results):
         summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'access', 'actor') if key in report}
+        # The compact summary omits recipe/connection metadata used by the role
+        # extractor. Project evidence before discarding those fields, for both
+        # live rendering and machine output, just as saved observation views do.
+        summary['identity_evidence'] = execution_identities(report)
         summary.update(host=host, result_path=str(path) if path else None)
         summaries.append(summary)
     result = {'hosts': summaries} if inv['all'] or len(hosts)!=1 else dict(summaries[0])

@@ -839,7 +839,10 @@ Observation view 0.2.0 JSON adds optional `identity_evidence`, an array with rol
 username and role-specific instance/effective_uid/source. Existing collection_identity
 continues to mean observed OS username/UID, and collection_user result-index fields
 keep their existing OS-actor semantics. Historical raw results are read without
-rewriting them; unavailable raw results have no identity evidence. Forced JSON from
-recipes run preserves its existing raw result structure. See [view schema](../schemas/observation-view.schema.json).
+rewriting them; unavailable raw results have no identity evidence. The compact
+recipes run completion summary also includes identity_evidence in JSON/pipe output.
+It projects the full report before dropping recipe/connection metadata, so live
+completion and saved observation views preserve the same identities. Saved raw
+result files retain their existing structure. See [view schema](../schemas/observation-view.schema.json).
 
-*Last modified: 2026-10-24 22:54:22*
+*Last modified: 2026-10-24 23:19:57*
