@@ -116,6 +116,8 @@ def dataset_lines(dataset, level=2, *, compact=False, limit=12):
 def page_title(record):
     """The content author owns titles, independently of executable recipe paths."""
     definition = record.get('retention_definition', {})
+    if definition.get('contract') == 'backup-files-check':
+        return 'Daily backups'
     if definition.get('contract') == 'mysql-replication':
         return 'MySQL replication'
     if definition.get('contract') == 'inventory-observations' or record['recipe_id'] == 'inventory-system':
@@ -157,6 +159,21 @@ def host_location(runtime, host):
     if groups and group == '_ungrouped':
         group = '%5Fungrouped'
     return '/'.join(('hosts', group, component(host)))
+
+
+def historical_names(records, runtime):
+    """One collision-aware mapping shared by publication and evidence readers."""
+    names, occupied = {}, set()
+    for record in sorted(records, key=lambda r: (r['observed_at'], r['record_id'])):
+        base = history_filename(record)
+        folder = host_location(runtime, record['host_id']) + '/' + record['observed_at'][:4]
+        name, ordinal = base, 1
+        while folder + '/' + name in occupied:
+            ordinal += 1
+            name = base[:-3] + '-' + str(ordinal) + '.md'
+        occupied.add(folder + '/' + name)
+        names[record['record_id']] = name
+    return names
 
 
 
@@ -670,6 +687,37 @@ def replication_lines(data, *, current=False):
     return lines
 
 
+def backup_lines(data, *, current=False):
+    policy = data['policy']
+    lines = ['## Backup status', '', 'Check date: ' + text(data['check_date']) + ' (' + text(policy['timezone']) + ')', '',
+             'Daily health checks file presence only. File contents and restoreability were not tested.', '']
+    lines += markdown_table(['Backup group', 'Daily backups', 'Expired files', 'Unexpected entries', 'Scan'], [
+        (text(g['name']), g['health'], len(g['expired_files']), len(g['unexpected_entries']), g['scan_status']) for g in data['backups']]) + ['']
+    lines += ['Age threshold: more than ' + str(policy['retention_days']) + ' days, using filename dates.', '',
+              '[Notifications and todos](../../../../Services/SUMMARY.md)' if current else '', '']
+    for group in data['backups']:
+        lines += ['## ' + text(group['name']), '', 'Directory: ' + text(group['directory']), '',
+                  'Observed: ' + text(format_time(group['observed_at'])), '',
+                  'Daily deadline: ' + text(format_time(group['deadline'])), '']
+        if group['scan_status'] != 'complete':
+            lines += ['> [!warning] Incomplete scan', '> Counts are lower bounds; absence and cleanup cannot be established. Reason: ' + text(group['reason_code']), '']
+        lines += markdown_table(['Expected file', 'Present', 'Size (bytes)'], [
+            (text(f['path']), 'Unknown' if f['present'] is None else 'Yes' if f['present'] else 'No',
+             f['size_bytes'] if f['size_bytes'] is not None else 'Unknown') for f in group['expected_files']]) + ['']
+        for title, key in (('Expired files', 'expired_files'), ('Unexpected entries', 'unexpected_entries')):
+            items = group[key]
+            lines += ['### ' + title, '', 'Count: ' + str(len(items)), '']
+            if not items:
+                lines += ['None.' if group['scan_status'] == 'complete' else 'No entries observed; scan incomplete.', '']
+                continue
+            selected = items[:12] if current else items
+            lines += markdown_table(['Path', 'Type', 'Size (bytes)', 'Age (days) / Reason'], [
+                (text(f['path']), f['kind'], f['size_bytes'], f.get('age_days', f.get('reason_code', ''))) for f in selected]) + ['']
+            if len(selected) < len(items):
+                lines += ['Showing 12 entries; the source report contains the complete list.', '']
+    return lines
+
+
 def render_current(record, history_names=None, host_icon=None, attention_policy=None):
     """Readable current views; historical rendering remains complete and independent."""
     data = record['data']
@@ -678,7 +726,9 @@ def render_current(record, history_names=None, host_icon=None, attention_policy=
              'Observed: ' + text(format_time(record['observed_at'])), '']
     if not replication:
         lines += current_warnings(record)
-    if replication:
+    if (record.get('retention_definition') or {}).get('contract') == 'backup-files-check':
+        lines += backup_lines(data, current=True)
+    elif replication:
         lines += replication_lines(data, current=True)
     elif 'groups' in data:
         lines += current_jobs(record, history_names)
@@ -706,7 +756,9 @@ def render_observation(record, *, current=False, history_names=None, host_icon=N
     lines = ['# ' + text(record['host_id']), '']
     observations = data.get('observations', {})
     inventory = data.get('inventory')
-    if (record.get('retention_definition') or {}).get('contract') == 'mysql-replication':
+    if (record.get('retention_definition') or {}).get('contract') == 'backup-files-check':
+        lines += backup_lines(data)
+    elif (record.get('retention_definition') or {}).get('contract') == 'mysql-replication':
         lines += replication_lines(data)
     elif 'groups' in data:
         lines += ['## Inventory jobs', '', 'Each group retains its own source times. Missing samples are gaps, not carried-forward measurements.', '']
@@ -875,16 +927,7 @@ def build(root, runtime):
     entries = {}
     # Timestamp/title names stay readable; repeated seconds get an ordinal rather
     # than an identifier. Use one mapping for publication and every source link.
-    history_names, occupied = {}, set()
-    for record in sorted(all_records, key=lambda r: (r['observed_at'], r['record_id'])):
-        base = history_filename(record)
-        folder = host_location(runtime, record['host_id']) + '/' + record['observed_at'][:4]
-        name, ordinal = base, 1
-        while folder + '/' + name in occupied:
-            ordinal += 1
-            name = base[:-3] + '-' + str(ordinal) + '.md'
-        occupied.add(folder + '/' + name)
-        history_names[record['record_id']] = name
+    history_names = historical_names(all_records, runtime)
     host_map = {}
     for record in all_records:
         host_map.setdefault(record['host_id'], []).append(record)

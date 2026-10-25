@@ -140,4 +140,11 @@ results unchanged; its database/retention schema is not migrated by this upgrade
 The runner owns connection acquisition/cleanup; do not reconnect or modify the
 Session to compensate for an unsupported runtime.
 
-*Last modified: 2026-10-24 22:24:58*
+
+## Reuse platform notifications, todos and backup checks
+
+Read [service API 0.1.0](services.md) and [adapter configuration/interfaces](service-adapters.md) before implementing notifications or work tracking. Use the supplied recipe.services / consumer context.services; stable source identities, source timestamps and evidence determine platform-owned lifecycle. Revision-check human changes, preserve unknowns and inspect separate receipts. Multiple presentation/delivery adapters are supported; lifecycle has no adapter. Do not embed mail credentials or generated Vault templates in recipe retention.
+
+For dated backup directories, prefer [opsfeast.backup_check](backup-file-checks.md) and its profile-local descriptor/wrapper/schema over a new scanner. The shared policy consumer interprets retained findings and the platform renders/delivers objects. The guide defines exact vars, saved contract, failure behavior, extension points and tested versus declared platforms. No service configuration, todo or recipe installation grants deletion or external sending authorization by itself.
+
+*Last modified: 2026-10-25 14:06:31*

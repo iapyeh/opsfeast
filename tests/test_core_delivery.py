@@ -159,6 +159,15 @@ def execute(recipe):
             self.assertIn('_opsfeast_data/tools/retention_consumers.py', names)
             self.assertIn('_opsfeast_data/consumers/vault/consumer.yaml', names)
             self.assertIn('_opsfeast_data/consumers/vault/main.py', names)
+            self.assertIn('opsfeast/services.py', names)
+            self.assertIn('opsfeast/service_adapters.py', names)
+            self.assertIn('opsfeast/backup_check.py', names)
+            self.assertIn('_opsfeast_data/tools/backup_retention.py', names)
+            self.assertIn('_opsfeast_data/schemas/backup-files-check.schema.json', names)
+            self.assertIn('_opsfeast_data/consumers/backup-check/consumer.yaml', names)
+            for guide in ('services', 'service-adapters', 'backup-file-checks'):
+                self.assertIn(f'_opsfeast_data/docs/{guide}.md', names)
+            self.assertIn('_opsfeast_data/consumers/backup-check/README.md', names)
             self.assertIn('_opsfeast_data/schemas/retention-consumer.schema.json', names)
             self.assertIn('_opsfeast_data/schemas/retention-event.schema.json', names)
             self.assertIn('_opsfeast_data/schemas/retention-selection.schema.json', names)
@@ -227,7 +236,10 @@ assert record['retention_definition']['contract'] == 'inventory-observations'
 assert record['data']['inventory']['hardware']['memory_total_bytes'] is not None
 assert inspect_one(REPOSITORY_RECIPES/'system/inventory/overview', [])['retention']['schema_path'].endswith('retention.schema.json')
 from retention_consumers import catalog, dispatch, inspect_deliveries
-assert catalog(profile.root)['consumers'][0]['source'] == 'builtin:vault'
+installed_consumers = {c['id']: c for c in catalog(profile.root)['consumers']}
+assert installed_consumers['vault']['source'] == 'builtin:vault'
+assert installed_consumers['vault']['enabled'] is True
+assert installed_consumers['backup-check']['enabled'] is False
 assert choose(profile.root, 'system/inventory/overview')['consumers'][0]['id'] == 'vault'
 assert len(inspect_deliveries(profile.root)['events']) == 2
 local = profile.root/'consumers/counter'

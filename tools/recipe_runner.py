@@ -276,10 +276,14 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
         report.update(status='failed', reason_code='operation_recording_failed',
                       message='Operation outcome could not be recorded; saved intent remains unresolved.')
     from retention_store import retain_general
+    from retention_consumers import live_collection
+    live_token = live_collection.set(report.get('evidence_kind') in ('local', 'ssh'))
     try:
         report['retention'] = retain_general(config.root, report, metadata, directory, saved_snapshot=report['retention_snapshot'])
     except Exception as exc:
         report['retention'] = {'status': 'failed', 'reason_code': 'retention_failed', 'error_type': type(exc).__name__}
+    finally:
+        live_collection.reset(live_token)
     finalize_content(config.root, report)
     save_receipt(path, report)
     return report, path

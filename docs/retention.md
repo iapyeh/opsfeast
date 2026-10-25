@@ -141,4 +141,11 @@ Operational CLI batches, saved inventory collections and due-work dispatch persi
 
 The bundled [database/mysql/check/replication](../recipes/database/mysql/check/replication/README.md) owns registered `mysql-replication` 0.1.0, including its schema and pure reviewed normalizer. General operational recipes now route declared structured data through the same registry/storage/replay path, without runner-specific database branches or dynamic candidate adapters. It retains per-instance/channel status, safe fixed-query evidence, positions/GTIDs/filters, lag policy, sample times and explicit source-side verification limits. Valid adverse/unknown observations are partial and retainable; wholly failed attempts remain raw evidence. Credentials and arbitrary database error text are excluded. Builtin Vault renders current/all-channel summaries and complete sanitized historical data from retention; it never re-queries databases.
 
-*Last modified: 2026-10-24 09:45:07*
+
+## Backup-file observations and live service evidence
+
+The registered structured contract `backup-files-check` 0.1.0 uses the [platform schema](../schemas/backup-files-check.schema.json) and pure validator/normalizer `tools/backup_retention.py`; a profile recipe declares the schema via the [backup module procedure](backup-file-checks.md). Static discovery binds schema and normalizer digests; candidate recipe code is not imported to interpret retention. Retain only operational local/SSH success/partial observations; preserve saved policy, actor, nullable presence and scan completeness. This extends the existing structured-contract registry and snapshot schema without putting templates into retention.
+
+Notification/todo objects live separately under services/, not retention/. Durable consumer effects eligibility is recorded atomically with each retention event in `consumer_effects`; only operational live collection grants permitted evidence IDs to consumer services. Historical replay/ingest and events without eligibility cannot create current service objects. Retries of eligible events preserve eligibility. Use [consumer context services](retention-consumers.md) rather than constructing unrestricted services in a consumer. Retention success does not establish policy, projection or delivery success; inspect the separate receipts.
+
+*Last modified: 2026-10-25 14:06:31*

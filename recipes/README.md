@@ -49,4 +49,9 @@ The first result contract and synthetic example live with inventory-system. Inve
 
 Retained inventory and JSON exchange are implemented through [result-data tools and contracts](../docs/result-data.md), with the [agent skill](../skills/opsfeast-result-data/SKILL.md). Identity/sudo probes and ESXi have synthetic coverage only; prior macOS local tests cover the older collection path.
 
-*Last modified: 2026-10-24 22:22:19*
+
+## Profile-local backup-file checks
+
+For daily dated backup presence, configurable expiry lists and unexpected directory entries, reuse the shipped [backup-files-check module and profile recipe procedure](../docs/backup-file-checks.md). The agreed profile path is `recipes/backup/files/check/daily-backups/`, reference `:backup/files/check/daily-backups`. It is user-installed support rather than an additional bundled descriptor; the six bundled recipes above remain unchanged. Real host bindings stay private. The opt-in [backup-check consumer](../consumers/backup-check/README.md) creates service objects without deleting files.
+
+*Last modified: 2026-10-25 14:06:31*

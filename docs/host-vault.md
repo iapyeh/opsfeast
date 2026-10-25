@@ -149,4 +149,11 @@ uses retained data only, preserves raw/retention and unmanaged human notes, and
 updates owned generated views through the existing publisher; no CSS/plugin or
 application-wide font setting is required.
 
-*Last modified: 2026-10-25 06:40:11*
+
+## Backup checks and service objects
+
+`backup-files-check` 0.1.0 renders current daily presence, saved policy/zone/deadline, scan completeness, expected paths and short expired/unexpected-entry previews. Full historical reports preserve complete retained lists. Partial counts are lower bounds; absent fields are not healthy empty lists. Interpretation uses saved thresholds/findings, without rescanning or reevaluating historical age. See [backup contract and verification](backup-file-checks.md).
+
+The independent default service presentation owns `Services/SUMMARY.md`, `Services/notification/<uuid>.md` and `Services/todo/<uuid>.md` using owner `service-vault`. It shows lifecycle/revision/source/history and links to an existing owned historical report when available; missing evidence stays explicit. It does not create or mutate conditions. Edit objects through [service API/CLI](services.md), then dispatch projections. Keep human files outside generated ownership, or use todo note fields. Multiple [service presentation adapters](service-adapters.md) may coexist with independent receipts; disabling vault.auto_refresh suppresses automatic builtin service presentation too.
+
+*Last modified: 2026-10-25 14:06:31*

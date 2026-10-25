@@ -305,4 +305,11 @@ ProxyCommand/ProxyJump. No host inventory, credentials, retained observations or
 normalizer/schema snapshots are rewritten. Prior native 6.1.0 host evidence remains
 historical; new local/synthetic checks do not establish real-host 7.0.0 readiness.
 
-*Last modified: 2026-10-24 22:24:58*
+
+## Notification/todo and backup-check development changes
+
+Service/object/adapter and backup-files-check contracts start at 0.1.0. Existing profiles need no service configuration to retain default Vault-only presentation; no mail channels or routes are added. The backup policy consumer requires explicit registration, and profile-local backup recipes require the shipped module, matching schema and current descriptor wrapper. See [installation/settings](backup-file-checks.md) and [services](services.md).
+
+The retention journal now stores consumer effects eligibility for live collection. Existing/historical events have no eligibility and cannot create service objects through consumer context.services; replay rebuilds data/content without fabricating current incidents. No backfill or conversion of old events is performed. Service objects are authoritative in services/objects.sqlite3, separate from retained observations and generated Vault pages. Preserve profile data; no automatic service migration, deletion or legacy compatibility layer is supplied.
+
+*Last modified: 2026-10-25 14:06:31*

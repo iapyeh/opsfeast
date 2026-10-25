@@ -133,4 +133,9 @@ of SSHScript execution. See schemas/sshscript-runtime.json for the data-only sou
 manifest. A future source change requires reviewed code, dependency, complete skill,
 manifest and validation updates together, under the user's authorization.
 
-*Last modified: 2026-10-24 22:24:58*
+
+## Service and backup schema reading
+
+After a release containing these capabilities, include [services](services.md), [adapter/configuration interfaces](service-adapters.md), [service object schema](../schemas/service-object.schema.json), [service configuration schema](../schemas/services.schema.json) and [backup-files-check schema/workflow](backup-file-checks.md) in the required schema reread. Existing recipe/Core/result-data skills link to these sources; direct reading needs no separate installation. Preserve the public SSHScript snapshot: these OpsFeast contracts do not change its upstream skill. Inspect selected-profile provider availability without sending, and distinguish historical replay from eligible live effects.
+
+*Last modified: 2026-10-25 14:06:31*

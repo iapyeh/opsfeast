@@ -26,6 +26,8 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec='microseconds')
 
 def validate_settings(data):
+    from opsfeast.services import validate_configuration
+    validate_configuration(data.get('services', {}))
     if not isinstance(data.get('namespace'), str) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,62}', data['namespace']):
         raise ConfigError('namespace requires 1-63 lowercase letters, digits, hyphens or underscores')
     months = data.get('overview_months', 3)

@@ -1,0 +1,265 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "condition_key": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "first_observed_at": {
+      "type": "string"
+    },
+    "last_observed_at": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "kind": {
+      "enum": [
+        "notification",
+        "todo"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "host_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recipe_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rule": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "host_id",
+        "recipe_reference",
+        "subject",
+        "rule"
+      ],
+      "additionalProperties": false
+    },
+    "episode": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "severity": {
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "critical"
+      ]
+    },
+    "priority": {
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "critical"
+      ]
+    },
+    "status": {
+      "enum": [
+        "active",
+        "resolved",
+        "open",
+        "in_progress",
+        "blocked",
+        "done",
+        "cancelled"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "record_id"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "condition_active": {
+      "type": "boolean"
+    },
+    "read": {
+      "type": "boolean"
+    },
+    "acknowledged": {
+      "type": "boolean"
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "assignee": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "start_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "due_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "muted_until": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolved_at": {
+      "type": "string"
+    },
+    "read_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "read_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "acknowledged_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "acknowledged_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "condition_key",
+    "title",
+    "body",
+    "created_at",
+    "updated_at",
+    "first_observed_at",
+    "last_observed_at",
+    "timezone",
+    "contract_version",
+    "kind",
+    "source",
+    "episode",
+    "revision",
+    "severity",
+    "priority",
+    "status",
+    "evidence",
+    "condition_active",
+    "read",
+    "acknowledged",
+    "verified",
+    "assignee",
+    "note",
+    "start_at",
+    "due_at",
+    "muted_until",
+    "read_at",
+    "read_by",
+    "acknowledged_at",
+    "acknowledged_by"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast notification and todo objects 0.1.0",
+  "$comment": "Last modified: 2026-10-25 11:18:59",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "notification"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "enum": [
+              "active",
+              "resolved"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "todo"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "enum": [
+              "open",
+              "in_progress",
+              "blocked",
+              "done",
+              "cancelled"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

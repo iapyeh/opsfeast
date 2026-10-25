@@ -47,4 +47,9 @@ two columns. Unhealthy findings are prominent; unknown/not-configured/cleanup
 uncertainty stay distinct and never imply success. Reports keep the complete
 sanitized payload. Rendering does not rerun probes or modify retention policy/data.
 
-*Last modified: 2026-10-25 06:40:11*
+
+## Backup and service views
+
+Vault renders [backup-files-check 0.1.0](../../docs/backup-file-checks.md) current summaries and complete historical file lists with saved policy and explicit partial states. The separate [service presentation adapter](../../docs/service-adapters.md) owns Services pages and source-report links; the retention Vault consumer does not own notification/todo lifecycle or send mail. Keep their receipts distinct and mutate service objects only through the platform API/CLI.
+
+*Last modified: 2026-10-25 14:06:31*

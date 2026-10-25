@@ -93,4 +93,9 @@ requirements, read [the migration guide](../docs/sshscript-7.md). The supported 
 32 module/type hashes and skill ZIP are pinned together. Operational adapters use
 only current connection parameter names; no real-host verification is implied.
 
-*Last modified: 2026-10-25 09:14:24*
+
+## Notifications, todos and backup checks
+
+For notification/todo creation, lifecycle, assignment/scheduling, delivery or custom projections, read [recipes: shared services](opsfeast-recipes/SKILL.md#notification-and-todo-workflow), [Core](opsfeast-core/SKILL.md) and the canonical [service guide](../docs/services.md). For backup-directory presence/expiry/unexpected-file checks, reuse [backup-files-check 0.1.0](../docs/backup-file-checks.md) and the opt-in [backup-check consumer](../consumers/backup-check/README.md). Service configuration and objects have separate versioned schemas. Historical replay cannot create current incidents; todo scheduling does not execute work or wake an agent. No separate installed skill or upstream SSHScript snapshot change is required.
+
+*Last modified: 2026-10-25 14:06:31*

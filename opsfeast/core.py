@@ -256,6 +256,11 @@ class Profile:
         from retention_store import Reader
         return Reader(self.root)
 
+    @property
+    def services(self):
+        from .services import Services
+        return Services(self.root)
+
     def reload(self):
         self.hosts.reload()
         return self
@@ -270,7 +275,7 @@ class Profile:
                 'groups': current.groups(), 'paths': paths,
                 'configuration_loaded_at': current.loaded_at,
                 'loaded_files': sorted(str(p) for p in current._config.loaded),
-                'services': {'logging': 'unimplemented', 'notifications': 'unimplemented'},
+                'services': {'logging': 'unimplemented', **self.services.inspect()},
                 'verification': 'configuration snapshot only; no host/provider probes'}
 
     def results(self, **filters):
@@ -417,6 +422,12 @@ class Recipe:
     @property
     def instance_id(self):
         return self._state.identity['id']
+
+    @property
+    def services(self):
+        self._check()
+        from .services import Services
+        return Services(self.profile.root, guard=self._check)
 
     @property
     def report(self):

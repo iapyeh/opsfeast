@@ -4,20 +4,21 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from opsfeast import ConfigError, REPOSITORY_RECIPES
+from opsfeast import ConfigError, REPOSITORY_RECIPES, REPOSITORY_ROOT
 
 INVENTORY_CONTRACT = ('inventory-observations', '0.1.0')
 # Registration is product code reviewed with its owning recipe, not descriptor executable paths.
 STRUCTURED = {INVENTORY_CONTRACT: ('system/inventory/overview', 'retention.py', 'retention.schema.json')}
 STRUCTURED[('inventory-job-observations', '0.1.0')] = ('system/inventory/overview', 'job_retention.py', 'job-retention.schema.json')
 STRUCTURED[('mysql-replication', '0.1.0')] = ('database/mysql/check/replication', 'retention.py', 'retention.schema.json')
+STRUCTURED[('backup-files-check', '0.1.0')] = ('@platform', 'tools/backup_retention.py', 'schemas/backup-files-check.schema.json')
 
 
 def location(contract):
     if contract not in STRUCTURED:
         raise ConfigError('unsupported structured retention contract/version')
     directory, module, schema = STRUCTURED[contract]
-    root = REPOSITORY_RECIPES / directory
+    root = REPOSITORY_ROOT if directory == '@platform' else REPOSITORY_RECIPES / directory
     return root / module, root / schema
 
 
@@ -41,14 +42,14 @@ def read_schema(path):
 def normalizer_digest(declaration):
     contract = (declaration['contract'], declaration['version'])
     module, _ = location(contract)
-    if module.is_symlink() or not module.resolve().is_relative_to(REPOSITORY_RECIPES.resolve()):
+    if module.is_symlink() or not module.resolve().is_relative_to(REPOSITORY_ROOT.resolve()):
         raise ConfigError('registered normalizer escapes bundled recipes')
     return hashlib.sha256(module.read_bytes()).hexdigest()
 
 
 def schema_digest(declaration):
     _, path = location((declaration['contract'], declaration['version']))
-    if path.is_symlink() or not path.resolve().is_relative_to(REPOSITORY_RECIPES.resolve()):
+    if path.is_symlink() or not path.resolve().is_relative_to(REPOSITORY_ROOT.resolve()):
         raise ConfigError('registered schema escapes bundled recipes')
     document = read_schema(path)
     document.pop('$comment', None)

@@ -147,4 +147,9 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
-_Last modified: 2026-10-20 10:53:49_
+
+## Implemented shared notification and todo foundation
+
+[Services 0.1.0](services.md) now supply platform-owned data objects, condition deduplication, revision-checked lifecycle, audit and shared Recipe/Core/consumer access. Presentation and delivery are adaptable through [versioned interfaces](service-adapters.md), with bundled Vault and SMTP implementations. Lifecycle stays in the platform. Historical replay does not create current incidents through consumer services. Todo scheduling records intended work but does not execute it or wake an agent. General logging and a general scheduler remain future work; provider configuration and real delivery evidence remain explicit deployment concerns.
+
+*Last modified: 2026-10-25 14:06:31*

@@ -221,4 +221,11 @@ messages precede that work. Two final dispatches preserve collection and command
 outcome publication; they are not one rebuild per selected host. Inspect consumers
 and delivery receipts for failures/backlog, without rerunning host operations.
 
-*Last modified: 2026-10-25 06:40:11*
+
+## Backup observations and service effects
+
+For `backup-files-check` 0.1.0 read [backup checks](../../docs/backup-file-checks.md), its [schema](../../schemas/backup-files-check.schema.json) and [consumer policy](../../consumers/backup-check/README.md). Preserve saved date/zone/threshold, actor, scan completeness, nullable presence and full findings. Expiry is strictly greater than the filename-date threshold; zero-length presence is valid. Partial file lists are lower bounds. Use retention query/show/export instead of parsing Vault or issuing new scans.
+
+Read [services](../../docs/services.md) before handling notification/todo data. It is separate authoritative storage under services/, with [object](../../schemas/service-object.schema.json) and [configuration](../../schemas/services.schema.json) contracts 0.1.0. Consumer `context.services` restricts effects to permitted live evidence IDs; historical ingest/replay and older events cannot create current objects. Do not bypass the facade or reinterpret an old observation as current. Retention, policy, projection and provider receipts are distinct. Generated Services Markdown is a projection; update objects with current revision and actor through the platform API/CLI.
+
+*Last modified: 2026-10-25 14:06:31*

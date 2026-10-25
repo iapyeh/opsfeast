@@ -1,0 +1,11 @@
+schema_version: '0.1.0'
+id: backup-check
+description: Reconcile daily backup observations into notification and todo objects; historical replay has no service effects.
+entrypoint: main.py
+delivery: batch
+subscriptions:
+  - event: retention.observation.created
+    selector:
+      contract: backup-files-check
+      version: '0.1.0'
+# Last modified: 2026-10-25 11:09:18

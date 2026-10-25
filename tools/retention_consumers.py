@@ -1,6 +1,7 @@
 """Consumer contract 0.1.0: static discovery and durable local event dispatch."""
 import argparse
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 import hashlib
 import importlib.util
@@ -20,6 +21,7 @@ VERSION = '0.1.0'
 EVENTS = {'retention.observation.created', 'retention.observation.deleted', 'retention.operation.created', 'retention.run.updated'}
 ID = re.compile(r'[a-z][a-z0-9_-]{0,62}')
 _ACTIVE = threading.local()
+live_collection = ContextVar('live_collection', default=False)
 
 
 def registrations(data):
@@ -158,6 +160,7 @@ def related(root, reference, declaration=None):
 
 
 def event_tables(connection):
+    connection.execute('CREATE TABLE IF NOT EXISTS consumer_effects (event_id TEXT PRIMARY KEY, permitted INTEGER NOT NULL)')
     connection.execute('CREATE TABLE IF NOT EXISTS retention_events (event_id TEXT PRIMARY KEY, emitted_at TEXT NOT NULL, payload TEXT NOT NULL)')
     connection.execute('CREATE TABLE IF NOT EXISTS consumer_deliveries (event_id TEXT NOT NULL, consumer TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(event_id, consumer))')
 
@@ -172,6 +175,7 @@ def enqueue(connection, record, action):
              'host_id': record['host_id'], 'recipe_reference': record['recipe_reference'],
              'contract': definition.get('contract'), 'version': definition.get('version'), 'observed_at': record['observed_at']}
     connection.execute('INSERT INTO retention_events VALUES (?,?,?)', (event['event_id'], event['emitted_at'], canonical(event)))
+    connection.execute('INSERT INTO consumer_effects VALUES (?,?)', (event['event_id'], int(live_collection.get())))
     return event
 
 
@@ -245,12 +249,36 @@ class ConsumerContext:
     event: dict
     retention: object
 
+    @property
+    def services(self):
+        return consumer_services(self.root, (self.event,))
+
 
 @dataclass(frozen=True)
 class BatchConsumerContext:
     root: Path
     events: tuple
     retention: object
+
+    @property
+    def services(self):
+        return consumer_services(self.root, self.events)
+
+
+def consumer_services(root, selected_events):
+    from opsfeast.services import Services
+    from retention_store import database
+    permitted = set()
+    selected = {e['event_id']: e['record_id'] for e in selected_events}
+    for path, event in events(root):
+        if event['event_id'] not in selected:
+            continue
+        with database(path) as db:
+            exists = db.execute("SELECT 1 FROM sqlite_master WHERE name='consumer_effects'").fetchone()
+            row = db.execute('SELECT permitted FROM consumer_effects WHERE event_id=?', (event['event_id'],)).fetchone() if exists else None
+        if row and row[0]:
+            permitted.add(event['record_id'])
+    return Services(root, permitted_records=permitted)
 
 
 def execute(root, item, event):
@@ -352,7 +380,13 @@ def dispatch(root, consumer=None):
                         connection.execute('UPDATE consumer_deliveries SET status=?,payload=? WHERE event_id=? AND consumer=?',
                                            (receipt['status'], canonical(receipt), event['event_id'], identity))
                     results.append(receipt)
-    return {'contract_version': VERSION, 'status': 'failed' if any(r['status'] == 'failed' for r in results) else 'success',
+    from opsfeast.services import Services
+    try:
+        services = Services(root).dispatch()
+    except Exception as exc:
+        services = {'status': 'failed', 'error_type': type(exc).__name__}
+    return {'contract_version': VERSION, 'status': 'failed' if services['status'] == 'failed' or any(r['status'] == 'failed' for r in results) else 'success',
+            'services': services,
             'consumers': results, 'recovery': 'opsfeast.py consumers dispatch --root ' + shlex.quote(str(root)) + ' --json'}
 
 

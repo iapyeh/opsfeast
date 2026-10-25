@@ -175,4 +175,10 @@ earlier host-level updates and other consumers remain independent. This does not
 change execution/skip/exit-code policy, SQLite lock timeout or file-lock behavior.
 See [consumer batching](retention-consumers.md#batch-delivery-for-current-state-publishers).
 
-*Last modified: 2026-10-25 06:40:11*
+## Shared service effects from operational recipes
+
+Python-recipe code can use scoped `recipe.services`; retention consumers use the evidence-restricted `context.services`. The [backup-check module](backup-file-checks.md) produces registered backup-files-check 0.1.0 retention and an opt-in consumer applies notification/todo policy independently. Live operational local/SSH retention events record effects eligibility atomically; historical replay cannot create new service objects through that facade. Failures before retainable evidence are execution failures, not automatically missing-backup notifications.
+
+Consumer finalization also attempts service projection/delivery dispatch and returns its own content_update.services receipt. Keep collection status, cleanup, retention, consumer and provider outcomes distinct. Direct service lifecycle writes do not automatically publish. Read [shared services and authorization](services.md) before enabling outbound routes; neither a todo nor dispatch executes the scheduled operational work.
+
+*Last modified: 2026-10-25 14:08:03*

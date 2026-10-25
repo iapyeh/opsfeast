@@ -1,6 +1,6 @@
 ---
 name: opsfeast-core
-description: Use the bundled OpsFeast Python API for installation identity, profiles, runtime hosts loading, scoped sessions and Recipe root/su/sudo, or read-only instance inspection. Use for standalone agent programs and python-recipe authoring; logging and notification services remain unavailable.
+description: Use the bundled OpsFeast Python API for installation identity, profiles, runtime hosts loading, scoped sessions and Recipe root/su/sudo, or read-only instance inspection. Use for standalone agent programs and python-recipe authoring; notification/todo services are shared by profiles and Recipes; general logging remains unavailable.
 ---
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
@@ -77,7 +77,7 @@ to its explicit user fallback. Existing Recipe.su/sudo still yield child Recipes
 
 ## Inspect and perform explicit local operations
 
-Instance/profile inspection reads local metadata/configuration/paths and dependency versions, never creates identity, connects, repairs or dispatches. Inspect success/partial, component errors, placeholder identity and available/configuration states separately. Dependency metadata is not runtime/native readiness. Reuse profile.results/jobs and existing artifact verification rather than scanning guessed filenames. Missing service paths are not implemented services: logging and notification remain deferred.
+Instance/profile inspection reads local metadata/configuration/paths and dependency versions, never creates identity, connects, repairs or dispatches. Inspect success/partial, component errors, placeholder identity and available/configuration states separately. Dependency metadata is not runtime/native readiness. Reuse profile.results/jobs and existing artifact verification rather than scanning guessed filenames. Missing service paths are not implemented services: notification/todo availability is described by the shared service facade; general logging remains deferred.
 
 Metadata init/update/renew/relocate, profile init/attach/use/detach are explicit writes with their own scope. Preserve existing roots/data and human notes. This API does not edit hosts YAML or delete history. Public configuration/inspection methods do not authorize host operations. Catch ConfigError/CoreError at the boundary, preserve stable reason codes and safe error types, and avoid arbitrary exception/settings output.
 
@@ -190,4 +190,9 @@ interfaces use parent_key_filename/proxy_command/proxy_jump, missing_host_key_po
 and known_hosts_source; only hostname is positional. No compatibility aliases,
 automatic install or real-host authorization follows from this migration.
 
-*Last modified: 2026-10-24 22:24:58*
+
+## Shared notification/todo services
+
+Use `profile.services` for standalone programs and the supplied `recipe.services` inside Recipe scope. Read [services 0.1.0](../../docs/services.md) for reconcile/create/list/show/update/history/snapshot, lifecycle and revision checks, and [adapters](../../docs/service-adapters.md) for static readiness, private configuration and dispatch side effects. Consumer code must use `context.services` to preserve live-evidence eligibility. Read-only inspection never proves provider delivery. General logging remains unavailable; service dispatch may send configured mail, while todos never execute work.
+
+*Last modified: 2026-10-25 14:06:31*

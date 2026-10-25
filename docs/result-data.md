@@ -128,4 +128,10 @@ Current inventory-job-observations 0.1.0 preserves failed collection attempts an
 
 [mysql-replication 0.1.0](../recipes/database/mysql/check/replication/retention.schema.json) is a registered general structured dataset owned by [database/mysql/check/replication](../recipes/database/mysql/check/replication/README.md). Use retention list/show/export or Core profile.retention.query/show; inventory observation exchange and its parser/ingest remain inventory-specific. Preserve instance/channel relations, source times, saved lag/source policy findings, unknown/partial/cleanup state and source_verification=not_performed. Sanitized probes expose fixed SQL and safe results, not arbitrary error text or credentials. Builtin Vault reads retention independently of collection. Follow the recipe guide for config/execution and [the authoring workflow](../skills/opsfeast-recipes/references/exploration-to-recipe.md) for new datasets.
 
-*Last modified: 2026-10-24 10:01:56*
+## Backup-file checks and notification/todo objects
+
+[Backup-files-check 0.1.0](backup-file-checks.md) is a registered general structured dataset using the [platform-owned schema](../schemas/backup-files-check.schema.json) and pure normalizer. Read with retention list/show/export or Core profile.retention.query/show; it is independent of inventory-only exchange. Preserve saved filename-date policy, target actor, nullable daily presence, scan completeness and full expired/unexpected lists. Incomplete counts are lower bounds, and presence does not establish dump integrity.
+
+[Notification/todo objects](services.md) have separate authoritative service storage and [schema](../schemas/service-object.schema.json). Consumer context.services uses durable live-evidence eligibility; historical ingest/replay is not a current incident source. Use revision-checked APIs for human updates and inspect provider receipts separately from retention/content outcomes. Generated Vault pages cannot update object lifecycle.
+
+*Last modified: 2026-10-25 14:08:03*

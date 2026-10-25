@@ -90,7 +90,7 @@ The shared loader resolves host/account icons using entry hosts.yaml `default.ic
 
 ## Public Core Python API
 
-Prefer [Core API 0.1.0](core-api.md) and the [Core skill](../skills/opsfeast-core/SKILL.md) for installation identity/profiles, hosts snapshots, standalone sessions and scoped Recipe su/sudo, and read-only inspection. From the checkout root or an authorized installed package use `from opsfeast import Instance`; select `Instance.open(installation=...).profile(...)`. Core replaces the need for caller-managed tools import paths for these capabilities. Existing python-session recipes remain compatible; python-recipe entrypoints receive execute(recipe). Logging/notifications remain deferred. See canonical examples, dependencies, error/lifecycle rules and copy/UUID policy in that guide.
+Prefer [Core API 0.1.0](core-api.md) and the [Core skill](../skills/opsfeast-core/SKILL.md) for installation identity/profiles, hosts snapshots, standalone sessions and scoped Recipe su/sudo, and read-only inspection. From the checkout root or an authorized installed package use `from opsfeast import Instance`; select `Instance.open(installation=...).profile(...)`. Core replaces the need for caller-managed tools import paths for these capabilities. Existing python-session recipes remain compatible; python-recipe entrypoints receive execute(recipe). Notification/todo services are implemented; use [the shared services](services.md). General logging remains deferred. See canonical examples, dependencies, error/lifecycle rules and copy/UUID policy in that guide.
 
 ## Python reuse map
 
@@ -140,7 +140,7 @@ Choose profile/root from invocation inputs in reusable programs; `main` here ill
 
 ## Extend and maintain the learning path
 
-For a DevOps user needing an unimplemented capability, describe the gap and a concrete workflow within scope rather than inventing commands. For product developers, assess that gap as a candidate for reusable product support that reduces future user-side development; documenting a workaround alone does not fulfill that mission. Logging/notification services, additional execution backends, a live exchange, automatic installation/publication and a general scheduler remain planned. Recipient-selected analysis and richer report renderers can use documented data/report contracts; no general recipient database importer is bundled.
+For a DevOps user needing an unimplemented capability, describe the gap and a concrete workflow within scope rather than inventing commands. For product developers, assess that gap as a candidate for reusable product support that reduces future user-side development; documenting a workaround alone does not fulfill that mission. General logging, additional execution backends, a live exchange, automatic installation/publication and a general scheduler remain planned. Recipient-selected analysis and richer report renderers can use documented data/report contracts; no general recipient database importer is bundled.
 
 Every added or changed usable capability must update its canonical guide, this map where applicable, relevant skill routing and examples in the same delivery. Include supported versions, availability/dependency checks, exact CLI and/or Python interface, inputs/outputs, effects, failure/skipped states, extension points and verification limits. Record when a module is internal or an interface has changed. Remove obsolete “planned” claims when implementation is delivered, and do not confuse recipe version, descriptor version and result/data-contract version.
 
@@ -365,4 +365,16 @@ messages precede that work. Two final dispatches preserve collection and command
 outcome publication; they are not one rebuild per selected host. Inspect consumers
 and delivery receipts for failures/backlog, without rerunning host operations.
 
-*Last modified: 2026-10-25 06:40:11*
+
+## Shared service and backup capability catalog
+
+| Need | Reuse | Availability and limits |
+| --- | --- | --- |
+| Notification/todo objects and human lifecycle | `profile.services`, `recipe.services`, consumer `context.services`; `services inspect/list/show/update/history` | [Contract/API 0.1.0](services.md), Python 3.11+, normal dependencies; platform revision/ownership control, source evidence, no automatic execution |
+| Presentation and notification delivery | `services dispatch`, builtin:vault, builtin:smtp, reviewed local modules | [Adapter/config contract 0.1.0](service-adapters.md); static inspect does not import/send; explicit external authorization and private provider settings; unknown retry may duplicate |
+| Backup-directory checks | `opsfeast.backup_check.descriptor(identity)` / `.execute(recipe)` | [Profile-local setup and inputs](backup-file-checks.md), target POSIX Python 3.8+, supported SSHScript 7.0.0; metadata only, no deletion/content integrity; backup-files-check retention 0.1.0 |
+| Convert backup findings into service conditions | builtin:backup-check batch consumer; `opsfeast.backup_policy` implementation | Explicit opt-in [consumer](../consumers/backup-check/README.md), shared context services, live evidence gating; no host reconnection |
+
+Prefer the complete documented workflows to direct internal SQLite/dispatcher helpers. Read configuration and object schemas before service changes; preserve independent raw/retention/consumer/service/provider outcomes. Canonical guides include errors, source review, extension rules and evidence limits. Public reproducible tests cover these contracts; real SSH backup flow is verified, actual SMTP delivery and native FreeBSD scanning are not.
+
+*Last modified: 2026-10-25 14:06:31*

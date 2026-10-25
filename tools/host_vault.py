@@ -61,6 +61,35 @@ def result_locations(root, *, host=None, record_id=None):
     return result
 
 
+def observation_report_locations(root, record_ids):
+    """Resolve existing owned historical reports once for a set of evidence IDs."""
+    from retention_store import query
+    from vault_content import historical_names
+    root = Path(root)
+    manifest = vault_checked(root, '.content-bundled-retention.json')
+    if not manifest.is_file():
+        return {}
+    owned = json.loads(manifest.read_text())
+    if not isinstance(owned, dict):
+        raise ConfigError('invalid content ownership manifest')
+    runtime = Validator(root)
+    runtime.load(root / 'hosts.yaml')
+    records = query(root)['records']
+    names = historical_names(records, runtime)
+    selected = set(record_ids)
+    result = {}
+    for record in records:
+        if record['kind'] != 'observation' or record['record_id'] not in selected:
+            continue
+        relative = '/'.join((host_location(runtime, record['host_id']), record['observed_at'][:4],
+                             'reports', names[record['record_id']]))
+        if relative in owned:
+            path = vault_checked(root, *relative.split('/'))
+            if path.is_file():
+                result[record['record_id']] = str(path)
+    return result
+
+
 @contextmanager
 def locked(root):
     import fcntl

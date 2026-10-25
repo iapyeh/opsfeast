@@ -1,0 +1,315 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "source_id",
+    "observation_id",
+    "recipe_id",
+    "recipe_version",
+    "observed_at",
+    "status",
+    "check_date",
+    "policy",
+    "backups",
+    "actor",
+    "target_python_version"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "observation_id": {
+      "type": "string"
+    },
+    "recipe_id": {
+      "type": "string"
+    },
+    "recipe_version": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "success",
+        "partial"
+      ]
+    },
+    "check_date": {
+      "type": "string"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timezone",
+        "retention_days",
+        "age_basis",
+        "comparison",
+        "max_entries"
+      ],
+      "properties": {
+        "timezone": {
+          "type": "string"
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "age_basis": {
+          "const": "filename_date"
+        },
+        "comparison": {
+          "const": "strictly_greater"
+        },
+        "max_entries": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "backups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "directory",
+          "observed_at",
+          "scan_status",
+          "reason_code",
+          "health",
+          "patterns",
+          "ready_after",
+          "grace_minutes",
+          "deadline",
+          "expected_files",
+          "expired_files",
+          "unexpected_entries",
+          "backup_count",
+          "scanned_entries",
+          "cutoff_exclusive"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "directory": {
+            "type": "string"
+          },
+          "observed_at": {
+            "type": "string"
+          },
+          "scan_status": {
+            "enum": [
+              "complete",
+              "incomplete"
+            ]
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "health": {
+            "enum": [
+              "healthy",
+              "missing",
+              "pending",
+              "unknown"
+            ]
+          },
+          "patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ready_after": {
+            "type": "string"
+          },
+          "grace_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "expected_files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "present",
+                "size_bytes",
+                "mtime_ns"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "present": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "size_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "mtime_ns": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "expired_files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "kind",
+                "size_bytes",
+                "mtime_ns",
+                "backup_date",
+                "age_days"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "file",
+                    "directory",
+                    "symlink",
+                    "other"
+                  ]
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "mtime_ns": {
+                  "type": "integer"
+                },
+                "backup_date": {
+                  "type": "string"
+                },
+                "age_days": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "unexpected_entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "kind",
+                "size_bytes",
+                "mtime_ns",
+                "reason_code"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "file",
+                    "directory",
+                    "symlink",
+                    "other"
+                  ]
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "mtime_ns": {
+                  "type": "integer"
+                },
+                "reason_code": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "backup_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scanned_entries": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cutoff_exclusive": {
+            "type": "string"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "actor": {
+      "type": "object",
+      "required": [
+        "username",
+        "effective_uid",
+        "mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effective_uid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "mode": {
+          "enum": [
+            "root",
+            "user",
+            "unverified"
+          ]
+        }
+      }
+    },
+    "target_python_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Backup file checks 0.1.0",
+  "description": "Presence-only checks and complete or explicitly incomplete file enumerations. Age derives from filename dates; no file deletion, integrity or restore verification.",
+  "$comment": "Last modified: 2026-10-25 11:18:59"
+}

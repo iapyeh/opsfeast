@@ -884,4 +884,19 @@ earlier host-level updates and other consumers remain independent. This does not
 change execution/skip/exit-code policy, SQLite lock timeout or file-lock behavior.
 See [consumer batching](retention-consumers.md#batch-delivery-for-current-state-publishers).
 
-*Last modified: 2026-10-25 06:40:11*
+
+## Notification and todo objects
+
+```sh
+python -B tools/opsfeast.py services inspect --profile main --json
+python -B tools/opsfeast.py services list --kind todo --host backup-example --status open --profile main --json
+python -B tools/opsfeast.py services show OBJECT_ID --kind todo --profile main --json
+python -B tools/opsfeast.py services update OBJECT_ID --kind todo --revision 3 --actor operator --changes '{"status":"in_progress"}' --profile main --json
+python -B tools/opsfeast.py services history OBJECT_ID --profile main --json
+python -B tools/opsfeast.py services deliveries --profile main --json
+python -B tools/opsfeast.py services dispatch --profile main --json
+```
+
+Actions are inspect, list, show, update, history, deliveries and dispatch. All accept mutually exclusive --profile NAME / --root PATH and --json; stdout is always JSON. List optionally filters --kind notification|todo, --host and --status. Show/update require object ID and --kind. Update also requires --revision INT, --actor TEXT and --changes JSON mapping; invalid fields or stale revisions fail. History accepts an optional object ID. Dispatch alone accepts --retry-unknown, which may duplicate uncertain delivery. Exit 0 means the operation succeeded, 1 operation/configuration/adapter failure, 2 parser misuse. No host connection or todo execution occurs. Inspect never sends or imports local adapters; dispatch invokes configured presentation and delivery code. See [lifecycle/fields/storage](services.md), [provider setup](service-adapters.md) and [backup recipe workflow](backup-file-checks.md).
+
+*Last modified: 2026-10-25 14:06:31*

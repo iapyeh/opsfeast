@@ -124,4 +124,10 @@ Recipe creators define and produce retention; OpsFeast manages recipes/execution
 
 For raw recovery, retained observation interpretation, export, validation or combination, read the [result-data skill](skills/opsfeast-result-data/SKILL.md), [workflow/contracts](docs/result-data.md) and [CLI reference](docs/cli.md#retained-observations-and-exchange). Runner automatically attempts raw → retained for operational inventory reports; always report retention separately from collection. Current inventory jobs retain verified actor/identity scope; account sudo policy controls privilege and identity_sudo is removed. Read [inventory access, partitioned results and CSV](docs/inventory-access.md); preserve the user's actual scope. Identity quality and fallback warnings are mandatory interpretation context. Sharing exports data but never authorizes transmission. Receiver analysis storage remains user-selected.
 
-_Last modified: 2026-10-20 14:33:40_
+## Notification, todo and backup services
+
+Before implementing notifications or work tracking, read [services 0.1.0](docs/services.md) and [adapter interfaces/configuration](docs/service-adapters.md), routed from the recipe/Core/result-data skills. Reuse recipe.services, profile.services or consumer context.services; platform lifecycle is authoritative and human updates require current revision/actor. Consumer code must preserve live-evidence gating: historical replay does not create current incidents. Static inspect never sends; dispatch can send configured mail and requires its external-effects authorization. Todos do not execute work or wake agents. General logging remains unavailable.
+
+For dated backup presence, expiry and unexpected-entry lists, use [the shipped backup-check module and profile-local recipe procedure](docs/backup-file-checks.md), backup-files-check 0.1.0 and the explicitly enabled [backup-check consumer](consumers/backup-check/README.md). Keep host bindings private, preserve incomplete/unknown states and saved filename-date policy, and never treat a finding or todo as deletion authorization.
+
+*Last modified: 2026-10-25 14:08:03*

@@ -164,6 +164,31 @@
               "const": "retention.schema.json"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contract",
+            "version",
+            "description",
+            "schema"
+          ],
+          "properties": {
+            "contract": {
+              "const": "backup-files-check"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "schema": {
+              "const": "backup-files-check.schema.json"
+            }
+          }
         }
       ]
     },
@@ -191,7 +216,8 @@
                 "enum": [
                   "inventory-observations",
                   "inventory-job-observations",
-                  "mysql-replication"
+                  "mysql-replication",
+                  "backup-files-check"
                 ]
               }
             },
@@ -225,5 +251,5 @@
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-24 23:13:34"
+  "$comment": "Last modified: 2026-10-25 11:06:25"
 }

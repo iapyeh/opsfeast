@@ -310,4 +310,11 @@ Do not substitute a same-version PyPI package or a different latest skill bundle
 The stable-release update prompt above does not authorize switching a source-test
 environment to another revision or downgrading it.
 
-*Last modified: 2026-10-24 22:26:13*
+
+## Shared notifications, todos and backup checks
+
+[Notification/todo services](docs/services.md) provide platform-owned objects, revision-checked lifecycle, audit history, default Vault views and configurable SMTP delivery. Multiple [presentation/delivery adapters](docs/service-adapters.md) can coexist; lifecycle stays in the platform. Recipes, Core programs and retention consumers use the same interface. No mail relay, background wakeup or todo execution is enabled by default.
+
+For daily backup presence and directory hygiene, reuse [backup-files-check 0.1.0](docs/backup-file-checks.md) in a profile-local recipe. The opt-in [backup-check consumer](consumers/backup-check/README.md) creates missing/scan-failure notifications and expired/unexpected-file todos from eligible live observations. It never deletes files; historical replay does not create incidents.
+
+*Last modified: 2026-10-25 14:06:31*

@@ -194,4 +194,11 @@ The bundled [Vault consumer](../consumers/vault/README.md) delegates full local 
 
 `retention.run.updated` is an additional supported event. It shares event envelope 0.1.0, with contract observation-run, version 0.1.0, the run UUID in record_id, anchor host in host_id and batch start in observed_at. The update/table write commits in the same annual archive transaction. It is not an observation creation event and does not change recipe retention schemas. Consumers subscribing to this event read `context.retention.run(event["record_id"])` or `.runs()`, not `.show()`. The bundled Vault consumer subscribes and renders [explicit run pages](observation-runs.md#attention-evidence-and-vault-pages). Rebuild/replay does not backfill old batches. Current persisted state can be newer than the event hint; preserve completed policy/findings and existing at-least-once/idempotency rules. Disabling consumers leaves durable data intact.
 
-*Last modified: 2026-10-25 09:14:24*
+
+## Platform service facade and live effects
+
+Both event and batch contexts expose `context.services`; read [services 0.1.0](services.md) before reconciling notifications/todos. It is bound to the selected events' permitted live evidence record IDs. Operational local/SSH collection records eligibility atomically with the durable event; retry keeps it. Historical ingest/replay, older events without eligibility and unrelated evidence do not produce effects through the facade. Never bypass this restriction by opening a new unrestricted Profile/Services instance. Unknown findings must not clear established conditions.
+
+The opt-in bundled [backup-check](../consumers/backup-check/README.md) demonstrates condition reconciliation independently from collection and Vault. Consumer dispatch also attempts service dispatch after processing, returning separate `content_update.services` presentation/delivery outcomes; service failure participates in the aggregate failure result without undoing committed retention. This can invoke externally configured delivery adapters, so review destinations and authorization when enabling them. Direct lifecycle mutation is separate from projection refresh. Retry does not reconnect to the source host, and todos never execute work.
+
+*Last modified: 2026-10-25 14:06:31*

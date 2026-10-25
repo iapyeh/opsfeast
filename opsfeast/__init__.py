@@ -78,13 +78,13 @@ def instance_definition(root):
     if path.is_symlink():
         raise ConfigError(f'refuses scaffold symlink: {path}')
     expected = LEGACY_INSTANCE_SCHEMA if path.name == LEGACY_INSTANCE_DEFINITION else INSTANCE_SCHEMA
-    data = mapping(read_yaml(path), str(path), (*expected, 'namespace', 'overview_months', 'vault', 'consumers'))
+    data = mapping(read_yaml(path), str(path), (*expected, 'namespace', 'overview_months', 'vault', 'consumers', 'services'))
     if type(data.get('schema_version')) is not int or any(data.get(k) != v for k, v in expected.items()):
         raise ConfigError(f'{path}: unsupported management directory definition')
     if 'namespace' in data:
         from retention_store import validate_settings
         validate_settings(data)
-    elif any(k in data for k in ('overview_months', 'vault', 'consumers')):
+    elif any(k in data for k in ('overview_months', 'vault', 'consumers', 'services')):
         raise ConfigError('overview_months requires a namespace')
 
 
@@ -1401,6 +1401,9 @@ def main(argv=None):
     if argv[:1] == ['consumers']:
         from retention_consumers import main as consumer_main
         return consumer_main(argv[1:])
+    if argv[:1] == ['services']:
+        from services_cli import main as services_main
+        return services_main(argv[1:])
     if argv[:1] == ['vault']:
         from host_vault import main as vault_main
         return vault_main(argv[1:])
@@ -1422,6 +1425,7 @@ def main(argv=None):
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
     commands.add_parser('consumers', help='discover retention consumers, inspect deliveries and dispatch pending events')
+    commands.add_parser('services', help='inspect notification/todo services, manage objects and dispatch adapters')
     commands.add_parser('vault', help='rebuild/inspect bundled vault content and group indexes; use vault --help')
     profiles_parser = commands.add_parser('profiles', help='list all registered profiles',
         description=('List registered Feast management directories and identify the selected default. '
