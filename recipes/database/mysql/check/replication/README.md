@@ -87,7 +87,8 @@ After authorized instance settings are saved in the actual host-definition YAML,
 ## Completion account identity
 
 The collection identity column displays each instance's server-reported
-CURRENT_USER() as `DB main: monitor@localhost`, plus an observed OS actor or
+CURRENT_USER() as `DB: monitor@localhost` for one instance, or
+`DB main: monitor@localhost` with the vars.instances key for multiple instances, plus an observed OS actor or
 explicit `SSH: operator` login fallback. This uses already collected evidence;
 it does not infer the database grant account from configured user, assume an OS
 UID, or reconnect. Multiple instances keep independent accounts and unknowns.
@@ -108,4 +109,8 @@ lag/source policies. Partial/unknown cleanup cannot produce a healthy overall
 banner. Existing views can be regenerated with authorized vault rebuild; no new
 recipe run, data migration, reader CSS/plugin or global font change is required.
 
-*Last modified: 2026-10-24 23:07:17*
+Replication completion and observation tables use recorded health findings rather
+than PASS. See [health labels and failure semantics](../../../../../docs/cli.md#replication-completion-health). Preserve the collection status, exit code and
+retention/content failure evidence; UNKNOWN is not healthy.
+
+*Last modified: 2026-10-25 06:27:41*

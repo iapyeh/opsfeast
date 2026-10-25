@@ -67,7 +67,9 @@ def inspect_consumer(base, source):
     directory = safe_path(base, source.split(':', 1)[1])
     descriptor = safe_path(directory, 'consumer.yaml')
     data = read_yaml(descriptor)
-    if (not isinstance(data, dict) or set(data) != {'schema_version', 'id', 'description', 'entrypoint', 'subscriptions'}
+    if (not isinstance(data, dict) or set(data) - {'schema_version', 'id', 'description', 'entrypoint', 'subscriptions', 'delivery'}
+            or not {'schema_version', 'id', 'description', 'entrypoint', 'subscriptions'} <= set(data)
+            or data.get('delivery', 'event') not in ('event', 'batch')
             or data['schema_version'] != VERSION or not isinstance(data['id'], str) or not ID.fullmatch(data['id'])
             or not isinstance(data['description'], str) or not data['description'].strip()
             or not isinstance(data['entrypoint'], str) or not data['entrypoint'].endswith('.py')):
@@ -244,8 +246,25 @@ class ConsumerContext:
     retention: object
 
 
+@dataclass(frozen=True)
+class BatchConsumerContext:
+    root: Path
+    events: tuple
+    retention: object
+
+
 def execute(root, item, event):
     from retention_store import Reader
+    return _execute(item, 'execute', ConsumerContext(Path(root), dict(event), Reader(root)))
+
+
+def execute_batch(root, item, events):
+    from retention_store import Reader
+    return _execute(item, 'execute_batch', BatchConsumerContext(
+        Path(root), tuple(dict(event) for event in events), Reader(root)))
+
+
+def _execute(item, method, context):
     # Trusted registered programs run in-process. This is not a sandbox.
     namespace = '_opsfeast_consumer_' + uuid4().hex
     spec = importlib.util.spec_from_file_location(namespace, item['entrypoint_path'], submodule_search_locations=[item['directory']])
@@ -259,9 +278,9 @@ def execute(root, item, event):
         if hashlib.sha256(descriptor + b'\0' + code).hexdigest() != item['sha256']:
             raise ConfigError('consumer source changed during dispatch; retry with reviewed current source')
         exec(compile(code, item['entrypoint_path'], 'exec'), module.__dict__)
-        result = module.execute(ConsumerContext(Path(root), dict(event), Reader(root)))
+        result = getattr(module, method)(context)
         if not isinstance(result, dict) or result.get('status') not in ('success', 'failed', 'skipped'):
-            raise ConfigError('consumer execute(context) must return status success/failed/skipped')
+            raise ConfigError('consumer must return status success/failed/skipped')
         json.dumps(result, allow_nan=False)
         return result
     finally:
@@ -301,27 +320,38 @@ def dispatch(root, consumer=None):
                 results.append({'consumer': item['id'], 'status': 'failed', 'reason_code': 'consumer_unavailable', 'errors': item['errors']})
                 continue
             identity = item['id'] + '@' + item['source']
+            pending = []
             for path, event in events(root):
                 if not matches(item, event):
                     continue
                 with database(path, True) as connection:
                     previous = connection.execute('SELECT status,attempts FROM consumer_deliveries WHERE event_id=? AND consumer=?', (event['event_id'], identity)).fetchone()
-                    if previous and previous[0] in ('success', 'skipped'):
-                        continue
-                    attempts = previous[1] + 1 if previous else 1
-                    # Persist started before calling arbitrary consumer code.
-                    connection.execute('INSERT OR REPLACE INTO consumer_deliveries VALUES (?,?,?,?,?)',
-                                       (event['event_id'], identity, 'running', attempts, canonical({'started_at': now(), 'sha256': item['sha256']})))
+                if previous and previous[0] in ('success', 'skipped'):
+                    continue
+                pending.append((path, event, previous[1] + 1 if previous else 1))
+            batches = [pending] if item.get('delivery', 'event') == 'batch' else [[entry] for entry in pending]
+            for batch in batches:
+                if not batch:
+                    continue
+                # Every selected event is durable before invoking arbitrary code.
+                for path, event, attempts in batch:
+                    with database(path, True) as connection:
+                        connection.execute('INSERT OR REPLACE INTO consumer_deliveries VALUES (?,?,?,?,?)',
+                                           (event['event_id'], identity, 'running', attempts,
+                                            canonical({'started_at': now(), 'sha256': item['sha256']})))
                 try:
-                    outcome = execute(root, item, event)
+                    outcome = (execute_batch(root, item, [entry[1] for entry in batch])
+                               if item.get('delivery', 'event') == 'batch'
+                               else execute(root, item, batch[0][1]))
                 except Exception as exc:
                     outcome = {'status': 'failed', 'reason_code': 'consumer_failed', 'error_type': type(exc).__name__}
-                receipt = dict(outcome, consumer=item['id'], source=item['source'], event_id=event['event_id'],
-                               record_id=event['record_id'], attempts=attempts, sha256=item['sha256'], completed_at=now())
-                with database(path, True) as connection:
-                    connection.execute('UPDATE consumer_deliveries SET status=?,payload=? WHERE event_id=? AND consumer=?',
-                                       (receipt['status'], canonical(receipt), event['event_id'], identity))
-                results.append(receipt)
+                for path, event, attempts in batch:
+                    receipt = dict(outcome, consumer=item['id'], source=item['source'], event_id=event['event_id'],
+                                   record_id=event['record_id'], attempts=attempts, sha256=item['sha256'], completed_at=now())
+                    with database(path, True) as connection:
+                        connection.execute('UPDATE consumer_deliveries SET status=?,payload=? WHERE event_id=? AND consumer=?',
+                                           (receipt['status'], canonical(receipt), event['event_id'], identity))
+                    results.append(receipt)
     return {'contract_version': VERSION, 'status': 'failed' if any(r['status'] == 'failed' for r in results) else 'success',
             'consumers': results, 'recovery': 'opsfeast.py consumers dispatch --root ' + shlex.quote(str(root)) + ' --json'}
 
@@ -389,7 +419,7 @@ def bootstrap(root):
             return {'status': 'skipped', 'reason_code': item.get('disabled_reason', 'consumer_disabled'), 'consumers': []}
         if item['status'] != 'success':
             raise ConfigError('bundled vault consumer unavailable')
-        outcome = execute(root, item, {'contract_version': VERSION, 'event': 'profile.initialized'})
+        outcome = execute_batch(root, item, [{'contract_version': VERSION, 'event': 'profile.initialized'}])
         return dict(outcome, consumers=[dict(outcome, consumer='vault')])
     except Exception as exc:
         return {'status': 'failed', 'reason_code': 'consumer_bootstrap_failed', 'error_type': type(exc).__name__}

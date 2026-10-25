@@ -399,7 +399,8 @@ leave without an exit sequence may intentionally retain waiting_input.
 
 Follow [role-aware completion/history identity](../../docs/cli.md#role-aware-collection-identity).
 The bundled replication recipe already retains CURRENT_USER() for each instance;
-completion and observation views now display DB INSTANCE: ACCOUNT plus observed
+completion and observation views display DB: ACCOUNT for one instance or
+DB INSTANCE: ACCOUNT for multiple instances, plus observed
 OS identity or explicitly labeled SSH login fallback. The runner preserves identity_evidence in compact TTY/JSON/pipe summaries before
 dropping recipe/connection metadata. Verify identity through the actual recipes run
 entrypoint, not only by directly rendering a saved raw report. Do not claim that a database
@@ -420,4 +421,22 @@ does not change recipe SQL, health rules, retention schema/normalizer or authori
 A user-requested appearance fix can regenerate owned views from retained data;
 it does not authorize new host queries or global reader-setting changes.
 
-*Last modified: 2026-10-24 23:19:57*
+Replication completion and observation tables use recorded health findings rather
+than PASS. See [health labels and failure semantics](../../docs/cli.md#replication-completion-health). Preserve the collection status, exit code and
+retention/content failure evidence; UNKNOWN is not healthy.
+
+## Batch consumers and recipe finalization
+
+For a current-state publisher, reuse the [explicit batch consumer interface](../../docs/retention-consumers.md#batch-delivery-for-current-state-publishers)
+rather than adding a recipe/runner-specific publication branch. Declare delivery:
+batch and implement execute_batch(context), reading context.events and the shared
+retention facade. Event mode keeps execute(context). Both modes retain per-event
+attempts, acknowledgements and at-least-once retry; failures never become success.
+Builtin Vault uses batch delivery. Do not delete skipped-host history, bypass locks
+or alter timeout merely to speed completion. Recipe TTY/--verbose stderr reports
+finalization stages and total seconds; --quiet suppresses it. Per-host completed
+messages precede that work. Two final dispatches preserve collection and command
+outcome publication; they are not one rebuild per selected host. Inspect consumers
+and delivery receipts for failures/backlog, without rerunning host operations.
+
+*Last modified: 2026-10-25 06:40:11*

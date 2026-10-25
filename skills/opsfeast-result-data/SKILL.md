@@ -184,7 +184,7 @@ For [database/mysql/check/replication](../../recipes/database/mysql/check/replic
 ## Distinguish service accounts from OS collection accounts
 
 Completion and compact observation views now share [role-aware identity display](../../docs/cli.md#role-aware-collection-identity).
-For MySQL replication, DB INSTANCE labels the recorded CURRENT_USER() account;
+For MySQL replication, DB (one instance) or DB INSTANCE (multiple instances) labels the recorded CURRENT_USER() account;
 SSH labels the successful final-hop login when no observed OS actor is available.
 Neither supplies a missing effective UID. View 0.2.0 adds identity_evidence while
 collection_identity and result-index collection_user retain OS-only semantics.
@@ -203,4 +203,22 @@ Unknown cleanup/partial evidence cannot establish healthy replication. Use exist
 retention readers and authorized vault rebuild rather than reconnecting or editing
 owned Markdown by hand; raw/retention and human notes must remain unchanged.
 
-*Last modified: 2026-10-24 23:07:17*
+Replication completion and observation tables use recorded health findings rather
+than PASS. See [health labels and failure semantics](../../docs/cli.md#replication-completion-health). Preserve the collection status, exit code and
+retention/content failure evidence; UNKNOWN is not healthy.
+
+## Batch consumers and recipe finalization
+
+For a current-state publisher, reuse the [explicit batch consumer interface](../../docs/retention-consumers.md#batch-delivery-for-current-state-publishers)
+rather than adding a recipe/runner-specific publication branch. Declare delivery:
+batch and implement execute_batch(context), reading context.events and the shared
+retention facade. Event mode keeps execute(context). Both modes retain per-event
+attempts, acknowledgements and at-least-once retry; failures never become success.
+Builtin Vault uses batch delivery. Do not delete skipped-host history, bypass locks
+or alter timeout merely to speed completion. Recipe TTY/--verbose stderr reports
+finalization stages and total seconds; --quiet suppresses it. Per-host completed
+messages precede that work. Two final dispatches preserve collection and command
+outcome publication; they are not one rebuild per selected host. Inspect consumers
+and delivery receipts for failures/backlog, without rerunning host operations.
+
+*Last modified: 2026-10-25 06:40:11*

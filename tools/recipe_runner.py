@@ -428,11 +428,18 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     else:
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix='recipe-host') as pool:
             results = list(pool.map(execute, targets))
+    def tail_progress(message):
+        if show_progress:
+            progress_line('[finalizing] ' + message)
     if run_id:
+        tail_started = time.monotonic()
+        tail_progress(f'recording {len(results)} host results')
         for host, (report, _) in zip(hosts, results):
             record_result(root, run_id, host, report)
         finish(root, run_id)
+        tail_progress('publishing retained content')
         content = refresh_content(root)
+        tail_progress('recording and publishing command outcome')
         from observation_runs import publish_execution
         _,content = publish_execution(root,run_id,execution_exit_code([r for r,_ in results],content),content)
         for report, path in results:
@@ -441,14 +448,18 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
                 report['content_update'] = content
             if path:
                 save_receipt(path,report)
+        tail_progress(f'finished in {time.monotonic() - tail_started:.2f}s')
     summaries = []
-    from console_output import execution_identities
+    from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
         summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'access', 'actor') if key in report}
         # The compact summary omits recipe/connection metadata used by the role
         # extractor. Project evidence before discarding those fields, for both
         # live rendering and machine output, just as saved observation views do.
         summary['identity_evidence'] = execution_identities(report)
+        health = replication_health(report)
+        if health is not None:
+            summary['replication_health'] = health
         summary.update(host=host, result_path=str(path) if path else None)
         summaries.append(summary)
     result = {'hosts': summaries} if inv['all'] or len(hosts)!=1 else dict(summaries[0])

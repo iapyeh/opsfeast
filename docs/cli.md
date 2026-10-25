@@ -827,8 +827,9 @@ commands do not need a NO_COLOR shell prefix for OpsFeast-managed proxies.
 
 Recipe completion and `observation OBSERVATION_ID` use the same recorded identity
 projection. An observed OS actor remains `name (uid=N)`. MySQL/MariaDB replication
-results additionally show `DB INSTANCE: CURRENT_USER_ACCOUNT`, independently for
-each instance. If an OS actor is unavailable, a successful recorded connection
+results additionally show `DB: CURRENT_USER_ACCOUNT` for a single instance, or
+`DB INSTANCE: CURRENT_USER_ACCOUNT` for each of multiple instances. INSTANCE is the
+configuration key under vars.instances, not a database/schema or primary role. If an OS actor is unavailable, a successful recorded connection
 can show `SSH: LOGIN` as explicitly labeled transport identity. SSH login does not
 establish the effective OS execution account; the database grant account does not
 establish either SSH or OS identity. Missing instance evidence stays unknown;
@@ -845,4 +846,42 @@ It projects the full report before dropping recipe/connection metadata, so live
 completion and saved observation views preserve the same identities. Saved raw
 result files retain their existing structure. See [view schema](../schemas/observation-view.schema.json).
 
-*Last modified: 2026-10-24 23:19:57*
+## Replication completion health
+
+For mysql-replication only, completion and observation tables replace generic PASS
+with HEALTHY, UNHEALTHY, UNKNOWN, NOT CONFIGURED or ERROR. They project existing
+per-instance findings, without querying hosts or recalculating lag thresholds.
+HEALTHY requires successful collection, all instances healthy and confirmed cleanup.
+A confirmed unhealthy instance yields UNHEALTHY. Missing/uncertain findings or a
+mixture of healthy and not-configured instances yield UNKNOWN; all instances with
+no replication configured yield NOT CONFIGURED. Failed execution, query/probe
+failure, timeout, unavailable client or unsupported server version yield ERROR,
+including one failed instance among otherwise collected instances. Errors take
+precedence over unhealthy findings. Confirmed unhealthy findings remain visible
+when another instance is unknown. No state claims source-side or data equality checks.
+
+Retention/content failures still override the overall result with FAIL and their
+reason, retaining the collection health in parentheses. Collection status, result
+filtering and CLI exit codes retain their meanings: an unhealthy check does not
+become a successful run. Other recipes keep their existing PASS/FAIL labels.
+Compact recipe summaries and observation view 0.2.0 JSON add optional
+replication_health with the same uppercase labels; raw results and retention stay
+unchanged. Missing raw evidence cannot create a health label. Single-instance
+identity omits the instance name only in human text; structured identity_evidence
+continues to carry it.
+
+## Batch finalization progress
+
+Per-host completed messages precede batch result journaling and content publication;
+they do not mean the CLI has finished. TTY or --verbose runs show [finalizing]
+messages on stderr for recording host results, publishing retained content and
+recording/publishing the command outcome, followed by total finalization seconds.
+--quiet suppresses these messages; JSON stdout remains machine-readable. Each
+skipped result remains in observation history. The Vault batch consumer processes
+many queued events with one rebuild per dispatch, retaining individual receipts.
+Completed collection and command outcome normally require two final dispatches;
+earlier host-level updates and other consumers remain independent. This does not
+change execution/skip/exit-code policy, SQLite lock timeout or file-lock behavior.
+See [consumer batching](retention-consumers.md#batch-delivery-for-current-state-publishers).
+
+*Last modified: 2026-10-25 06:40:11*

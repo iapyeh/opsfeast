@@ -480,4 +480,58 @@ Human CLI/execution docs, the capability map and recipe skill now cover this pat
 and require verification through the public completion boundary. Remote CI and
 real-host execution were not performed for this correction.
 
-*Last modified: 2026-10-24 23:23:00*
+## Replication completion health and compact identity
+
+Synthetic completion tests cover HEALTHY, UNHEALTHY, UNKNOWN, NOT CONFIGURED and
+ERROR, mixed instances, cleanup uncertainty, query/connection failures, preserved
+collection status, retention/publication failures and unchanged raw input. Unrelated
+recipes and skipped/unsupported outcomes retain their previous labels. One database
+instance displays DB; multiple instances retain their configuration names and
+independent unknown identities. Public CLI tests cover single/batch TTY, JSON and
+pipe summaries. Saved observation integration verifies live/history health parity,
+optional replication_health and unchanged saved bytes. No raw/retention schema or
+stored data migration is involved; observation view 0.2.0 adds an optional field.
+
+The public CLI was also exercised offline for all five health labels and exit codes
+with a synthetic backend; actual local PTY rendering showed the five labels and
+compact single-instance identity. No host, credential, database, profile or Vault
+operation was performed. The wheel/sdist built successfully, and 52 tests passed
+against the installed wheel outside the checkout. Human guides, capability routing
+and recipe/result-data skills describe the new presentation and evidence limits.
+Final source discovery passed 916 tests on Python 3.13.13 and 3.14.4. Python
+3.11.15 discovery ran 916 tests with one existing TUI layout assertion failure
+(details pane width read as zero). That test plus the 52 affected tests passed
+in an isolated 53-test recheck. The initial failure is preserved in evidence;
+no unrelated TUI code/test was changed to suppress it. Grammar, documentation
+links/footers, skill metadata, schema JSON and diff whitespace checks passed.
+Remote CI and real-host execution were not run.
+
+## Batch consumer finalization verification
+
+Python 3.11.15, 3.13.13 and 3.14.4 each passed 922 public tests, including the
+pending health/identity presentation changes. Six added consumer tests cover batch
+acknowledgements, deterministic snapshot order, disabled backlog, no-op redispatch,
+ordinary exception/returned failure with all-event retry, secret-text omission,
+interruption leaving running attempts, skipped acknowledgements, events arriving
+during execution, invalid mode/missing batch entrypoint, and a public recipes run
+regression with 30 selected hosts, two synthetic successes and 28 skips. All 33
+events remain individually acknowledged; finalization does two Vault rebuilds.
+Per-event consumers retain existing failure isolation, source checks and semantics.
+
+A matching empty-profile benchmark measured 33 versus two final Vault rebuilds,
+and 1.753 versus 0.257 seconds after the final synthetic backend returned. Two-host
+execution also performs two final rebuilds. These are local timing samples rather
+than managed-profile performance guarantees. The backend was replaced explicitly;
+real event journaling, consumer dispatch and Vault rendering ran in independent
+temporary profiles. Progress logs show finalization stages and total seconds.
+No managed host, real credential, private profile or database was accessed.
+
+Wheel/sdist builds and 99 installed-package tests outside the checkout passed.
+Python 3.11 grammar, descriptor/schema JSON/YAML, Markdown links/footers, skill
+metadata and diff whitespace checks passed. Human guides, capability map, consumer
+catalog and recipe/result-data skills document delivery: batch, execute_batch,
+per-event receipts/retry, snapshot boundaries and retained timeout/lock limits.
+No event history was pruned; no retention storage migration or private configuration
+change is required. Remote CI, commit, push and release were not performed.
+
+*Last modified: 2026-10-25 06:41:20*

@@ -333,6 +333,10 @@ Observation view 0.2.0 adds identity_evidence while preserving OS-only
 collection_identity. See [CLI semantics](cli.md#role-aware-collection-identity).
 recipes run includes projected identity_evidence in compact single/batch summaries
 before it removes full recipe/connection metadata, preserving live/history parity.
+Single-instance identity uses DB; multiple instances include their configuration names.
+Replication completion/history projects HEALTHY/UNHEALTHY/UNKNOWN/NOT CONFIGURED/ERROR
+from saved findings; reuse console_output.replication_health and execution_result.
+See [completion health semantics](cli.md#replication-completion-health).
 Do not infer service identities from input vars, configured users or SSH accounts,
 or reconnect solely to replace an unknown display value.
 
@@ -347,4 +351,18 @@ summary; do not invent new thresholds, turn unknown into healthy or treat unheal
 as missing collection. No additional SQL, retention/schema migration or global
 reader settings are needed. Full sanitized evidence remains in historical reports.
 
-*Last modified: 2026-10-24 23:19:57*
+## Batch consumers and recipe finalization
+
+For a current-state publisher, reuse the [explicit batch consumer interface](retention-consumers.md#batch-delivery-for-current-state-publishers)
+rather than adding a recipe/runner-specific publication branch. Declare delivery:
+batch and implement execute_batch(context), reading context.events and the shared
+retention facade. Event mode keeps execute(context). Both modes retain per-event
+attempts, acknowledgements and at-least-once retry; failures never become success.
+Builtin Vault uses batch delivery. Do not delete skipped-host history, bypass locks
+or alter timeout merely to speed completion. Recipe TTY/--verbose stderr reports
+finalization stages and total seconds; --quiet suppresses it. Per-host completed
+messages precede that work. Two final dispatches preserve collection and command
+outcome publication; they are not one rebuild per selected host. Inspect consumers
+and delivery receipts for failures/backlog, without rerunning host operations.
+
+*Last modified: 2026-10-25 06:40:11*

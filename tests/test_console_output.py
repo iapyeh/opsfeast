@@ -334,7 +334,7 @@ hosts:
                   'recipe': {'id': 'mysql-replication'}, 'connected': True,
                   'login_identity': {'username': 'operator', 'source': 'ssh_connection'},
                   'private_connection_extra': 'synthetic-do-not-display',
-                  'data': {'instances': [{'instance': 'main',
+                  'data': {'instances': [{'instance': 'main', 'health': 'healthy', 'cleanup': 'confirmed',
                            'server': {'authenticated_user': 'monitor@localhost'}}]}}
         before = json.loads(json.dumps(report))
         for selector in (['--host', 'h'], ['--all']):
@@ -348,13 +348,16 @@ hosts:
                 self.assertNotIn('synthetic-do-not-display', output)
                 if tty and not flags:
                     self.assertIn('monitor@localhost', output)
-                    self.assertIn('DB main:', output)
+                    self.assertIn('DB:', output)
+                    self.assertNotIn('DB main:', output)
+                    self.assertIn('HEALTHY', output)
                     self.assertIn('operator', output)
                 else:
                     row = json.loads(output)
                     if 'hosts' in row: row = row['hosts'][0]
                     self.assertEqual(row['identity_evidence'], console.execution_identities(report))
                     self.assertNotIn('recipe', row)
+                    self.assertEqual(row['replication_health'], 'HEALTHY')
                 self.assertEqual(report, before)
 
     def test_recipes_run_login_fallback_and_unknown_without_recorded_identity(self):
@@ -369,7 +372,7 @@ hosts:
                     'database/mysql/check/replication', '--root', str(self.root), '--host', 'h'])
             self.assertEqual(code, 1)
             self.assertIn('operator' if connected else 'unknown', output)
-            self.assertNotIn('DB main:', output)
+            self.assertNotIn('DB:', output)
 
     def test_execution_summary_includes_result_id_and_verified_collection_actor(self):
         report = {'hosts': [

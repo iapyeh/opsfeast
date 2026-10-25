@@ -70,9 +70,10 @@ subscriptions:
       version: "0.1.0"
 ```
 
-All five top-level fields are required; unknown fields fail validation. `entrypoint` names a relative `.py` file. `subscriptions` is a nonempty list. Each subscription requires `event` and `selector`; permitted events are `retention.observation.created`, `retention.observation.deleted`, `retention.operation.created` and `retention.run.updated`. The selector permits only `recipe_reference`, `contract` and `version`, each an exact nonempty string. Contract/version must appear together. `{}` selects all events of that type. Conditions within a subscription are AND; multiple subscriptions are OR and do not duplicate a delivery. Operation events have null contract/version and can be selected by recipe reference or an empty selector.
+The five illustrated top-level fields are required. Optional delivery selects event
+(the default) or batch; other fields and delivery values fail validation. `entrypoint` names a relative `.py` file. `subscriptions` is a nonempty list. Each subscription requires `event` and `selector`; permitted events are `retention.observation.created`, `retention.observation.deleted`, `retention.operation.created` and `retention.run.updated`. The selector permits only `recipe_reference`, `contract` and `version`, each an exact nonempty string. Contract/version must appear together. `{}` selects all events of that type. Conditions within a subscription are AND; multiple subscriptions are OR and do not duplicate a delivery. Operation events have null contract/version and can be selected by recipe reference or an empty selector.
 
-The selected Python must be 3.11+ with the normal OpsFeast initialization dependencies. Declare any consumer-specific dependencies and supported data versions in its README and verify availability in the selected environment; the dispatcher does not install packages. It imports the registered entrypoint and invokes:
+The selected Python must be 3.11+ with the normal OpsFeast initialization dependencies. Declare any consumer-specific dependencies and supported data versions in its README and verify availability in the selected environment; the dispatcher does not install packages. For delivery: event it imports the registered entrypoint and invokes:
 
 ```python
 def execute(context):
@@ -88,6 +89,64 @@ def execute(context):
 `context.root` is the selected profile's absolute Path. `context.event` is a copy of the event envelope. `context.retention.query/show` is the existing read-only retention facade. It supports the same filters and schemas as [retention queries](retention.md#discover-and-read-data). Use this facade instead of parsing raw files or generating SQL storage code. Relative helper imports such as `from .render import build` are supported; only the reviewed entrypoint is automatically called. Do not print to stdout, mutate process-wide state, start background work, connect or transmit without the user's corresponding authorization. No consumer-specific configuration/input-variable mechanism is implemented in 0.1.0; private application settings belong in reviewed local configuration.
 
 Return a JSON-serializable object with `status: success|failed|skipped`, plus useful safe result details. Success and skipped acknowledge the event. Failed returns and ordinary exceptions remain retryable; exception text is omitted and only its type is recorded. Do not put secrets in returned diagnostics. There is no enforced timeout, resource quota, process isolation or remote-delivery service; consumers must finish synchronously and impose their own bounded work. Interrupted execution can leave a running receipt that will retry. Recursive dispatch in the same thread/profile is refused; consumers should read retention and write derived outputs, not create feedback loops through retention writes.
+
+## Batch delivery for current-state publishers
+
+A consumer that can rebuild all current state once for many change hints may opt in:
+
+```yaml
+delivery: batch
+```
+
+Its reviewed entrypoint must define `execute_batch(context)` instead of
+`execute(context)`. `context.root` and `context.retention.query/show` have the same
+meaning; `context.events` is a nonempty tuple of copied event envelopes, ordered
+by emission time/event ID. There is no context.event in batch mode. The return
+status and safe diagnostics apply to every event in that batch. This is an explicit
+interface selection, not entrypoint fallback or an automatically inferred capability.
+
+For example, this read-only inventory projection prepares the current inputs once;
+its reviewed publisher should replace only that consumer's owned output paths:
+
+```python
+def execute_batch(context):
+    from .render import publish_inventory  # Your reviewed, idempotent publisher.
+    records = context.retention.query(
+        recipe="system/inventory/overview", kind="observation"
+    )["records"]
+    publish_inventory(context.root, records)
+    return {"status": "success", "events": len(context.events),
+            "records": len(records)}
+```
+
+The render helper is user-provided, not an OpsFeast import. Define its ownership,
+input schema/dependencies and failure behavior before activation. If publishing
+fails, raise or return failed; do not acknowledge only a subset implicitly.
+
+The dispatcher takes a snapshot of matching unacknowledged events for each consumer,
+marks every selected pair running before calling code, invokes the consumer once,
+and saves an individual receipt/attempt count for every pair. Success/skipped
+acknowledge all selected events; failure or an ordinary exception leaves all retryable.
+An interruption can leave running pairs. A storage failure while acknowledging can
+leave a mixture of acknowledged and running pairs; retry the remainder. Batch output
+must therefore be idempotent. New events arriving during execution wait for a later
+dispatch; no event is acknowledged merely because a prior batch rebuilt current state.
+Event-mode consumers still run separately for each event. Disabled, subscription,
+source-integrity and per-profile serialization rules apply to both modes. A changed
+source digest does not reprocess already acknowledged events under the same ID/source.
+
+The bundled Vault declares batch delivery and delegates one invocation to the shared
+full rebuild. A batch recipe run still publishes completed collection first and
+then its recorded command outcome: normally two final dispatches/rebuilds, independent
+of skipped-host count, plus any earlier per-host publication. An empty matching queue
+performs no rebuild. These synchronous steps have no new deadline; SQLite's existing
+lock timeout and blocking file locks are unchanged. This optimization reduces repeat
+work rather than hiding a lock failure or claiming exactly-once publication.
+
+Descriptor/schema 0.1.0 adds optional delivery and the batch Python interface;
+existing event-mode consumers need no edits. Older installations that reject delivery
+must update product code, schema and bundled consumer together. No storage migration,
+history pruning, credential access or host connection is needed.
 
 ## Durable event and delivery semantics
 
@@ -135,4 +194,4 @@ The bundled [Vault consumer](../consumers/vault/README.md) delegates full local 
 
 `retention.run.updated` is an additional supported event. It shares event envelope 0.1.0, with contract observation-run, version 0.1.0, the run UUID in record_id, anchor host in host_id and batch start in observed_at. The update/table write commits in the same annual archive transaction. It is not an observation creation event and does not change recipe retention schemas. Consumers subscribing to this event read `context.retention.run(event["record_id"])` or `.runs()`, not `.show()`. The bundled Vault consumer subscribes and renders [explicit run pages](observation-runs.md#attention-evidence-and-vault-pages). Rebuild/replay does not backfill old batches. Current persisted state can be newer than the event hint; preserve completed policy/findings and existing at-least-once/idempotency rules. Disabling consumers leaves durable data intact.
 
-_Last modified: 2026-10-20 23:27:35_
+*Last modified: 2026-10-25 09:14:24*

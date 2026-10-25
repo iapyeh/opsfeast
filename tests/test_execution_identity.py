@@ -17,7 +17,7 @@ class IdentityTests(unittest.TestCase):
 
     def test_database_and_login_have_explicit_roles_without_os_claim(self):
         row = self.row()
-        self.assertEqual(execution_identity(row), 'DB main: monitor@localhost; SSH: operator')
+        self.assertEqual(execution_identity(row), 'DB: monitor@localhost; SSH: operator')
         evidence = execution_identities(row)
         self.assertFalse(any(i['role'] == 'os' for i in evidence))
         self.assertEqual(evidence[0]['source'], 'CURRENT_USER()')
@@ -27,7 +27,7 @@ class IdentityTests(unittest.TestCase):
                'connected': True, 'login_identity': {'username': 'operator', 'source': 'ssh_connection'}}
         self.assertEqual(execution_identity(row), 'root (uid=0)')
         row.update(recipe={'id': 'mysql-replication'}, data=self.row()['data'])
-        self.assertEqual(execution_identity(row), 'DB main: monitor@localhost; root (uid=0)')
+        self.assertEqual(execution_identity(row), 'DB: monitor@localhost; root (uid=0)')
 
     def test_all_instances_preserve_independent_unknowns_and_same_account_names(self):
         row = self.row()

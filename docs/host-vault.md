@@ -19,7 +19,10 @@ python -B tools/opsfeast.py vault inspect --profile main --json
 
 All commands also accept `--root PATH` instead of `--profile`. Init preserves an existing namespace/configuration. Rebuild refreshes generated pages and group links without collecting or writing retention/run data; groups refreshes membership links only; inspect is read-only. Exit codes are 0 success, 1 failure, 2 argument error. The old SQLite-in-vault layout is incompatible and is never moved/deleted automatically: preserve the old profile and use a separate initialized profile plus reviewed [raw replay](retention-replay.md). Rebuild cannot reconstruct missing old collection values/evidence.
 
-Automatic publication uses the [Vault consumer](../consumers/vault/README.md), default registration `builtin:vault`. Observation creation/deletion, operation creation and `retention.run.updated` events trigger current-state rebuilds. Use `consumers inspect` and `consumers dispatch vault` for failed deliveries. Explicit `vault rebuild` does not create or acknowledge events.
+Automatic publication uses the [Vault consumer](../consumers/vault/README.md), default registration `builtin:vault`. Observation creation/deletion, operation creation and `retention.run.updated` events queue current-state updates. The bundled batch consumer rebuilds once per
+nonempty dispatch snapshot and records each event separately; skipped-host events
+do not each cause a rebuild. The completed-collection and command-outcome dispatches
+remain separate. Failed/running deliveries retry without deleting event history. Use `consumers inspect` and `consumers dispatch vault` for failed deliveries. Explicit `vault rebuild` does not create or acknowledge events.
 
 ## Directory and ownership
 
@@ -146,4 +149,4 @@ uses retained data only, preserves raw/retention and unmanaged human notes, and
 updates owned generated views through the existing publisher; no CSS/plugin or
 application-wide font setting is required.
 
-*Last modified: 2026-10-24 23:07:17*
+*Last modified: 2026-10-25 06:40:11*

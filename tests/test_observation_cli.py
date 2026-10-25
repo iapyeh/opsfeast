@@ -212,7 +212,7 @@ class ObservationCLITests(unittest.TestCase):
         raw = {'host_id': 'node', 'status': 'success', 'recipe': {'id': 'mysql-replication'},
                'observation_run_id': identity, 'connected': True,
                'login_identity': {'username': 'operator', 'source': 'ssh_connection'},
-               'data': {'instances': [{'instance': 'main', 'server': {'authenticated_user': 'monitor@localhost'}}]}}
+               'data': {'instances': [{'instance': 'main', 'health': 'healthy', 'cleanup': 'confirmed', 'server': {'authenticated_user': 'monitor@localhost'}}]}}
         path = self.raw(identity, 'node', 'database')
         path.write_text(json.dumps(raw));before = path.read_bytes()
         runs.record_result(self.root, identity, 'node', raw);runs.finish(self.root, identity)
@@ -222,6 +222,10 @@ class ObservationCLITests(unittest.TestCase):
         self.assertEqual(console_output.execution_identity(cli.execution_row(view['hosts'][0])),
                          console_output.execution_identity(raw))
         self.assertIn('monitor@localhost', cli.render(view))
+        self.assertIn('HEALTHY', cli.render(view))
+        self.assertEqual(view['hosts'][0]['replication_health'], 'HEALTHY')
+        self.assertEqual(console_output.execution_result(cli.execution_row(view['hosts'][0]))['text'],
+                         console_output.execution_result(raw)['text'])
         self.assertEqual(path.read_bytes(), before)
 
     def test_content_failure_survives_fallback_and_filters_match_display(self):

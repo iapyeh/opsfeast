@@ -1,6 +1,8 @@
 # Vault retention consumer
 
-`builtin:vault` (ID vault) implements [consumer contract 0.1.0](../../docs/retention-consumers.md) with default activation. It subscribes to observation creation/deletion, operation creation and retention.run.updated across sources. Its entrypoint delegates to host_vault.rebuild; explicit vault rebuild uses that same renderer without creating/acknowledging events.
+`builtin:vault` (ID vault) implements [consumer contract 0.1.0](../../docs/retention-consumers.md) with default activation. It subscribes to observation creation/deletion, operation creation and retention.run.updated across sources. It declares delivery: batch; execute_batch(context) delegates once per nonempty
+dispatch snapshot to host_vault.rebuild, while each event keeps its own durable
+receipt and retry count. Failed rebuilds leave all selected events retryable; explicit vault rebuild uses that same renderer without creating/acknowledging events.
 
 Requirements are Python 3.11+, OpsFeast initialization dependencies, a namespace-enabled profile, valid hosts.yaml, retention read access and writable owned Vault output. No connection, SSHScript execution or model is needed. Plain Markdown tables work without a plugin; optional DGMO rendering requires a compatible reader/plugin, not an MCP server or new collection. The renderer consumes registered inventory-job-observations 0.1.0, historical inventory-observations 0.1.0, host-values 0.2.0, operation evidence and explicit observation-run 0.1.0.
 
@@ -45,4 +47,4 @@ two columns. Unhealthy findings are prominent; unknown/not-configured/cleanup
 uncertainty stay distinct and never imply success. Reports keep the complete
 sanitized payload. Rendering does not rerun probes or modify retention policy/data.
 
-*Last modified: 2026-10-24 23:07:17*
+*Last modified: 2026-10-25 06:40:11*

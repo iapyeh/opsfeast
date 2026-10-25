@@ -386,6 +386,117 @@ def execute(context):
         self.assertEqual(consumers.events(self.root), [])
         self.assertTrue((self.root / 'vault/HOSTS.md').exists())
 
+    def batch_candidate(self, code=None):
+        import yaml
+        directory = self.candidate(events=['retention.run.updated'], code=code or """import json
+def execute_batch(context):
+    path = context.root / 'batches.json'
+    batches = json.loads(path.read_text()) if path.exists() else []
+    batches.append([event['event_id'] for event in context.events])
+    path.write_text(json.dumps(batches))
+    assert context.retention.query()['kind'] == 'opsfeast-retention'
+    return {'status': 'success', 'batch_size': len(context.events)}
+""")
+        descriptor = directory / 'consumer.yaml'
+        data = yaml.safe_load(descriptor.read_text()); data['delivery'] = 'batch'
+        descriptor.write_text(yaml.safe_dump(data))
+        self.configure()
+        return directory
+
+    def queue_run(self):
+        import observation_runs as runs
+        identity = runs.start(self.root, [{'host_id': 'node'}], 'synthetic/check')
+        runs.record_result(self.root, identity, 'node', {'status': 'skipped', 'reason_code': 'recipe_disabled'})
+        runs.finish(self.root, identity)
+        return identity
+
+    def test_batch_delivery_runs_once_but_acknowledges_every_event(self):
+        self.enable(); self.batch_candidate(); self.queue_run()
+        result = consumers.dispatch(self.root, 'counter')
+        self.assertEqual(len(result['consumers']), 3)
+        self.assertTrue(all(r['status'] == 'success' and r['attempts'] == 1 for r in result['consumers']))
+        batches = json.loads((self.root / 'batches.json').read_text())
+        self.assertEqual(batches, [[event['event_id'] for _, event in consumers.events(self.root)]])
+        self.assertEqual(consumers.dispatch(self.root, 'counter')['consumers'], [])
+
+    def test_batch_failure_and_exception_retry_all_events_without_secret_text(self):
+        self.enable()
+        directory = self.batch_candidate("def execute_batch(context):\n    raise ValueError('synthetic-secret')\n")
+        self.queue_run()
+        result = consumers.dispatch(self.root, 'counter')
+        self.assertEqual(result['status'], 'failed')
+        self.assertEqual(len(result['consumers']), 3)
+        self.assertNotIn('synthetic-secret', json.dumps(result))
+        (directory / 'main.py').write_text("def execute_batch(context):\n    return {'status':'failed'}\n")
+        self.assertEqual(consumers.dispatch(self.root, 'counter')['status'], 'failed')
+        (directory / 'main.py').write_text("def execute_batch(context):\n    return {'status':'success'}\n")
+        result = consumers.dispatch(self.root, 'counter')
+        self.assertTrue(all(r['status'] == 'success' and r['attempts'] == 3 for r in result['consumers']))
+
+    def test_interrupted_batch_leaves_all_running_then_retries(self):
+        self.enable()
+        directory = self.batch_candidate("def execute_batch(context):\n    raise KeyboardInterrupt()\n")
+        self.queue_run()
+        with self.assertRaises(KeyboardInterrupt): consumers.dispatch(self.root, 'counter')
+        rows = consumers.inspect_deliveries(self.root, 'counter')['events']
+        self.assertTrue(all(row['deliveries'][0]['status'] == 'running' for row in rows))
+        (directory / 'main.py').write_text("def execute_batch(context):\n    return {'status':'skipped'}\n")
+        result = consumers.dispatch(self.root, 'counter')
+        self.assertTrue(all(r['status'] == 'skipped' and r['attempts'] == 2 for r in result['consumers']))
+        self.assertEqual(consumers.dispatch(self.root, 'counter')['consumers'], [])
+
+    def test_batch_snapshot_defers_new_events_and_disabled_backlog(self):
+        self.enable(); self.batch_candidate(); self.configure(False); self.queue_run()
+        self.assertEqual(consumers.dispatch(self.root, 'counter')['consumers'], [])
+        self.configure(True)
+        original = consumers.execute_batch
+        def execute(root, item, events):
+            self.queue_run()
+            return original(root, item, events)
+        with patch.object(consumers, 'execute_batch', side_effect=execute):
+            self.assertEqual(len(consumers.dispatch(self.root, 'counter')['consumers']), 3)
+        self.assertEqual(len(consumers.dispatch(self.root, 'counter')['consumers']), 3)
+        self.assertEqual(consumers.dispatch(self.root, 'counter')['consumers'], [])
+
+    def test_invalid_batch_mode_and_missing_entrypoint_are_explicit_failures(self):
+        import yaml
+        self.enable(); directory = self.batch_candidate("def execute(context):\n    return {'status':'success'}\n")
+        self.queue_run()
+        self.assertEqual(consumers.dispatch(self.root, 'counter')['status'], 'failed')
+        descriptor = directory / 'consumer.yaml'; data = yaml.safe_load(descriptor.read_text())
+        data['delivery'] = 'silently-drop'; descriptor.write_text(yaml.safe_dump(data))
+        item = next(i for i in consumers.catalog(self.root)['consumers'] if i['id'] == 'counter')
+        self.assertEqual(item['status'], 'failed')
+
+    def test_public_cli_30_hosts_two_successes_coalesces_vault_and_reports_finalization(self):
+        import host_vault, recipe_runner, observation_runs
+        self.enable()
+        (self.root / 'hosts.yaml').write_text(json.dumps({'hosts': {
+            f'h{i:02}': {'connection': {'local': True}} for i in range(30)}}))
+        def run(root, host, *args, **kwargs):
+            active = int(host[1:]) < 2
+            return {'host_id': host, 'status': 'success' if active else 'skipped',
+                    'reason_code': 'synthetic_success' if active else 'recipe_disabled'}, None
+        output, error = io.StringIO(), io.StringIO()
+        with patch.object(recipe_runner, 'run', side_effect=run), \
+                patch.object(host_vault, 'rebuild', wraps=host_vault.rebuild) as rebuild, \
+                contextlib.redirect_stdout(output), contextlib.redirect_stderr(error):
+            code = main(['recipes', 'run', 'database/mysql/check/replication', '--root', str(self.root),
+                         '--all', '--threads', '2', '--json', '--verbose'])
+        # Existing CLI semantics count skipped recipe targets as non-success.
+        self.assertEqual(code, 1)
+        self.assertEqual(rebuild.call_count, 2)
+        view = json.loads(output.getvalue())
+        run = observation_runs.show(self.root, view['observation_run_id'])
+        self.assertEqual(len(run['targets']), 30)
+        self.assertEqual(sum(t['status'] == 'skipped' for t in run['targets']), 28)
+        deliveries = consumers.inspect_deliveries(self.root, 'vault')['events']
+        self.assertEqual(len(deliveries), 33)
+        self.assertTrue(all(len(r['deliveries']) == 1 and r['deliveries'][0]['status'] == 'success' for r in deliveries))
+        self.assertIn('[finalizing] recording 30 host results', error.getvalue())
+        self.assertIn('[finalizing] publishing retained content', error.getvalue())
+        self.assertIn('[finalizing] finished in ', error.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

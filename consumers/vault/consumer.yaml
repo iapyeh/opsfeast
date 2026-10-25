@@ -2,6 +2,7 @@ schema_version: "0.1.0"
 id: vault
 description: Publish retained observations and operation evidence as owned Vault Markdown.
 entrypoint: main.py
+delivery: batch
 subscriptions:
   - event: retention.observation.created
     selector: {}
@@ -11,4 +12,4 @@ subscriptions:
     selector: {}
   - event: retention.run.updated
     selector: {}
-# Last modified: 2026-10-20 17:51:56
+# Last modified: 2026-10-25 06:40:11

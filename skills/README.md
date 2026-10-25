@@ -17,6 +17,15 @@ For automatic retained-data handlers/converters, read [the consumer contract](..
 
 For saved raw replay, retention author iteration or source-scoped observation deletion, route to [result-data](opsfeast-result-data/SKILL.md) and [replay contracts](../docs/retention-replay.md). Prefer the bundled ingest/delete CLI; do not independently delete SQLite rows or recreate recovery scripts.
 
+For slow completion after per-host completed messages, follow
+[batch finalization](../docs/recipe-execution.md#batch-finalization-progress) and
+[consumer batching](../docs/retention-consumers.md#batch-delivery-for-current-state-publishers).
+Use the recipe/result-data skills below: Vault opts into delivery: batch while
+keeping each event's receipt/retry. Do not remove skipped-host records or bypass
+locks. Replication completion health and compact DB identity use
+[the shared CLI semantics](../docs/cli.md#replication-completion-health), not inferred
+accounts or a generic PASS label.
+
 ## Retention and content routing
 
 Use [result-data](opsfeast-result-data/SKILL.md) and [retention contracts](../docs/retention.md) for independent data discovery/query/storage/replay. Recipe creators use [recipes](opsfeast-recipes/SKILL.md) to define host-values 0.2.0 or registered structured contracts, including inventory-observations and mysql-replication 0.1.0. system/inventory/overview owns its declaration, schema and normalizer; no recipe-ID fallback supplies its semantics. Content authors use the offline report retention reader, [bundled content example](../recipes/feast/report/retention-summary/README.md) and [vault ownership](../docs/host-vault.md). Core programs prefer profile.retention.query/show. Vault is the bundled content application; authoritative data lives under retention/, not vault/. Update and inspect separate retention/content receipts.
@@ -84,4 +93,4 @@ requirements, read [the migration guide](../docs/sshscript-7.md). The supported 
 32 module/type hashes and skill ZIP are pinned together. Operational adapters use
 only current connection parameter names; no real-host verification is implied.
 
-*Last modified: 2026-10-24 22:24:58*
+*Last modified: 2026-10-25 09:14:24*

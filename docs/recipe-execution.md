@@ -146,7 +146,7 @@ Completion no longer requires an OS UID to display any known account. Shared
 console_output.execution_identities(raw)/execution_identity(raw) project supported
 recorded evidence: actual OS actor, MySQL replication instance CURRENT_USER()
 grant account, and final-hop authenticated SSH login. Database identities are
-labeled DB INSTANCE; login fallback is labeled SSH and never described as the
+labeled DB for one instance or DB INSTANCE for multiple instances; login fallback is labeled SSH and never described as the
 OS collector. Multiple instances preserve unknown entries independently. Recipes
 should preserve service-authenticated identity in their reviewed data contract;
 this is not a generic instruction to expose vars, credentials or arbitrary data.
@@ -157,4 +157,22 @@ recipes run. The current service extractor supports mysql-replication only. Addi
 service requires a reviewed identity source and tests. No connection, schema/
 normalizer migration or old-data rewrite is needed for this presentation change.
 
-*Last modified: 2026-10-24 23:19:57*
+Replication completion and observation tables use recorded health findings rather
+than PASS. See [health labels and failure semantics](cli.md#replication-completion-health). Preserve the collection status, exit code and
+retention/content failure evidence; UNKNOWN is not healthy.
+
+## Batch finalization progress
+
+Per-host completed messages precede batch result journaling and content publication;
+they do not mean the CLI has finished. TTY or --verbose runs show [finalizing]
+messages on stderr for recording host results, publishing retained content and
+recording/publishing the command outcome, followed by total finalization seconds.
+--quiet suppresses these messages; JSON stdout remains machine-readable. Each
+skipped result remains in observation history. The Vault batch consumer processes
+many queued events with one rebuild per dispatch, retaining individual receipts.
+Completed collection and command outcome normally require two final dispatches;
+earlier host-level updates and other consumers remain independent. This does not
+change execution/skip/exit-code policy, SQLite lock timeout or file-lock behavior.
+See [consumer batching](retention-consumers.md#batch-delivery-for-current-state-publishers).
+
+*Last modified: 2026-10-25 06:40:11*

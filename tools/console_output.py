@@ -322,7 +322,7 @@ def execution_identity(row):
     logins = [i for i in identities if i.get('role') == 'ssh']
     labels = []
     if any(i.get('username') for i in databases):
-        labels.extend(f"DB {i['instance']}: {i.get('username') or 'unknown'}" for i in databases)
+        labels.extend(f"DB{' ' + i['instance'] if len(databases) > 1 else ''}: {i.get('username') or 'unknown'}" for i in databases)
     if os_actors:
         labels.extend(f"{i['username']} (uid={i['effective_uid']})" for i in os_actors)
     elif logins:
@@ -330,11 +330,41 @@ def execution_identity(row):
     return '; '.join(labels) or 'unknown'
 
 
+def replication_health(row):
+    """Project saved replica findings, never configuration or fresh queries."""
+    labels = {'HEALTHY', 'UNHEALTHY', 'UNKNOWN', 'NOT CONFIGURED', 'ERROR'}
+    if row.get('replication_health') in labels:
+        return row['replication_health']
+    if (row.get('recipe') or {}).get('id') != 'mysql-replication':
+        return None
+    if row.get('status') in ('skipped', 'unsupported'):
+        return None
+    if row.get('status') == 'failed':
+        return 'ERROR'
+    instances = (row.get('data') or {}).get('instances')
+    if not isinstance(instances, list) or not instances:
+        return 'UNKNOWN'
+    errors = {'query_failed', 'probe_failed', 'timeout', 'client_unavailable',
+              'unsupported_server_version'}
+    if any(i.get('reason') in errors for i in instances):
+        return 'ERROR'
+    states = [i.get('health') for i in instances]
+    if 'unhealthy' in states:
+        return 'UNHEALTHY'
+    if any(i.get('cleanup') != 'confirmed' for i in instances):
+        return 'UNKNOWN'
+    if all(s == 'not_configured' for s in states):
+        return 'NOT CONFIGURED'
+    if row.get('status') == 'success' and all(s == 'healthy' for s in states):
+        return 'HEALTHY'
+    return 'UNKNOWN'
+
+
 def execution_result(row):
     """Shared completion/history outcome; keep collection and receipt failures distinct."""
     access = row.get('access') or {}
     state = row.get('status', 'unknown')
-    outcome = status(row)
+    outcome = replication_health(row) or status(row)
     if state != 'success':
         reason = row.get('reason_code') or row.get('error')
         if reason:
