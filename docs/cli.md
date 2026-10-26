@@ -157,7 +157,7 @@ Run examples from the repository checkout. `python` means the interpreter select
 | Operation | Controller requirements |
 | --- | --- |
 | Profiles, init, attach, detach, use, check, dump, inspect-recipe, recipes metadata/results/packages/jobs and offline reports | Python 3.11+ and PyYAML; no SSHScript Session |
-| Standalone test-connection | Python 3.11+, PyYAML and the pinned SSHScript 7.0.0 source contract (same guard as Core/runner) |
+| Standalone test-connection | Python 3.11+, PyYAML and the published SSHScript 7.0.0 with reviewed package identity (same guard as Core/runner) |
 | Host-init, test-host, test-su, test-sudo, test-connection --host-init, opsfeast.py recipes run | Python 3.11+, PyYAML and matching SSHScript import/distribution **7.0.0** |
 
 Both environment-check scopes require PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth); the full check additionally requires SSHScript 7.0.0:
@@ -899,4 +899,16 @@ python -B tools/opsfeast.py services dispatch --profile main --json
 
 Actions are inspect, list, show, update, history, deliveries and dispatch. All accept mutually exclusive --profile NAME / --root PATH and --json; stdout is always JSON. List optionally filters --kind notification|todo, --host and --status. Show/update require object ID and --kind. Update also requires --revision INT, --actor TEXT and --changes JSON mapping; invalid fields or stale revisions fail. History accepts an optional object ID. Dispatch alone accepts --retry-unknown, which may duplicate uncertain delivery. Exit 0 means the operation succeeded, 1 operation/configuration/adapter failure, 2 parser misuse. No host connection or todo execution occurs. Inspect never sends or imports local adapters; dispatch invokes configured presentation and delivery code. See [lifecycle/fields/storage](services.md), [provider setup](service-adapters.md) and [backup recipe workflow](backup-file-checks.md).
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable recipe, observation and retention space
+
+Use `opsfeast.py transfer --help` and [the complete command examples](portability.md). Actions: list/show/export, import-plan/import, archive-plan/archive/resume/receipts, recipe-plan/recipe-install, recipe-rollback-plan/recipe-rollback, import-recovery-plan/import-recover and rebuild. All accept mutually exclusive --profile/--root and --json; output is always JSON. List/export/archive-plan support repeated --kind observation|retention, --id, --host, exact --recipe and mutually exclusive --older-than/--before. Show and recovery/resume take a positional unit/receipt ID. Data import uses --package and --mode merge|replace. Recipe installation uses --package, --path and --resolution conflict|replace|skip. Mutations require --plan except resume, which verifies its durable receipt/package. Archive uses the frozen plan and --output, with selection flags reserved for archive-plan.
+
+Exit 0 means the local operation completed, 1 validation/storage/conflict/recovery failure, 2 argument misuse. Import can commit data while reporting a separate failed content_update; inspect both. No remote connection, provider sending, automatic dependency installation or consumer activation occurs. Archive is a destructive local removal after verified external storage; preview protections/capacity and keep its receipt. Recipe bundle is now 0.2.0 with safe executable modes; old 0.1.0 bundles are rejected.
+
+
+## Recipe-owned assessments and account settings
+
+`recipes run` keeps fixed machine status/exit behavior; `PASS` means execution success. Optional assessment labels and severity appear in completion and saved observation views, with platform failures taking precedence. Configure whole-recipe login/su/sudo under exact-reference `recipes.<reference>.execution`; account settings are not CLI vars or new flags. See [results and accounts](recipe-results-and-accounts.md) for supported contracts, settings, saved evidence and examples.
+
+*Last modified: 2026-10-26 12:14:33*

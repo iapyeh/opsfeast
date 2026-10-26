@@ -660,6 +660,9 @@ class Validator:
                 raise ConfigError('recipes must be a reference mapping or selection list')
             self.effective_recipes[host] = resolved(self.default_recipes,
                 [self.groups.get(group, {}).get('recipes', {}) for group in groups], local_options)
+            from opsfeast.recipe_execution import normalize as execution_policy
+            for options in self.effective_recipes[host].values():
+                execution_policy(options.get('execution'))
             fallback = self.icon_default('host', groups)
             self.host_user_icons[host] = self.icon_default('user', groups)
             host_config['icon'] = validate_icon(host_config.get('icon', fallback), f'{path}: {host}.icon')
@@ -819,6 +822,10 @@ class Validator:
             directory = scope.path(info['pattern'], info['origin'])
             metadata = mapping(read_yaml(scope.inside(directory / 'recipe.yaml')), 'recipe.yaml')
             from recipe_inputs import validate_value
+            from opsfeast.recipe_execution import normalize as execution_policy
+            execution = execution_policy(options.get('execution'), partial=True)
+            if (execution['via'] != 'login' or execution['user'] is not None) and metadata.get('runner', {}).get('contract') != 'python-recipe':
+                raise ConfigError('configured su/sudo execution requires a python-recipe entrypoint')
             definitions = metadata.get('inputs', {}).get('variables', {})
             for name, value in options.get('vars', {}).items():
                 if name not in definitions:
@@ -864,8 +871,6 @@ class Validator:
                 if 'id' in data:
                     recipe_id = string(data['id'], str(directory / 'recipe.yaml') + ': id')
                     qualified = (info['name'], recipe_id)
-                    if qualified in ids and ids[qualified] != directory:
-                        raise ConfigError(f'{where}: duplicate recipe ID {recipe_id} in source {info["name"]}')
                     ids[qualified] = directory
                 selected.append(directory)
                 entries.append(dict(info, directory=directory, host_vars=selector.get('vars', {})))
@@ -1401,6 +1406,9 @@ def main(argv=None):
     if argv[:1] == ['consumers']:
         from retention_consumers import main as consumer_main
         return consumer_main(argv[1:])
+    if argv[:1] == ['transfer']:
+        from transfer_cli import main as transfer_main
+        return transfer_main(argv[1:])
     if argv[:1] == ['services']:
         from services_cli import main as services_main
         return services_main(argv[1:])
@@ -1425,6 +1433,7 @@ def main(argv=None):
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
     commands.add_parser('consumers', help='discover retention consumers, inspect deliveries and dispatch pending events')
+    commands.add_parser('transfer', help='portable recipe/data packages, reviewed import and recoverable space-reclaiming archive')
     commands.add_parser('services', help='inspect notification/todo services, manage objects and dispatch adapters')
     commands.add_parser('vault', help='rebuild/inspect bundled vault content and group indexes; use vault --help')
     profiles_parser = commands.add_parser('profiles', help='list all registered profiles',

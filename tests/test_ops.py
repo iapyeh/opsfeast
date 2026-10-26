@@ -565,8 +565,7 @@ class OpsTests(unittest.TestCase):
         for name in ('a', 'b'):
             self.write(f'recipes/{name}/recipe.yaml', 'id: same')
         self.write('hosts.yaml', 'hosts: {a: {connection: {hostname: a}, recipes: [{directory: ./recipes}]}}')
-        with self.assertRaisesRegex(ops.ConfigError, 'duplicate recipe ID'):
-            self.check()
+        self.assertEqual(len(self.check().selected['a']), 2)
 
     def test_recipe_symlink_escape_and_glob_escape(self):
         outside = Path(self.temp.name) / 'outside'

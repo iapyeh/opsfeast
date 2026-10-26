@@ -89,13 +89,26 @@ def validate_artifacts(directory, declarations):
 
 
 def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
-    directory = Path(item['directory'])
+    from opsfeast.recipe_install import execution_snapshot
+    from opsfeast import read_yaml
+    with execution_snapshot(root, Path(item['directory'])) as directory:
+        if read_yaml(directory/'recipe.yaml')!=item['descriptor']:
+            raise ConfigError('report recipe changed after selection')
+        return _run_report(root,item,inputs,values,assignments,timeout,code_directory=directory)
+
+
+def _run_report(root, item, inputs, values=None, assignments=(), timeout=30, *, code_directory=None):
+    directory = code_directory or Path(item['directory'])
     config = configuration(root)
     info = config.recipe_location(item['reference'], config.root / 'hosts.yaml', cli=True)
     if not info['enabled']:
         raise ConfigError('report source is disabled')
     metadata = item['descriptor']
-    validate(directory, metadata)
+    from opsfeast.recipe_execution import normalize as execution_policy
+    policy = execution_policy(config.default_recipes.get(item['reference'], {}).get('execution'))
+    if policy['via'] != 'login' or policy['user'] is not None:
+        raise ConfigError('offline reports do not support target-account execution')
+    validate(directory, metadata, identity_directory=Path(item['directory']))
     effective = prepare_vars(metadata, info['vars'], {}, cli_variables(metadata, values, assignments))
     documents, sources = [], []
     for path in inputs:
@@ -130,7 +143,7 @@ def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
         stage = 'execution'
         result = selected['execute'](context=ReportContext(effective, documents, artifacts, reader), timeout=timeout)
         stage = 'result_validation'
-        if not isinstance(result, dict) or set(result) != {'status', 'reason_code', 'message', 'data', 'artifacts'}:
+        if not isinstance(result, dict) or not {'status', 'reason_code', 'message', 'data', 'artifacts'} <= set(result) or set(result) - {'status', 'reason_code', 'message', 'data', 'artifacts', 'assessment'}:
             raise ConfigError('report result requires common result fields plus artifacts')
         declared = validate_artifacts(artifacts, result['artifacts'])
         validated = validate_result({key: value for key, value in result.items() if key != 'artifacts'})
@@ -183,6 +196,14 @@ def result_short_ids(root):
 
 def collection_user(raw):
     """Return only a supported, observed collection actor; never guess from login."""
+    if isinstance(raw, dict) and raw.get('execution_identity'):
+        from opsfeast.recipe_execution import validate_evidence
+        try:
+            evidence = validate_evidence(raw['execution_identity'])
+            if evidence['verified']:
+                return evidence['actual']['username']
+        except ConfigError:
+            return None
     if not isinstance(raw, dict) or not isinstance(raw.get('recipe'), dict) or raw['recipe'].get('id') != 'inventory-system':
         return None
     access = raw.get('access')
@@ -222,6 +243,7 @@ def results(root, recipe=None, host=None, status=None, *, kind=None):
             raw = json_object(path)
             if kind is not None:
                 check_result_kind(path,raw,kind)
+            validate_saved_metadata(raw)
             meta = raw.get('recipe', {})
             if not isinstance(meta, dict) or raw.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
                 raise ConfigError('unrecognized result envelope')
@@ -229,7 +251,9 @@ def results(root, recipe=None, host=None, status=None, *, kind=None):
                    'observation_run_id': raw.get('observation_run_id'),
                    'recipe_id': meta.get('id'), 'recipe_version': meta.get('version'),
                    'recipe_reference': meta.get('reference'), 'recipe_source': meta.get('source_name'),
-                   'host_id': raw.get('host_id'), 'status': raw['status'], 'reason_code': raw.get('reason_code'),
+                   'host_id': raw.get('host_id'), 'status': raw['status'],
+                   **({'assessment':raw['assessment']} if 'assessment' in raw else {}),
+                   **({'execution_identity':raw['execution_identity']} if 'execution_identity' in raw else {}), 'reason_code': raw.get('reason_code'),
                    'started_at': raw.get('started_at'), 'completed_at': raw.get('completed_at', raw.get('finished_at')),
                    'identity_quality': raw.get('identity', {}).get('quality') if isinstance(raw.get('identity'), dict) else None,
                    'collection_user': collection_user(raw),
@@ -284,6 +308,7 @@ def show_result(root, identifier, *, kind=None):
         check_result_kind(path,document,kind)
     if not isinstance(document.get('recipe'), dict) or document.get('status') not in ('success', 'partial', 'failed', 'skipped', 'unsupported'):
         raise ConfigError('unrecognized result envelope')
+    validate_saved_metadata(document)
     return document
 
 
@@ -300,3 +325,12 @@ def show_artifact(root, identifier, name):
     if checked['sha256'] != info.get('sha256') or checked['size_bytes'] != info.get('size_bytes'):
         raise ConfigError('artifact content changed after generation')
     return {**checked, 'relative_path': checked['path'], 'path': str((path.parent / 'artifacts' / name).resolve())}
+
+
+def validate_saved_metadata(document):
+    if 'assessment' in document:
+        from opsfeast.recipe_assessment import validate
+        validate(document['assessment'])
+    if 'execution_identity' in document:
+        from opsfeast.recipe_execution import validate_evidence
+        validate_evidence(document['execution_identity'])

@@ -114,7 +114,7 @@ class SSHScriptUpdateTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(TypeError):
                 Session.resolve_connection('example.invalid', ssh_config=False, **{name: 'synthetic'})
 
-    def test_dependency_surfaces_bind_the_same_public_source(self):
+    def test_dependency_surfaces_bind_the_same_published_release(self):
         import tomllib
         from packaging.requirements import Requirement
         import build_backend
@@ -127,8 +127,11 @@ class SSHScriptUpdateTests(unittest.TestCase):
                         if line.startswith('Requires-Dist: ')]
         parsed = [Requirement(value) for value in requirements]
         selected = next(value for value in parsed if value.name == 'sshscript')
-        self.assertEqual(selected.url, Requirement(requirement).url)
-        self.assertIn(sshscript_runtime.SOURCE_COMMIT, selected.url)
+        self.assertIsNone(selected.url)
+        self.assertEqual(str(selected.specifier), '==7.0.0')
+        self.assertEqual(sshscript_runtime.CONTRACT['release_tag'], 'v7.0.0')
+        self.assertEqual(sshscript_runtime.CONTRACT['wheel_sha256'],
+                         '43e8d010065aca3aa137de308e0d4ea31a2792f313e7e728f29317c834fda278')
 
     def test_native_borrowed_console_state_job_and_session_reuse(self):
         import time

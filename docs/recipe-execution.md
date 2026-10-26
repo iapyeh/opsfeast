@@ -85,7 +85,7 @@ The timeout controls connection stages and is supplied as the per-command budget
 
 ## Results, failure states and storage
 
-execute returns exactly four fields:
+execute returns four required fields and may add `assessment` (label/severity/summary) as described in [results and accounts](recipe-results-and-accounts.md):
 
 | Field | Contract |
 | --- | --- |
@@ -181,4 +181,14 @@ Python-recipe code can use scoped `recipe.services`; retention consumers use the
 
 Consumer finalization also attempts service projection/delivery dispatch and returns its own content_update.services receipt. Keep collection status, cleanup, retention, consumer and provider outcomes distinct. Direct service lifecycle writes do not automatically publish. Read [shared services and authorization](services.md) before enabling outbound routes; neither a todo nor dispatch executes the scheduled operational work.
 
-*Last modified: 2026-10-25 14:08:03*
+
+## Pinned portable recipe execution
+
+General Python operations and offline reports now execute from complete temporary source snapshots created under the installation lock. The report preserves the original installed reference and records the actual pinned code/descriptor evidence; updates cannot mix files within that execution. New user domains can return final data under mode: portable with an embedded schema; replay/import performs data-only validation, never candidate normalization. Read [portable contracts](portable-contracts.md) and [installation/recovery/controller limits](portability.md). Native inventory jobs retain their existing bundled collection route.
+
+
+## Recipe assessments and selected accounts
+
+Python-recipe runners support inherited `execution: {via: login|su|sudo, user: ...}` before calling the body; default is verified login. Optional recipe-owned `assessment` provides label/severity/summary independently of fixed status and exit codes. Read [results and accounts](recipe-results-and-accounts.md) for configuration, exact stdin/job semantics, failure precedence and evidence limits.
+
+*Last modified: 2026-10-26 11:54:14*

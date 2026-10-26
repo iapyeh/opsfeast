@@ -4,7 +4,7 @@ After release updates, reread [raw replay, snapshots and deletion protection](re
 
 For namespace-enabled Feasts, first read [retention data/content contracts](retention.md), host-values 0.2.0, recipe-owned inventory-observations 0.1.0, and data-only snapshot 0.2.0 with structured normalizer/schema digests, then read [host-vault contracts](host-vault.md), including the linked record, scalar values, operation-event and future package schemas, after every release update. Logical identity and retention layout supersede legacy inventory identity rules at the management layer.
 
-Git 隨附 `skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為 7.0.0 source contract，固定來源提交見下方。初次使用可離線閱讀，不必重新下載。
+Git 隨附 `skills/sshscript/` 完整公開文件快照。`SOURCE.json` 記錄下載 URL、保存時間、文件契約與原始 ZIP 的 SHA-256；目前快照為正式 7.0.0 release 的相符文件契約，固定來源提交見下方。初次使用可離線閱讀，不必重新下載。
 
 公開入口：https://iapyeh.github.io/sshscript/v3a/ai-agents/
 
@@ -20,8 +20,8 @@ Users can paste the [short README prompt](../README.md#update-sshscript-and-lear
 
 1. **Identify the installation.** Read AGENTS.md, optional AGENTS.local.md and skills/README.md. Identify the trusted tool checkout, selected execution interpreter and actual imported module path/version plus distribution version. Read requirements.txt, pyproject.toml and the runner/diagnostic/environment-check requirements. Do not assume shell python or pip belongs to this Feast. Record existing skill SOURCE.json and inspect tracked/local edits and relevant agent-installed copies before replacement. Resolve actual source/loader conflicts with the user; preserve their edits.
 2. **Check official releases and matching knowledge.** Query the official [PyPI package metadata](https://pypi.org/pypi/sshscript/json) for the latest stable version and its Python/dependency requirements. Review the [public changelog](https://github.com/iapyeh/sshscript/blob/release/CHANGELOG.md), then run `python -B tools/skill_bundle.py check --json` using the selected interpreter. Use `download NEW_DIRECTORY --json` to stage a complete candidate when needed. Read its SKILL.md, Agent Guide, versioning/migration guide and relevant API sections. Record source URLs, artifact version/digest and bundle contract/digest. A source announcement does not prove PyPI publication; a failed fetch is not "no update". Bundle differences may be packaging or local edits rather than a new version. If the official bundle documents a different version, obtain matching official documents or report the gap; do not mix contracts or guess APIs.
-3. **Select a supported version.** The target must satisfy the trusted OpsFeast checkout's exact dependency, runtime and skill contracts, and the selected Python. This development checkout requires SSHScript **7.0.0 at source commit 7a3b43594eca50cf1600d4f8a1dc67cb266df19e** for execution. It is an unreleased source contract; do not substitute a same-version PyPI artifact or the latest website bundle. Never bypass version guards, edit dependency pins or install an unsupported major release as a user-side update workaround. If the newest release is unsupported, report its version and the needed OpsFeast support/update. The README prompt permits updating to the latest supported stable version available in that checkout; if already there, keep it and report the newer unsupported release. Updating OpsFeast itself follows its separately authorized [release-update workflow](../README.md#update-opsfeast-and-refresh-your-agents-skills). Review private/custom recipes for removed APIs; report required user changes without rewriting them under package-update authorization.
-4. **Apply within the requested scope.** Preserve a complete backup of the current skill outside the replacement directory, including SOURCE.json and local edits. For a supported published release, obtain its exact wheel and hash. For this explicitly authorized unreleased snapshot, use the matching skill's source-snapshot workflow and the source requirement in requirements.txt; build/install the exact source and record the artifact hash. Do not use pip install sshscript==7.0.0 as a substitute for source provenance. Review dependency changes first; do not upgrade unrelated packages, global Python, other virtual environments or agent-wide copies by assumption. Replace skills/sshscript/ as one reviewed complete bundle with SOURCE.json, preserving its upstream bytes rather than rewriting references. Preserve unrelated checkout changes and management data. Existing unmodified agent-installed copies may be refreshed only when included in the user's scope and supported by their platform; repository replacement alone does not reload a running agent. A blocked replacement must be reported, not hidden by partial-file copying.
+3. **Select a supported version.** This checkout requires the published `sshscript==7.0.0` release, with reviewed package/type bytes and complete skill identity recorded in [release support](sshscript-7.md). Verify official release/PyPI availability, exact artifact digest, Python requirements and existing dependencies. Do not bypass guards or install another version merely because it is newer. Report unsupported releases and needed product support. Review private/custom recipes without silently rewriting them.
+4. **Apply within the requested scope.** Back up the current package/provenance and complete skill, including local edits. Install the verified release wheel in the selected environment; same-version source installations may require force-reinstall with no dependency upgrades. Preserve upstream skill bytes and replace the entire matching bundle plus SOURCE.json. If the website bundle differs, obtain/generate the complete bundle from the exact official release source and review it; never mix references. Existing unmodified agent-local copies can be refreshed within the authorized scope, with their backups preserved. Do not alter unrelated environments or profiles. A blocked/partial update must be reported explicitly.
 5. **Learn and verify.** Explicitly reread the applied SKILL.md, Agent Guide, versioning guide and task-relevant API chapters, including newly introduced and removed interfaces. Run `SELECTED_PYTHON -B tools/check_environment.py --json`, applicable public tests, skill frontmatter/completeness checks and the Agent Guide's credential-free local quickstart. Verify import/distribution/CLI versions and check cleanup. Use an isolated temporary directory/profile for local recipe checks; never use private host settings just to validate an update. Report checks that failed or could not run and whether the applied environment remains usable. A package-only update does not require rereading all OpsFeast object schemas; an accompanying OpsFeast release update still does.
 6. **Report the outcome.** Give before/after interpreter, module and package versions, complete skill location/contract/digest, compatibility implications, what the agent actually learned and verification limits. Report package application and skill application separately, including unchanged, failed or blocked states; do not call a partial update complete. Retain the backup location for recovery. These prompts do not authorize Git commit/push, remote connections, privilege tests, recipe execution on managed hosts or recurring schedules.
 
@@ -114,28 +114,23 @@ Checking the SSHScript public bundle, Ops skills and recipes are different scope
 
 When updating to a release containing recipe policy/observation batches, include [recipe reference settings and gates](recipe-sources.md), [observation runs](observation-runs.md) and [observation-run.schema.json](../schemas/observation-run.schema.json) in the current-contract reread, alongside the host/retention/consumer contracts above. Learn the new exact-reference enabled opt-in before bulk execution and use runs()/run() for run IDs; do not silently infer batch membership or apply current thresholds to historical snapshots. Reading is guidance, not an enforced receipt/permission mechanism.
 
-## Current pinned 7.0.0 development contract
+## Current 7.0.0 release contract
 
-This checkout now supports the reviewed public source commit
-`7a3b43594eca50cf1600d4f8a1dc67cb266df19e`, not arbitrary 7.0.0 builds.
-[Source provenance and migration](sshscript-7.md) explain the exact requirement,
-32 package/type file hashes, matching skill ZIP and compatibility limits. The
-source announcement and version label do not establish PyPI/GitHub publication.
-The maintained website ZIP can still describe a different release: check/stage it
-as a candidate only, never replace the pinned snapshot automatically. The 6.1.0
-release hashes above remain historical evidence, not current installation inputs.
-
-Full readiness, Core, runner and standalone test-connection require the supported
-version and matching source bytes before Session creation. An old/newer/mismatched
-version or same-version drift fails; no installation, fallback or migration is
-performed by the guard. Base init/metadata/offline capabilities remain independent
-of SSHScript execution. See schemas/sshscript-runtime.json for the data-only source
-manifest. A future source change requires reviewed code, dependency, complete skill,
-manifest and validation updates together, under the user's authorization.
+Use the published `sshscript==7.0.0` requirement and [reviewed release identity](sshscript-7.md). The release wheel's 32 package/type files and complete eight-file skill payload match the prior development snapshot. SOURCE.json now records the exact official release commit/tag and provenance. Upstream documentation wording is preserved even where it still says source contract; release/PyPI metadata separately verifies publication. Full readiness, Core, runner and standalone test-connection retain strict version/file checks. A version label alone does not establish identity; no automatic installation, fallback or migration occurs. Older 6.1.0 hashes above are historical.
 
 
 ## Service and backup schema reading
 
 After a release containing these capabilities, include [services](services.md), [adapter/configuration interfaces](service-adapters.md), [service object schema](../schemas/service-object.schema.json), [service configuration schema](../schemas/services.schema.json) and [backup-files-check schema/workflow](backup-file-checks.md) in the required schema reread. Existing recipe/Core/result-data skills link to these sources; direct reading needs no separate installation. Preserve the public SSHScript snapshot: these OpsFeast contracts do not change its upstream skill. Inspect selected-profile provider availability without sending, and distinguish historical replay from eligible live effects.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable unit schema reread
+
+For a release with portability changes, reread [portability](portability.md), [portable contracts](portable-contracts.md), [unit](../schemas/portable-data-unit.schema.json), [data package](../schemas/data-package.schema.json), [portable retention](../schemas/portable-retention.schema.json) and updated snapshot/envelope schemas. Recipe bundle is 0.2.0; imported observations/retention are distinct 0.1.0 units. Update recipe/result-data/Core skill knowledge together. No installed agent skill is silently replaced, and the upstream SSHScript snapshot is unaffected.
+
+
+## Assessment/account schema reading
+
+After an update providing these services, include [recipe assessments/accounts](recipe-results-and-accounts.md) and its linked assessment, execution-policy and evidence schemas in the mandatory data-contract reread. Existing SSHScript snapshot provenance remains unchanged; this is an OpsFeast service, not a new SSHScript release.
+
+*Last modified: 2026-10-26 12:14:33*

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recipe execution identity evidence 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "requested",
+    "login",
+    "actual",
+    "verified",
+    "restoration_verified"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0"
+    },
+    "requested": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "enum": [
+            "login",
+            "su",
+            "sudo"
+          ]
+        },
+        "user": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*\\$?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "via",
+        "user"
+      ]
+    },
+    "login": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "username",
+            "effective_uid"
+          ],
+          "properties": {
+            "username": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*\\$?$"
+            },
+            "effective_uid": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "actual": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "username",
+            "effective_uid"
+          ],
+          "properties": {
+            "username": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*\\$?$"
+            },
+            "effective_uid": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "restoration_verified": {
+      "type": "boolean"
+    },
+    "error_type": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$comment": "Last modified: 2026-10-26 11:34:47"
+}

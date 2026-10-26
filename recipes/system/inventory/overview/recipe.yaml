@@ -26,7 +26,7 @@ platforms:
   - macos
 compatibility:
   sshscript: ==7.0.0
-  note: Pinned 7.0.0 source 7a3b43594eca50cf1600d4f8a1dc67cb266df19e; version and source files checked before connection.
+  note: Published sshscript==7.0.0, release source a1c76d016419484b6ffb930bf2b16f30bae61208; version and package files checked before connection.
 dependencies:
   controller:
   - Python >=3.11

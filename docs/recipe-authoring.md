@@ -8,7 +8,7 @@ Develop retention against saved raw with [retention ingest and explicit read-onl
 
 ## Host-centered retention and state pages
 
-Recipe creators define and produce retention; they do not embed vault presentation in it. Declare [host-values 0.2.0](retention.md#recipe-owned-data-declarations) for safe scalar fields with explicit units and meaningful dataset/field descriptions. Declare access_mode accurately; runner snapshots contain data declarations only. system/inventory/overview 0.3.2 owns its [inventory-observations declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract); all inventory descriptors must declare access_mode and retention, independently of raw output. New structured contracts need reviewed registry support, not arbitrary candidate-code loading. Keep credentials out of both field values and descriptions.
+Recipe creators define and produce retention; they do not embed vault presentation in it. Declare [host-values 0.2.0](retention.md#recipe-owned-data-declarations) for safe scalar fields with explicit units and meaningful dataset/field descriptions. Declare access_mode accurately; runner snapshots contain data declarations only. system/inventory/overview 0.3.2 owns its [inventory-observations declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract); all inventory descriptors must declare access_mode and retention, independently of raw output. New user-defined structured contracts use mode: portable and a saved data_schema without registry edits; reviewed execution owns domain checks, and replay/import never load candidate code. Keep credentials out of both field values and descriptions.
 
 Content authors use `context.retention.query/show` in offline python-report programs to combine multiple recipe/host/time selections. The [bundled example](../recipes/feast/report/retention-summary/README.md) writes Markdown and HTML, preserving full evidence and source times. Vault uses the same public data interface; `markdown_template` is removed from recipe retention. Update public tests, schemas, discovery metadata, capability catalogs and relevant skills with usable contract changes.
 
@@ -132,7 +132,7 @@ Follow the [agent workflow](../skills/opsfeast-recipes/references/exploration-to
 
 ## Current SSHScript source contract
 
-New recipes use [the pinned 7.0.0 source contract](sshscript-7.md) through their
+New recipes use [the published 7.0.0 release contract](sshscript-7.md) through their
 supplied Recipe/Session. Review custom Python connection code for removed aliases,
 keyword-only arguments, key ownership and source identity before authorized use.
 The MySQL replication recipe uses argv, stdin and command_timeout/structured
@@ -147,4 +147,14 @@ Read [service API 0.1.0](services.md) and [adapter configuration/interfaces](ser
 
 For dated backup directories, prefer [opsfeast.backup_check](backup-file-checks.md) and its profile-local descriptor/wrapper/schema over a new scanner. The shared policy consumer interprets retained findings and the platform renders/delivers objects. The guide defines exact vars, saved contract, failure behavior, extension points and tested versus declared platforms. No service configuration, todo or recipe installation grants deletion or external sending authorization by itself.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Author recipes for independent transfer
+
+Prefer [portable retention declarations](portable-contracts.md) for user-defined structured data. Produce and domain-validate final data inside reviewed execution code; save schema, units, null/partial semantics, source times and policy explicitly. Do not require the receiver to modify OpsFeast's normalizer registry. Include complete code/schema/assets, dependency/version requirements, README/license, synthetic tests and optional consumer source in an explicit bundle 0.2.0 allowlist. The sender's host bindings, data and provider secrets remain separate. Use [installation conflict plans and rollback](portability.md#recipe-packages-and-path-conflicts), and exact references when versions coexist at different paths. For backup checks, portable_files(identity) supplies this complete source tree.
+
+
+## Reuse assessment and account services
+
+Return optional `assessment: {label, severity, summary}` to interpret findings while retaining fixed execution status. Operator-selected account policy is applied before `execute(recipe)`; continue using the supplied scoped Recipe/session. Do not add per-recipe root/account vars or switching loops. See [contracts, examples and transport limits](recipe-results-and-accounts.md).
+
+*Last modified: 2026-10-26 12:14:33*

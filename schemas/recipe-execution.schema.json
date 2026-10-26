@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recipe execution policy 0.1.0; partial objects inherit by leaf, effective su/sudo requires user",
+  "$comment": "Last modified: 2026-10-26 11:34:47",
+  "anyOf": [
+    {
+      "type": "null"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "enum": [
+            "login",
+            "su",
+            "sudo"
+          ]
+        },
+        "user": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*\\$?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

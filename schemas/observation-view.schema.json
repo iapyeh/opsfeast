@@ -264,6 +264,12 @@
             "NOT CONFIGURED",
             "ERROR"
           ]
+        },
+        "assessment": {
+          "$ref": "recipe-assessment.schema.json"
+        },
+        "execution_identity": {
+          "$ref": "recipe-execution-evidence.schema.json"
         }
       }
     }
@@ -367,5 +373,5 @@
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-25 06:27:41"
+  "$comment": "Last modified: 2026-10-26 11:54:14"
 }

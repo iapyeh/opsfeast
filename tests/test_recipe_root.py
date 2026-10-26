@@ -44,7 +44,9 @@ class RootActor(fixture.Actor):
 
     def start(self, command, **kwargs):
         self.owner.calls.append(('start', self.name, command, kwargs))
-        return SimpleNamespace(command=command, actor=self.name)
+        job = fixture.Job(self, command, kwargs)
+        job.actor_name = self.name
+        return job
 
     @contextmanager
     def enter(self, command, **kwargs):
@@ -77,10 +79,10 @@ class RootActor(fixture.Actor):
             if (self.name, mode, target) in self.owner.restore_failures:
                 self.uid = 5555
 
-    def sudo(self, *, username, password, enter_timeout):
+    def sudo(self, *, username, password, enter_timeout, get_pty=True):
         return self.switch('sudo', username, password)
 
-    def su(self, user, *, password, enter_timeout):
+    def su(self, user, *, password, enter_timeout, get_pty=True):
         return self.switch('su', user, password)
 
     @contextmanager
@@ -194,7 +196,7 @@ class RecipeRootTests(unittest.TestCase):
         with scope as recipe:
             with recipe.root() as root:
                 job = root.start('printf ready', timeout=7)
-                self.assertEqual(job.actor, 'root')
+                self.assertEqual(job.actor_name, 'root')
                 root.start('printf default')
                 self.assertEqual(actor.calls[-1][-1]['timeout'], recipe.timeout)
                 with root.enter('synthetic-program', prompt='ready') as program:

@@ -46,4 +46,9 @@ Checkout modules: `retention_replay.snapshot(metadata, directory)`, `validate_sn
 
 Schemas: [raw replay context](../schemas/raw-retention-context.schema.json), [data-only snapshot](../schemas/retention-snapshot.schema.json), [provenance](../schemas/retention-provenance.schema.json), [record envelope](../schemas/host-vault-record.schema.json), [scalar fields](../schemas/host-values.schema.json), [operation events](../schemas/operation-event.schema.json). Synthetic tests verify replay and failure/protection behavior; they establish no native SSH/su/sudo or remote termination guarantees.
 
-_Last modified: 2026-10-19 14:55:28_
+
+## Transfer and archival are separate from replay
+
+Use [transfer](portability.md) to copy/import saved observations and already structured retention, or to archive selected old data and reclaim space. Replay is raw → retention interpretation; import of retention is saved data → validated storage and does not rerun a normalizer. Mode: portable snapshots embed their data schema, so replay has no candidate code dependency. Archive can move raw alone while retaining data, or data alone while retaining raw; preserve independent links/provenance and small audit receipts. Existing protected-operation rules still apply. Never emulate archive with retention delete-observation followed by raw unlink, because that lacks verified-package recovery and compaction.
+
+*Last modified: 2026-10-25 14:56:19*

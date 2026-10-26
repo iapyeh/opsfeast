@@ -1,6 +1,6 @@
 # Share and package recipes
 
-For inventory-observations 0.1.0 clones, include the recipe-local retention.schema.json in the explicit bundle allowlist and declare the required registered OpsFeast contract. A bundled normalizer file is not an automatically activated plugin: replay uses the installed reviewed contract implementation. New structured contracts need product registration, tests and guidance. Private retention/ and vault/ data are excluded from recipe bundles alongside observations/records/reports. See [creator-owned inventory retention](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract).
+For inventory-observations 0.1.0 clones, include the recipe-local retention.schema.json in the explicit bundle allowlist and declare the required registered OpsFeast contract. A bundled normalizer file is not an automatically activated plugin: replay uses the installed reviewed contract implementation. New user-defined structured contracts can instead use mode: portable with a saved data_schema; see the portable-contracts guide. Private retention/ and vault/ data are excluded from recipe bundles alongside observations/records/reports. See [creator-owned inventory retention](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract).
 
 
 Share one recipe or several from a repository or archive. Complete the [authoring deliverables](recipe-authoring.md) first. This guide includes human/agent review procedures. The [recipes pack/unpack commands](recipe-experience.md#portable-recipe-bundles) implement explicit-file single-recipe bundles and verified candidates; publication, signing, dependency review and installation remain separate workflows.
@@ -38,7 +38,7 @@ Include reusable queries, transformations, interpretation rules, templates/asset
 
 Exclude private source bindings, real operational datasets, credentials and generated reports by default. Sharing a report recipe does not authorize sharing the data it processes, publishing a dashboard or transmitting reports; those are separate explicit selections and scopes. Recipients review the complete candidate, choose local configuration and verify it using synthetic data before authorized operational use. Read [acquisition](recipe-acquisition.md) for the full process.
 
-Git repositories or clean archives can carry these reviewed files today through the manual sharing workflow. Catalog discovery, offline python-report 0.1.0 execution/artifacts, pack/unpack bundles and saved reruns are implemented through [recipes commands](recipe-experience.md). Automatic installation/publication and a live OpsBuffet exchange remain unimplemented. Incompatible standalone scripts keep their reviewed invocation; registration does not adapt them to an implemented contract.
+Git repositories or clean archives can carry these reviewed files today through the manual sharing workflow. Catalog discovery, offline python-report 0.1.0 execution/artifacts, pack/unpack bundles and saved reruns are implemented through [recipes commands](recipe-experience.md). Automatic downloading/publication and a live OpsBuffet exchange remain unimplemented; reviewed local installation uses transfer recipe-plan/recipe-install. Incompatible standalone scripts keep their reviewed invocation; registration does not adapt them to an implemented contract.
 
 ## ZIP or tar.gz
 
@@ -64,4 +64,11 @@ Recipe READMEs link to the [recipes skill](../skills/opsfeast-recipes/SKILL.md),
 
 Report the actual package inventory, versions, digests, signature status, verification limits and delivery path. Report URLs/commits only after publication has actually occurred. Updates use new versions and describe changes; checking for updates and applying them are separate authorization scopes.
 
-_Last modified: 2026-10-19 15:24:36_
+
+## Complete portable installation and separate data packages
+
+The current recipe bundle is **0.2.0**, preserving executable modes as well as content digests; old 0.1.0 bundles are rejected. [Installation plans](portability.md#recipe-packages-and-path-conflicts) inspect dependencies, compare old/new descriptors and require explicit replace/skip/new path for conflicts. Optional consumers/assets can be shipped, but no activation or dependency installation is automatic. Repeated IDs can coexist at different paths and require exact references.
+
+[Observations and retention datasets](portability.md) have their own independent 0.1.0 packages. Do not place private operational data into a code bundle. New [recipe-carried contracts](portable-contracts.md) do not require platform registry registration; the reviewed recipe owns domain logic and the saved schema supports source-independent data import. Imported historical data does not execute code or generate current notifications.
+
+*Last modified: 2026-10-25 14:58:28*

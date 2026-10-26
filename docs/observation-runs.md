@@ -96,4 +96,10 @@ no identity evidence. This is a read-only projection of the original batch's exa
 raw result; it does not alter run membership, stored collection evidence, status,
 raw files or retention. See [the CLI identity policy](cli.md#role-aware-collection-identity).
 
-*Last modified: 2026-10-24 22:54:22*
+
+
+## Saved recipe assessments and account evidence
+
+New generic recipe targets may also save optional `assessment` and `execution_identity`. These come from the same completed attempt and survive removal/archival of its raw file; they are never reconstructed from another run. Compact observation views expose the same optional fields. Fixed operation and storage failures retain precedence over recipe-owned labels. See [results and accounts](recipe-results-and-accounts.md) for schemas, interpretation and verification.
+
+*Last modified: 2026-10-26 11:54:14*

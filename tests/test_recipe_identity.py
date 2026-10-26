@@ -63,8 +63,8 @@ class IdentityTests(unittest.TestCase):
             root=Path(directory)
             metadata={'id':'fixture','version':'1','runner':{'entrypoint':'main.py'},'author':{'name':'Fixture','contacts':['Unknown']},'license':'Unknown'}
             payloads={'recipe.yaml':json.dumps(metadata).encode(),'README.md':b'fixture','main.py':b'VERSION="1"\n'}
-            manifest={'format':'opsfeast-recipe-bundle','version':'0.1.0','recipe_id':'fixture','recipe_version':'1','author':metadata['author'],'license':'Unknown',
-                      'files':{name:{'size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()} for name,data in payloads.items()}}
+            manifest={'format':'opsfeast-recipe-bundle','version':'0.2.0','recipe_id':'fixture','recipe_version':'1','author':metadata['author'],'license':'Unknown',
+                      'files':{name:{'size_bytes':len(data),'mode':0o644,'sha256':hashlib.sha256(data).hexdigest()} for name,data in payloads.items()}}
             def save(path):
                 with zipfile.ZipFile(path,'w') as z:
                     z.writestr('MANIFEST.json',json.dumps(manifest))

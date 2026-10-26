@@ -602,7 +602,7 @@ hosts:
 
 ## Recipe sources and selectors
 
-Use the [canonical recipe policy guide](recipe-sources.md) for exact references, registrations, three-layer inheritance, typed inputs and runtime gates. `recipes` maps filesystem references directly to `enabled`/`vars`; descriptor IDs are not rewritten into configuration keys.
+Use the [canonical recipe policy guide](recipe-sources.md) for exact references, registrations, three-layer inheritance, typed inputs and runtime gates. `recipes` maps filesystem references directly to `enabled`/`vars`/`execution`; descriptor IDs are not rewritten into configuration keys.
 
 ```yaml
 default:
@@ -792,4 +792,9 @@ to "true" for local proxies only; empty inherited NO_COLOR is removed. Explicit
 settings win. Core/UI snapshots mask all values. See [configuration, safe diagnostics,
 lifecycle and limits](process-environment.md) before changing process settings.
 
-*Last modified: 2026-10-24 22:26:13*
+
+## Whole-recipe account policy
+
+Recipe mappings also accept `execution` at default/group/host levels. Effective login is the default; su/sudo needs an explicit target. Existing host users own credentials/policies. Configuration checks do not connect. Read [the account policy guide](recipe-results-and-accounts.md#configure-a-whole-recipe-execution-account) for inheritance, resets, supported runners and failure behavior.
+
+*Last modified: 2026-10-26 11:49:24*

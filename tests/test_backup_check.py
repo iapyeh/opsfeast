@@ -64,6 +64,8 @@ class BackupTests(unittest.TestCase):
             self.touch(name)
         result = self.execute()
         self.assertEqual(result['status'], 'success')
+        self.assertEqual(result['assessment']['label'], 'BACKUPS OK · CLEANUP NEEDED')
+        self.assertEqual(result['assessment']['severity'], 'warning')
         group = result['data']['backups'][0]
         self.assertEqual(group['health'], 'healthy')
         self.assertEqual([x['path'] for x in group['expired_files']], ['2026-07-26.sql'])

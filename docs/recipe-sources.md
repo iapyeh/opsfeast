@@ -33,7 +33,7 @@ A bare reference always means bundle, even when a profile/external copy has the 
 
 ## Three configuration layers
 
-Use `recipes` as a direct mapping from reference to `enabled` and/or `vars` at `default`, group and host levels:
+Use `recipes` as a direct mapping from reference to `enabled`, `vars` and/or `execution` at `default`, group and host levels:
 
 ```yaml
 default:
@@ -128,4 +128,14 @@ python -B tools/opsfeast.py recipes run system/inventory/overview --all --exclud
 
 Synthetic tests cover reference normalization, duplicate detection, deep inheritance/list replacement, input isolation, explicit/bulk gates, disabled jumps and durable batch outcomes. These tests do not establish third-party safety, native SSH or privilege-policy behavior. Existing bulk workflows must explicitly enable recipes; existing nested object overrides now merge rather than discard inherited siblings. Update private settings deliberately, preserve retained data, and use [migration notes](migration.md#recipe-policy-and-observation-runs) before rerunning authorized work.
 
-_Last modified: 2026-10-20 23:06:43_
+
+## Same-ID recipes at different paths
+
+Different paths may contain the same recipe ID, including coexistence of versions/forks within a source. Catalog inspection warns rather than disabling those recipes. Short-ID selection is ambiguous; use the exact source/path reference for settings, execution, saved jobs and subscriptions. Same-path changes still require the reviewed [installation conflict workflow](portability.md). Installing at another path never rewrites private bindings or historical references.
+
+
+## Execution-account inheritance
+
+Exact-reference mappings accept `execution` alongside enabled/vars. Leaves merge through the same default/group/host rules; `execution: null` resets inherited account policy. Effective default is login, and su/sudo requires an explicit user. Nondefault policies require python-recipe. Read [results and accounts](recipe-results-and-accounts.md); invocation vars do not override account policy.
+
+*Last modified: 2026-10-26 11:49:24*

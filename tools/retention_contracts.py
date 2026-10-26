@@ -89,6 +89,14 @@ def validate_declaration(metadata, directory=None):
         return None
     if not isinstance(declaration, dict):
         raise ConfigError('invalid retention declaration')
+    if declaration.get('mode') == 'portable':
+        if set(declaration) != {'contract','version','description','mode','data_schema'}:
+            raise ConfigError('portable retention requires contract/version/description/mode/data_schema')
+        if any(not isinstance(declaration[k],str) or not declaration[k].strip() for k in ('contract','version','description')):
+            raise ConfigError('portable retention requires named semantics and version')
+        from opsfeast.data_contract import definition
+        definition(declaration['data_schema'])
+        return declaration
     contract = (declaration.get('contract'), declaration.get('version'))
     if not all(isinstance(v, str) for v in contract):
         raise ConfigError('retention contract/version must be strings')

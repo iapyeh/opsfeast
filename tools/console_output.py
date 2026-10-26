@@ -293,7 +293,9 @@ def execution_identities(row):
         # Only the read-only batch projection supplies this precomputed evidence.
         return row['identity_evidence']
     identities = []
-    actor = (row.get('access') or {}).get('actual_identity') or {}
+    execution = row.get('execution_identity') or {}
+    actor = execution.get('actual') if execution.get('verified') is True else None
+    actor = actor or (row.get('access') or {}).get('actual_identity') or {}
     username, uid = actor.get('username'), actor.get('effective_uid')
     if name(username) and type(uid) is int and uid >= 0:
         identities.append({'role': 'os', 'username': username, 'effective_uid': uid})
@@ -364,7 +366,14 @@ def execution_result(row):
     """Shared completion/history outcome; keep collection and receipt failures distinct."""
     access = row.get('access') or {}
     state = row.get('status', 'unknown')
-    outcome = replication_health(row) or status(row)
+    assessment = row.get('assessment')
+    if assessment is not None:
+        from opsfeast.recipe_assessment import text as assessment_text
+        outcome = assessment_text(assessment)
+        if state != 'success':
+            outcome = status(row) + ' · ' + outcome
+    else:
+        outcome = replication_health(row) or status(row)
     if state != 'success':
         reason = row.get('reason_code') or row.get('error')
         if reason:

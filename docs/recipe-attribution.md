@@ -46,7 +46,7 @@ This is product policy, not cryptographic publisher authentication or a sandbox.
 
 ## Packaging and external import
 
-`recipes pack` includes author/license in MANIFEST.json and checks them against the descriptor actually being packed. A descriptor changed since catalog inspection fails before output creation. MIT recipes must explicitly include LICENSE in their file allowlist; filenames do not verify a license's correctness or ownership. Other declared/custom licenses need their own reviewed license files and obligations. The bundle format remains 0.1.0 with additive author metadata.
+`recipes pack` includes author/license in MANIFEST.json and checks them against the descriptor actually being packed. A descriptor changed since catalog inspection fails before output creation. MIT recipes must explicitly include LICENSE in their file allowlist; filenames do not verify a license's correctness or ownership. Other declared/custom licenses need their own reviewed license files and obligations. The current recipe bundle format is 0.2.0 with author metadata and safe executable modes; 0.1.0 bundles are rejected.
 
 `recipes unpack` is the current external review-candidate import surface, not an installer. It validates the descriptor with the duplicate-key-rejecting loader and rejects reserved Bundle author/contacts before creating the destination. A manifest author/license mismatch is also rejected. File inventory/digest/path/size checks still apply; rejection leaves no candidate directory. Unknown attribution is accepted as explicit missing evidence, not verified authorship or permission. Complete review before registration/execution/publication.
 
@@ -54,4 +54,4 @@ Packing a built-in recipe for inspection is possible, but its Bundle archive can
 
 Public tests cover keyboard/mouse editing, cancellation, atomic save failures, invalid-file/symlink preservation, defaults and copy preservation, case/whitespace reservation, author/contact types, all built-in identities/LICENSE files, required MIT packaging, rejected Bundle archives before extraction, ordinary candidate imports and manifest spoofing. Synthetic user-copy fixtures explicitly use synthetic authors rather than pretending to be Bundle. No real download, third-party execution or publication is performed.
 
-_Last modified: 2026-10-20 11:24:28_
+*Last modified: 2026-10-25 14:58:28*

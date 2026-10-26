@@ -93,8 +93,14 @@ def validate(run):
         target_fields = {'host_id','icon','jobs','requested_jobs','status','record_id','retention_status',
                          'reason_code','attention','baseline_record_ids','recipe_reference'}
         for target in targets:
-            if set(target) != target_fields or not isinstance(target['host_id'],str) or not target['host_id']:
+            if not target_fields <= set(target) or set(target) - target_fields - {'assessment', 'execution_identity'} or not isinstance(target['host_id'],str) or not target['host_id']:
                 raise ConfigError('invalid observation run target')
+            if 'assessment' in target:
+                from opsfeast.recipe_assessment import validate as validate_assessment
+                validate_assessment(target['assessment'])
+            if 'execution_identity' in target:
+                from opsfeast.recipe_execution import validate_evidence
+                validate_evidence(target['execution_identity'])
             if target['status'] not in ('pending','success','partial','failed','skipped') or not isinstance(target['jobs'],list) or not isinstance(target['requested_jobs'],list):
                 raise ConfigError('invalid run target state')
             if run['status']!='running' and target['status']=='pending':
@@ -210,6 +216,9 @@ def record_result(root, run_id, host, result):
         status=result.get('status','failed')
         target['status']=status if status in ('success','partial','failed','skipped') else 'failed'
         target['reason_code']=result.get('reason_code') or result.get('error_type')
+        for field in ('assessment','execution_identity'):
+            if field in result:
+                target[field]=copy.deepcopy(result[field])
         receipt=result.get('retention',{})
         target['retention_status']=receipt.get('status','not_stored')
         target['record_id']=receipt.get('record_id')

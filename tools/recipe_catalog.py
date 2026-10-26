@@ -76,8 +76,7 @@ def catalog(root=None, query=None, kind=None):
         for duplicates in ids.values():
             if len(duplicates) > 1:
                 for item in duplicates:
-                    item.update(status='failed', runnable=False)
-                    item['errors'].append('duplicate recipe ID within source')
+                    item.setdefault('warnings', []).append('duplicate recipe ID; select by exact source/path')
         if any(item['status'] == 'failed' for item in result['recipes'] if item['source'] == source['name']):
             result['status'] = 'failed'
     # Same IDs across different sources remain distinct; resolving by ID must be explicit.

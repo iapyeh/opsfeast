@@ -32,18 +32,21 @@ def merge(base, update):
 
 def normalize(value):
     if not isinstance(value, dict):
-        raise ConfigError('recipes must map exact references to enabled/vars')
+        raise ConfigError('recipes must map exact references to enabled/vars/execution')
     result = {}
     for key, options in value.items():
         key = reference(key)
         if key in result:
             raise ConfigError('duplicate normalized recipe reference')
-        if not isinstance(options, dict) or set(options) - {'enabled', 'vars'}:
-            raise ConfigError('recipe settings permit enabled and vars only')
+        if not isinstance(options, dict) or set(options) - {'enabled', 'vars', 'execution'}:
+            raise ConfigError('recipe settings permit enabled, vars and execution only')
         if 'enabled' in options and type(options['enabled']) is not bool:
             raise ConfigError('recipe enabled must be Boolean')
         if 'vars' in options and not isinstance(options['vars'], dict):
             raise ConfigError('recipe vars must be a mapping')
+        if 'execution' in options:
+            from opsfeast.recipe_execution import normalize as execution_policy
+            execution_policy(options['execution'], partial=True)
         plain_values(options.get('vars', {}), 'recipe vars')
         result[key] = copy.deepcopy(options)
     return result

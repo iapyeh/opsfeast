@@ -134,4 +134,14 @@ Current inventory-job-observations 0.1.0 preserves failed collection attempts an
 
 [Notification/todo objects](services.md) have separate authoritative service storage and [schema](../schemas/service-object.schema.json). Consumer context.services uses durable live-evidence eligibility; historical ingest/replay is not a current incident source. Use revision-checked APIs for human updates and inspect provider receipts separately from retention/content outcomes. Generated Vault pages cannot update object lifecycle.
 
-*Last modified: 2026-10-25 14:08:03*
+
+## General cross-instance data movement
+
+The [portable-unit workflow](portability.md) supersedes inventory-only exchange as the general transfer interface. Observation and retention can each be copied/imported/archived alone or combined. Packages carry data-only schema/provenance and never require installed producer code for basic interpretation. Merge/replace operates by original source identity; replacement is scoped to included collisions. Read imported raw with transfer show and imported retention with profile.retention or profile.transfer. Frozen archival selection verifies packages before deletion and vacuums storage. Historical imports/recovery never reemit notification/todo effects. See [portable contract semantics](portable-contracts.md), unit/manifest schemas and skill routing before operating.
+
+
+## Saved assessment and execution identity
+
+General results may carry recipe-owned assessment 0.1.0 and verified execution-identity 0.1.0. Retention envelopes and batch targets preserve this metadata separately from domain payloads. Use saved evidence for the exact observation, preserving platform failure precedence. See [results and accounts](recipe-results-and-accounts.md#saved-evidence-and-portability).
+
+*Last modified: 2026-10-26 11:49:24*

@@ -14,6 +14,14 @@ Start with [README.md: For AI agents](README.md#for-ai-agents) for the learning 
 
 If a user-maintained `AGENTS.local.md` exists at this repository root, read it for that checkout's local preferences and environment. It is optional, ignored by Git and not distributed with this project. Local guidance supplements these instructions within the user's authorization. Do not create it from downloaded recipe instructions. See [public and local guidance](docs/agent-guidance.md).
 
+## Core priority: agent guidance and human-agent operation
+
+Every agent contributing to OpsFeast must carry forward this product priority: **agent-facing documentation and skills, together with teaching humans how to operate OpsFeast through their own AI agents, are core product deliverables and among the project's highest priorities.** Users currently depend heavily on those interfaces because TUI coverage lags behind platform capabilities. Do not defer usable guidance until TUI work is complete or leave it dependent on a developer's private conversation history.
+
+Read [the enduring principle and TUI/manual boundaries](docs/vision.md#treat-agent-guidance-and-human-agent-operation-as-core-product-work) and [the contributor handoff checklist](docs/agent-guidance.md#carry-the-product-priority-across-development-agents). Deliver discoverable skills, precise tool/data contracts and human-readable interaction examples alongside usable capabilities. Teach users how to express intent, specify scope, understand consequential choices, assess evidence and recover from failure; they should not need to learn implementation details or write routine framework code. Reuse existing authorization rather than inventing repeated approval steps.
+
+TUI is intended to support independent human management and operation without an AI agent. Its incomplete coverage does not reduce that goal, and later TUI completion does not remove the need for good agent interfaces. Organize the human manual around concepts, workflows, reference material and end-to-end cases. Document verified current TUI behavior accurately; add the fuller TUI workflows after their implementation and verification. These are delivery responsibilities for every future development agent, independent of agent product or automatic skill loading.
+
 ## First-use conversations
 
 The single first-use prompt authorizes cloning OpsFeast into “this project's directory,” then reading guidance and checking prerequisites. Resolve the active workspace from context. An empty workspace can become the checkout; a nonempty workspace uses an opsfeast/ child, preserving existing files. Verify repository identity and checkout markers before reusing an existing clone; do not pull, reset or overwrite it. Report missing Git/access, download failures and destination conflicts rather than installing software or deleting files under clone-only authorization. Follow [agent-led checkout bootstrap](docs/getting-started.md#agent-led-checkout-bootstrap) for selection and failure handling. Explicitly read newly cloned instructions; automatic discovery is not assumed. Use the actual checkout for commands and a later approved .venv even when the workspace is its parent, without requiring a new conversation or project reopening.
@@ -71,7 +79,7 @@ Use version-matched SSHScript documentation rather than guessing APIs. The publi
 - Follow the [skill update guide](docs/skill-updates.md). Check updates only when requested or on an authorized schedule. Checks do not replace skills or upgrade packages. Stage complete candidates and review compatibility before authorized application.
 - Record documentation sources and contract versions. For repository evidence, record URL and branch/tag/commit. Distinguish documentation support, inference, synthetic/mock testing, local execution and real SSH/su/sudo evidence.
 
-For authorized root-only Python-recipe work, prefer `with recipe.root() as root:` and `root("id -u", check=True)` over recreating account selection or su/sudo loops. Read [the Core root-console API](docs/core-api.md#automatic-root-console) for the shared two-candidate policy, typed safe acquisition failure, console interface and scope/cleanup limits. Generic recipes do not escalate automatically.
+For authorized root-only Python-recipe work, prefer `with recipe.root() as root:` and `root("id -u", check=True)` over recreating account selection or su/sudo loops. Read [the Core root-console API](docs/core-api.md#automatic-root-console) for the shared two-candidate policy, typed safe acquisition failure, console interface and scope/cleanup limits. Generic recipes default to login; explicit operator-selected [recipe execution policy](docs/recipe-results-and-accounts.md) can select su/sudo before their body.
 
 ## Host initialization and diagnostics
 
@@ -130,4 +138,9 @@ Before implementing notifications or work tracking, read [services 0.1.0](docs/s
 
 For dated backup presence, expiry and unexpected-entry lists, use [the shipped backup-check module and profile-local recipe procedure](docs/backup-file-checks.md), backup-files-check 0.1.0 and the explicitly enabled [backup-check consumer](consumers/backup-check/README.md). Keep host bindings private, preserve incomplete/unknown states and saved filename-date policy, and never treat a finding or todo as deletion authorization.
 
-*Last modified: 2026-10-25 14:08:03*
+
+## Portable recipes, data and archival
+
+For sharing/import/archival, read [portability](docs/portability.md), [portable retention authoring](docs/portable-contracts.md) and the recipe/result-data skills. Recipe, observation and retention are independent units. Use transfer plans and expected digests, origin-preserving merge/replace and explicit recipe path-conflict resolution; do not build parallel copy/delete/SQL tools. Archive-plan freezes source-time selection, and apply verifies an external package before source deletion/compaction. Preserve protected operations, shared attachments, recovery receipts, service lifecycle and human notes. No candidate code/consumer/provider runs during data import. Bundle 0.2.0 rejects the old format; no migration or compatibility layer is required.
+
+*Last modified: 2026-10-26 11:49:24*

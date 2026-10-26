@@ -156,4 +156,16 @@ application-wide font setting is required.
 
 The independent default service presentation owns `Services/SUMMARY.md`, `Services/notification/<uuid>.md` and `Services/todo/<uuid>.md` using owner `service-vault`. It shows lifecycle/revision/source/history and links to an existing owned historical report when available; missing evidence stays explicit. It does not create or mutate conditions. Edit objects through [service API/CLI](services.md), then dispatch projections. Keep human files outside generated ownership, or use todo note fields. Multiple [service presentation adapters](service-adapters.md) may coexist with independent receipts; disabling vault.auto_refresh suppresses automatic builtin service presentation too.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Imported and archived evidence
+
+Data import uses the protected portable-data owner for Transfers/SUMMARY.md and per-unit previews (12000 characters). Full payload/schema/attachments remain available through transfer show/API without producer code. This view does not duplicate all local raw evidence or convert a transferred batch snapshot into a new local execution. transfer rebuild repairs these pages without consumer/provider execution.
+
+Archive repairs bundled owned views and compacts active storage while preserving human files and independent notification/todo objects. Service evidence can identify the verified archive package/receipt when its active report was removed. Custom adapters/consumers are not invoked by archive; their stale copies require separately authorized maintenance. Read [complete storage/recovery rules](portability.md).
+
+
+## Assessment and execution-account evidence
+
+Vault presents saved recipe assessment and execution-account evidence separately from fixed operation status. A custom label cannot suppress platform failures, and historical content does not recompute live findings. See [results and accounts](recipe-results-and-accounts.md).
+
+*Last modified: 2026-10-26 11:49:24*

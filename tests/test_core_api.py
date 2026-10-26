@@ -10,12 +10,39 @@ import sys
 import tempfile
 import threading
 from types import SimpleNamespace
+from dataclasses import dataclass
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from opsfeast import Instance, Recipe, CoreError, ConfigError
 from opsfeast.identity import initialize_identity, read_identity, NIL_UUID, DEVELOPMENT_UUID, FILENAME
+
+
+@dataclass(frozen=True)
+class Result:
+    stdout: str
+    stderr: str
+    exitcode: int
+    command: object = ()
+    stdout_truncated: bool = False
+    stderr_truncated: bool = False
+    termination_status: str = 'confirmed'
+    stop_reason: str = 'completed'
+
+
+class Job:
+    def __init__(self, actor, command, options):
+        self.actor = actor
+        self.command, self.options = command, options
+        self.result = None
+
+    def __enter__(self): return self
+    def __exit__(self, *args): return False
+    def wait(self):
+        self.result = self.actor(self.command, **self.options)
+        return self.result
+    def stop(self): return self.wait()
 
 
 class Actor:
@@ -37,14 +64,14 @@ class Actor:
             output = str({'root': 0, 'operator': 1000, 'app': 1001}.get(argv[2], 2000)) if len(argv) > 2 else str(self.uid)
         else:
             output = self.name
-        return SimpleNamespace(stdout=output + '\n', stderr='', exitcode=0)
+        return Result(stdout=output + '\n', stderr='', exitcode=0, command=tuple(argv))
 
     def __call__(self, command, **kwargs):
         import shlex
         return self.exec_command(shlex.split(command), **kwargs)
 
     @contextmanager
-    def sudo(self, *, username, password, enter_timeout):
+    def sudo(self, *, username, password, enter_timeout, get_pty=True):
         self.owner.transitions.append(('sudo', username, password))
         if self.owner.entry_failure:
             raise PermissionError('synthetic-private-password')
@@ -56,10 +83,13 @@ class Actor:
                 self.uid = 5555
 
     @contextmanager
-    def su(self, user, *, password, enter_timeout):
+    def su(self, user, *, password, enter_timeout, get_pty=True):
         self.owner.transitions.append(('su', user, password))
         child = Actor(user, {'root': 0, 'app': 1001}[user], self.owner)
         yield child
+
+    def start(self, command, **kwargs):
+        return Job(self, command, kwargs)
 
     def close(self, strict=False):
         self.closed += 1

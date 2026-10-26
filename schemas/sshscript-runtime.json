@@ -33,9 +33,11 @@
     "stdio.py": "425ffbc17ee8279bd8ef8b8e9426a8b70a32a97acdb5e61d4a5f9a3387abb153",
     "tokenparser.py": "7461d8dacf13c23cf443eafa9da9e600bf15090c595aa98cea0e0abd3808bb3b"
   },
-  "requirement": "sshscript @ https://github.com/iapyeh/sshscript/archive/7a3b43594eca50cf1600d4f8a1dc67cb266df19e.tar.gz",
+  "release_tag": "v7.0.0",
+  "requirement": "sshscript==7.0.0",
   "skill_bundle_sha256": "943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f",
-  "source_commit": "7a3b43594eca50cf1600d4f8a1dc67cb266df19e",
-  "source_url": "https://github.com/iapyeh/sshscript/tree/7a3b43594eca50cf1600d4f8a1dc67cb266df19e",
-  "version": "7.0.0"
+  "source_commit": "a1c76d016419484b6ffb930bf2b16f30bae61208",
+  "source_url": "https://github.com/iapyeh/sshscript/tree/a1c76d016419484b6ffb930bf2b16f30bae61208",
+  "version": "7.0.0",
+  "wheel_sha256": "43e8d010065aca3aa137de308e0d4ea31a2792f313e7e728f29317c834fda278"
 }

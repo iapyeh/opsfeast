@@ -1,9 +1,11 @@
 {
-  "source_url": "https://github.com/iapyeh/sshscript/tree/7a3b43594eca50cf1600d4f8a1dc67cb266df19e",
-  "source_commit": "7a3b43594eca50cf1600d4f8a1dc67cb266df19e",
-  "generator": "tools/sync_ai_docs.py outputs() from the same source commit",
-  "saved_at_utc": "2026-10-24T12:34:31+00:00",
+  "source_url": "https://github.com/iapyeh/sshscript/tree/a1c76d016419484b6ffb930bf2b16f30bae61208",
+  "source_commit": "a1c76d016419484b6ffb930bf2b16f30bae61208",
+  "release_tag": "v7.0.0",
+  "release_url": "https://github.com/iapyeh/sshscript/releases/tag/v7.0.0",
+  "generator": "tools/sync_ai_docs.py outputs() from the same release source commit; identical to official website ZIP",
+  "saved_at_utc": "2026-10-26T04:12:56.254213+00:00",
   "documentation_contract": "7.0.0",
   "bundle_sha256": "943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f",
-  "update_policy": "Pinned local test snapshot; only update or switch back to release when requested; pin the full source SHA and update package, documents and complete skill together."
+  "update_policy": "Pinned released package and matching complete skill; check/update only when requested or authorized."
 }

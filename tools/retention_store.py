@@ -152,8 +152,14 @@ def database(path, write=False):
 
 def validate_record(record):
     required = {'contract_version', 'record_id', 'kind', 'namespace', 'host_id', 'origin', 'recipe_id', 'recipe_reference', 'observed_at', 'data', 'mappings'}
-    if not isinstance(record, dict) or not required.issubset(record) or set(record) - required - {'retention_provenance', 'retention_definition', 'collection_evidence'} or record['contract_version'] != VERSION:
+    if not isinstance(record, dict) or not required.issubset(record) or set(record) - required - {'retention_provenance', 'retention_definition', 'collection_evidence', 'assessment', 'execution_identity'} or record['contract_version'] != VERSION:
         raise ConfigError('invalid vault record contract')
+    if 'execution_identity' in record:
+        from opsfeast.recipe_execution import validate_evidence
+        validate_evidence(record['execution_identity'])
+    if 'assessment' in record:
+        from opsfeast.recipe_assessment import validate as validate_assessment
+        validate_assessment(record['assessment'])
     if 'collection_evidence' in record:
         from collection_evidence import validate
         validate(record['collection_evidence'])
@@ -195,7 +201,10 @@ def validate_record(record):
         declaration = validate_retention({'retention': record['retention_definition']})
         if declaration is None or record['kind'] != 'observation':
             raise ConfigError('retention_definition requires an observation and a declaration')
-        if declaration['contract'] != 'host-values':
+        if declaration.get('mode') == 'portable':
+            from opsfeast.data_contract import validate
+            validate(record['data'], declaration['data_schema'])
+        elif declaration['contract'] != 'host-values':
             from retention_contracts import validate_payload
             validate_payload((declaration['contract'], declaration['version']), record['data'])
     if record['kind'] == 'operation':
@@ -370,7 +379,7 @@ def retain(root, raw, dry_run=False, *, saved_snapshot=None):
         raise ConfigError('retention snapshot recipe ID mismatch')
     if declaration is None:
         return {'status': 'skipped', 'reason_code': 'no_retention_adapter'}
-    if declaration['contract'] == 'host-values':
+    if declaration['contract'] == 'host-values' or declaration.get('mode') == 'portable':
         return retain_general(root, raw, None, None, saved_snapshot=selected, dry_run=dry_run)
     from retention_replay import provenance, raw_digest, producer_identity
     reject_old_layout(root)
@@ -396,6 +405,10 @@ def retain(root, raw, dry_run=False, *, saved_snapshot=None):
         from collection_evidence import validate
         envelope_record['collection_evidence'] = validate(raw['collection_evidence'])
     envelope_record['retention_definition'] = declaration
+    if 'execution_identity' in raw:
+        envelope_record['execution_identity'] = __import__('opsfeast.recipe_execution', fromlist=['validate_evidence']).validate_evidence(raw['execution_identity'])
+    if 'assessment' in raw:
+        envelope_record['assessment'] = __import__('opsfeast.recipe_assessment', fromlist=['validate']).validate(raw['assessment'])
     envelope_record['retention_provenance'] = provenance(raw, raw_digest(raw), selected)
     envelope_record['origin']['instance_id'] = producer_identity(raw)
     result = save(root, envelope_record, dry_run=dry_run)
@@ -501,6 +514,21 @@ def retain_general(root, report, metadata, directory, *, saved_snapshot=None, dr
         return {'status': 'skipped', 'reason_code': 'no_retention_adapter'}
     if report['status'] not in ('success', 'partial') or report['evidence_kind'] not in ('local', 'ssh'):
         return {'status': 'skipped', 'reason_code': 'result_not_retained'}
+    if declaration.get('mode') == 'portable':
+        # The recipe produces final domain data. Storage/import performs data-only validation.
+        from opsfeast.data_contract import validate
+        validate(report['data'], declaration['data_schema'])
+        identifier = source_identity(report, raw_digest(report))
+        record = envelope(root, 'observation', report['host_id'], selected['recipe_id'], report['completed_at'],
+                          report['data'], identifier, reference=report['recipe'].get('reference'))
+        record['retention_definition'] = declaration
+        if 'execution_identity' in report:
+            record['execution_identity'] = __import__('opsfeast.recipe_execution', fromlist=['validate_evidence']).validate_evidence(report['execution_identity'])
+        if 'assessment' in report:
+            record['assessment'] = __import__('opsfeast.recipe_assessment', fromlist=['validate']).validate(report['assessment'])
+        record['retention_provenance'] = provenance(report, identifier, selected)
+        record['origin']['instance_id'] = producer_identity(report)
+        return save(root, record, dry_run=dry_run)
     if declaration['contract'] != 'host-values':
         return retain(root, report, saved_snapshot=selected, dry_run=dry_run)
     fields = {}
@@ -518,6 +546,10 @@ def retain_general(root, report, metadata, directory, *, saved_snapshot=None, dr
     record = envelope(root, 'observation', report['host_id'], selected['recipe_id'], report['completed_at'], data,
                       identifier, reference=report['recipe'].get('reference'))
     record['retention_definition'] = declaration
+    if 'execution_identity' in report:
+        record['execution_identity'] = __import__('opsfeast.recipe_execution', fromlist=['validate_evidence']).validate_evidence(report['execution_identity'])
+    if 'assessment' in report:
+        record['assessment'] = __import__('opsfeast.recipe_assessment', fromlist=['validate']).validate(report['assessment'])
     record['retention_provenance'] = provenance(report, identifier, selected)
     record['origin']['instance_id'] = producer_identity(report)
     return save(root, record, dry_run=dry_run)
@@ -644,7 +676,8 @@ def query(root, *, hosts=None, recipe=None, since=None, until=None, status=None,
         raise ConfigError('invalid retention kind')
     if isinstance(hosts, str):
         raise ConfigError('hosts must be a sequence of IDs, not a string')
-    selected = [r for r in records(root) if (not hosts or r['host_id'] in hosts)
+    from opsfeast.transfer import retained_views
+    selected = [r for r in [*records(root), *retained_views(root)] if (not hosts or r['host_id'] in hosts)
                 and (recipe is None or r['recipe_reference'] == recipe)
                 and (since is None or r['observed_at'] >= since)
                 and (until is None or r['observed_at'] <= until)
@@ -696,7 +729,7 @@ def describe(metadata, directory=None):
     result = {'declaration': declaration, 'availability': 'declared; execution and retention success must be checked' if declaration else 'not_declared',
             'cli': 'opsfeast.py retention list --recipe SOURCE_QUALIFIED_REFERENCE --profile PROFILE --json',
             'python': 'retention_store.query(profile.root, recipe=SOURCE_QUALIFIED_REFERENCE)'}
-    if declaration and declaration['contract'] != 'host-values':
+    if declaration and declaration['contract'] != 'host-values' and declaration.get('mode') != 'portable':
         from retention_contracts import location, normalizer_digest, schema_digest
         module, schema = location((declaration['contract'], declaration['version']))
         result.update(schema_path=str(Path(directory) / declaration['schema']) if directory else str(schema), schema_sha256=schema_digest(declaration),

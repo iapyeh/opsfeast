@@ -201,4 +201,9 @@ Both event and batch contexts expose `context.services`; read [services 0.1.0](s
 
 The opt-in bundled [backup-check](../consumers/backup-check/README.md) demonstrates condition reconciliation independently from collection and Vault. Consumer dispatch also attempts service dispatch after processing, returning separate `content_update.services` presentation/delivery outcomes; service failure participates in the aggregate failure result without undoing committed retention. This can invoke externally configured delivery adapters, so review destinations and authorization when enabling them. Direct lifecycle mutation is separate from projection refresh. Retry does not reconnect to the source host, and todos never execute work.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable data and optional recipe consumers
+
+Imported observation/retention packages preserve historical context without enqueuing live consumer events or activating providers. Optional consumer source can travel inside a recipe package, but installation into the profile's consumer directory and explicit registration are separate reviewed operations. A portable retention declaration can use an arbitrary named contract/version without product registry edits; consumers subscribe to that declared contract/version. Archive preserves selected event/delivery context in the package and removes corresponding active rows without invoking arbitrary consumers. Bundled views are repaired through data-only paths; custom applications need a separately authorized refresh. See [transfer and recovery](portability.md).
+
+*Last modified: 2026-10-25 14:56:19*

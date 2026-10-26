@@ -10,7 +10,7 @@ import yaml
 from opsfeast import ConfigError, plain_values, UniqueLoader
 from recipe_inputs import parse_json_object
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 MAX_BYTES = 25 * 1024 * 1024
 MAX_FILES = 2000
 PRIVATE_NAMES = {'hosts.yaml', 'feast.yaml', 'my-ops.yaml', 'inventory.yaml', 'inventory-cron-errors.log', 'AGENTS.local.md', 'AGENTS.override.md'}
@@ -77,7 +77,7 @@ def pack(item, files, destination):
     manifest = {'format': 'opsfeast-recipe-bundle', 'version': VERSION,
                 'recipe_id': item['id'], 'recipe_version': item['version'],
                 'source_reference': item['reference'], 'license': identity['license'], 'author': identity['author'],
-                'files': {name: {'sha256': hashlib.sha256(content).hexdigest(), 'size_bytes': len(content)} for name, content in payloads.items()}}
+                'files': {name: {'sha256': hashlib.sha256(content).hexdigest(), 'size_bytes': len(content), 'mode': 0o755 if (directory/name).stat().st_mode & 0o111 else 0o644} for name, content in payloads.items()}}
     destination = destination.expanduser()
     if destination.exists() or destination.is_symlink():
         raise ConfigError('pack destination must not exist')
@@ -88,7 +88,10 @@ def pack(item, files, destination):
         with output, zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr('MANIFEST.json', json.dumps(manifest, ensure_ascii=False, indent=2))
             for name, content in sorted(payloads.items()):
-                archive.writestr('recipe/' + name, content)
+                info = zipfile.ZipInfo('recipe/' + name)
+                info.external_attr = (stat.S_IFREG | manifest['files'][name]['mode']) << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                archive.writestr(info, content)
     except Exception:
         if created and destination.exists(): destination.unlink()
         raise
@@ -130,6 +133,8 @@ def unpack(archive_path, destination):
                 content = archive.read('recipe/' + name)
                 if not isinstance(evidence, dict) or len(content) != evidence.get('size_bytes') or hashlib.sha256(content).hexdigest() != evidence.get('sha256'):
                     raise ConfigError('bundle payload digest/size mismatch')
+                if evidence['mode'] not in (0o644, 0o755):
+                    raise ConfigError('invalid recipe executable mode')
                 payloads[name] = content
             descriptor_consistency(payloads, manifest.get('recipe_id'), manifest.get('recipe_version'))
             from recipe_identity import validate as validate_identity
@@ -148,6 +153,7 @@ def unpack(archive_path, destination):
             path = destination / 'recipe' / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
+            path.chmod(manifest['files'][name]['mode'])
         (destination / 'MANIFEST.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     except Exception:
         shutil.rmtree(destination)

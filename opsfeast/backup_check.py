@@ -214,5 +214,79 @@ def execute(recipe):
     data = {'check_date': instant.astimezone(zone).date().isoformat(), 'actor': actor, 'target_python_version': target_python_version,
             'policy': {'timezone': zone.key, 'retention_days': days, 'age_basis': 'filename_date', 'comparison': 'strictly_greater', 'max_entries': maximum},
             'backups': groups}
-    return {'status': status, 'reason_code': 'checked' if status == 'success' else 'backup_attention',
+    return {'status': status, 'assessment': assessment(data), 'reason_code': 'checked' if status == 'success' else 'backup_attention',
             'message': 'Read-only daily backup-file check; presence only, no integrity or restore verification.', 'data': data}
+
+
+
+def assessment(data):
+    groups = data['backups']
+    if any(g['scan_status'] != 'complete' for g in groups):
+        return {'label': 'CHECK INCOMPLETE', 'severity': 'error',
+                'summary': 'Directory enumeration is incomplete; missing entries cannot be treated as absent.'}
+    if any(g['health'] == 'missing' for g in groups):
+        return {'label': 'BACKUPS MISSING', 'severity': 'error', 'summary': 'Expected daily backup files are missing after the deadline.'}
+    if any(g['health'] == 'pending' for g in groups):
+        return {'label': 'BACKUPS PENDING', 'severity': 'warning', 'summary': 'Daily backup files are not all present; their deadline has not passed.'}
+    expired = sum(len(g['expired_files']) for g in groups)
+    unexpected = sum(len(g['unexpected_entries']) for g in groups)
+    if expired or unexpected:
+        return {'label': 'BACKUPS OK · CLEANUP NEEDED', 'severity': 'warning',
+                'summary': f'Daily files are present; {expired} expired files and {unexpected} unexpected entries require review.'}
+    return {'label': 'BACKUPS OK', 'severity': 'info', 'summary': 'Daily files are present and complete scans found no directory-hygiene findings.'}
+
+
+def portable_files(identity):
+    """Return a complete user-recipe source tree; no profile writes or activation."""
+    import copy
+    from pathlib import Path
+    import yaml
+    from opsfeast import REPOSITORY_ROOT
+    schema = json.loads((REPOSITORY_ROOT / 'schemas/backup-files-check.schema.json').read_text())
+    metadata = descriptor(identity)
+    metadata['retention'] = {'contract':'backup-files-check','version':VERSION,'mode':'portable',
+        'description':metadata['retention']['description'],'data_schema':copy.deepcopy(schema)}
+    metadata['portability'] = {'api':'0.1.0','python':'>=3.11','distributions':{'sshscript':'==7.0.0'},
+                               'features':{'recipe-assessment':'0.1.0', 'recipe-execution':'0.1.0', 'portable-retention':'0.1.0'},
+                               'services':{'notifications':'0.1.0','todos':'0.1.0'}}
+    validator = (REPOSITORY_ROOT/'tools/backup_retention.py').read_text().replace(
+        "(REPOSITORY_ROOT / 'schemas/backup-files-check.schema.json')", "__import__('pathlib').Path(__file__).with_name('backup-files-check.schema.json')")
+    validator = validator.split('\ndef normalize(raw, source):')[0].replace('from observation_store import timestamp, uuid_text', 'from opsfeast.data_contract import timestamp, uuid_text').replace('from collection_evidence import validate as validate_evidence', 'from opsfeast.data_contract import validate_collection_evidence as validate_evidence')
+    # The entrypoint owns normalization; retention never imports a candidate normalizer.
+    wrapper = '''VERSION = '0.1.0'
+from datetime import datetime, timezone
+from pathlib import Path
+import runpy
+
+def execute(recipe):
+    base = Path(__file__).parent
+    result = runpy.run_path(str(base / 'check.py'))['execute'](recipe)
+    report = recipe.report
+    data = result['data']
+    data.update(contract_version=VERSION, source_id=report['producer_instance_id'],
+                observation_id=report['source_observation_id'], recipe_id='daily-backups',
+                recipe_version=VERSION, observed_at=datetime.now(timezone.utc).isoformat(timespec='microseconds'),
+                status=result['status'])
+    runpy.run_path(str(base / 'validate.py'))['validate'](data)
+    return result
+'''
+    readme = '''# Daily backup checks
+
+This portable user recipe includes metadata scanning, domain validation, a saved data schema and an optional consumer. It requires OpsFeast API 0.1.0, Python 3.11+, SSHScript 7.0.0 and target POSIX Python 3.8+. Read the installed docs/backup-file-checks.md for typed inputs and presence-only limits. No files are deleted.
+
+The recipe declares recipe-assessment, recipe-execution and portable-retention 0.1.0 product features. Complete healthy scans return BACKUPS OK; expired or unexpected entries return a warning assessment BACKUPS OK · CLEANUP NEEDED while retaining execution success. Missing, pending and incomplete scans remain partial. Read docs/recipe-results-and-accounts.md for interpretation and operator-configured login/su/sudo scopes; private execution credentials and settings are not packaged.
+
+The package carries consumers/backup-check as an optional companion. After reviewing it, copy that directory to the destination profile's consumers/backup-check and explicitly register source local:consumers/backup-check in feast.yaml. It is not activated by installation. Notification/todo services belong to OpsFeast; no SMTP configuration is included. Actual bindings and credentials belong to the receiver.
+'''
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    readme += '\n*Last modified: ' + datetime.now(ZoneInfo('Asia/Taipei')).strftime('%Y-%m-%d %H:%M:%S') + '*\n'
+    policy = (REPOSITORY_ROOT/'opsfeast/backup_policy.py').read_text()+"\n\ndef execute(context):\n    return consume(context)\n"
+    result = {'recipe.yaml':yaml.safe_dump(metadata,sort_keys=False),'main.py':wrapper,
+              'check.py':Path(__file__).read_text().split('\ndef portable_files(identity):')[0].replace('from collection_evidence import validate as validate_evidence', 'from opsfeast.data_contract import validate_collection_evidence as validate_evidence'),
+              'validate.py':validator,'backup-files-check.schema.json':json.dumps(schema,indent=2),
+              'README.md':readme,'consumers/backup-check/main.py':policy,
+              'consumers/backup-check/consumer.yaml':(REPOSITORY_ROOT/'consumers/backup-check/consumer.yaml').read_text()}
+    if identity['license']=='MIT':
+        result['LICENSE']='MIT License\n\n'+(REPOSITORY_ROOT/'recipes/system/network/check/port/LICENSE').read_text().split('MIT License',1)[-1].lstrip()
+    return {name:value.encode('utf-8') for name,value in result.items()}

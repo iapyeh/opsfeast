@@ -126,8 +126,7 @@ class RecipeSourcesTests(unittest.TestCase):
         self.write()
         self.assertEqual(len(self.config().selected['h']), 3)
         shutil.copytree(self.external / 'system/inventory/overview', self.external / 'system/inventory/duplicate')
-        with self.assertRaisesRegex(ops.ConfigError, 'duplicate recipe ID'):
-            self.config()
+        self.assertEqual(len(self.config().selected['h']), 4)
 
     def test_disabled_source_skips_missing_paths_without_runtime_or_fallback(self):
         self.data['recipe_sources']['community'] = {'path': str(self.base / 'absent'), 'enabled': False}

@@ -131,8 +131,8 @@ def execute(recipe):
             names = archive.namelist()
             metadata = archive.read(next(name for name in names if name.endswith('.dist-info/METADATA'))).decode()
             self.assertIn('Requires-Dist: tabulate[widechars]==0.10.0\n', metadata)
-            self.assertIn('Requires-Dist: sshscript @ https://github.com/iapyeh/sshscript/archive/7a3b43594eca50cf1600d4f8a1dc67cb266df19e.tar.gz ; extra == "execution"', metadata)
-            self.assertIn('sshscript @ https://github.com/iapyeh/sshscript/archive/7a3b43594eca50cf1600d4f8a1dc67cb266df19e.tar.gz', archive.read('_opsfeast_data/requirements.txt').decode())
+            self.assertIn('Requires-Dist: sshscript==7.0.0 ; extra == "execution"', metadata)
+            self.assertIn('sshscript==7.0.0', archive.read('_opsfeast_data/requirements.txt').decode())
             self.assertIn('tabulate[widechars]==0.10.0', archive.read('_opsfeast_data/requirements-init.txt').decode())
             self.assertIn('opsfeast/core.py', names)
             self.assertIn('_opsfeast_data/tools/console_output.py', names)
@@ -162,10 +162,14 @@ def execute(recipe):
             self.assertIn('opsfeast/services.py', names)
             self.assertIn('opsfeast/service_adapters.py', names)
             self.assertIn('opsfeast/backup_check.py', names)
+            for module in ('transfer', 'recipe_install', 'data_contract', 'recipe_assessment', 'recipe_execution'):
+                self.assertIn(f'opsfeast/{module}.py', names)
+            for contract in ('portable-data-unit', 'data-package', 'portable-retention', 'recipe-assessment', 'recipe-execution', 'recipe-execution-evidence'):
+                self.assertIn(f'_opsfeast_data/schemas/{contract}.schema.json', names)
             self.assertIn('_opsfeast_data/tools/backup_retention.py', names)
             self.assertIn('_opsfeast_data/schemas/backup-files-check.schema.json', names)
             self.assertIn('_opsfeast_data/consumers/backup-check/consumer.yaml', names)
-            for guide in ('services', 'service-adapters', 'backup-file-checks'):
+            for guide in ('services', 'service-adapters', 'backup-file-checks', 'portability', 'portable-contracts', 'recipe-results-and-accounts'):
                 self.assertIn(f'_opsfeast_data/docs/{guide}.md', names)
             self.assertIn('_opsfeast_data/consumers/backup-check/README.md', names)
             self.assertIn('_opsfeast_data/schemas/retention-consumer.schema.json', names)

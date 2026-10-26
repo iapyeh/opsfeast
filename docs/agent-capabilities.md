@@ -313,7 +313,7 @@ assumption. Synthetic/local process evidence does not prove real SSH connectivit
 ## SSHScript 7.0 pinned runtime support
 
 Use [the source contract and migration guide](sshscript-7.md) for current operational
-support. Core/runner/test-connection share the exact 7.0.0 source requirement and
+support. Core/runner/test-connection share the published sshscript==7.0.0 requirement and reviewed release identity and
 32-file validation; the version label alone is insufficient. Checkout
 sshscript_runtime.source_identity() returns value-free source evidence without
 network/Session creation; require_source(module) is the internal execution guard.
@@ -377,4 +377,22 @@ and delivery receipts for failures/backlog, without rerunning host operations.
 
 Prefer the complete documented workflows to direct internal SQLite/dispatcher helpers. Read configuration and object schemas before service changes; preserve independent raw/retention/consumer/service/provider outcomes. Canonical guides include errors, source review, extension rules and evidence limits. Public reproducible tests cover these contracts; real SSH backup flow is verified, actual SMTP delivery and native FreeBSD scanning are not.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable units and source-independent contracts
+
+| Task | Reuse | Essential boundary |
+| --- | --- | --- |
+| Define a user's structured dataset | retention mode: portable, embedded data_schema; opsfeast.data_contract | [Dialect/API](portable-contracts.md); recipe performs domain checks, replay/import never execute normalizers |
+| Copy/import observations or retention independently | profile.transfer, opsfeast.transfer.Space, transfer CLI | [Unit/package 0.1.0](portability.md); origin-preserving merge/replace, reviewed plan digest, no historical effects |
+| Free active storage | transfer archive-plan/archive/resume | Fixed source-time cutoff, external verified package, selected deletion/VACUUM, protected evidence and durable receipts |
+| Install/update/coexist/rollback recipes | recipes pack/unpack 0.2.0; opsfeast.recipe_install; transfer recipe-* | Explicit files/dependencies, path conflict plan, exact references for repeated IDs, atomic exchange on macOS/Linux, pinned general-operation/report trees |
+| Build complete backup user recipe | opsfeast.backup_check.portable_files(identity) | Scanner/validator/schema/optional consumer source included; receiver settings and consumer activation remain explicit |
+
+Read [portability](portability.md) for exact invocations, storage, recovery, API signatures, failure/content receipts and verified limits. Imports expose saved data without requiring producer installation. Do not use old inventory-only exchange as the generic data transfer/import mechanism or recreate archival using export plus unchecked deletion.
+
+
+## Recipe assessments and execution account
+
+Reuse the runner/Core recipe-execution 0.1.0 service for login/su/sudo selection and verified cleanup; use optional recipe-assessment 0.1.0 for human finding labels. Supported surfaces are exact-reference execution configuration, `Profile.recipe(..., execution=...)`, `Recipe.execution(policy)` and returned assessment objects. [Results and accounts](recipe-results-and-accounts.md) documents signatures, schemas, failure behavior, portability, transport and tests. These are bundled platform capabilities; arbitrary runner/backend account adapters remain unsupported.
+
+*Last modified: 2026-10-26 12:14:33*

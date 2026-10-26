@@ -357,6 +357,12 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "assessment": {
+            "$ref": "recipe-assessment.schema.json"
+          },
+          "execution_identity": {
+            "$ref": "recipe-execution-evidence.schema.json"
           }
         }
       }
@@ -452,5 +458,5 @@
       }
     }
   },
-  "$comment": "Last modified: 2026-10-21 10:48:35"
+  "$comment": "Last modified: 2026-10-26 11:34:47"
 }

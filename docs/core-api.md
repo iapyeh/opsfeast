@@ -311,4 +311,14 @@ is introduced; use the canonical policy guide for compatibility and verified lim
 
 `profile.services` and scoped `recipe.services` expose the same [service API 0.1.0](services.md): notifications/todos list/show/create/update, condition reconcile, history, deliveries, snapshot, inspect and explicit dispatch. Lifecycle belongs to OpsFeast, with source-owner identity and optimistic revision checks. Consumer contexts expose evidence-restricted services for live effects. Read the canonical [API examples and failure rules](services.md#shared-python-interface) and [adapter configuration](service-adapters.md) before creating objects or dispatching external delivery. Inspection is local/static; dispatch may send configured mail. No todo executor or automatic wakeup is provided.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable profile space
+
+`profile.transfer` exposes [independent data transfer and archival](portability.md#python-api-views-and-verification). It provides query/select/export, import_plan/import_package, archive_plan/archive and receipts; mutations require the reviewed expected_plan digest. `opsfeast.recipe_install` supplies recipe plan/install/rollback APIs. These are local storage/code-installation operations, not host execution. Core retention query/show includes imported saved datasets using source-qualified host and portable record IDs while preserving the original payload separately. Import never normalizes using candidate code or dispatches historical effects. See [recipe-carried definitions](portable-contracts.md) for the structural schema dialect and producer interfaces.
+
+
+## Recipe-wide execution policy
+
+Use `profile.recipe(host_id, execution={"via": "sudo", "user": "root"})` for an explicitly selected standalone account, or `with recipe.execution(policy) as selected:` from a login scope. The runner resolves exact-reference settings automatically. `recipe.su`/`sudo` now default to pipe consoles; explicit interactive `get_pty=True` remains available. Read [results and accounts](recipe-results-and-accounts.md) before choosing policies or interpreting saved evidence; do not recreate credential retries or privilege loops.
+
+*Last modified: 2026-10-26 11:49:24*

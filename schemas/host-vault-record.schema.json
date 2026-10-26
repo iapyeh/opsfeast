@@ -155,6 +155,17 @@
     },
     "collection_evidence": {
       "$ref": "collection-evidence.schema.json"
+    },
+    "transfer_identity": {
+      "type": "string",
+      "pattern": "^retention:[0-9a-f]{64}$",
+      "description": "Read-only imported management projection ID; original envelope stays in portable storage."
+    },
+    "assessment": {
+      "$ref": "recipe-assessment.schema.json"
+    },
+    "execution_identity": {
+      "$ref": "recipe-execution-evidence.schema.json"
     }
   },
   "allOf": [
@@ -174,29 +185,55 @@
         }
       },
       "else": {
-        "properties": {
-          "data": {
-            "anyOf": [
-              {
-                "$ref": "retained-observation.schema.json"
-              },
-              {
-                "$ref": "host-values.schema.json"
-              },
-              {
-                "$ref": "../recipes/system/inventory/overview/job-retention.schema.json"
-              },
-              {
-                "$ref": "../recipes/database/mysql/check/replication/retention.schema.json"
-              },
-              {
-                "$ref": "backup-files-check.schema.json"
+        "if": {
+          "required": [
+            "retention_definition"
+          ],
+          "properties": {
+            "retention_definition": {
+              "required": [
+                "mode"
+              ],
+              "properties": {
+                "mode": {
+                  "const": "portable"
+                }
               }
-            ]
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "data": {
+              "type": "object"
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "retained-observation.schema.json"
+                },
+                {
+                  "$ref": "host-values.schema.json"
+                },
+                {
+                  "$ref": "../recipes/system/inventory/overview/job-retention.schema.json"
+                },
+                {
+                  "$ref": "../recipes/database/mysql/check/replication/retention.schema.json"
+                },
+                {
+                  "$ref": "backup-files-check.schema.json"
+                }
+              ]
+            }
           }
         }
       }
     }
   ],
-  "$comment": "Last modified: 2026-10-25 11:06:25"
+  "$comment": "Last modified: 2026-10-26 11:34:47"
 }

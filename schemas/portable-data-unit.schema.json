@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpsFeast independent observation or retention unit 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "unit_version",
+    "id",
+    "kind",
+    "origin",
+    "recipe_reference",
+    "observed_at",
+    "payload",
+    "schema",
+    "context",
+    "attachments"
+  ],
+  "properties": {
+    "unit_version": {
+      "const": "0.1.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "observation",
+        "retention"
+      ]
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instance_id",
+        "namespace",
+        "host_id",
+        "id",
+        "profile"
+      ],
+      "properties": {
+        "instance_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "host_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "recipe_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "schema": {
+      "type": [
+        "object",
+        "boolean"
+      ]
+    },
+    "context": {
+      "type": "object"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256",
+          "size_bytes",
+          "hex"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hex": {
+            "type": "string",
+            "pattern": "^[0-9a-f]*$"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-10-25 15:08:41"
+}

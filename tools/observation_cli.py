@@ -86,16 +86,23 @@ def query(root, identifier=None, *, statuses=None):
                 warnings.append('Raw result became unavailable for '+target['host_id']+'.')
                 linked=None
         access=raw.get('access') if raw and isinstance(raw.get('access'),dict) else {}
-        actor=access.get('actual_identity') if isinstance(access.get('actual_identity'),dict) else {}
+        saved_execution = raw.get('execution_identity') if raw else target.get('execution_identity')
+        actor = saved_execution.get('actual') if saved_execution and saved_execution.get('verified') else access.get('actual_identity')
+        actor = actor if isinstance(actor,dict) else {}
         identity=({'username':actor['username'],'effective_uid':actor['effective_uid']}
             if isinstance(actor.get('username'),str) and actor['username'] and type(actor.get('effective_uid')) is int else None)
         item={'host_id':target['host_id'],'icon':target.get('icon',''),'status':target['status'],
             'reason_code':target.get('reason_code'),'retention_status':target['retention_status'],
-            'collection_identity':identity,'identity_evidence':execution_identities(raw) if raw else [],
+            'collection_identity':identity,'identity_evidence':execution_identities(raw if raw else {'execution_identity':saved_execution}),
             'access_degraded':bool(access.get('degraded')) if raw else None,
             'content_status':raw['content_update'].get('status') if raw and isinstance(raw.get('content_update'),dict) else None,
             'record_id':target['record_id'],'result_id':linked['result_id'] if linked else None,
             'short_id':linked['short_id'] if linked else None}
+        saved_assessment = raw.get('assessment') if raw else target.get('assessment')
+        if saved_assessment is not None:
+            item['assessment'] = saved_assessment
+        if saved_execution is not None:
+            item['execution_identity'] = saved_execution
         health = replication_health(raw) if raw else None
         if health is not None:
             item['replication_health'] = health
@@ -119,6 +126,8 @@ def query(root, identifier=None, *, statuses=None):
 def execution_row(host):
     """Reconstruct only recorded presentation evidence, without borrowing batch receipts."""
     return {'status':host['status'],'reason_code':host['reason_code'],
+            **({'assessment':host['assessment']} if 'assessment' in host else {}),
+            **({'execution_identity':host['execution_identity']} if 'execution_identity' in host else {}),
             **({'identity_evidence':host['identity_evidence']} if 'identity_evidence' in host else {}),
             **({'replication_health':host['replication_health']} if 'replication_health' in host else {}),
             'retention':{'status':host['retention_status']},

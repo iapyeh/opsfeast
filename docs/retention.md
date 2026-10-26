@@ -148,4 +148,14 @@ The registered structured contract `backup-files-check` 0.1.0 uses the [platform
 
 Notification/todo objects live separately under services/, not retention/. Durable consumer effects eligibility is recorded atomically with each retention event in `consumer_effects`; only operational live collection grants permitted evidence IDs to consumer services. Historical replay/ingest and events without eligibility cannot create current service objects. Retries of eligible events preserve eligibility. Use [consumer context services](retention-consumers.md) rather than constructing unrestricted services in a consumer. Retention success does not establish policy, projection or delivery success; inspect the separate receipts.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Independent portable datasets
+
+New user contracts can use [mode: portable with embedded data_schema](portable-contracts.md). The reviewed recipe returns final structured data; retention/replay validate saved definitions without product registry changes or candidate normalizer execution. Independent [retention packages](portability.md) include schema, provenance, policy/findings and available event context, without requiring original raw evidence or installed producer code. Imported data lives in transfer/space.sqlite3 and is exposed as an origin-qualified read-only retention projection; authoritative originals are not rebound to same-name local hosts. Use reviewed merge/replace and independent retention archive plans, not direct database deletion. Protected operation journals remain separate.
+
+
+## Assessment and actor metadata
+
+Retained general envelopes may include `assessment` and `execution_identity`, validated independently of domain data. Their absence in older records is not an inferred healthy result or verified actor. Query/export/import preserves saved metadata without rerunning code. See [results and accounts](recipe-results-and-accounts.md).
+
+*Last modified: 2026-10-26 11:49:24*

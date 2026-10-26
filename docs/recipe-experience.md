@@ -98,7 +98,7 @@ python -B tools/opsfeast.py recipes pack :feast/report/execution-summary --root 
 python -B tools/opsfeast.py recipes unpack /path/to/new-report.zip --destination /path/to/new-candidate
 ```
 
-Bundle 0.1.0 contains MANIFEST.json and recipe/ payload files for one selected recipe. --file is a required explicit allowlist: descriptor, README and entrypoints must be included, with all reviewed helpers/templates/dependencies added by the author. Complete dependency closure and licensing remain review responsibilities. No automatic scanning/installing/downloading of dependencies occurs. Multiple recipes can be shared as separate bundles or through the existing [manual collection workflow](recipe-sharing.md).
+Bundle 0.2.0 contains MANIFEST.json and recipe/ payload files for one selected recipe. --file is a required explicit allowlist: descriptor, README and entrypoints must be included, with all reviewed helpers/templates/dependencies added by the author. Complete dependency closure and licensing remain review responsibilities. No automatic scanning/installing/downloading of dependencies occurs. Multiple recipes can be shared as separate bundles or through the existing [manual collection workflow](recipe-sharing.md).
 
 Manifest fields: format opsfeast-recipe-bundle, version 0.1.0, recipe_id, recipe_version, source_reference, license declaration and files mapping relative paths to sha256/size_bytes. The manifest excludes itself from its payload digest list. Pack excludes hidden/private configuration names, operational storage, jobs, venv/cache/Git paths and symlinks. These name checks do not inspect arbitrary file contents for secrets; review the actual allowlist. Generated reports and private data require a separate explicit sharing workflow, not inclusion in recipe bundles.
 
@@ -173,4 +173,9 @@ offsets. Bundled feast/report/execution-summary 0.1.2 applies this policy to HTM
 JSON dataset. See [the canonical time policy](cli.md#human-time-display-policy) for
 DST/unknown-time handling and verification limits. Source observations are not refreshed.
 
-*Last modified: 2026-10-24 22:22:19*
+
+## Reviewed installation and independent data portability
+
+Use [the transfer workflow](portability.md) for current bundle 0.2.0 installation plans, path-conflict resolution, source snapshots and rollback. Pack/unpack alone still does not activate code. Observation and retention packages are independent of recipe bundles, with reviewed merge/replace import and resumable verified archival. Imported datasets can be read without installing their producer. See [portable contracts](portable-contracts.md) instead of adding a registry entry for each user-defined dataset.
+
+*Last modified: 2026-10-25 14:56:19*

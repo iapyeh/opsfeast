@@ -170,13 +170,15 @@ class RecipeExperienceTests(unittest.TestCase):
         self.assertIn('title',item['inputs']['variables'])
         self.assertEqual(item['contract'],'valid-python-report')
 
-    def test_duplicate_ids_within_source_fail_without_hiding_valid_items(self):
+    def test_duplicate_ids_within_source_require_exact_reference(self):
         self.copy_report('one')
         self.copy_report('two')
         data=catalog.catalog(self.root)
-        self.assertEqual(data['status'],'failed')
+        self.assertEqual(data['status'],'success')
         private=[item for item in data['recipes'] if item['source']=='profile']
-        self.assertTrue(all(not item['runnable'] for item in private))
+        self.assertTrue(all(item['runnable'] for item in private))
+        with self.assertRaisesRegex(ops.ConfigError, 'ambiguous'):
+            catalog.choose(self.root, private[0]['id'])
         self.assertTrue(catalog.choose(self.root,'system/network/check/port')['runnable'])
 
     def test_unavailable_source_and_escaping_descriptor(self):
@@ -604,7 +606,7 @@ class RecipeExperienceTests(unittest.TestCase):
         self.copy_report('report/shareable')
         code,out,error=self.invoke('pack',':report/shareable','--file','recipe.yaml','--file','main.py','--file','README.md','--file','LICENSE','--output',str(archive))
         self.assertEqual(code,0,error)
-        self.assertEqual(json.loads(out)['bundle_version'],'0.1.0')
+        self.assertEqual(json.loads(out)['bundle_version'],'0.2.0')
         output=io.StringIO()
         with contextlib.redirect_stdout(output):
             self.assertEqual(ops.main(['recipes','unpack',str(archive),'--destination',str(self.base/'cli-candidate')]),0)

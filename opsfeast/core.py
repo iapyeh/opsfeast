@@ -261,6 +261,11 @@ class Profile:
         from .services import Services
         return Services(self.root)
 
+    @property
+    def transfer(self):
+        from .transfer import Space
+        return Space(self.root)
+
     def reload(self):
         self.hosts.reload()
         return self
@@ -287,13 +292,17 @@ class Profile:
         return listing(self.root)
 
     @contextmanager
-    def recipe(self, host_id, *, vars=None, timeout=30):
+    def recipe(self, host_id, *, vars=None, timeout=30, execution=None):
         from . import plain_values
         if vars is not None and not isinstance(vars, dict):
             raise ConfigError('recipe vars must be a mapping')
         plain_values(vars or {}, 'recipe vars')
+        from .recipe_execution import normalize as execution_policy
+        execution = execution_policy(execution)
         with self.sessions.connect(host_id, timeout=timeout) as connection:
-            yield Recipe._borrow(connection, vars=vars)
+            recipe = Recipe._borrow(connection, vars=vars)
+            with recipe.execution(execution) as selected:
+                yield selected
 
 
 @dataclass
@@ -317,7 +326,8 @@ class SessionView:
         if owner._console:
             if not isinstance(argv, (list, tuple)) or any(not isinstance(v, str) for v in argv):
                 raise ConfigError('privileged exec_command requires a string argv sequence')
-            return owner._actor(shlex.join(argv), **kwargs)
+            from .recipe_execution import console_exec
+            return console_exec(owner._actor, argv, kwargs)
         return owner._actor.exec_command(argv, **kwargs)
 
     def start(self, argv, **kwargs):
@@ -327,7 +337,9 @@ class SessionView:
         if owner._console:
             if not isinstance(argv, (list, tuple)) or any(not isinstance(v, str) for v in argv):
                 raise ConfigError('privileged start requires a string argv sequence')
-            return owner._actor.start(shlex.join(argv), **kwargs)
+            from .recipe_execution import console_command, ConsoleJob
+            command, kwargs = console_command(argv, kwargs)
+            return ConsoleJob(owner._actor.start(command, **kwargs), argv)
         return owner._actor.start(argv, **kwargs)
 
     def close(self, *args, **kwargs):
@@ -438,11 +450,59 @@ class Recipe:
                 self._state.top is not self or self._state.thread != threading.get_ident()):
             raise CoreError('session_scope_unavailable')
 
-    def sudo(self, user='root'):
-        return self._privilege('sudo', user)
+    @contextmanager
+    def execution(self, policy=None):
+        """Yield the verified configured actor. Acquisition failure never runs the body."""
+        from .recipe_execution import normalize
+        from host_runtime import identity, verify_connection_identity
+        selected = normalize(policy)
+        self._check()
+        if self._console:
+            raise CoreError('execution_requires_login_scope')
+        evidence = {'contract_version': '0.1.0', 'requested': selected, 'login': None,
+                    'actual': None, 'verified': False, 'restoration_verified': False}
+        self._report['execution_identity'] = evidence
+        try:
+            login = verify_connection_identity(self._actor, self.timeout, self._report,
+                authenticated_user=self._report.get('login_identity', {}).get('username'),
+                configured_user=self._config.hosts[self.host_id]['connection'].get('user'))
+            evidence['login'] = dict(login)
+            if selected['via'] == 'login':
+                if selected['user'] is not None:
+                    identity(self._actor, self.timeout, target=selected['user'])
+                evidence.update(actual=dict(login), verified=True)
+                try:
+                    yield self
+                finally:
+                    restored = identity(self._actor, self.timeout)
+                    evidence['restoration_verified'] = restored == login and not self._state.failed
+                    if not evidence['restoration_verified']:
+                        self._state.failed = True
+                        self._report.setdefault('scope_error', 'identity_restoration_failed')
+                        raise CoreError(self._report['scope_error'])
+            else:
+                privilege_index = len(self._report.get('privileges', []))
+                try:
+                    with self._privilege(selected['via'], selected['user']) as child:
+                        actual = self._report['privileges'][privilege_index]['actual_identity']
+                        evidence.update(actual=dict(actual), verified=True)
+                        yield child
+                finally:
+                    privileges = self._report.get('privileges', [])
+                    if len(privileges) > privilege_index:
+                        evidence['restoration_verified'] = privileges[privilege_index]['restoration_verified']
+        except BaseException as exc:
+            evidence['error_type'] = type(exc).__name__
+            # Preserve failed acquisition versus failed operation separately.
+            if not evidence['verified']:
+                self._report['execution_identity_error'] = 'execution_identity_failed'
+            raise
 
-    def su(self, user):
-        return self._privilege('su', user)
+    def sudo(self, user='root', *, get_pty=False):
+        return self._privilege('sudo', user, get_pty=get_pty)
+
+    def su(self, user, *, get_pty=False):
+        return self._privilege('su', user, get_pty=get_pty)
 
     @contextmanager
     def root(self):
@@ -452,7 +512,18 @@ class Recipe:
         from root_access import root_actor
         self._check()
         if self._console:
-            raise CoreError('root_requires_login_scope')
+            selected = self._report.get('execution_identity', {})
+            actual = identity(self._actor, self.timeout, console=True)
+            if not selected.get('verified') or actual['effective_uid'] != 0:
+                raise CoreError('root_requires_login_scope')
+            view = _RootConsole(self, self._actor)
+            self._state.top = view
+            try:
+                yield view
+            finally:
+                view._active = False
+                self._state.top = self
+            return
         evidence = {'operation': 'root', 'target': 'root', 'status': 'failed',
                     'restoration_verified': False}
         self._report.setdefault('privileges', []).append(evidence)
@@ -516,10 +587,12 @@ class Recipe:
             self._state.top = self
 
     @contextmanager
-    def _privilege(self, mode, user):
+    def _privilege(self, mode, user, *, get_pty=False):
         from host_runtime import identity, verify_connection_identity, privilege_password, username
         self._check()
         user = username(user)
+        if type(get_pty) is not bool:
+            raise ConfigError('get_pty must be Boolean')
         try:
             before = identity(self._actor, self.timeout, console=self._console)
             login = self._report.get('connection_identity')
@@ -549,8 +622,8 @@ class Recipe:
         child = None
         error = None
         try:
-            context = (self._actor.su(user, password=password, enter_timeout=self.timeout) if mode == 'su'
-                       else self._actor.sudo(username=user, password=password, enter_timeout=self.timeout))
+            context = (self._actor.su(user, password=password, enter_timeout=self.timeout, get_pty=get_pty) if mode == 'su'
+                       else self._actor.sudo(username=user, password=password, enter_timeout=self.timeout, get_pty=get_pty))
             actor = context.__enter__()
             entered = True
             actual = identity(actor, self.timeout, console=True, target=user)

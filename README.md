@@ -170,6 +170,8 @@ Read the [skill index](skills/README.md) first, select the relevant skills and c
 
 For DevOps users and their agents, before writing operational programs, consult the [existing tool and Python module capability map](docs/agent-capabilities.md). OpsFeast already handles configuration, discovery, execution, inputs, results, reports, exchange, bundles and saved reruns; reuse suitable interfaces and develop only the missing task logic. OpsFeast product developers have the complementary mission to reduce that need by providing broad, complete and stable tools/modules. Both roles use reviewed code for routine repetition and reserve AI for new needs, judgment, changes and exceptions; see [the role-specific principles](docs/vision.md#distinguish-product-developers-from-devops-users).
 
+For agents developing OpsFeast, [agent guidance and human-agent operation are core product priorities](docs/vision.md#treat-agent-guidance-and-human-agent-operation-as-core-product-work), especially while TUI coverage is incomplete. Read the [contributor handoff checklist](docs/agent-guidance.md#carry-the-product-priority-across-development-agents) and deliver discoverable agent knowledge plus human-readable operating examples alongside features. TUI remains the independent human-operation interface; its fuller manual workflows follow verified TUI updates.
+
 ### Learn Ops and choose the relevant skill
 
 1. Read [AGENTS.md](AGENTS.md) for project instructions, then any user-maintained `AGENTS.local.md` in this checkout. Local guidance is optional, private and not supplied by a clone; see [public and local guidance](docs/agent-guidance.md).
@@ -301,14 +303,9 @@ Inventory execution automatically saves operational success/partial observations
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
 
-## Development SSHScript source contract
+## SSHScript 7.0.0 release contract
 
-This checkout currently targets an explicitly pinned, unreleased SSHScript 7.0.0
-source revision. Follow [the dependency and migration guide](docs/sshscript-7.md)
-for the exact SHA, installation identity, source guards and verification limits.
-Do not substitute a same-version PyPI package or a different latest skill bundle.
-The stable-release update prompt above does not authorize switching a source-test
-environment to another revision or downgrading it.
+This checkout requires the published `sshscript==7.0.0` release and its matching complete skill. Follow [the release identity and migration guide](docs/sshscript-7.md) for hashes, strict runtime checks, installation and verification limits. The release package/type files and skill payload match the previously reviewed development snapshot; official release provenance is now recorded explicitly.
 
 
 ## Shared notifications, todos and backup checks
@@ -317,4 +314,9 @@ environment to another revision or downgrading it.
 
 For daily backup presence and directory hygiene, reuse [backup-files-check 0.1.0](docs/backup-file-checks.md) in a profile-local recipe. The opt-in [backup-check consumer](consumers/backup-check/README.md) creates missing/scan-failure notifications and expired/unexpected-file todos from eligible live observations. It never deletes files; historical replay does not create incidents.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable knowledge and data
+
+[Transfer recipes, observations and retention independently](docs/portability.md). Reviewed import plans support merge or replacement, recipe path-conflict handling and rollback. Frozen archive plans verify packages outside the active profile before source removal, database compaction and resumable cleanup. [Recipe-carried data contracts](docs/portable-contracts.md) let users define structured data without modifying the platform registry. Imported history never activates recipes, consumers or notification delivery.
+
+*Last modified: 2026-10-26 12:14:33*

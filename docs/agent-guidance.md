@@ -16,6 +16,20 @@ The [README's For AI agents section](../README.md#for-ai-agents) provides the le
 
 Future documentation and skills follow the shared [AI-friendly documentation principles](vision.md#write-ai-friendly-documentation-for-humans-and-agents). Keep them understandable to humans and actionable by agents: expose the relevant learning path, exact interfaces and interpretation, sources and update procedures, and verification limits without requiring prior chat context. These are contributor requirements, not a claim of machine-enforced documentation checks.
 
+## Carry the product priority across development agents
+
+All agents developing OpsFeast must read [the core product priority](vision.md#treat-agent-guidance-and-human-agent-operation-as-core-product-work) before choosing feature or documentation scope. The current reliance on user AI agents makes agent documentation, skills and human-agent operating guidance essential delivery work. This priority applies across development-agent products and survives changes of contributor or conversation.
+
+For each usable feature/change, assess the handoff from both sides:
+
+- Can a fresh user's agent discover the existing tool/module/recipe from the repository entrypoints, read its supported versions and configuration, and perform the authorized workflow without reconstructing missing framework code or consulting an earlier conversation?
+- Can a human understand the purpose and relevant concepts, describe the desired outcome to their agent, supply the required scope/context, assess important choices and understand where results are stored?
+- Do the linked instructions and examples explain success, partial/failed/unknown outcomes, evidence limits and recovery? Do they preserve actual authorization and avoid asking for routine implementation details or repeating approvals already given?
+- Are the capability map, relevant skills, canonical CLI/API/contracts and human operating examples consistent with the delivered behavior, with implemented and planned functionality clearly distinguished?
+- Is any TUI path described actually implemented and verified? Record the coverage gap and add the completed TUI workflow to the manual after the corresponding update. TUI's goal remains independent human operation without an agent.
+
+Use these questions in design/review and the existing [contribution completion gate](../AGENTS.md#before-every-commit). Maintain one linked body of knowledge rather than competing manuals per agent product. Keep human explanations organized by concepts, tasks and end-to-end cases; keep exact syntax and schemas in canonical reference documents. This checklist does not authorize unrelated work or require the entire planned manual/TUI to be built during every feature task. Document the actual delivery and remaining gaps candidly.
+
 ## Skill storage and conflict resolution
 
 Use `skills/` as the portable source location for OpsFeast operational skills:
@@ -76,4 +90,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-_Last modified: 2026-10-20 11:22:14_
+*Last modified: 2026-10-25 15:28:33*

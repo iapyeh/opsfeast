@@ -1,4 +1,4 @@
-"""Pinned SSHScript source contract for this development checkout."""
+"""Released SSHScript package identity and reviewed source contract."""
 import hashlib
 import json
 from pathlib import Path

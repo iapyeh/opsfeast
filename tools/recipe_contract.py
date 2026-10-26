@@ -16,9 +16,9 @@ VERSION = '0.1.0'
 STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 
 
-def validate(directory, metadata):
+def validate(directory, metadata, *, identity_directory=None):
     from recipe_identity import validate as validate_identity
-    validate_identity(metadata, directory)
+    validate_identity(metadata, identity_directory or directory)
     if metadata.get('access_mode', 'unknown') not in ('read', 'write', 'unknown'):
         raise ConfigError('access_mode must be read, write or unknown')
     from retention_store import validate_retention
@@ -96,14 +96,17 @@ def validate(directory, metadata):
 
 
 def validate_result(result):
-    if not isinstance(result, dict) or set(result) != {'status', 'reason_code', 'message', 'data'}:
-        raise ConfigError('recipe result requires exactly status, reason_code, message and data')
+    if not isinstance(result, dict) or not {'status', 'reason_code', 'message', 'data'} <= set(result) or set(result) - {'status', 'reason_code', 'message', 'data', 'assessment'}:
+        raise ConfigError('recipe result requires status, reason_code, message and data; optional assessment only')
     if not isinstance(result['status'], str) or result['status'] not in STATUSES:
         raise ConfigError('invalid recipe result status')
     if any(not isinstance(result[key], str) or not result[key] for key in ('reason_code', 'message')):
         raise ConfigError('recipe result reason_code and message must be nonempty strings')
     if not isinstance(result['data'], dict):
         raise ConfigError('recipe result data must be an object')
+    if 'assessment' in result:
+        from opsfeast.recipe_assessment import validate as validate_assessment
+        validate_assessment(result['assessment'])
     plain_values(result, 'recipe result')
     def check_keys(value):
         if isinstance(value, dict):

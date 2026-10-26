@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 from opsfeast import ConfigError, resolve_root
-from console_output import human_output, table, vertical, prepare, display_icons, host_label, ConsoleDependencyError
+from console_output import human_output, table, vertical, prepare, display_icons, host_label, execution_result, ConsoleDependencyError
 from display_time import format_time, human_times
 from recipe_reports import results, show_result, result_path, page, export_html
 from result_diagnostics import diagnose, format_diagnosis
@@ -58,9 +58,9 @@ def main(argv=None):
                 print(json.dumps(data,indent=2,ensure_ascii=False,allow_nan=False) if args.json else format_diagnosis(data))
             return 0
         data=results(root,args.recipe_id,args.host,args.status,kind='operation')
-        rows=[[r['short_id'],r['recipe_id'],r['host_id'],r['status'],format_time(r['completed_at']),r.get('collection_user') or 'unknown',json.dumps(r['identity_warnings'],ensure_ascii=False)] for r in data['results']]
+        rows=[[r['short_id'],r['recipe_id'],r['host_id'],execution_result(r)['text'],format_time(r['completed_at']),r.get('collection_user') or 'unknown',json.dumps(r['identity_warnings'],ensure_ascii=False)] for r in data['results']]
         if args.html:
-            receipt={'html_path':export_html(args.html,page('OpsFeast host results',['Result ID','Recipe','Host','Status','Completed','User','Identity warnings'],rows,json.dumps(data['errors'],ensure_ascii=False))),'status':data['status']}
+            receipt={'html_path':export_html(args.html,page('OpsFeast host results',['Result ID','Recipe','Host','Result','Completed','User','Identity warnings'],rows,json.dumps(data['errors'],ensure_ascii=False))),'status':data['status']}
             print(json.dumps(receipt,indent=2))
         elif args.json:
             print(json.dumps(data,indent=2,ensure_ascii=False,allow_nan=False))
@@ -73,7 +73,7 @@ def main(argv=None):
         elif human_output():
             icons=display_icons(root)
             for row in rows:row[2]=host_label(row[2],icons) if row[2] else '-'
-            print(table(['result ID','recipe','host','status','completed','user'],[row[:-1] for row in rows]))
+            print(table(['result ID','recipe','host','result','completed','user'],[row[:-1] for row in rows]))
         else:
             for row in rows:print(' | '.join(str(value) for value in row))
         if not args.json and not args.html:

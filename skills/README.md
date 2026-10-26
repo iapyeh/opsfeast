@@ -1,5 +1,7 @@
 # AI Agent Guidance
 
+Agent documentation and skills, together with human guidance for operating OpsFeast through AI agents, are [core product priorities](../docs/vision.md#treat-agent-guidance-and-human-agent-operation-as-core-product-work). They are especially important while TUI coverage remains incomplete. Every development agent must preserve this priority and follow [the contributor handoff checklist](../docs/agent-guidance.md#carry-the-product-priority-across-development-agents); operational agents should use the task routing below. TUI's goal is independent human operation, and its fuller manual workflows follow completed, verified TUI updates.
+
 For interactive exploration that should become reusable code, route through [recipes](opsfeast-recipes/SKILL.md) and its [complete workflow](opsfeast-recipes/references/exploration-to-recipe.md): transparent calls, explicit authorization for dangerous effects, config, retention, consumers and repeatable verification. For MySQL/MariaDB replica status use [the bundled database recipe](../recipes/database/mysql/check/replication/README.md), which owns mysql-replication 0.1.0 retention and Vault views; it never connects to the source host or repairs replication.
 
 
@@ -88,7 +90,7 @@ For inherited agent/terminal/cron/CI environment differences, route to the
 Shared CLI/Core/runner proxy policy normalizes NO_COLOR and supports explicit
 per-proxy overrides without modifying global environment or disclosing values.
 
-For the unreleased SSHScript 7.0.0 source migration and strict source/version
+For the published SSHScript 7.0.0 release and strict package/source
 requirements, read [the migration guide](../docs/sshscript-7.md). The supported SHA,
 32 module/type hashes and skill ZIP are pinned together. Operational adapters use
 only current connection parameter names; no real-host verification is implied.
@@ -98,4 +100,14 @@ only current connection parameter names; no real-host verification is implied.
 
 For notification/todo creation, lifecycle, assignment/scheduling, delivery or custom projections, read [recipes: shared services](opsfeast-recipes/SKILL.md#notification-and-todo-workflow), [Core](opsfeast-core/SKILL.md) and the canonical [service guide](../docs/services.md). For backup-directory presence/expiry/unexpected-file checks, reuse [backup-files-check 0.1.0](../docs/backup-file-checks.md) and the opt-in [backup-check consumer](../consumers/backup-check/README.md). Service configuration and objects have separate versioned schemas. Historical replay cannot create current incidents; todo scheduling does not execute work or wake an agent. No separate installed skill or upstream SSHScript snapshot change is required.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Independent transfer and archival
+
+For portable recipes, observations or retention data, read [portability](../docs/portability.md), [portable contract authoring](../docs/portable-contracts.md), then the recipes/result-data skills. `transfer` provides copy, reviewed merge/replace import, frozen archive plans, resumable cleanup/compaction, recipe path-conflict installation and rollback. Keep the three units independent. Imported data never triggers historical notifications or automatically merges same-name hosts. Archive must verify an external package before removing active data; use the public APIs instead of filesystem/SQLite deletion scripts.
+
+
+## Recipe findings and execution accounts
+
+For a custom result label, whole-recipe account selection or interpreting PASS, route through [recipes](opsfeast-recipes/SKILL.md), [Core](opsfeast-core/SKILL.md) and [results/accounts](../docs/recipe-results-and-accounts.md). Use the bundled policy/assessment interfaces instead of generating privilege loops; fixed execution failure always takes precedence.
+
+*Last modified: 2026-10-26 12:14:33*

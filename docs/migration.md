@@ -289,9 +289,9 @@ configuration rewrite are provided.
 
 ## SSHScript 7.0.0 pinned source migration
 
-OpsFeast operational execution now targets source commit
-7a3b43594eca50cf1600d4f8a1dc67cb266df19e (unreleased 7.0.0). Use the exact
-source dependency, not a same-version PyPI replacement. CLI diagnostics, Core and
+OpsFeast operational execution now requires published `sshscript==7.0.0`, release source
+a1c76d016419484b6ffb930bf2b16f30bae61208. The release wheel and complete skill match the prior development payload;
+use the verified release artifact and updated provenance. CLI diagnostics, Core and
 runner share source/version validation. Old 6.1.0 runtimes are intentionally
 rejected; there are no aliases or automatic upgrades. See [the migration and
 verification contract](sshscript-7.md).
@@ -312,4 +312,16 @@ Service/object/adapter and backup-files-check contracts start at 0.1.0. Existing
 
 The retention journal now stores consumer effects eligibility for live collection. Existing/historical events have no eligibility and cannot create service objects through consumer context.services; replay rebuilds data/content without fabricating current incidents. No backfill or conversion of old events is performed. Service objects are authoritative in services/objects.sqlite3, separate from retained observations and generated Vault pages. Preserve profile data; no automatic service migration, deletion or legacy compatibility layer is supplied.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable unit architecture
+
+Recipe bundle 0.2.0 replaces 0.1.0 and requires per-file safe modes; repack reviewed source for this version. No compatibility reader or migration tool is supplied. New mode: portable retention stores recipe-carried data schemas and final data, independent of registered domain normalizers. Existing bundled contracts remain their own implemented producer formats; they are not required for importing portable saved data.
+
+Imported units have independent origin-preserving storage in transfer/space.sqlite3 and qualified read views. Same recipe IDs at different paths now coexist; replace ambiguous short-ID invocation/settings with exact references. Import replacement is scoped to included identities, not profile-wide clearing. Archive uses frozen verified plans/receipts and physical compaction; it does not delete service lifecycle or human notes. Preserve existing private data and consult [portability](portability.md) for explicit copy/archive/import and recovery.
+
+
+## Recipe assessments and account scopes
+
+Update OpsFeast before using recipe-assessment/recipe-execution 0.1.0 or installing packages declaring those features. Existing references default to login; no account is automatically escalated. Explicit Core su/sudo scopes now default to pipes, preserving stdout/stderr and finite stdin; terminal-dependent interactive code must explicitly request `get_pty=True`. Nondefault account policies on other runner contracts fail preflight. Existing stored evidence is preserved; no migration or history rewrite is needed. See [results and accounts](recipe-results-and-accounts.md).
+
+*Last modified: 2026-10-26 12:14:33*

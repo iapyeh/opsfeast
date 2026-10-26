@@ -741,6 +741,9 @@ def render_current(record, history_names=None, host_icon=None, attention_policy=
             lines += ['## Observations', ''] + markdown_table(['Field', 'Value', 'State'], rows) + ['']
     if not any(line.startswith('## ') and line != '## Attention' for line in lines):
         lines += ['No collected values are available in this view. See the full report.', '']
+    if record.get('assessment'):
+        assessment = record['assessment']
+        lines += ['## Recipe assessment', '', text(assessment['label']), '', 'Severity: ' + assessment['severity'], '', text(assessment['summary']), '']
     lines += command_outputs(record)
     report_link = source_report_link(record, history_names)
     lead = 'Replication status' if replication else 'Attention'
@@ -798,8 +801,20 @@ def render_observation(record, *, current=False, history_names=None, host_icon=N
                                       item.get('unit', ''), item.get('description', 'See dataset contract'))
                                      for field, item in observations.items()]) + ['']
     evidence = record.get('collection_evidence')
-    actor = evidence['actor'] if evidence else data.get('actor') or {
+    execution_actor = (record.get('execution_identity') or {}).get('actual')
+    execution_actor = ({**execution_actor, 'mode': 'root' if execution_actor['effective_uid'] == 0 else 'user'} if execution_actor else None)
+    actor = evidence['actor'] if evidence else data.get('actor') or execution_actor or {
         'username': None, **data.get('collection_scope', {'mode': 'unverified', 'effective_uid': None})}
+    if record.get('assessment'):
+        assessment = record['assessment']
+        lines += ['## Recipe assessment', '', text(assessment['label']), '', 'Severity: ' + assessment['severity'], '', text(assessment['summary']), '']
+    execution = record.get('execution_identity')
+    if execution:
+        actual = execution.get('actual') or {}
+        lines += ['## Execution account', '', 'Requested: ' + text(str(execution['requested'])), '',
+                  'Connection account: ' + text((execution.get('login') or {}).get('username') or 'Unknown'), '',
+                  'Actual: ' + text(actual.get('username') or 'Unknown') + ' (UID ' + str(actual.get('effective_uid', 'unknown')) + ')', '',
+                  'Identity verified: ' + str(execution['verified']) + '; restoration verified: ' + str(execution['restoration_verified']), '']
     lines += ['## Collection metadata', '']
     overview = [('Host', record['host_id']), ('Report', page_title(record)),
                 ('Recipe', record.get('recipe_reference', record['recipe_id'])),

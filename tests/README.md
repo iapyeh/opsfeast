@@ -534,4 +534,9 @@ per-event receipts/retry, snapshot boundaries and retained timeout/lock limits.
 No event history was pruned; no retention storage migration or private configuration
 change is required. Remote CI, commit, push and release were not performed.
 
-*Last modified: 2026-10-25 06:41:20*
+
+## Published SSHScript 7.0.0 verification
+
+On 2026-10-26, the selected OpsFeast Python 3.14.4 environment was reinstalled from the verified published 7.0.0 wheel without dependency upgrades. Its 32 package/type files and complete eight-file skill payload match the previously supported development snapshot. Requirements, built distribution metadata, release source provenance and bundled/agent-local complete skill copies now identify the official release. CPython 3.11.15, 3.12.12, 3.13.13 and 3.14.4 each passed all 1,017 OpsFeast tests, including isolated wheel/sdist delivery. The other interpreters used the same installed pure-Python package with their existing compatible native dependencies; no other environment was upgraded. Full readiness, pip check, CLI version, skill validation and the documented credential-free stdin quickstart with strict cleanup passed. No managed-host SSH/su/sudo, remote CI, profile migration, commit or push was performed. See [release identity and limits](../docs/sshscript-7.md).
+
+*Last modified: 2026-10-26 12:17:54*

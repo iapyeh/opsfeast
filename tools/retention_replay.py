@@ -60,7 +60,7 @@ def snapshot(metadata, directory):
         raise ConfigError('access_mode must be read, write or unknown')
     value = {'contract_version': SNAPSHOT_VERSION, 'recipe_id': metadata['id'], 'recipe_version': metadata['version'],
              'access_mode': mode, 'retention': copy.deepcopy(declaration)}
-    if declaration and declaration['contract'] != 'host-values':
+    if declaration and declaration['contract'] != 'host-values' and declaration.get('mode') != 'portable':
         from retention_contracts import normalizer_digest, schema_digest
         value['normalizer_sha256'] = normalizer_digest(declaration)
         value['schema_sha256'] = schema_digest(declaration)
@@ -80,7 +80,7 @@ def validate_snapshot(value):
     if value['sha256'] != digest({k: v for k, v in value.items() if k != 'sha256'}):
         raise ConfigError('retention snapshot digest mismatch')
     declaration = validate_retention({'retention': value['retention']})
-    if declaration and declaration['contract'] != 'host-values':
+    if declaration and declaration['contract'] != 'host-values' and declaration.get('mode') != 'portable':
         from retention_contracts import normalizer_digest, schema_digest
         if value.get('schema_sha256') != schema_digest(declaration):
             raise ConfigError('saved retention schema differs from the installed registered contract; select an explicit reviewed --recipe-dir')

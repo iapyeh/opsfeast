@@ -180,17 +180,22 @@ def preflight(root, host, recipe, cli_vars=None, assignments=(), *, explicit_hos
             raise ConfigError('offline report recipes use opsfeast.py recipes run without host selectors')
     variables = prepare_vars(metadata, info['vars'], config.matching_recipe_vars(host, directory, info),
                              cli_variables(metadata, cli_vars, assignments))
-    config.execution_recipe = dict(info, effective_vars=variables, metadata=metadata)
+    from opsfeast.recipe_execution import normalize as execution_policy
+    policy = execution_policy(config.recipe_options(host, info['reference']).get('execution'))
+    if (policy['via'] != 'login' or policy['user'] is not None) and (metadata.get('collection') or metadata.get('runner', {}).get('contract') != recipe_contract.CORE_CONTRACT):
+        raise ConfigError('configured su/sudo execution requires a python-recipe entrypoint using Recipe')
+    config.execution_recipe = dict(info, effective_vars=variables, metadata=metadata, execution=policy)
     digest = bundle_digest(directory)
     output_dir = config.root / 'observations'
     if output_dir.is_symlink() or (output_dir.exists() and not output_dir.is_dir()):
         raise ConfigError('observations must be a real directory within management root')
     return config, directory, digest, output_dir
 
-def run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime):
+def run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, *, code_directory=None):
     info = config.execution_recipe
     metadata = info['metadata']
-    entry = directory / metadata['runner']['entrypoint']
+    code_directory = code_directory or directory
+    entry = code_directory / metadata['runner']['entrypoint']
     source_root = REPOSITORY_ROOT.resolve() if info['name'] == 'repository' else info['root']
     report = {
         'run_contract': recipe_contract.VERSION, 'schema_version': metadata['output']['schema_version'],
@@ -204,8 +209,8 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
                    'runner_contract': metadata['runner']['contract'], 'runner_version': metadata['runner']['version'],
                    'entrypoint': metadata['runner']['entrypoint'],
                    'implementation_sha256': hashlib.sha256(entry.read_bytes()).hexdigest(),
-                   'descriptor_sha256': hashlib.sha256((directory / 'recipe.yaml').read_bytes()).hexdigest(),
-                   'bundle_sha256': digest, 'installed_path': directory.relative_to(source_root).as_posix(),
+                   'descriptor_sha256': hashlib.sha256((code_directory / 'recipe.yaml').read_bytes()).hexdigest(),
+                   'bundle_sha256': digest, 'content_sha256': __import__('opsfeast.recipe_install',fromlist=['fingerprint']).fingerprint(code_directory), 'installed_path': directory.relative_to(source_root).as_posix(),
                    'source_name': info['name'], 'source_root': str(info['root']),
                    'reference': info['reference'], 'resolved_path': str(directory),
                    'variable_names': sorted(info['effective_vars']), 'selection_source': 'cli'},
@@ -216,7 +221,7 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     from opsfeast.identity import read_identity
     report['producer_instance_id'] = read_identity(REPOSITORY_ROOT)['id']
     report['execution_access_mode'] = metadata.get('access_mode', 'unknown')
-    report['retention_snapshot'] = snapshot(metadata, directory)
+    report['retention_snapshot'] = snapshot(metadata, code_directory)
     from retention_store import operation_intent, operation_result
     intent = operation_intent(config.root, host, metadata, report['recipe']['descriptor_sha256'], info['effective_vars'],
                               reference=info['reference'], implementation_digest=report['recipe']['implementation_sha256'],
@@ -245,7 +250,10 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
                 report['profile'] = profile.name
                 report['run_id'] = execution.run_id
                 try:
-                    result = selected['execute'](execution)
+                    stage = 'execution_identity'
+                    with execution.execution(info['execution']) as actor_recipe:
+                        stage = 'execution'
+                        result = selected['execute'](actor_recipe)
                 finally:
                     execution._state.active = False
                     execution._active = False
@@ -258,6 +266,8 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
                       message='Recipe result is invalid.' if stage == 'result_validation' else 'Recipe execution failed.')
         # Custom exception text may contain input values; preserve type/stage only.
         report['execution_errors'].append({'stage': stage, 'type': type(exc).__name__})
+    if report.get('execution_identity_error'):
+        report.update(status='failed', reason_code=report['execution_identity_error'], message='Requested execution identity could not be verified.')
     if report.get('scope_error'):
         report.update(status='failed', reason_code=report['scope_error'], message='Session identity verification failed.')
     if 'cleanup_error' in report:
@@ -307,7 +317,11 @@ def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli
     if session_class is None:
         progress('checking execution runtime')
         session_class, runtime = load_runtime()
-    return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime)
+    from opsfeast.recipe_install import execution_snapshot
+    with execution_snapshot(config.root, directory) as pinned:
+        if read_yaml(pinned / 'recipe.yaml') != config.execution_recipe['metadata'] or bundle_digest(pinned) != digest:
+            raise ConfigError('recipe changed after preflight; select and execute again')
+        return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, code_directory=pinned)
 
 
 def finalize_content(root, report):
@@ -456,7 +470,7 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     summaries = []
     from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
-        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'access', 'actor') if key in report}
+        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'access', 'actor', 'assessment', 'execution_identity') if key in report}
         # The compact summary omits recipe/connection metadata used by the role
         # extractor. Project evidence before discarding those fields, for both
         # live rendering and machine output, just as saved observation views do.

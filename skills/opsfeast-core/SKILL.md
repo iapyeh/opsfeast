@@ -27,7 +27,7 @@ Read [retention contracts](../../docs/retention.md), [offline replay/protection]
 1. Discover declared datasets with recipes list/show or inspect-recipe --json. Read field meanings, units, versions, limits and source-qualified references before selecting data; metadata is not execution evidence.
 2. Query with `retention list/show/export --profile NAME --json`, Core `profile.retention.query/show`, or checkout `retention_store.query/show`. Annual authoritative SQLite lives in retention/; reads never initialize or connect. Preserve source times, origins, identity warnings, partial/unknown states and zero/false values.
 3. Authors declare host-values 0.2.0 with dataset/field descriptions; system/inventory/overview 0.3.1 owns inventory-observations 0.1.0, its schema and registered normalizer. Discovery reads the explicit declaration; it never guesses from recipe ID. Retention snapshots 0.2.0 contain data definitions only. No markdown_template or rendered Markdown is retained.
-   Read [inventory-owned data semantics](../../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract) before authoring or interpreting inventory: explicit access_mode/retention declaration, recipe-local schema, normalizer/schema digests, supported versions and partial/identity limits. Registered contract/version selects shipped pure normalization; candidate main.py/retention.py is never loaded by replay. A new structured contract requires reviewed product registration and tests, not descriptor executable paths. Reuse runner/replay/query; include retention.schema.json in portable clone bundles. Current envelopes preserve retention_definition and source provenance.
+   Read [inventory-owned data semantics](../../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract) before authoring or interpreting inventory: explicit access_mode/retention declaration, recipe-local schema, normalizer/schema digests, supported versions and partial/identity limits. Registered contract/version selects shipped pure normalization; candidate main.py/retention.py is never loaded by replay. A new user-defined structured contract should use mode: portable with an embedded data_schema; product-registered bundled normalizers remain available for their own contracts. Replay never loads descriptor executable paths. Reuse runner/replay/query; include retention.schema.json in portable clone bundles. Current envelopes preserve retention_definition and source provenance.
 4. Reuse offline python-report's `context.retention.query/show` and artifact/result/job support for content. [feast/report/retention-summary](../../recipes/feast/report/retention-summary/README.md) generates Markdown and HTML and combines multiple recipe references without raw access or connections. Custom renderers declare dependencies and verification; no hosting or transmission is implied.
 5. Use retention ingest/delete-observation/rebuild for data and vault rebuild/groups/inspect for content. Replay does not execute recipe code. Write/unknown operations and linked evidence remain protected. Direct Core calls need explicit retention_store.operation_intent/operation_result journaling.
 6. Init establishes namespace plus independent retention/vault areas. vault.auto_refresh defaults true and may be disabled. Check recipe status, retention and content_update separately; consumer failure preserves stored data and is retried with consumers dispatch; explicit vault rebuild regenerates current Vault content. Old vault SQLite layouts are rejected and preserved; use a separate profile and explicitly replay raw. Old inventory raw without snapshots, old template snapshots and structured normalizer/schema digest mismatches need a reviewed current --recipe-dir; never reclassify historical execution.
@@ -183,7 +183,7 @@ subprocess environment policy implied by this support. No new Core method is nee
 ## SSHScript 7.0 source migration
 
 Read [the exact source contract](../../docs/sshscript-7.md) before operational work.
-This checkout supports only 7.0.0 source commit 7a3b43594eca50cf1600d4f8a1dc67cb266df19e;
+This checkout requires published sshscript==7.0.0, release source a1c76d016419484b6ffb930bf2b16f30bae61208;
 Core/runner/diagnostics require matching module/type bytes, not just version text.
 Reuse existing Core sessions and host YAML identity_file/proxy_command. New Python
 interfaces use parent_key_filename/proxy_command/proxy_jump, missing_host_key_policy
@@ -195,4 +195,14 @@ automatic install or real-host authorization follows from this migration.
 
 Use `profile.services` for standalone programs and the supplied `recipe.services` inside Recipe scope. Read [services 0.1.0](../../docs/services.md) for reconcile/create/list/show/update/history/snapshot, lifecycle and revision checks, and [adapters](../../docs/service-adapters.md) for static readiness, private configuration and dispatch side effects. Consumer code must use `context.services` to preserve live-evidence eligibility. Read-only inspection never proves provider delivery. General logging remains unavailable; service dispatch may send configured mail, while todos never execute work.
 
-*Last modified: 2026-10-25 14:06:31*
+
+## Portable profile data and recipes
+
+`profile.transfer` is a profile-bound Space with query/select/export, import_plan/import_package, archive_plan/archive and receipts. Read [the canonical API/workflow](../../docs/portability.md) and [data-only contracts](../../docs/portable-contracts.md). API mutations require expected_plan; archive can resume by receipt ID. `opsfeast.recipe_install` exposes recipe plan/install and rollback_plan/rollback; no provider calls or candidate execution occur. Imported retention is a read-only origin-qualified projection through profile.retention; the original payload remains intact in transfer storage. Preserve source identities and independent observation/retention selection. Dependencies and filesystem primitives have explicit inspection/verification limits; never replace a reviewed plan with unconditional overwrite.
+
+
+## Selected execution scopes
+
+Read [results/accounts](../../docs/recipe-results-and-accounts.md) for `Profile.recipe(..., execution={"via":"sudo","user":"root"})`, `Recipe.execution(policy)`, pipe-console exec/start and exact stdin. Default login requires no escalation; failed acquisition never yields the body, restoration failure disables reuse. Explicit su/sudo defaults changed to get_pty=False; request a PTY only for a reviewed interactive need. Reuse an already-selected root with recipe.root(); do not nest switching loops.
+
+*Last modified: 2026-10-26 12:14:33*

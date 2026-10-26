@@ -10,7 +10,7 @@ system/inventory/overview 0.3.1 owns [retention.schema.json](../recipes/system/i
 
 ## Retention contracts
 
-[host-vault-record.schema.json](host-vault-record.schema.json) defines namespace-based management identity, immutable origin, recipe provenance and future mappings. [host-vault-package.schema.json](host-vault-package.schema.json) defines the future manifest structure. Read [runtime storage and validation](../docs/retention.md); package generation/import/export are deferred. Existing retained schemas describe the unchanged nested inventory payload.
+[host-vault-record.schema.json](host-vault-record.schema.json) defines namespace-based management identity, immutable origin and recipe provenance. [host-vault-package.schema.json](host-vault-package.schema.json) is an earlier, unimplemented manifest proposal; current independent data transfers use the portable unit/package contracts below. Read [runtime storage and validation](../docs/retention.md) and [portability](../docs/portability.md). Existing inventory payload contracts remain independent of the transfer envelope.
 
 Host-values and snapshots are now data-only 0.2.0; field semantics are required and Markdown templates are removed. See [query/content contracts](../docs/retention.md).
 
@@ -20,9 +20,9 @@ For the current host configuration object, read [hosts.yaml](../docs/hosts-yaml.
 
 After every release update, user agents must reread the current object/schema documentation and implemented schemas, regardless of diffs or previous reading, following the [mandatory release reading list](../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading-completion verification or receipt is required.
 
-The first milestone will establish the minimal inventory and result formats. They should retain host identity, collection time, source, tool version, status, and units where relevant.
+Implemented inventory and result formats preserve host identity, collection time, source, tool version, status, and units where relevant.
 
-Observations, unknown values, and AI interpretations should remain distinguishable. The inventory-system result schema 0.2.0 is defined in [schema.json](../recipes/system/inventory/overview/schema.json). [Retained inventory observation 0.1.0](retained-observation.schema.json) and [JSON exchange 0.1.0](observation-exchange.schema.json) are now implemented. Other record contracts remain planned.
+Observations, unknown values, and AI interpretations remain distinguishable. The inventory-system result schema 0.2.0 is defined in [schema.json](../recipes/system/inventory/overview/schema.json). [Retained inventory observation 0.1.0](retained-observation.schema.json) and [JSON exchange 0.1.0](observation-exchange.schema.json) are implemented. Recipe-owned structured and portable contracts are described in the retention and portability guides.
 
 See the [result-data workflow](../docs/result-data.md) for stage separation, SQLite storage, extraction, identity, replay, export and combination. JSON Schemas describe structure; the tool also checks semantic identity relations, ordering/state constraints and duplicate/conflicting IDs. A schema is not publisher authentication. Receiver analysis storage remains user-selected.
 
@@ -36,4 +36,12 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [observation-view.schema.json](observation-view.schema.json) defines compact batch index/host views 0.2.0 for the top-level observation CLI. This projection separates whole-batch collection/result counts, effective result_status, nullable actor/access/content evidence and exact raw Result ID links independently of full observation-run objects. See [CLI and checkout helper semantics](../docs/cli.md#revisit-an-observation-batch).
 
-_Last modified: 2026-10-21 18:12:20_
+## Portable units and recipe-carried data
+
+[portable-data-unit.schema.json](portable-data-unit.schema.json) defines independent observation and retention units with original identity, payload, attachments and context. [data-package.schema.json](data-package.schema.json) defines their package manifest. [portable-retention.schema.json](portable-retention.schema.json) defines a recipe-owned data declaration using the supported offline schema dialect. [retention-snapshot.schema.json](retention-snapshot.schema.json) preserves that definition for later data-only validation. Follow [portable authoring](../docs/portable-contracts.md) and [transfer/import/archive plans](../docs/portability.md); archive selection, protected operations, recovery and source deletion require runtime checks beyond schema validation. Recipe bundles use the separately documented 0.2.0 contract.
+
+## Recipe assessments and execution identity
+
+[recipe-assessment.schema.json](recipe-assessment.schema.json) defines optional label, severity and summary separately from fixed execution status. [recipe-execution.schema.json](recipe-execution.schema.json) describes partial operator policy; effective inherited su/sudo policies require an explicit target. [recipe-execution-evidence.schema.json](recipe-execution-evidence.schema.json) preserves verified login/actual identities and restoration evidence. Retained envelopes, batch targets and compact observation views reference the applicable metadata contracts. Read [results and accounts](../docs/recipe-results-and-accounts.md) for configuration, failure precedence and verification limits.
+
+*Last modified: 2026-10-26 12:19:58*

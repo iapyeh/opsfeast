@@ -187,7 +187,9 @@ def vault(snapshot, config, root=None):
                 relative = os.path.relpath(links[key], Path(root) / 'vault/Services' / kind)
                 lines += ['[Source observation report](' + quote(relative, safe='/.-_') + ')', '']
             else:
-                lines += ['Source observation report unavailable; retain the source record ID above for lookup.', '']
+                from opsfeast.transfer import archived_reference
+                archived = archived_reference(root, key) if root is not None else None
+                lines += ['Evidence archived: ' + text(archived['package']) + ' (receipt ' + archived['receipt_id'] + ').' if archived else 'Source observation report unavailable; retain the source record ID above for lookup.', '']
             lines += markdown_table(['At', 'Actor', 'Action', 'Status'], [
                 (h['at'], text(h['actor']), h['action'], h['object']['status'])
                 for h in snapshot['history'] if h['object']['id'] == obj['id']])
