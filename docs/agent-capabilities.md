@@ -92,6 +92,16 @@ The shared loader resolves host/account icons using entry hosts.yaml `default.ic
 
 Prefer [Core API 0.1.0](core-api.md) and the [Core skill](../skills/opsfeast-core/SKILL.md) for installation identity/profiles, hosts snapshots, standalone sessions and scoped Recipe su/sudo, and read-only inspection. From the checkout root or an authorized installed package use `from opsfeast import Instance`; select `Instance.open(installation=...).profile(...)`. Core replaces the need for caller-managed tools import paths for these capabilities. Existing python-session recipes remain compatible; python-recipe entrypoints receive execute(recipe). Notification/todo services are implemented; use [the shared services](services.md). General logging remains deferred. See canonical examples, dependencies, error/lifecycle rules and copy/UUID policy in that guide.
 
+For a complete temporary agent program, use [authorized Core operations](core-agent-operations.md): host-ID dictionary iteration, public imports, literal shell text, finite per-command budgets, original exception/cleanup evidence and conversion to a reusable recipe. No new API, implicit host authorization or automatic Core journaling is added.
+
+`recipe.host_info` is the public read-only view of saved host-init OS/distribution,
+kernel, architecture and optional login-PATH python3 version/executable, with the
+original observation time. It returns a copied fixed-key dictionary with None for
+unavailable values, never probes or depends on inventory, and reuses existing cache
+validity rules. Refresh via authorized host-init; OS/Python/PATH freshness and other
+interpreter environments are the user's responsibility. See [Core keys/example](core-api.md#saved-host-information)
+and [probe/optional-failure semantics](host-diagnostics.md#initialize-platform-facts).
+
 ## Python reuse map
 
 These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 7.0.0. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
@@ -395,4 +405,4 @@ Read [portability](portability.md) for exact invocations, storage, recovery, API
 
 Reuse the runner/Core recipe-execution 0.1.0 service for login/su/sudo selection and verified cleanup; use optional recipe-assessment 0.1.0 for human finding labels. Supported surfaces are exact-reference execution configuration, `Profile.recipe(..., execution=...)`, `Recipe.execution(policy)` and returned assessment objects. [Results and accounts](recipe-results-and-accounts.md) documents signatures, schemas, failure behavior, portability, transport and tests. These are bundled platform capabilities; arbitrary runner/backend account adapters remain unsupported.
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-29 22:51:57*

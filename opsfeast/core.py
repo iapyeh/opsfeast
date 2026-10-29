@@ -432,6 +432,20 @@ class Recipe:
         return connection
 
     @property
+    def host_info(self):
+        """Copied latest usable host-init facts; no probe or session operation."""
+        from host_runtime import cached_facts
+        cached = cached_facts(self._config, self.host_id)
+        facts = cached['facts'] if cached else {}
+        fields = ('os_name', 'os_version', 'distribution_id', 'distribution_name',
+                  'distribution_version', 'kernel_name', 'kernel_release',
+                  'architecture', 'python_version', 'python_executable')
+        return {'host_id': self.host_id,
+                'observed_at': cached['observed_at'] if cached else None,
+                **{key: facts[key] if isinstance(facts.get(key), str) and facts[key] else None
+                   for key in fields}}
+
+    @property
     def instance_id(self):
         return self._state.identity['id']
 

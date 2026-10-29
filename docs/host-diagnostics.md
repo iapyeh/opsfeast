@@ -18,6 +18,20 @@ A direct `host-init` invocation always refreshes facts. The optional `test-conne
 
 The probe uses `uname -s`, `uname -r` and `uname -m`. Linux distribution identity/version comes from `/etc/os-release`, falling back to `/usr/lib/os-release` only when the first file is absent. It parses data without executing its content. FreeBSD userland version comes from `freebsd-version -u`; macOS product version comes from `sw_vers -productVersion`. Kernel release remains separate from OS/distribution version. Unknown fields remain unavailable. A recognized kernel is sufficient for platform discovery; missing distribution/version does not prevent a generic implementation from matching. An unrecognized kernel is recorded without guessing that it is Linux.
 
+Host-init also runs a fixed `python3 -c` query through the original login
+Session's PATH. It records `facts.python_version` (major.minor.micro) and
+`facts.python_executable` (sys.executable) from that same interpreter, with per-field
+states in fields. Python is optional: missing command, timeout, malformed/truncated
+output or another query failure leaves these facts absent and does not invalidate
+successful OS discovery. No Python installation, alternate-name/path search, venv
+enumeration or su/sudo occurs for this probe. The existing finite timeout applies.
+
+Recipes read these values and OS facts through [recipe.host_info](core-api.md#saved-host-information)
+without another probe or an inventory run. Rerun host-init to fill Python fields in
+existing saved facts, and after OS/Python/PATH changes. The user owns freshness and
+must specify Python environments outside the login PATH; the saved Python does not
+describe a later sudo/su account's PATH.
+
 Facts are saved atomically in `observations/host-init/<sha256-of-host-id>.json` inside the management directory. Symlink storage is rejected. Reports retain host ID, UTC observation time, probe/schema version, per-field state, commands and a digest of the connection target including jump-host settings. No credentials or raw command output are included. A changed target configuration, failed latest initialization, incompatible facts schema or malformed cache causes a new probe. SSH config changes outside hosts.yaml and reinstallation at the same endpoint cannot be inferred from this digest: run `host-init` explicitly after such changes. There is no age-based expiry.
 
 A failed explicit refresh retains the previous successful facts as historical evidence, but the latest state is failed and those facts are not reused for dispatch. Cleanup failure also makes initialization fail.
@@ -224,4 +238,4 @@ Broadcom's [SSH access guidance](https://knowledge.broadcom.com/external/article
 also distinguishes SSH shell access from UI-role restrictions; it does not establish
 this behavior on every ESXi installation.
 
-*Last modified: 2026-10-24 22:22:19*
+*Last modified: 2026-10-29 22:51:57*

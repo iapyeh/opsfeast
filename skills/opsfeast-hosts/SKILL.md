@@ -122,6 +122,7 @@ Choose the narrowest command that satisfies the request:
 
 Use the selected interpreter instead of assuming `python`. New commands accept `--root` or `--profile`, not a positional management root; omit both for the default profile. Existing test-connection retains its positional root. `--timeout` is per stage/command, not a whole-run deadline.
 
+- Host-init also records optional login-PATH python3 version/sys.executable. Missing or failed Python probes do not invalidate successful OS discovery; no interpreter installation/search or privilege switch occurs. Recipes use the read-only [recipe.host_info dictionary](../../docs/core-api.md#saved-host-information), without requiring inventory. Rerun host-init after OS/Python/PATH changes or to populate absent Python fields; the user specifies other environments and owns freshness.
 - Direct host-init and test-connection --host-init refresh facts. Test-host reuses successful target-matching facts, otherwise probes; failed latest refresh never becomes a reused success. Show cache/probe provenance and original observation time. Endpoint reinstallation or external SSH-config changes require explicit refresh; the cache has no age expiry.
 - Test-host includes login checks, platform initialization, enabled connection-account sudo using the selected password or passwordless policy, and independent su to other declared accounts. It does not enumerate accounts or test chains. This is the explicit exception to ordinary configuration work never selecting su targets automatically.
 - Test-sudo usernames are actors; omitted means the actual connection identity, and --run-as selects the sudo target (default root). Another actor requires verified su entry first. Distinguish failed su prerequisites from an attempted sudo failure.
@@ -313,4 +314,4 @@ the selected password as its fallback when no explicit passphrase is supplied.
 
 Use exact-reference `recipes.<reference>.execution` with inherited via/user, supported for python-recipe. Read [the configuration/account guide](../../docs/recipe-results-and-accounts.md) before edits. Preserve host credential policy, validate effective settings locally, and execute only within operational authorization. Configuration validity is not native sudo/su evidence.
 
-*Last modified: 2026-10-26 11:49:24*
+*Last modified: 2026-10-29 22:51:57*

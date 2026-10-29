@@ -72,6 +72,26 @@ class CoreDeliveryTests(unittest.TestCase):
         self.assertEqual(report['retention']['reason_code'], 'no_retention_adapter')
         self.assertNotIn('private-value', path.read_text())
 
+    def test_runner_recipe_reads_host_init_info_without_probing(self):
+        from host_runtime import load_config, save_facts, target_fingerprint
+        config = load_config(self.profile.root, 'h')
+        save_facts(config, 'h', {'schema_version': '0.1.0', 'host_id': 'h',
+            'status': 'success', 'observed_at': '2026-10-29T00:00:00+00:00',
+            'target_fingerprint': target_fingerprint(config, 'h'),
+            'facts': {'os_name': 'linux', 'distribution_id': 'debian',
+                      'distribution_version': '13', 'python_version': '3.13.5',
+                      'python_executable': '/usr/bin/python3'}})
+        self.write("""VERSION = '0.1.0'
+def execute(recipe):
+    return {'status': 'success', 'reason_code': 'host_info_read',
+            'message': 'Read saved host initialization.', 'data': recipe.host_info}
+""")
+        with patch('host_runtime.discover', side_effect=AssertionError('must not probe')):
+            report, _ = self.run_recipe()
+        self.assertEqual(report['status'], 'success', report)
+        self.assertEqual(report['data']['distribution_id'], 'debian')
+        self.assertEqual(report['data']['python_version'], '3.13.5')
+
     def test_static_catalog_and_signature_never_import_recipe(self):
         self.write("raise RuntimeError('must not execute')\n" + CODE)
         inspected = inspect_one(self.directory, [])
@@ -192,6 +212,7 @@ sys.path.append(sys.argv[3])  # Selected environment's dependency directory, not
 from pathlib import Path
 from opsfeast import Instance, Recipe, RootUnavailableError, CoreError
 assert callable(Recipe.root)
+assert isinstance(Recipe.host_info, property)
 assert issubclass(RootUnavailableError, CoreError)
 from root_access import candidates
 from recipe_inspection import inspect_one

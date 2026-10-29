@@ -51,6 +51,8 @@ See [ecosystem roles and repository boundaries](docs/ecosystem.md) and [rename c
 
 For CLI automation, explicitly select `--json` where supported: stdout terminals now receive shared tabulate summaries, while non-TTY contracts and raw-data export commands retain their formats. Follow [the console policy](docs/cli.md#terminal-tables-and-json).
 
+For agent-authored temporary Core programs, read the [authorized operation guide](docs/core-agent-operations.md) before choosing invocation syntax. It covers host dictionary iteration, public imports, quoted local heredocs, remote argument quoting, per-command deadlines and original-error/cleanup evidence. Prefer the existing recipe workflow for repeated work.
+
 ## Execution tool principles
 
 OpsFeast welcomes recipes built with different execution tools and also serves as a practical showcase of SSHScript. Prefer SSHScript for command execution and session orchestration when it fits the task, supported versions and authorized environment. User-selected tools, safety requirements and existing environment constraints take precedence. Suitability includes verifiable behavior and reasonable dependency and maintenance costs, not merely technical possibility.
@@ -143,4 +145,4 @@ For dated backup presence, expiry and unexpected-entry lists, use [the shipped b
 
 For sharing/import/archival, read [portability](docs/portability.md), [portable retention authoring](docs/portable-contracts.md) and the recipe/result-data skills. Recipe, observation and retention are independent units. Use transfer plans and expected digests, origin-preserving merge/replace and explicit recipe path-conflict resolution; do not build parallel copy/delete/SQL tools. Archive-plan freezes source-time selection, and apply verifies an external package before source deletion/compaction. Preserve protected operations, shared attachments, recovery receipts, service lifecycle and human notes. No candidate code/consumer/provider runs during data import. Bundle 0.2.0 rejects the old format; no migration or compatibility layer is required.
 
-*Last modified: 2026-10-26 11:49:24*
+*Last modified: 2026-10-29 19:58:09*

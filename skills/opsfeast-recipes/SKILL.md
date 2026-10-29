@@ -3,6 +3,12 @@ name: opsfeast-recipes
 description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for turning interactive discovery into repeatable recipe/config/retention/consumer workflows, recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
 ---
 
+For Python recipes, read `recipe.host_info` for saved host-init OS/distribution,
+versions, architecture and optional login-PATH python3 version/path. Missing values
+are None; no inventory prerequisite or implicit probe is added. Use
+[the canonical dictionary/example](../../docs/core-api.md#saved-host-information).
+Users refresh with host-init after environment changes and specify other interpreters.
+
 ## Interactive exploration to a complete reusable workflow
 
 When a user wants to turn exploration into repeatable operations, follow [the exploration-to-recipe workflow](references/exploration-to-recipe.md). Show commands/calls before execution, retain sanitized input/output evidence and prefer explicit failure to destructive guesses. Dangerous changes require concrete authorization. Deliver config, retention and the requested consumer alongside the recipe, using current contracts rather than reconstructing infrastructure. Finish the handoff: apply authorized target-specific private settings from exploration, supply the actual copy/paste invocation and point to this execution's raw/readable results; do not leave known facts as user homework. TTY completion supplies saved result/Vault entrypoints; JSON remains unchanged.
@@ -462,4 +468,4 @@ Bundle 0.2.0 pack/unpack preserves digests and executable modes; 0.1.0 is not ac
 
 Before implementing findings labels or account selection, read [recipe assessments/accounts](../../docs/recipe-results-and-accounts.md). Python-recipe uses operator-configured execution 0.1.0 before the body; continue using supplied `recipe.session`. Return optional assessment 0.1.0 with label/severity/summary, keeping fixed status truthful. Default PASS means completed execution. Do not put account credentials in vars, invent CLI flags, fall back after identity failure or imply hygiene todos authorize deletion. Portable generators declare required feature versions; upgrade/review private copies rather than assuming product updates replace their code.
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-29 22:51:57*

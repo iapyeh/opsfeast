@@ -50,7 +50,11 @@ status = instance.inspect()
 profile = instance.profile()                 # Snapshot of the active selection.
 other = instance.profile("inventory")        # Does not change active profile.
 external = instance.profile(root="/srv/feasts/other")  # Explicit root; name may be None.
-settings = profile.hosts.list()              # Independent, masked dictionaries.
+settings = profile.hosts.list()              # dict: {host_id: masked_config}
+host_ids = list(settings)
+for host_id, config in settings.items():
+    pass                                    # Work with copied, masked configuration.
+exists = "host-01" in settings
 host = profile.hosts.get("host-01")
 icon = host["icon"]                         # Resolved explicit/global/built-in host symbol.
 profile.reload()                             # Explicitly replace configuration snapshot.
@@ -78,6 +82,11 @@ instance.profiles.detach("inventory")
 
 `profiles.list()` returns roots, available/unavailable states and active flags. Attach validates and preserves existing data; conflicting names/roots fail. Init reuses a registered name rather than creating another directory. Main cannot detach; detaching active switches to valid registered main and preserves files. Local writes do not authorize host operations. Existing Profile objects keep their selected roots when the active profile changes. Registry writes use existing atomic save and Core writers serialize; legacy CLI/external-editor concurrent registry changes are not a transactional guarantee. No public hosts editor, arbitrary file writer, history deletion or migration API is included.
 
+For a complete agent-authored temporary program, host iteration, local/remote
+quoting, per-command deadlines and failure handling, follow
+[authorized Core operations](core-agent-operations.md). `profile.hosts` is a
+non-callable snapshot manager; iterate/test membership on its returned dictionary.
+
 ## Standalone session and Recipe scopes
 
 Within already authorized host/command scope:
@@ -92,9 +101,56 @@ with profile.recipe("host-01", vars={"purpose": "identity"}, timeout=15) as reci
 
 `profile.sessions.connect(host_id, timeout=30)` yields the same scoped Recipe capabilities without invocation vars. Recipe is a per-execution object; do not construct it directly or share across threads. It provides host_id, vars, timeout, run_id, instance_id, selected Profile, connection_owner (core or runner), session, root(), sudo(), su() and a copied report. Standalone vars must be plain JSON-compatible mappings; runner vars additionally use descriptor validation/defaults.
 
-The session facade provides exec_command and start. It applies a finite default command/job timeout and quotes argv for privileged consoles; privileged commands require string argv sequences. CommandResult/managed-job interpretation follows SSHScript 5.0.0, including truncation and unknown remote termination. Caller-owned jobs must finish/stop within scope; returned raw job objects are not lifetime-sandboxed. Shell/connect/settings and direct privilege factories are not exposed through this facade. Existing legacy recipes retain their full borrowed SSHScript Session.
+The session facade provides exec_command and start. It applies a finite default command/job timeout and quotes argv for privileged consoles; privileged commands require string argv sequences. CommandResult/managed-job interpretation follows SSHScript 7.0.0, including truncation and unknown remote termination. Caller-owned jobs must finish/stop within scope; returned raw job objects are not lifetime-sandboxed. Shell/connect/settings and direct privilege factories are not exposed through this facade. Existing legacy recipes retain their full borrowed SSHScript Session.
 
 Core owns standalone connection cleanup, including jump ancestors. Recipe/session close is rejected with CoreError `session_not_owned`; leaving the outer scope closes the owner strictly. Scope expiry, wrong-thread use, use of a parent while a nested privilege scope is current, or uncertain restoration raises `session_scope_unavailable`. Python introspection/private attribute access is not sandboxed. Disabled hosts/jumps are rejected, with no fallback, implicit host-init or su/sudo on connect. Timeout is per stage/command, not a total recipe deadline.
+
+## Saved host information
+
+`recipe.host_info` returns a fresh, independent dictionary of the latest usable
+host-init facts for the Recipe's selected host and configuration. It reads local
+saved data only: no connection, command, initialization, inventory or automatic
+refresh. It also works from a nested su/sudo Recipe and can be read while a root
+console is active or after the execution scope ends; it grants no execution access.
+
+```python
+with profile.recipe("host-01") as recipe:
+    info = recipe.host_info
+    distribution = info["distribution_id"]  # e.g. ubuntu or debian; otherwise None.
+    version = info["distribution_version"]  # Linux distribution version.
+    python = info["python_version"]         # Login PATH python3, e.g. 3.12.8.
+    executable = info["python_executable"]  # e.g. /usr/bin/python3.
+```
+
+Every dictionary has these keys:
+
+| Key | Meaning |
+| --- | --- |
+| host_id | Configured host ID |
+| observed_at | Original host-init UTC observation time, or None |
+| os_name | OS family: linux, macos, freebsd, esxi, or observed kernel-derived name |
+| os_version | macOS/FreeBSD/ESXi version; None for Linux (use distribution_version) |
+| distribution_id, distribution_name, distribution_version | Linux distribution identity/name/version |
+| kernel_name, kernel_release, architecture | Kernel and architecture facts |
+| python_version, python_executable | Login account's PATH python3 version and sys.executable |
+
+All values except host_id are strings or None. Missing initialization or unusable
+saved facts yields None values; a missing individual field also yields None.
+Failed latest initialization does not substitute previous_success history. Existing
+schema/target checks and unsafe-storage rejection remain unchanged; invalid storage
+can raise ConfigError or an I/O error when this property is read. Ordinary Recipe
+operations do not read host_info unless requested. Returned edits are not saved.
+
+Run `python -B tools/opsfeast.py host-init host-01 --profile main` under the user's
+host-operation authorization to collect/refresh these facts. Existing saved results
+without Python fields remain readable with None values; rerun host-init to populate
+them. Reinstallation, OS/Python upgrades and PATH changes require an explicit rerun;
+the user owns the risk of using old observations. Python refers to the login PATH
+at initialization, not a sudo/su account, venv or every installed interpreter. Users
+must tell their agents about other intended Python environments. See
+[host initialization](host-diagnostics.md#initialize-platform-facts) for probing,
+storage and failure details. No new inventory dependency or compatibility layer is
+introduced; host-init facts/API remain version 0.1.0 with additive optional fields.
 
 ## Privilege transitions and evidence
 
@@ -160,7 +216,7 @@ An already-root exec Session opens a Bash console so the return interface is the
 as an elevated console. Thus `Recipe.root()` requires a usable SSHScript Bash console
 as well as supported identity probes even when sudo is unnecessary. Inventory's raw
 already-root exec path does not open an extra console and keeps its platform support.
-The implementation follows the bundled SSHScript 5.0.0 Agent Guide/API console,
+The implementation follows the bundled SSHScript 7.0.0 Agent Guide/API console,
 authenticated-entry, job and cleanup contracts; no upstream library change is needed.
 
 Call root() from the active login-level Recipe, not a child returned by su/sudo
@@ -222,7 +278,7 @@ Catch ConfigError for invalid configuration/inputs and CoreError for Core lifecy
 
 API and identity schema are 0.1.0; recipe runner contract is separately python-recipe 0.1.0, descriptor 0.3.0, and product version remains VERSION. Additive compatibility is preferred; incompatible behavior requires a new declared contract and migration guidance. Core currently supports POSIX controllers; native Windows controller locking is unsupported.
 
-Public tests cover temporary identities/configuration, copies/moves, isolation, concurrency, synthetic local/jump transports, privileged identity/credential/restoration cases, runner/static discovery and wheel/sdist boundaries. Native SSH/su/sudo validation is separate; synthetic identity probes do not establish PAM, sudo policy or every platform's behavior. SSHScript source is the bundled public documentation contract 5.0.0 with provenance/digest in skills/sshscript/SOURCE.json; this feature does not update that upstream snapshot.
+Public tests cover temporary identities/configuration, copies/moves, isolation, concurrency, synthetic local/jump transports, privileged identity/credential/restoration cases, runner/static discovery and wheel/sdist boundaries. Native SSH/su/sudo validation is separate; synthetic identity probes do not establish PAM, sudo policy or every platform's behavior. SSHScript source is the bundled public documentation contract 7.0.0 with provenance/digest in skills/sshscript/SOURCE.json; this feature does not update that upstream snapshot.
 
 Delivery verification (2026-10-15): 456 tests passed on each of Python 3.11.15, 3.13.13 and 3.14.4, including headless Textual checks. Older interpreters reused the selected environment's pure-Python dependencies; these runs do not establish native SSHScript dependency readiness. Matching SSHScript 5.0.0 and credential-free local Core/identity execution were verified on 3.14. Wheel build, pip installation into a temporary target, import/session use outside the checkout, public resource inspection, skill validation and changed-document checks passed. Native SSH/su/sudo remain unverified. An existing TUI regression test now waits for deferred refresh completion instead of fixed short sleeps.
 
@@ -321,4 +377,4 @@ is introduced; use the canonical policy guide for compatibility and verified lim
 
 Use `profile.recipe(host_id, execution={"via": "sudo", "user": "root"})` for an explicitly selected standalone account, or `with recipe.execution(policy) as selected:` from a login scope. The runner resolves exact-reference settings automatically. `recipe.su`/`sudo` now default to pipe consoles; explicit interactive `get_pty=True` remains available. Read [results and accounts](recipe-results-and-accounts.md) before choosing policies or interpreting saved evidence; do not recreate credential retries or privilege loops.
 
-*Last modified: 2026-10-26 11:49:24*
+*Last modified: 2026-10-29 22:51:57*

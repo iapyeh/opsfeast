@@ -44,6 +44,15 @@ An instance is an installation/checkout, not feasts/ or an individual management
 
 A new clone or copy into another directory must receive a new UUID. Use explicit initialization on that copy, never relocate its identity. Copy detection uses the recorded resolved path; same-path copies on another machine require explicit renewal. Only an actual move of the original installation uses relocate_identity to preserve UUID. The UUID ending in 000000000001 is reserved for the original development installation; it must not propagate to copies. Missing UUID uses the standard all-zero placeholder, with inspection exposing placeholder/reason; the user accepts duplicate-identity risk. Name is required/default UUID and description optional; names are not unique or authentication evidence. Assigned identity persists through normal init/profile changes. Do not rewrite identity during a read-only handover.
 
+For temporary operations, follow the [complete Core operation example](../../docs/core-agent-operations.md): public imports need no tools sys.path insertion; hosts.list() returns a host-ID dictionary; use a quoted local heredoc or a reviewed Python file, then quote remote arguments separately. check=False does not suppress timeouts. Preserve step labels, original errors and cleanup evidence, and do not retry uncertain writes or invent Ctrl+C recovery. Convert reviewed repeated work into a recipe.
+
+For saved system context use `recipe.host_info`, a copied dictionary of OS family,
+distribution/version, kernel/architecture, observation time and optional login-PATH
+python3 version/executable. Missing values are None. Reads never probe or require
+inventory; refresh through authorized host-init. Users own freshness and specify
+other Python environments. Use the [canonical keys and example](../../docs/core-api.md#saved-host-information),
+not private config/cache parsing or an automatic probe.
+
 ## Reuse configuration and sessions
 
 Effective hosts and declared users include resolved icon fields (built-ins 🍎/👤). Entry hosts.yaml supports global default.icon.host/user. Entry and included YAML support per-group groups.<name>.icon.host/user. Explicit host/account icons override defaults; default.users.<account>.icon then precedes group user defaults. Each remaining field independently takes the first defined value in host group order, then the global default. Include files inherit defaults; explicit values must be one Unicode Symbol code point, not a multi-code-point glyph. Optional default.users.<account>.email stays in source metadata and is not merged into host-account snapshots. This is display-only and does not rewrite YAML; see [icon rules](../../docs/hosts-yaml.md#host-icon).
@@ -205,4 +214,4 @@ Use `profile.services` for standalone programs and the supplied `recipe.services
 
 Read [results/accounts](../../docs/recipe-results-and-accounts.md) for `Profile.recipe(..., execution={"via":"sudo","user":"root"})`, `Recipe.execution(policy)`, pipe-console exec/start and exact stdin. Default login requires no escalation; failed acquisition never yields the body, restoration failure disables reuse. Explicit su/sudo defaults changed to get_pty=False; request a PTY only for a reviewed interactive need. Reuse an already-selected root with recipe.root(); do not nest switching loops.
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-29 22:51:57*

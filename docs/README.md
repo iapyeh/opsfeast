@@ -37,6 +37,11 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 ## Agent instructions
 
+For Python composition, read the [Core API contract](core-api.md) and
+[authorized temporary operation guide](core-agent-operations.md): host-ID
+dictionaries, literal shell text, per-command deadlines, failure evidence and
+the route from exploration to reusable recipes.
+
 - [Public and local agent guidance](agent-guidance.md): shared tracked instructions, optional private settings, discovery behavior and checks before publication.
 
 ## Recipe ecosystem guides
@@ -53,4 +58,4 @@ Start with the shared [vision and design principles](vision.md): human intent, l
 
 Extend the implemented Python-session contract only with versioned, tested capabilities. Implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/FreeBSD/SSH and native su/sudo validation and the collect-record-repeat-compare workflow, including preservation of human notes.
 
-_Last modified: 2026-10-20 11:22:14_
+*Last modified: 2026-10-29 19:59:44*

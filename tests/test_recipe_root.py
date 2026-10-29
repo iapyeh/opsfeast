@@ -1,4 +1,4 @@
-"""Recipe.root console, typed failures, scope ownership and shared policy; synthetic only."""
+"""Recipe.root console, typed failures, scope ownership and shared policy; synthetic identities and optional local Bash timeout."""
 from contextlib import contextmanager
 import json
 import threading
@@ -24,9 +24,12 @@ class RootActor(fixture.Actor):
             self.calls = []
             self.shell_failure = False
             self.shell_wrong_identity = False
+            self.command_errors = {}
 
     def __call__(self, command, **kwargs):
         self.owner.calls.append(('command', self.name, command, kwargs))
+        if command in self.owner.command_errors:
+            raise self.owner.command_errors[command]
         self.latest = super().__call__(command, **kwargs)
         return self.latest
 
@@ -269,6 +272,103 @@ class RecipeRootTests(unittest.TestCase):
         self.assertIn('session disabled', caught.exception.__notes__[0])
         self.assertEqual(recipe.report['privileges'][0]['cleanup_error'], 'RuntimeError')
         self.assertEqual(recipe.report['privileges'][0]['error_type'], 'ValueError')
+
+    def test_timeout_preserves_original_through_successful_and_failed_cleanup(self):
+        for already_root in (False, True):
+            for cleanup_fails in (False, True):
+                with self.subTest(already_root=already_root, cleanup_fails=cleanup_fails):
+                    actor = RootActor('root', 0) if already_root else RootActor()
+                    original = TimeoutError('synthetic command deadline')
+                    actor.command_errors['slow-command'] = original
+                    if cleanup_fails:
+                        actor.exit_failures.add(('shell', 'bash') if already_root
+                                                else ('operator', 'sudo', 'root'))
+                    scope, _ = self.connection(actor)
+                    with self.assertRaises(TimeoutError) as caught:
+                        with scope as recipe:
+                            with recipe.root() as root:
+                                root('slow-command', check=False, command_timeout=0.1)
+                    self.assertIs(caught.exception, original)
+                    self.assertEqual(actor.closed, 1)
+                    evidence = recipe.report['privileges'][0]
+                    self.assertEqual(evidence['error_type'], 'TimeoutError')
+                    if cleanup_fails:
+                        self.assertTrue(recipe._state.failed)
+                        self.assertEqual(recipe.report['scope_error'], 'root_scope_failed')
+                        self.assertEqual(evidence['cleanup_error'], 'RuntimeError')
+                        self.assertTrue(any('session disabled' in note for note in original.__notes__))
+                    else:
+                        self.assertTrue(evidence['restoration_verified'])
+                        self.assertNotIn('scope_error', recipe.report)
+
+    def test_caught_timeout_allows_reuse_only_after_verified_cleanup(self):
+        for cleanup_fails in (False, True):
+            with self.subTest(cleanup_fails=cleanup_fails):
+                actor = RootActor()
+                original = TimeoutError('synthetic command deadline')
+                actor.command_errors['slow-command'] = original
+                if cleanup_fails:
+                    actor.exit_failures.add(('operator', 'sudo', 'root'))
+                scope, _ = self.connection(actor)
+
+                def operation():
+                    with scope as recipe:
+                        with self.assertRaises(TimeoutError) as caught:
+                            with recipe.root() as root:
+                                root('slow-command', check=False)
+                        self.assertIs(caught.exception, original)
+                        call = next(call for call in actor.calls if call[2] == 'slow-command')
+                        self.assertEqual(call[-1]['command_timeout'], recipe.timeout)
+                        if cleanup_fails:
+                            with self.assertRaises(CoreError) as unavailable:
+                                recipe.session.exec_command(['whoami'])
+                            self.assertEqual(unavailable.exception.code, 'session_scope_unavailable')
+                        else:
+                            self.assertEqual(recipe.session.exec_command(['whoami']).stdout.strip(), 'operator')
+
+                if cleanup_fails:
+                    with self.assertRaises(CoreError) as outer:
+                        operation()
+                    self.assertEqual(outer.exception.code, 'root_scope_failed')
+                else:
+                    operation()
+                self.assertEqual(actor.closed, 1)
+
+    def test_local_bash_timeout_through_core_facade_preserves_exception(self):
+        try:
+            from sshscript import Session
+        except ImportError:
+            self.skipTest('optional SSHScript execution dependency unavailable')
+        from contextlib import closing
+        import time
+
+        # Only the shell and timed command are real; all root identities are
+        # synthetic. Never execute sudo or contact a configured host.
+        class LocalShellActor(RootActor):
+            @contextmanager
+            def shell(self, shell):
+                with closing(Session()) as local:
+                    with local.shell(shell) as console:
+                        class TimedActor(RootActor):
+                            def __call__(self, command, **kwargs):
+                                if command == 'sleep 1':
+                                    return console(command, **kwargs)
+                                return super().__call__(command, **kwargs)
+                        yield TimedActor(self.name, self.uid, self.owner)
+
+        scope, actor = self.connection(LocalShellActor('root', 0))
+        started = time.monotonic()
+        with self.assertRaises(TimeoutError) as caught:
+            with scope as recipe:
+                with recipe.root() as root:
+                    try:
+                        root('sleep 1', check=False, command_timeout=0.1)
+                    except TimeoutError as original:
+                        saved = original
+                        raise
+        self.assertIs(caught.exception, saved)
+        self.assertLess(time.monotonic() - started, 15)
+        self.assertEqual(actor.closed, 1)
 
     def test_cross_thread_cached_method_and_explicit_privilege_scope_guards(self):
         scope, _ = self.connection(RootActor())

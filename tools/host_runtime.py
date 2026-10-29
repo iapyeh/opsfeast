@@ -14,6 +14,23 @@ import sys
 from opsfeast import ConfigError, Validator, connection_plan, connection_error, diagnostic_traceback
 
 FACTS_VERSION = '0.1.0'
+_PYTHON_INFO = (
+    'import json,sys; print(json.dumps({'
+    '"version":".".join(map(str,sys.version_info[:3])), '
+    '"executable":sys.executable}))'
+)
+
+
+def parse_python_info(text):
+    value = json.loads(text)
+    if (not isinstance(value, dict)
+            or not isinstance(value.get('version'), str)
+            or re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', value['version']) is None
+            or not isinstance(value.get('executable'), str)
+            or not value['executable'] or '\x00' in value['executable']):
+        raise ValueError('invalid Python information')
+    return value
+
 _diagnostics = ContextVar('host_diagnostics', default=(False, False, False))
 
 
@@ -265,6 +282,14 @@ def discover(session, host, timeout):
         probe('os_version', ['sw_vers', '-productVersion'])
     elif kernel == 'VMkernel':
         probe('os_version', ['vmware', '-v'])
+    python = probe('python', ['python3', '-c', _PYTHON_INFO], parse_python_info)
+    # Python is optional. A missing/failed interpreter does not invalidate OS facts.
+    python_state = report['fields'].pop('python')
+    report['facts'].pop('python', None)
+    for field, key in (('python_version', 'version'), ('python_executable', 'executable')):
+        report['fields'][field] = python_state
+        if python is not None:
+            report['facts'][field] = python[key]
     report.update(status='success', reason_code='platform_detected')
     return report
 

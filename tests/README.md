@@ -16,6 +16,24 @@ test_vault_readability.py verifies labeled provenance placement, all six invento
 
 `test_retention_consumers.py` verifies static discovery and reverse recipe relations, explicit activation, source/contract/version selectors, deduplication, disabled backlog, independent failures/retries, transaction rollback, projection failure recovery, interrupted running attempts, deletion/reinsertion, concurrent dispatch and operation events. The installed-wheel test also verifies packaged consumer resources and a registered local consumer outside checkout source. All fixtures are synthetic and local; no private Feast is modified or host contacted.
 
+`test_recipe_root.py` covers command TimeoutError propagation with check=False,
+explicit/default deadlines, successful and failed cleanup, original-error identity,
+disabled-session reuse, swallowed errors on outer exit and owner closure. The
+optional installed-SSHScript local Bash case uses simulated root identity and
+real local command timeout, without sudo or SSH. `test_core_agent_operations.py`
+runs the canonical guide shell example against a synthetic Core boundary and
+local printf, verifying literal dollar/newline preservation and no completion
+banner after command failure. No managed host, package installation or service
+change is exercised.
+
+`test_recipe_host_info.py` verifies copied fixed-key Recipe host_info, missing and
+partial facts, failed-latest history exclusion, current cache rereads, unchanged
+storage, no implicit probes and nested/post-scope access. Host-runtime tests cover
+optional login-PATH Python success/missing/timeout/malformed/truncated results and
+run the fixed query locally with the selected interpreter. Core-delivery tests
+exercise the python-recipe runner and installed-wheel property. All host/privilege
+identities are synthetic; local Python execution does not validate SSH or sudo policy.
+
 ## Host-vault verification
 
 Vault tests cover dedicated vault/ output and input separation, automatic CLI/Core
@@ -539,4 +557,4 @@ change is required. Remote CI, commit, push and release were not performed.
 
 On 2026-10-26, the selected OpsFeast Python 3.14.4 environment was reinstalled from the verified published 7.0.0 wheel without dependency upgrades. Its 32 package/type files and complete eight-file skill payload match the previously supported development snapshot. Requirements, built distribution metadata, release source provenance and bundled/agent-local complete skill copies now identify the official release. CPython 3.11.15, 3.12.12, 3.13.13 and 3.14.4 each passed all 1,017 OpsFeast tests, including isolated wheel/sdist delivery. The other interpreters used the same installed pure-Python package with their existing compatible native dependencies; no other environment was upgraded. Full readiness, pip check, CLI version, skill validation and the documented credential-free stdin quickstart with strict cleanup passed. No managed-host SSH/su/sudo, remote CI, profile migration, commit or push was performed. See [release identity and limits](../docs/sshscript-7.md).
 
-*Last modified: 2026-10-26 12:17:54*
+*Last modified: 2026-10-29 22:51:57*

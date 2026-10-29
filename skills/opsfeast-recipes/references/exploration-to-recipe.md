@@ -8,6 +8,8 @@ Before executing, show the actual command or API call with target, purpose and e
 
 Judge actual effects before running, including shell expansion, subprocesses and configured hooks. A check label or SELECT keyword alone is not evidence of safety. Deletion, overwriting system files, important configuration changes, database writes, service interruption and comparable destructive actions require explicit authorization covering concrete targets, commands and effects. Prepare reviewable changes first; explain rollback/backup limits where applicable. Reuse authorization already granted for the same scope; an exploratory read does not authorize repair, source-host access, privilege escalation or scheduling. Stop on uncertain targets or unbounded damage. Offer a safer alternative and refuse execution when risk cannot reasonably be controlled, even if a broad request was given.
 
+For temporary Python/Core exploration, use the [authorized operation example](../../../docs/core-agent-operations.md) before writing a shell invocation. Preserve literal dollar signs across local Python and remote shell boundaries, use public imports and host-ID dictionary iteration, and distinguish per-command timeout, original operation failure and cleanup evidence. Do not automatically retry uncertain writes.
+
 ## Discover, then explore within scope
 
 Read [capabilities](../../../docs/agent-capabilities.md), the [catalog](../../../recipes/README.md) and applicable tool skills first. Reuse reviewed recipes, configuration loading, account policy, connections and result/retention/consumer lifecycles. State the missing capability before creating code. Select only task-relevant contracts, not every guide.
@@ -64,4 +66,4 @@ recorded identity evidence; never repair a display gap by guessing configured
 accounts or reconnecting. Keep synthetic backend boundaries explicit when testing
 the real CLI so tests cannot accidentally execute a managed-host operation.
 
-*Last modified: 2026-10-24 23:19:57*
+*Last modified: 2026-10-29 19:58:09*

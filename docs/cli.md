@@ -218,7 +218,7 @@ Run `python -B tools/opsfeast.py COMMAND --help` for that command's parser help.
 | `inspect-recipe [RECIPE] [--platform OS_NAME ...] [--details | --json]` | Read recipe metadata, declared platform coverage, entrypoint/version status and verification evidence. Omitted RECIPE discovers checkout recipes; repeat --platform for desired OS names. No management profile, SSHScript import or connection. |
 | `dump SETTING [ROOT] [--profile NAME]` | Print a dot-separated mapping path from loaded configuration as JSON, including merged hosts. This performs loading checks, not a complete check. List indexes are unsupported. |
 | `test-connection [HOST] [ROOT] [--all | --group GROUP...] [--root ROOT | --profile NAME]` | Connect to selected hosts and required hops, then independently run hostname and date. See [selection and progress](#select-and-monitor-connection-tests). Does not switch accounts or run recipes. |
-| `host-init HOST [--root ROOT] [--profile NAME]` | Connect and freshly discover platform facts, updating saved initialization data on every explicit invocation. |
+| `host-init HOST [--root ROOT] [--profile NAME]` | Connect and freshly discover OS facts plus optional login-PATH python3 version/path, updating saved initialization data on every explicit invocation. |
 | `test-host HOST [--root ROOT] [--profile NAME]` | Test login, reuse or initialize facts, then test the configured account capabilities described below. |
 | `test-sudo HOST [USER ...] [--run-as TARGET] [--root ROOT] [--profile NAME]` | Independently test each sudo actor; omitted USER means the actual connection identity. Default TARGET: root. |
 | `test-su HOST USER ... [--root ROOT] [--profile NAME]` | Independently test connection-user → each target. At least one target is required. |
@@ -315,6 +315,12 @@ Facts include os_name, kernel_name, kernel_release, architecture and available O
 Test-host and the runner reuse successful facts with the expected schema, matching host/target fingerprint and observation timestamp. Missing, malformed, failed or target-mismatched facts require a new probe. The runner also reprobes once if cached facts cannot select an implementation. Direct host-init and test-connection --host-init always refresh. A failed explicit refresh retains previous_success as historical evidence, but the latest failure prevents cache reuse. Cleanup failure makes fresh initialization fail.
 
 There is no age expiry. Changes to an external SSH config or an OS reinstallation at the same endpoint are not detected by the configuration fingerprint; explicitly refresh after known changes. Cached observations keep their original timestamp and never become a fresh measurement merely by reuse.
+
+Host-init includes optional login-PATH `python3` version and executable path;
+Python failure leaves those fields unavailable without failing successful OS
+discovery. Core `recipe.host_info` reads the saved OS/Python facts without probing.
+Rerun host-init after OS/Python/PATH changes or to populate previously absent Python
+fields; see [facts and failure semantics](host-diagnostics.md#initialize-platform-facts).
 
 ### Sudo: actor versus target
 
@@ -911,4 +917,4 @@ Exit 0 means the local operation completed, 1 validation/storage/conflict/recove
 
 `recipes run` keeps fixed machine status/exit behavior; `PASS` means execution success. Optional assessment labels and severity appear in completion and saved observation views, with platform failures taking precedence. Configure whole-recipe login/su/sudo under exact-reference `recipes.<reference>.execution`; account settings are not CLI vars or new flags. See [results and accounts](recipe-results-and-accounts.md) for supported contracts, settings, saved evidence and examples.
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-29 22:51:57*

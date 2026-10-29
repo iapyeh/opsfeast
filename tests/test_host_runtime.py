@@ -25,7 +25,7 @@ def result(text='', code=0, **kwargs):
 
 
 def facts_outputs(kernel='Linux'):
-    return [result(kernel+'\n'), result('6.1\n'), result('x86_64\n')] + ([result('ID=ubuntu\nNAME=Ubuntu\nVERSION_ID=24.04\n')] if kernel == 'Linux' else [result('14.2-RELEASE\n')] if kernel == 'FreeBSD' else [result('15.0\n')] if kernel == 'Darwin' else [])
+    return [result(kernel+'\n'), result('6.1\n'), result('x86_64\n')] + ([result('ID=ubuntu\nNAME=Ubuntu\nVERSION_ID=24.04\n')] if kernel == 'Linux' else [result('14.2-RELEASE\n')] if kernel == 'FreeBSD' else [result('15.0\n')] if kernel == 'Darwin' else []) + [result(json.dumps({'version': '3.12.8', 'executable': '/usr/bin/python3'}))]
 
 
 class HostTests(unittest.TestCase):
@@ -43,6 +43,45 @@ class HostTests(unittest.TestCase):
         session = Mock()
         session.exec_command.side_effect = values
         return Mock(return_value=session), session
+
+    def test_python_info_uses_login_path_and_finite_budget(self):
+        cls, session = self.cls(facts_outputs())
+        report = hr.initialize_host(self.config, 'h', timeout=7, session_class=cls)
+        self.assertEqual(report['facts']['python_version'], '3.12.8')
+        self.assertEqual(report['facts']['python_executable'], '/usr/bin/python3')
+        self.assertEqual(report['fields']['python_version'], 'success')
+        session.exec_command.assert_called_with(['python3', '-c', hr._PYTHON_INFO],
+                                                check=False, command_timeout=7)
+        self.assertEqual(hr.cached_facts(self.config, 'h')['facts'], report['facts'])
+
+    def test_python_failure_is_optional_and_keeps_os_facts(self):
+        failures = [result(code=127), TimeoutError('private-timeout'),
+                    result('not-json'), result('[]'),
+                    result('{"version":"3.12.8"}'),
+                    result('{"version":"invalid","executable":"/usr/bin/python3"}'),
+                    result('{"version":"3.12.8","executable":""}'),
+                    result('{"version":"3.12.8","executable":"/usr/bin/python3"}',
+                           stdout_truncated=True)]
+        for failure in failures:
+            with self.subTest(failure=type(failure).__name__):
+                values = facts_outputs()[:-1] + [failure]
+                cls, _ = self.cls(values)
+                report = hr.initialize_host(self.config, 'h', session_class=cls, refresh=True)
+                self.assertEqual(report['status'], 'success')
+                self.assertEqual(report['facts']['distribution_id'], 'ubuntu')
+                self.assertNotIn('python_version', report['facts'])
+                self.assertNotIn('python_executable', report['facts'])
+                self.assertNotEqual(report['fields']['python_version'], 'success')
+                self.assertIsNotNone(hr.cached_facts(self.config, 'h'))
+                self.assertNotIn('private-timeout', json.dumps(report))
+
+    def test_python_probe_program_runs_locally_without_shell_expansion(self):
+        import subprocess
+        result = subprocess.run([sys.executable, '-c', hr._PYTHON_INFO],
+                                capture_output=True, text=True, timeout=5, check=True)
+        info = hr.parse_python_info(result.stdout)
+        self.assertEqual(info['version'], '.'.join(map(str, sys.version_info[:3])))
+        self.assertEqual(info['executable'], sys.executable)
 
     def test_cache_refresh_and_failure_history(self):
         cls, session = self.cls(facts_outputs())
