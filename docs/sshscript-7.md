@@ -1,18 +1,20 @@
-# SSHScript 7.0.0 release support
+# SSHScript 7.0.1 release support
 
-OpsFeast execution now uses the published `sshscript==7.0.0` package. The official [GitHub release](https://github.com/iapyeh/sshscript/releases/tag/v7.0.0) was published on 2026-10-25; [PyPI 7.0.0](https://pypi.org/project/sshscript/7.0.0/) supplies the wheel and source distribution. Release source is `a1c76d016419484b6ffb930bf2b16f30bae61208`.
+OpsFeast execution now uses the published `sshscript==7.0.1` package. The official [GitHub release](https://github.com/iapyeh/sshscript/releases/tag/v7.0.1) was published on 2026-10-30; [PyPI 7.0.1](https://pypi.org/project/sshscript/7.0.1/) supplies the wheel and source distribution. Release source is `b8d7c8fe88b4096e8a58e6609ba805ee2bf41049`.
 
-The release wheel's 32 package/type files are byte-identical to the previously supported development snapshot. The complete eight-file skill ZIP generated from the release source is also identical to the official website ZIP and the previous bundled payload. Upstream documents still use the wording “source contract”; their bytes are preserved. Release availability is established separately by the official release and PyPI metadata, not inferred from that wording or a version label.
+The release wheel's 32 package/type files match the exact official source. Compared with reviewed 7.0.0, only `_version.py` changes; the command, connection, Console and cleanup implementations are unchanged. The [7.0.1 changelog](https://github.com/iapyeh/sshscript/blob/v7.0.1/CHANGELOG.md) adds maintainer release/documentation tooling and clarifies agent status guidance: use `result.exitcode`, `session.exitcode` and `$.exitcode`; `subprocess.CalledProcessError` still uses its native `returncode`.
+
+At update time the official website skill ZIP still documented 7.0.0. The complete eight-file 7.0.1 skill was therefore generated with `tools/sync_ai_docs.py outputs()` from the exact public release commit. All upstream bytes are preserved. SOURCE.json records the release source, generated bundle digest and separately observed website bundle identity. Release availability is established by official tag/PyPI metadata, not inferred from documentation wording or a version label.
 
 | Artifact | SHA-256 |
 | --- | --- |
-| sshscript-7.0.0-py3-none-any.whl | `43e8d010065aca3aa137de308e0d4ea31a2792f313e7e728f29317c834fda278` |
-| sshscript-7.0.0.tar.gz | `0446d2f8698f17e9aa5794ccc6d7ce8f2900979e8fb37028d4fe46d4790345d8` |
-| Complete skill ZIP | `943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f` |
+| sshscript-7.0.1-py3-none-any.whl | `54ee743010ec896379780b0445a3a24ace2a654704413ca034cbb85d7017a73c` |
+| sshscript-7.0.1.tar.gz | `feb9e9dd5b5a99480151cefb673912e65d153f534ade84171ee196390ee30a04` |
+| Complete skill ZIP | `17c6bf7236e70a3f7c73b28b730c6df0c46d5c3936e8a68fc24fab9578d71019` |
 
 ## Dependency, identity and update
 
-`requirements.txt`, the execution extra in `pyproject.toml` and built package metadata use `sshscript==7.0.0`. Python 3.11+ is required. The release declares Paramiko >=2.11,<5 and packaging >=21; do not upgrade unrelated dependencies as part of this update.
+`requirements.txt`, the execution extra in `pyproject.toml` and built package metadata use `sshscript==7.0.1`. Python 3.11+ is required. The release declares Paramiko >=2.11,<5 and packaging >=21; do not upgrade unrelated dependencies as part of this update.
 
 Within an authorized selected environment:
 
@@ -27,6 +29,12 @@ An existing source installation with the same version may need an explicit revie
 [Runtime manifest](../schemas/sshscript-runtime.json) records release source identity, exact requirement, wheel digest, complete skill digest and 32 package/type hashes. [Skill provenance](../skills/sshscript/SOURCE.json) binds the complete payload to the release source. Core, runner and standalone test-connection retain strict version/source checks before Session creation; same-version file drift remains a failure. Base init/offline metadata capabilities remain independent of execution dependencies. Guards never install, retry or migrate data. Checks read files on disk; already-running Python/agent processes must reload their cached modules/knowledge explicitly.
 
 Checkout helper `sshscript_runtime.source_identity()` returns source_commit, source_matches, expected_files, checked_files or a safe error_type. Internal `require_source(module)` enforces it; runtime receipts carry `sshscript_source`. This is a compatibility identity, not a sandbox or independent publisher signature. Review future package changes before updating hashes.
+
+## Compatibility and existing private recipes
+
+OpsFeast now strictly requires 7.0.1. Update package, complete skill and this checkout together; 7.0.0 and mismatched versions remain rejected before execution. Existing private recipes/packages that explicitly pin `==7.0.0` need their own reviewed dependency update before reuse; this product update does not rewrite installed private recipe copies or historical records. Regenerate/review portable backup recipes only under their installation scope. Host connection keys and stored observations need no migration.
+
+The selected environment update removed stale duplicate 5.0.0 and 7.0.0 package metadata with pip before installing the verified 7.0.1 wheel with no dependency upgrades. Package and skill backups remain in the local ignored staging area; unrelated environments/profiles are preserved. See [verification evidence](../tests/README.md#sshscript-701-update-verification).
 
 ## Connection contract and preserved configuration
 
@@ -46,8 +54,8 @@ Recipes using supplied Sessions retain their argv, stdin, command_timeout and ca
 
 ## Console and verification boundaries
 
-Use [the matching skill](../skills/sshscript/SKILL.md), [Agent Guide](../skills/sshscript/references/agent-guide.md), [API guide](../skills/sshscript/references/api-guide.md), [version policy](../skills/sshscript/references/versioning.md) and [embedded Console contract](../skills/sshscript/references/embedded-console.md). Console(existing_session, ownership="borrowed") preserves explicit ownership and Session reuse evidence. Hidden input, entered-program exits, diagnostics and TTY output behavior are unchanged from the reviewed snapshot. Without an exit sequence a program can stay in waiting_input; silence/reminders do not prove cleanup. Script CLI TTY output defaults are separate from Python library capture.
+Use [the matching skill](../skills/sshscript/SKILL.md), [Agent Guide](../skills/sshscript/references/agent-guide.md), [API guide](../skills/sshscript/references/api-guide.md), [version policy](../skills/sshscript/references/versioning.md) and [embedded Console contract](../skills/sshscript/references/embedded-console.md). Console(existing_session, ownership="borrowed") preserves explicit ownership and Session reuse evidence. Hidden input, entered-program exits, diagnostics and TTY output behavior are unchanged from reviewed 7.0.0. Without an exit sequence a program can stay in waiting_input; silence/reminders do not prove cleanup. Script CLI TTY output defaults are separate from Python library capture.
 
 Public tests cover release dependency/metadata consistency, strict version/file-drift rejection, current resolver arguments and native local borrowed Console/jobs/cleanup, alongside OpsFeast recipes, packaging and retained data. New package application and credential-free checks do not establish real-host SSH/su/sudo/database compatibility. Historical host results remain historical; run target verification only within separate operational authorization.
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-30 16:38:14*

@@ -28,7 +28,7 @@ def inspect_environment(scope='full'):
                 'tabulate': inspect_package('tabulate', '0.10.0'),
                 'wcwidth': inspect_package('wcwidth')}
     if scope == 'full':
-        packages['sshscript'] = inspect_package('sshscript', '7.0.0')
+        packages['sshscript'] = inspect_package('sshscript', '7.0.1')
         from sshscript_runtime import source_identity
         packages['sshscript']['source'] = source_identity()
         packages['sshscript']['ready'] = (packages['sshscript']['ready']
@@ -36,7 +36,7 @@ def inspect_environment(scope='full'):
     try:
         source = json.loads((ROOT / 'skills/sshscript/SOURCE.json').read_text(encoding='utf-8'))
         skill = {'documentation_contract': source['documentation_contract'],
-                 'ready': source['documentation_contract'] == '7.0.0'}
+                 'ready': source['documentation_contract'] == '7.0.1'}
         from sshscript_runtime import CONTRACT
         skill['source_commit'] = source.get('source_commit')
         skill['ready'] = (skill['ready'] and source.get('source_commit') == CONTRACT['source_commit']

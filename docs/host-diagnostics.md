@@ -1,6 +1,6 @@
 # Host initialization and diagnostics
 
-These commands use the selected management profile unless `--profile NAME` or an explicit management directory is supplied. Diagnostics and initialization require matching SSHScript import/distribution 7.0.0, Python 3.11+ and PyYAML. They retain the existing connection, jump-host, key and host-key trust rules. They do not install packages or alter target configuration. Connecting may execute a configured proxy command; authentication attempts and login-shell startup may create target audit records.
+These commands use the selected management profile unless `--profile NAME` or an explicit management directory is supplied. Diagnostics and initialization require matching SSHScript import/distribution 7.0.1, Python 3.11+ and PyYAML. They retain the existing connection, jump-host, key and host-key trust rules. They do not install packages or alter target configuration. Connecting may execute a configured proxy command; authentication attempts and login-shell startup may create target audit records.
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers tools/opsfeast.py and its recipe/inventory subcommands for administrators and agents.
 
@@ -238,4 +238,4 @@ Broadcom's [SSH access guidance](https://knowledge.broadcom.com/external/article
 also distinguishes SSH shell access from UI-role restrictions; it does not establish
 this behavior on every ESXi installation.
 
-*Last modified: 2026-10-29 22:51:57*
+*Last modified: 2026-10-30 12:17:33*

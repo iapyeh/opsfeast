@@ -38,7 +38,7 @@ Terminal summaries now use tabulate when stdout is a TTY. For agents, explicitly
 
 After every OpsFeast release update, reread the installed release's current object schemas/data contracts, including hosts.yaml, before resuming work, regardless of diffs or earlier reading. Follow the [mandatory release reading list](../../docs/skill-updates.md#required-schema-reread-after-a-release-update). No reading receipt or completion verification is required.
 
-Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 7.0.0 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
+Read the [Core API contract and examples](../../docs/core-api.md) for exact signatures, installation, lifecycle, storage, errors and verification limits. API/identity schema 0.1.0, python-recipe runner 0.1.0, descriptor 0.3.0; Python 3.11+, PyYAML 6.0.3, and matching SSHScript 7.0.1 only for execution. Use the selected interpreter and trusted installation; do not install/upgrade solely to inspect.
 
 ## Identify the instance and scope
 
@@ -194,7 +194,7 @@ subprocess environment policy implied by this support. No new Core method is nee
 ## SSHScript 7.0 source migration
 
 Read [the exact source contract](../../docs/sshscript-7.md) before operational work.
-This checkout requires published sshscript==7.0.0, release source a1c76d016419484b6ffb930bf2b16f30bae61208;
+This checkout requires published sshscript==7.0.1, release source b8d7c8fe88b4096e8a58e6609ba805ee2bf41049;
 Core/runner/diagnostics require matching module/type bytes, not just version text.
 Reuse existing Core sessions and host YAML identity_file/proxy_command. New Python
 interfaces use parent_key_filename/proxy_command/proxy_jump, missing_host_key_policy

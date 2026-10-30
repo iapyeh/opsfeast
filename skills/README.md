@@ -77,7 +77,7 @@ When writing Python that consumes host settings, start with [runtime configurati
 - [opsfeast-hosts](opsfeast-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).
 - [opsfeast-recipes](opsfeast-recipes/SKILL.md): discover, author and execute inventory and compatible Python-session recipes with typed invocation inputs, share one or many recipes, and acquire, verify and review third-party candidates before authorized installation. Start with the [recipe user guide](../docs/recipes.md).
 - [opsfeast-result-data](opsfeast-result-data/SKILL.md): recover, interpret, export, validate and combine retained observations; start with the [result-data contracts](../docs/result-data.md).
-- [sshscript](sshscript/SKILL.md): SSHScript 7.0.0 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); this library API does not imply a formal persistent OpsFeast Console adapter. Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
+- [sshscript](sshscript/SKILL.md): SSHScript 7.0.1 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); this library API does not imply a formal persistent OpsFeast Console adapter. Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
 
 These skills rely on the repository layout and can be read directly by any agent. The full public SSHScript skill snapshot lives in `skills/sshscript/`, including references and SOURCE.json; its presence does not imply installation or automatic loading by a particular agent.
 
@@ -92,7 +92,7 @@ For inherited agent/terminal/cron/CI environment differences, route to the
 Shared CLI/Core/runner proxy policy normalizes NO_COLOR and supports explicit
 per-proxy overrides without modifying global environment or disclosing values.
 
-For the published SSHScript 7.0.0 release and strict package/source
+For the published SSHScript 7.0.1 release and strict package/source
 requirements, read [the migration guide](../docs/sshscript-7.md). The supported SHA,
 32 module/type hashes and skill ZIP are pinned together. Operational adapters use
 only current connection parameter names; no real-host verification is implied.

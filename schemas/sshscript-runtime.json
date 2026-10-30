@@ -3,7 +3,7 @@
     "__init__.py": "c354764b88c5cc043a65c63d84bb1361fc364c750003f21eee446b57f57e5843",
     "__init__.pyi": "ec2fb8c9f2c2a16dcf141705d4b02ca078663e9ef24ddca88d4673cba12c6455",
     "_runtime.py": "c09b7c5d2c4adb536db7ea12521105e2537c371d741f55fc272206d9e6da3d2a",
-    "_version.py": "eb718ab1b85cb3304c6243c326c61ca706864236d538f2debe6438a30f3d0b30",
+    "_version.py": "9271665ff2a2619d91b5f30acd274f2e5fb0804207ed590f21aca12ad7c922c6",
     "channelgeneric.py": "11de716af94c3e18e2e5d652ff7302e36377045fb9b1b2cb19597927838b5aec",
     "channelssh.py": "695748dcab14a123ae8c20cba6e2342379b96035990af21e07c6b827ddcfeebd",
     "channelsubprocess.py": "9963ccc45315e99331f953d63cd82d46f3805bda6345936d5dd765d2a63b5109",
@@ -33,11 +33,11 @@
     "stdio.py": "425ffbc17ee8279bd8ef8b8e9426a8b70a32a97acdb5e61d4a5f9a3387abb153",
     "tokenparser.py": "7461d8dacf13c23cf443eafa9da9e600bf15090c595aa98cea0e0abd3808bb3b"
   },
-  "release_tag": "v7.0.0",
-  "requirement": "sshscript==7.0.0",
-  "skill_bundle_sha256": "943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f",
-  "source_commit": "a1c76d016419484b6ffb930bf2b16f30bae61208",
-  "source_url": "https://github.com/iapyeh/sshscript/tree/a1c76d016419484b6ffb930bf2b16f30bae61208",
-  "version": "7.0.0",
-  "wheel_sha256": "43e8d010065aca3aa137de308e0d4ea31a2792f313e7e728f29317c834fda278"
+  "release_tag": "v7.0.1",
+  "requirement": "sshscript==7.0.1",
+  "skill_bundle_sha256": "17c6bf7236e70a3f7c73b28b730c6df0c46d5c3936e8a68fc24fab9578d71019",
+  "source_commit": "b8d7c8fe88b4096e8a58e6609ba805ee2bf41049",
+  "source_url": "https://github.com/iapyeh/sshscript/tree/b8d7c8fe88b4096e8a58e6609ba805ee2bf41049",
+  "version": "7.0.1",
+  "wheel_sha256": "54ee743010ec896379780b0445a3a24ace2a654704413ca034cbb85d7017a73c"
 }

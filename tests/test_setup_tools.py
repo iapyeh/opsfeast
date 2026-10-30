@@ -18,7 +18,7 @@ import check_environment as environment
 import skill_bundle as bundle
 
 
-def archive_bytes(extra=(), contract='7.0.0', omitted=()):
+def archive_bytes(extra=(), contract='7.0.1', omitted=()):
     stream = io.BytesIO()
     files = {
         'SKILL.md': f'SSHScript {contract} contract',
@@ -51,7 +51,7 @@ class BundleTests(unittest.TestCase):
         self.assertEqual((self.candidate / 'sshscript-skill.zip').read_bytes(), self.content)
         source = json.loads((self.installed / 'SOURCE.json').read_text())
         self.assertEqual(source['bundle_sha256'], hashlib.sha256(self.content).hexdigest())
-        self.assertEqual(source['documentation_contract'], '7.0.0')
+        self.assertEqual(source['documentation_contract'], '7.0.1')
         self.assertEqual((self.installed / 'assets/extra.txt').read_text(), 'complete bundle')
 
     def test_check_is_read_only_and_detects_local_modifications(self):
@@ -81,8 +81,19 @@ class BundleTests(unittest.TestCase):
         report = bundle.check(archive_bytes(contract='8.0.0'), self.installed)
         self.assertTrue(report['bundle_changed'])
         self.assertFalse(report['contract_matches_runner'])
-        self.assertEqual(report['installed_contract'], '7.0.0')
+        self.assertEqual(report['installed_contract'], '7.0.1')
         self.assertEqual(report['candidate_contract'], '8.0.0')
+
+    def test_stale_website_contract_does_not_replace_release_matched_skill(self):
+        before = {p.relative_to(self.installed): p.read_bytes()
+                  for p in self.installed.rglob('*') if p.is_file()}
+        report = bundle.check(archive_bytes(contract='7.0.0'), self.installed)
+        self.assertEqual(report['status'], 'review_required')
+        self.assertEqual(report['installed_contract'], '7.0.1')
+        self.assertEqual(report['candidate_contract'], '7.0.0')
+        self.assertFalse(report['contract_matches_runner'])
+        self.assertEqual({p.relative_to(self.installed): p.read_bytes()
+                          for p in self.installed.rglob('*') if p.is_file()}, before)
 
     def test_existing_destination_not_overwritten(self):
         with self.assertRaises(FileExistsError):

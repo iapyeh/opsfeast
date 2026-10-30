@@ -120,10 +120,10 @@ They cover absent/empty/1/true/0/unexpected NO_COLOR, explicit overrides/removal
 PATH preservation, stdin/stdout and PID continuity, concurrent child isolation,
 permissions, launch/connection failure, termination, file cleanup, sanitized
 receipts, configuration validation, aliases, jump ownership and shared diagnostic/
-runtime routes. An actual SSHScript 7.0.0 Session opens a local proxy fixture whose
+runtime routes. An actual SSHScript 7.0.1 Session opens a local proxy fixture whose
 handshake deliberately fails; policy application and strict child cleanup are
 verified. This proves neither native wstunnel connectivity nor successful real SSH,
 authentication, jump hosts, remote shells, su/sudo, Windows support or every tool's
 environment semantics. Tests use synthetic data and no real credentials/hosts.
 
-*Last modified: 2026-10-24 22:22:19*
+*Last modified: 2026-10-30 12:17:33*

@@ -160,7 +160,7 @@ Read [recipe experience](../../docs/recipe-experience.md) before selecting these
 | Capability | Usable interface | Availability and limits |
 | --- | --- | --- |
 | Unified local recipe catalog | recipes list/show, --json, query/kind filters | Checkout, Feast and registered sources; static metadata/signatures only, disabled/error states explicit, ambiguous IDs fail |
-| Operation execution | recipes run with host/group/all and --var/--vars-file | Same opsfeast.py recipes run logic, SSHScript 7.0.0 runtime and existing scope/cleanup/result semantics |
+| Operation execution | recipes run with host/group/all and --var/--vars-file | Same opsfeast.py recipes run logic, SSHScript 7.0.1 runtime and existing scope/cleanup/result semantics |
 | Offline report generation | recipes run with --input JSON and python-report entrypoint | Python/PyYAML only; execute(*, context, timeout), declared artifacts; no host/Session, optional renderer dependencies belong to the recipe |
 | Raw results and basic views | observation result, recipes results list/show, catalog/index --html | Read existing execution/report files, preserve partial/invalid/quality/time evidence; escaped plain HTML export; optional Textual source/directory browser with provenance-matched execution history |
 | Verified artifacts | recipes artifact RESULT_ID NAME | Return path after manifest/path/size/digest checks; no publication or viewer launch |
@@ -192,7 +192,7 @@ Share portable report code/templates and synthetic examples through [report shar
 
 ## Execute or author general Python recipes
 
-Read [the Python-session capability contract](../../docs/recipe-execution.md) before using or authoring this interface. Supported versions are descriptor 0.3.0, python-session 0.1.0 and SSHScript 7.0.0; inventory keeps descriptor/result 0.2.0. Check the selected Feast/configuration, interpreter and actual dependencies, inspect the descriptor and entrypoint without executing, and review operations within the user's scope. No installer or compatibility declaration establishes target availability.
+Read [the Python-session capability contract](../../docs/recipe-execution.md) before using or authoring this interface. Supported versions are descriptor 0.3.0, python-session 0.1.0 and SSHScript 7.0.1; inventory keeps descriptor/result 0.2.0. Check the selected Feast/configuration, interpreter and actual dependencies, inspect the descriptor and entrypoint without executing, and review operations within the user's scope. No installer or compatibility declaration establishes target availability.
 
 Use `python -B tools/opsfeast.py recipes run system/network/check/port --host HOST --var port=8888` for the bundled [host-origin TCP check](../../recipes/system/network/check/port/README.md), or use the selected compatible recipe's own input names. --vars-file accepts a JSON object; --var uses literal strings or JSON for other declared types. Preparation merges defaults → source → resolved default/group/host recipe vars → invocation values, with nested mappings merged and lists replaced. --var replaces the same variable from --vars-file before that merge. Invalid effective inputs fail before that host's Session is created. Read the canonical contract for batch independence, disabled skips, parsing and secret handling.
 
@@ -396,8 +396,8 @@ inputs/results and authorization for actual environment/configuration changes.
 
 Use [the pinned source contract](../../docs/sshscript-7.md), matching bundled SSHScript
 skill and normal Recipe/Session ownership. Operational execution requires the reviewed
-7.0.0 source SHA and 32 module/type hashes; identical version text is insufficient.
-Use the verified published sshscript==7.0.0 wheel and matching complete skill; do not bypass the guard. Custom connection code
+7.0.1 source SHA and 32 module/type hashes; identical version text is insufficient.
+Use the verified published sshscript==7.0.1 wheel and matching complete skill; do not bypass the guard. Custom connection code
 must adopt 7.0 names and keyword-only arguments; host YAML and recipe result/retention
 schemas stay unchanged. The bundled replication recipe uses unchanged argv/stdin
 APIs and is covered by local integration; real SSH/MySQL evidence must be revalidated

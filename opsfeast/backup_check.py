@@ -21,7 +21,7 @@ def descriptor(identity):
                           'schema': 'backup-files-check.schema.json'},
             'runner': {'contract': 'python-recipe', 'version': '0.1.0', 'entrypoint': 'main.py'},
             'platforms': {'implemented': ['linux', 'freebsd', 'macos'], 'tested': [], 'planned': []},
-            'dependencies': {'controller': ['Python 3.11+', 'OpsFeast backup-files-check 0.1.0', 'SSHScript 7.0.0'], 'target': ['Python 3.8+']},
+            'dependencies': {'controller': ['Python 3.11+', 'OpsFeast backup-files-check 0.1.0', 'SSHScript 7.0.1'], 'target': ['Python 3.8+']},
             'permissions': {'sudo': False, 'su': False},
             'side_effects': ['Read directory entries and file metadata over the supplied connection.',
                              'Save raw and retained observations and dispatch configured consumers.'],
@@ -246,7 +246,7 @@ def portable_files(identity):
     metadata = descriptor(identity)
     metadata['retention'] = {'contract':'backup-files-check','version':VERSION,'mode':'portable',
         'description':metadata['retention']['description'],'data_schema':copy.deepcopy(schema)}
-    metadata['portability'] = {'api':'0.1.0','python':'>=3.11','distributions':{'sshscript':'==7.0.0'},
+    metadata['portability'] = {'api':'0.1.0','python':'>=3.11','distributions':{'sshscript':'==7.0.1'},
                                'features':{'recipe-assessment':'0.1.0', 'recipe-execution':'0.1.0', 'portable-retention':'0.1.0'},
                                'services':{'notifications':'0.1.0','todos':'0.1.0'}}
     validator = (REPOSITORY_ROOT/'tools/backup_retention.py').read_text().replace(
@@ -272,7 +272,7 @@ def execute(recipe):
 '''
     readme = '''# Daily backup checks
 
-This portable user recipe includes metadata scanning, domain validation, a saved data schema and an optional consumer. It requires OpsFeast API 0.1.0, Python 3.11+, SSHScript 7.0.0 and target POSIX Python 3.8+. Read the installed docs/backup-file-checks.md for typed inputs and presence-only limits. No files are deleted.
+This portable user recipe includes metadata scanning, domain validation, a saved data schema and an optional consumer. It requires OpsFeast API 0.1.0, Python 3.11+, SSHScript 7.0.1 and target POSIX Python 3.8+. Read the installed docs/backup-file-checks.md for typed inputs and presence-only limits. No files are deleted.
 
 The recipe declares recipe-assessment, recipe-execution and portable-retention 0.1.0 product features. Complete healthy scans return BACKUPS OK; expired or unexpected entries return a warning assessment BACKUPS OK · CLEANUP NEEDED while retaining execution success. Missing, pending and incomplete scans remain partial. Read docs/recipe-results-and-accounts.md for interpretation and operator-configured login/su/sudo scopes; private execution credentials and settings are not packaged.
 

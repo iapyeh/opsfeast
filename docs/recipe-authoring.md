@@ -132,7 +132,7 @@ Follow the [agent workflow](../skills/opsfeast-recipes/references/exploration-to
 
 ## Current SSHScript source contract
 
-New recipes use [the published 7.0.0 release contract](sshscript-7.md) through their
+New recipes use [the published 7.0.1 release contract](sshscript-7.md) through their
 supplied Recipe/Session. Review custom Python connection code for removed aliases,
 keyword-only arguments, key ownership and source identity before authorized use.
 The MySQL replication recipe uses argv, stdin and command_timeout/structured
@@ -157,4 +157,4 @@ Prefer [portable retention declarations](portable-contracts.md) for user-defined
 
 Return optional `assessment: {label, severity, summary}` to interpret findings while retaining fixed execution status. Operator-selected account policy is applied before `execute(recipe)`; continue using the supplied scoped Recipe/session. Do not add per-recipe root/account vars or switching loops. See [contracts, examples and transport limits](recipe-results-and-accounts.md).
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-30 12:17:33*

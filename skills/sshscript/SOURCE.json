@@ -1,11 +1,14 @@
 {
-  "source_url": "https://github.com/iapyeh/sshscript/tree/a1c76d016419484b6ffb930bf2b16f30bae61208",
-  "source_commit": "a1c76d016419484b6ffb930bf2b16f30bae61208",
-  "release_tag": "v7.0.0",
-  "release_url": "https://github.com/iapyeh/sshscript/releases/tag/v7.0.0",
-  "generator": "tools/sync_ai_docs.py outputs() from the same release source commit; identical to official website ZIP",
-  "saved_at_utc": "2026-10-26T04:12:56.254213+00:00",
-  "documentation_contract": "7.0.0",
-  "bundle_sha256": "943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f",
-  "update_policy": "Pinned released package and matching complete skill; check/update only when requested or authorized."
+  "source_url": "https://github.com/iapyeh/sshscript/tree/b8d7c8fe88b4096e8a58e6609ba805ee2bf41049",
+  "source_commit": "b8d7c8fe88b4096e8a58e6609ba805ee2bf41049",
+  "release_tag": "v7.0.1",
+  "release_url": "https://github.com/iapyeh/sshscript/releases/tag/v7.0.1",
+  "generator": "tools/sync_ai_docs.py outputs() from the exact official release source commit",
+  "saved_at_utc": "2026-10-30T04:17:33.154216+00:00",
+  "documentation_contract": "7.0.1",
+  "bundle_sha256": "17c6bf7236e70a3f7c73b28b730c6df0c46d5c3936e8a68fc24fab9578d71019",
+  "website_bundle_url": "https://iapyeh.github.io/sshscript/v3a/ai-agents/downloads/sshscript-skill.zip",
+  "website_bundle_contract_at_update": "7.0.0",
+  "website_bundle_sha256_at_update": "943984702b6bef752811f92f607272157c815b2a6d968846d21a4cb571cd5b3f",
+  "update_policy": "Pinned published package and matching complete release-source skill; check/update only when requested or authorized."
 }

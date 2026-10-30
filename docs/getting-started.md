@@ -69,7 +69,7 @@ Dependency lists for the selected setup scope:
 | 清單 | 用途 |
 | --- | --- |
 | `requirements-init.txt` | PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth), for base commands, access tables and tests |
-| `requirements.txt` | 上述依賴加 SSHScript 7.0.0，供完整 Ops 工具使用 |
+| `requirements.txt` | 上述依賴加 SSHScript 7.0.1，供完整 Ops 工具使用 |
 | `requirements-tui.txt` | Optional Textual 8.2.8 for the interactive Home/recipes interface; install alongside the chosen base requirements only within the approved plan |
 
 版本固定為本專案目前驗證的環境；這不是所有傳遞依賴的 lockfile。既有環境使用不同版本時先回報，不自行升級、降級或覆寫共用 venv。使用者只要求初始化時，可以只安裝精簡清單；要準備連線與 runner 時再選完整清單。
@@ -164,4 +164,4 @@ If proxy behavior differs between terminals, agents or scheduled processes, insp
 normalization, explicit per-connection overrides and sanitized hop evidence. It
 does not install proxy tools, modify global environment or authorize host connections.
 
-*Last modified: 2026-10-24 22:22:19*
+*Last modified: 2026-10-30 12:17:33*

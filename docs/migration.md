@@ -1,5 +1,9 @@
 # SSHScript Ops to OpsFeast
 
+## SSHScript 7.0.1 package and complete skill
+
+Update the selected execution environment to the verified `sshscript==7.0.1` wheel together with this checkout and its complete bundled skill. Strict guards reject 7.0.0 or mismatched package/source identity. Execution code is unchanged except for its version; no connection-key or stored-data migration is required. Review exact-version private recipe/package pins separately; the update preserves those copies. The matching skill clarifies `CommandResult.exitcode` and is generated from the official release source while the checked website bundle remains 7.0.0. See [release identity and verification](sshscript-7.md).
+
 ## Vault diagrams use Mermaid
 
 Newly published current inventory pages use `mermaid` fences instead of `dgmo`. Obsidian renders Mermaid natively, without the Diagrammo community plugin. Readers need Mermaid XY-chart support for filesystem bars; Markdown tables preserve the same reported values. To update existing generated pages, run `python -B tools/opsfeast.py vault rebuild --profile PROFILE --json` for the intended profile. This refreshes owned output from retention without recollecting, changing retained/raw evidence or converting human notes. Human-authored DGMO diagrams remain unchanged. See [Vault rendering and ownership](host-vault.md).
@@ -293,11 +297,12 @@ must declare an override. See [the policy contract](process-environment.md).
 This is an intentional behavioral change; no compatibility aliases or private
 configuration rewrite are provided.
 
-## SSHScript 7.0.0 pinned source migration
+## SSHScript 7.0.1 pinned source migration
 
-OpsFeast operational execution now requires published `sshscript==7.0.0`, release source
-a1c76d016419484b6ffb930bf2b16f30bae61208. The release wheel and complete skill match the prior development payload;
-use the verified release artifact and updated provenance. CLI diagnostics, Core and
+OpsFeast operational execution now requires published `sshscript==7.0.1`, release source
+b8d7c8fe88b4096e8a58e6609ba805ee2bf41049. Only the package version module differs
+from reviewed 7.0.0 execution code; use the verified release artifact and matching
+release-generated complete skill with updated provenance. CLI diagnostics, Core and
 runner share source/version validation. Old 6.1.0 runtimes are intentionally
 rejected; there are no aliases or automatic upgrades. See [the migration and
 verification contract](sshscript-7.md).
@@ -309,7 +314,7 @@ must replace pkey_path/proxyCommand/proxyJump/policy/known_hosts with the 7.0 na
 and make arguments after hostname keyword-only. OpenSSH config directives remain
 ProxyCommand/ProxyJump. No host inventory, credentials, retained observations or
 normalizer/schema snapshots are rewritten. Prior native 6.1.0 host evidence remains
-historical; new local/synthetic checks do not establish real-host 7.0.0 readiness.
+historical; new local/synthetic checks do not establish real-host 7.0.1 readiness.
 
 
 ## Notification/todo and backup-check development changes
@@ -339,4 +344,4 @@ backfilled. Connection settings are unchanged, and failed queries retain the
 last successful reference. The separate local reference metadata is not included
 in observation/retention transfer packages. See [data contract and limits](host-reference-ips.md).
 
-*Last modified: 2026-10-30 16:02:12*
+*Last modified: 2026-10-30 16:38:14*

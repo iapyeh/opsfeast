@@ -159,10 +159,10 @@ Run examples from the repository checkout. `python` means the interpreter select
 | Operation | Controller requirements |
 | --- | --- |
 | Profiles, init, attach, detach, use, check, dump, inspect-recipe, recipes metadata/results/packages/jobs and offline reports | Python 3.11+ and PyYAML; no SSHScript Session |
-| Standalone test-connection | Python 3.11+, PyYAML and the published SSHScript 7.0.0 with reviewed package identity (same guard as Core/runner) |
-| Host-init, test-host, test-su, test-sudo, test-connection --host-init, opsfeast.py recipes run | Python 3.11+, PyYAML and matching SSHScript import/distribution **7.0.0** |
+| Standalone test-connection | Python 3.11+, PyYAML and the published SSHScript 7.0.1 with reviewed package identity (same guard as Core/runner) |
+| Host-init, test-host, test-su, test-sudo, test-connection --host-init, opsfeast.py recipes run | Python 3.11+, PyYAML and matching SSHScript import/distribution **7.0.1** |
 
-Both environment-check scopes require PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth); the full check additionally requires SSHScript 7.0.0:
+Both environment-check scopes require PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth); the full check additionally requires SSHScript 7.0.1:
 
 ```sh
 python -B tools/check_environment.py
@@ -371,7 +371,7 @@ Its JSON contains host, overall status, and tests keyed by test-connection, host
 
 ## tools/opsfeast.py recipes: shared recipe interfaces
 
-The [canonical recipe experience reference](recipe-experience.md) defines catalog/report/artifact/bundle/job versions, JSON fields, source/ID selection, validation, storage, dependencies, outputs, errors and verification. All these commands use the selected interpreter and read/write only within the requested scope; static discovery never executes candidates. --root/--profile select a Feast, mutually exclusively. List/show/pack also accept --checkout-only instead. Metadata and offline report use require Python 3.11+ and PyYAML; operation execution retains matching SSHScript 7.0.0.
+The [canonical recipe experience reference](recipe-experience.md) defines catalog/report/artifact/bundle/job versions, JSON fields, source/ID selection, validation, storage, dependencies, outputs, errors and verification. All these commands use the selected interpreter and read/write only within the requested scope; static discovery never executes candidates. --root/--profile select a Feast, mutually exclusively. List/show/pack also accept --checkout-only instead. Metadata and offline report use require Python 3.11+ and PyYAML; operation execution retains matching SSHScript 7.0.1.
 
 | Command | Interface and effects |
 | --- | --- |
@@ -467,7 +467,7 @@ Synthetic tests cover configuration, dispatch, cache, account transitions, batch
 
 ## Retained observations and exchange
 
-All commands require Python 3.11+ and PyYAML; only runner execution additionally requires matching SSHScript 7.0.0. SQLite is included with Python; JSON SQL functions must be available. See the [canonical contract and identity workflow](result-data.md) and [agent skill](../skills/opsfeast-result-data/SKILL.md).
+All commands require Python 3.11+ and PyYAML; only runner execution additionally requires matching SSHScript 7.0.1. SQLite is included with Python; JSON SQL functions must be available. See the [canonical contract and identity workflow](result-data.md) and [agent skill](../skills/opsfeast-result-data/SKILL.md).
 
 ```sh
 python -B tools/observation_store.py ingest FILE [FILE ...] [--root ROOT | --profile NAME]

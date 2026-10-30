@@ -44,11 +44,11 @@ Use default/group/host recipe mappings and the [shared merge rules](../../../../
 .venv/bin/python -B tools/opsfeast.py recipes run system/storage/inventory/disks-raid --profile NAME --host HOST --var 'expected_disks={"data":4}' --var boot_policy=mirrored-ssd-pair --var expected_raids=2 --json
 ```
 
-Static inspection never connects. Execution requires the approved host/root/query scope and existing configured accounts/jumps. The [entrypoint](main.py) reuses SSHScript 7.0.0, Core verified execution identity and cleanup; it does not recreate connection/credential logic. ESXi root execution uses existing Core identity prerequisites, including systems without id/command shell utilities. Linux non-root requires a compatible Bash root console; no new target software is installed.
+Static inspection never connects. Execution requires the approved host/root/query scope and existing configured accounts/jumps. The [entrypoint](main.py) reuses SSHScript 7.0.1, Core verified execution identity and cleanup; it does not recreate connection/credential logic. ESXi root execution uses existing Core identity prerequisites, including systems without id/command shell utilities. Linux non-root requires a compatible Bash root console; no new target software is installed.
 
 ## Implementation choice
 
-The [entrypoint](main.py) uses SSHScript 7.0.0 through the supplied Core Recipe session for argv commands, explicit POSIX discovery and bounded output/command deadlines. Core owns verified actors, Linux root acquisition and cleanup; [synthetic tests](../../../../../tests/test_disks_raid.py) exercise those boundaries. Vendor CLIs provide controller-specific facts that OS disk lists cannot supply. The fixed [MD helper](md_probe.py) uses target Python and sysfs without installing mdadm. Public SSHScript API knowledge is the bundled 7.0.0 contract, sourced from [release commit a1c76d0](https://github.com/iapyeh/sshscript/tree/a1c76d016419484b6ffb930bf2b16f30bae61208); native verification limits are below.
+The [entrypoint](main.py) uses SSHScript 7.0.1 through the supplied Core Recipe session for argv commands, explicit POSIX discovery and bounded output/command deadlines. Core owns verified actors, Linux root acquisition and cleanup; [synthetic tests](../../../../../tests/test_disks_raid.py) exercise those boundaries. Vendor CLIs provide controller-specific facts that OS disk lists cannot supply. The fixed [MD helper](md_probe.py) uses target Python and sysfs without installing mdadm. Public SSHScript API knowledge is the bundled 7.0.1 contract, sourced from [release commit a1c76d0](https://github.com/iapyeh/sshscript/tree/b8d7c8fe88b4096e8a58e6609ba805ee2bf41049); native verification limits are below.
 
 ## Collection is physical-first
 
@@ -94,4 +94,4 @@ Native ESXi 7.0.0 with local RACADM 11.0.0 verifies complete physical and RAID r
 
 Sources: [Dell RACADM storage interface](https://www.dell.com/support/manuals/en-us/idrac9-lifecycle-controller-v5.x-series/idrac9_5.xx_racadm_pub/storage?guid=guid-23586e74-58bd-46af-b1e6-0855a6e43e0c&lang=en-us), [Dell Ready physical-disk example](https://www.dell.com/support/manuals/en-ai/idrac8-with-lc-v2.05.05.05/racadm_idrac_pub-v1/storage?guid=guid-9e3676cb-b71d-420b-8c48-c80add258e03&lang=en-us), [Dell hot-spare status values](https://www.dell.com/support/manuals/en-ed/dell-active-system-manager-v8.2.1/asm%20rest_%20api/hotsparestatus?guid=guid-59a29686-97e0-4d52-9fa0-ba01b6e30022&lang=en-us), [Dell STOR0104 description](https://www.dell.com/support/kbdoc/en-ca/000220599/avamar-gen-5a-storage-controller-failure-eventid-52806).
 
-*Last modified: 2026-10-30 11:44:50*
+*Last modified: 2026-10-30 12:17:33*

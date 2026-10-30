@@ -17,35 +17,35 @@ from opsfeast import ConfigError
 
 class SSHScriptUpdateTests(unittest.TestCase):
     def test_runtime_gates_accept_matching_supported_version(self):
-        module = SimpleNamespace(__version__='7.0.0', Session=object())
+        module = SimpleNamespace(__version__='7.0.1', Session=object())
         with patch.dict(sys.modules, sshscript=module), \
-                patch.object(recipe_runner, 'version', return_value='7.0.0'), \
-                patch.object(metadata, 'version', return_value='7.0.0'), \
+                patch.object(recipe_runner, 'version', return_value='7.0.1'), \
+                patch.object(metadata, 'version', return_value='7.0.1'), \
                 patch.object(sshscript_runtime, 'source_identity', return_value={
                     'source_matches': True, 'source_commit': sshscript_runtime.SOURCE_COMMIT}):
             session, report = recipe_runner.load_runtime()
             self.assertIs(session, module.Session)
             self.assertIs(host_runtime.runtime_class(), module.Session)
-            self.assertEqual(report['sshscript_import'], '7.0.0')
-            self.assertEqual(report['sshscript_distribution'], '7.0.0')
+            self.assertEqual(report['sshscript_import'], '7.0.1')
+            self.assertEqual(report['sshscript_distribution'], '7.0.1')
 
     def test_old_newer_and_mismatched_versions_are_rejected_before_session(self):
-        for imported, installed in [('6.0.0', '6.0.0'), ('6.1.0', '6.1.0'), ('8.0.0', '8.0.0'),
-                                    ('7.0.0', '5.0.0'), ('5.0.0', '7.0.0')]:
+        for imported, installed in [('6.0.0', '6.0.0'), ('6.1.0', '6.1.0'), ('7.0.0', '7.0.0'), ('8.0.0', '8.0.0'),
+                                    ('7.0.1', '5.0.0'), ('5.0.0', '7.0.1')]:
             with self.subTest(imported=imported, installed=installed):
                 module = SimpleNamespace(__version__=imported)
                 with patch.dict(sys.modules, sshscript=module), \
                         patch.object(recipe_runner, 'version', return_value=installed), \
                         patch.object(metadata, 'version', return_value=installed):
-                    with self.assertRaisesRegex(ConfigError, '7.0.0'):
+                    with self.assertRaisesRegex(ConfigError, '7.0.1'):
                         recipe_runner.load_runtime()
-                    with self.assertRaisesRegex(ConfigError, '7.0.0'):
+                    with self.assertRaisesRegex(ConfigError, '7.0.1'):
                         host_runtime.runtime_class()
 
     def test_full_readiness_checks_package_and_complete_skill_contract(self):
         with patch.object(environment, 'inspect_package', return_value={'ready': True}) as inspect:
             self.assertTrue(environment.inspect_environment()['ready'])
-        self.assertIn(unittest.mock.call('sshscript', '7.0.0'), inspect.call_args_list)
+        self.assertIn(unittest.mock.call('sshscript', '7.0.1'), inspect.call_args_list)
 
     def test_matching_package_does_not_hide_old_skill_contract(self):
         import json
@@ -66,10 +66,10 @@ class SSHScriptUpdateTests(unittest.TestCase):
                 self.assertFalse(environment.inspect_environment()['ready'])
 
     def test_same_version_wrong_source_rejected_by_all_entrypoints(self):
-        module = SimpleNamespace(__version__='7.0.0', Session=unittest.mock.Mock())
+        module = SimpleNamespace(__version__='7.0.1', Session=unittest.mock.Mock())
         with patch.dict(sys.modules, sshscript=module), \
-                patch.object(recipe_runner, 'version', return_value='7.0.0'), \
-                patch.object(metadata, 'version', return_value='7.0.0'), \
+                patch.object(recipe_runner, 'version', return_value='7.0.1'), \
+                patch.object(metadata, 'version', return_value='7.0.1'), \
                 patch.object(sshscript_runtime, 'source_identity', return_value={'source_matches': False}):
             from opsfeast import load_session_class
             for acquire in (recipe_runner.load_runtime, host_runtime.runtime_class, load_session_class):
@@ -128,10 +128,10 @@ class SSHScriptUpdateTests(unittest.TestCase):
         parsed = [Requirement(value) for value in requirements]
         selected = next(value for value in parsed if value.name == 'sshscript')
         self.assertIsNone(selected.url)
-        self.assertEqual(str(selected.specifier), '==7.0.0')
-        self.assertEqual(sshscript_runtime.CONTRACT['release_tag'], 'v7.0.0')
+        self.assertEqual(str(selected.specifier), '==7.0.1')
+        self.assertEqual(sshscript_runtime.CONTRACT['release_tag'], 'v7.0.1')
         self.assertEqual(sshscript_runtime.CONTRACT['wheel_sha256'],
-                         '43e8d010065aca3aa137de308e0d4ea31a2792f313e7e728f29317c834fda278')
+                         '54ee743010ec896379780b0445a3a24ace2a654704413ca034cbb85d7017a73c')
 
     def test_native_borrowed_console_state_job_and_session_reuse(self):
         import time

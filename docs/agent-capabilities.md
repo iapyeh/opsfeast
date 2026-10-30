@@ -106,7 +106,7 @@ and [probe/optional-failure semantics](host-diagnostics.md#initialize-platform-f
 
 ## Python reuse map
 
-These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 7.0.0. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
+These modules live in `tools/` and use sibling imports. Put the selected trusted checkout's `tools/` on `sys.path` or `PYTHONPATH`; these checkout modules have internal or documented composition interfaces rather than the versioned Core API. The bundled package is installable; prefer Core for its supported operations. Use Python 3.11+ and the selected environment's dependencies. Configuration/catalog/results/exchange processing need PyYAML; operational interfaces additionally require matching SSHScript 7.0.1. Extra renderers/providers have their own dependencies. Pass filesystem arguments as `pathlib.Path` where the implementation expects paths.
 
 | Module and current interface | Reusable result or behavior | Caller responsibility |
 | --- | --- | --- |
@@ -325,7 +325,7 @@ assumption. Synthetic/local process evidence does not prove real SSH connectivit
 ## SSHScript 7.0 pinned runtime support
 
 Use [the source contract and migration guide](sshscript-7.md) for current operational
-support. Core/runner/test-connection share the published sshscript==7.0.0 requirement and reviewed release identity and
+support. Core/runner/test-connection share the published sshscript==7.0.1 requirement and reviewed release identity and
 32-file validation; the version label alone is insufficient. Checkout
 sshscript_runtime.source_identity() returns value-free source evidence without
 network/Session creation; require_source(module) is the internal execution guard.
@@ -384,7 +384,7 @@ and delivery receipts for failures/backlog, without rerunning host operations.
 | --- | --- | --- |
 | Notification/todo objects and human lifecycle | `profile.services`, `recipe.services`, consumer `context.services`; `services inspect/list/show/update/history` | [Contract/API 0.1.0](services.md), Python 3.11+, normal dependencies; platform revision/ownership control, source evidence, no automatic execution |
 | Presentation and notification delivery | `services dispatch`, builtin:vault, builtin:smtp, reviewed local modules | [Adapter/config contract 0.1.0](service-adapters.md); static inspect does not import/send; explicit external authorization and private provider settings; unknown retry may duplicate |
-| Backup-directory checks | `opsfeast.backup_check.descriptor(identity)` / `.execute(recipe)` | [Profile-local setup and inputs](backup-file-checks.md), target POSIX Python 3.8+, supported SSHScript 7.0.0; metadata only, no deletion/content integrity; backup-files-check retention 0.1.0 |
+| Backup-directory checks | `opsfeast.backup_check.descriptor(identity)` / `.execute(recipe)` | [Profile-local setup and inputs](backup-file-checks.md), target POSIX Python 3.8+, supported SSHScript 7.0.1; metadata only, no deletion/content integrity; backup-files-check retention 0.1.0 |
 | Convert backup findings into service conditions | builtin:backup-check batch consumer; `opsfeast.backup_policy` implementation | Explicit opt-in [consumer](../consumers/backup-check/README.md), shared context services, live evidence gating; no host reconnection |
 
 Prefer the complete documented workflows to direct internal SQLite/dispatcher helpers. Read configuration and object schemas before service changes; preserve independent raw/retention/consumer/service/provider outcomes. Canonical guides include errors, source review, extension rules and evidence limits. Public reproducible tests cover these contracts; real SSH backup flow is verified, actual SMTP delivery and native FreeBSD scanning are not.

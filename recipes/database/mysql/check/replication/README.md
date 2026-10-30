@@ -36,7 +36,7 @@ Default/group/host exact-reference recipe vars merge using existing rules; invoc
 
 ## Inputs and requirements
 
-Controller: Python 3.11+, normal OpsFeast dependencies, SSHScript 7.0.0 and registered mysql-replication retention 0.1.0. Target: python3 plus mysql or mariadb client on PATH, or an explicit absolute client path. Server support is MySQL 5.7+ and MariaDB 10.2+; a declared version range is not a native test matrix. Required database permissions include REPLICATION CLIENT on MySQL or the applicable MariaDB replication-monitoring privilege; provision the least privileges separately. This recipe grants no privileges and never escalates OS accounts.
+Controller: Python 3.11+, normal OpsFeast dependencies, SSHScript 7.0.1 and registered mysql-replication retention 0.1.0. Target: python3 plus mysql or mariadb client on PATH, or an explicit absolute client path. Server support is MySQL 5.7+ and MariaDB 10.2+; a declared version range is not a native test matrix. Required database permissions include REPLICATION CLIENT on MySQL or the applicable MariaDB replication-monitoring privilege; provision the least privileges separately. This recipe grants no privileges and never escalates OS accounts.
 
 `instances` is a required mapping of 1–32 named instances. Each name is 1–63 letters, digits, underscores or hyphens. All configuration is validated before executing the first remote helper. Instance options:
 
@@ -113,4 +113,4 @@ Replication completion and observation tables use recorded health findings rathe
 than PASS. See [health labels and failure semantics](../../../../../docs/cli.md#replication-completion-health). Preserve the collection status, exit code and
 retention/content failure evidence; UNKNOWN is not healthy.
 
-*Last modified: 2026-10-25 06:27:41*
+*Last modified: 2026-10-30 12:17:33*

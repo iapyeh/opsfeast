@@ -17,7 +17,7 @@ platforms:
   tested: [linux]
   planned: []
 dependencies:
-  controller: [Python 3.11+, SSHScript 7.0.0, OpsFeast mysql-replication retention 0.1.0]
+  controller: [Python 3.11+, SSHScript 7.0.1, OpsFeast mysql-replication retention 0.1.0]
   target: [python3, mysql or mariadb client, MySQL 5.7+ or MariaDB 10.2+]
 permissions: {sudo: false, su: false}
 side_effects:
@@ -31,4 +31,4 @@ inputs:
     command_timeout_seconds: {type: number, default: 20, minimum: 1, maximum: 120}
 output: {schema_version: 0.1.0}
 verification: {synthetic: tested, local: tested, ssh: tested}
-# Last modified: 2026-10-24 22:22:19
+# Last modified: 2026-10-30 12:17:33

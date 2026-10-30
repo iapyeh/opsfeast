@@ -101,7 +101,7 @@ with profile.recipe("host-01", vars={"purpose": "identity"}, timeout=15) as reci
 
 `profile.sessions.connect(host_id, timeout=30)` yields the same scoped Recipe capabilities without invocation vars. Recipe is a per-execution object; do not construct it directly or share across threads. It provides host_id, vars, timeout, run_id, instance_id, selected Profile, connection_owner (core or runner), session, root(), sudo(), su() and a copied report. Standalone vars must be plain JSON-compatible mappings; runner vars additionally use descriptor validation/defaults.
 
-The session facade provides exec_command and start. It applies a finite default command/job timeout and quotes argv for privileged consoles; privileged commands require string argv sequences. CommandResult/managed-job interpretation follows SSHScript 7.0.0, including truncation and unknown remote termination. Caller-owned jobs must finish/stop within scope; returned raw job objects are not lifetime-sandboxed. Shell/connect/settings and direct privilege factories are not exposed through this facade. Existing legacy recipes retain their full borrowed SSHScript Session.
+The session facade provides exec_command and start. It applies a finite default command/job timeout and quotes argv for privileged consoles; privileged commands require string argv sequences. CommandResult/managed-job interpretation follows SSHScript 7.0.1, including truncation and unknown remote termination. Caller-owned jobs must finish/stop within scope; returned raw job objects are not lifetime-sandboxed. Shell/connect/settings and direct privilege factories are not exposed through this facade. Existing legacy recipes retain their full borrowed SSHScript Session.
 
 Core owns standalone connection cleanup, including jump ancestors. Recipe/session close is rejected with CoreError `session_not_owned`; leaving the outer scope closes the owner strictly. Scope expiry, wrong-thread use, use of a parent while a nested privilege scope is current, or uncertain restoration raises `session_scope_unavailable`. Python introspection/private attribute access is not sandboxed. Disabled hosts/jumps are rejected, with no fallback, implicit host-init or su/sudo on connect. Timeout is per stage/command, not a total recipe deadline.
 
@@ -216,7 +216,7 @@ An already-root exec Session opens a Bash console so the return interface is the
 as an elevated console. Thus `Recipe.root()` requires a usable SSHScript Bash console
 as well as supported identity probes even when sudo is unnecessary. Inventory's raw
 already-root exec path does not open an extra console and keeps its platform support.
-The implementation follows the bundled SSHScript 7.0.0 Agent Guide/API console,
+The implementation follows the bundled SSHScript 7.0.1 Agent Guide/API console,
 authenticated-entry, job and cleanup contracts; no upstream library change is needed.
 
 Call root() from the active login-level Recipe, not a child returned by su/sudo
@@ -278,7 +278,7 @@ Catch ConfigError for invalid configuration/inputs and CoreError for Core lifecy
 
 API and identity schema are 0.1.0; recipe runner contract is separately python-recipe 0.1.0, descriptor 0.3.0, and product version remains VERSION. Additive compatibility is preferred; incompatible behavior requires a new declared contract and migration guidance. Core currently supports POSIX controllers; native Windows controller locking is unsupported.
 
-Public tests cover temporary identities/configuration, copies/moves, isolation, concurrency, synthetic local/jump transports, privileged identity/credential/restoration cases, runner/static discovery and wheel/sdist boundaries. Native SSH/su/sudo validation is separate; synthetic identity probes do not establish PAM, sudo policy or every platform's behavior. SSHScript source is the bundled public documentation contract 7.0.0 with provenance/digest in skills/sshscript/SOURCE.json; this feature does not update that upstream snapshot.
+Public tests cover temporary identities/configuration, copies/moves, isolation, concurrency, synthetic local/jump transports, privileged identity/credential/restoration cases, runner/static discovery and wheel/sdist boundaries. Native SSH/su/sudo validation is separate; synthetic identity probes do not establish PAM, sudo policy or every platform's behavior. SSHScript source is the bundled public documentation contract 7.0.1 with provenance/digest in skills/sshscript/SOURCE.json; this feature does not update that upstream snapshot.
 
 Delivery verification (2026-10-15): 456 tests passed on each of Python 3.11.15, 3.13.13 and 3.14.4, including headless Textual checks. Older interpreters reused the selected environment's pure-Python dependencies; these runs do not establish native SSHScript dependency readiness. Matching SSHScript 5.0.0 and credential-free local Core/identity execution were verified on 3.14. Wheel build, pip installation into a temporary target, import/session use outside the checkout, public resource inspection, skill validation and changed-document checks passed. Native SSH/su/sudo remain unverified. An existing TUI regression test now waits for deferred refresh completion instead of fixed short sleeps.
 

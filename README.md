@@ -303,9 +303,9 @@ Inventory execution automatically saves operational success/partial observations
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
 
-## SSHScript 7.0.0 release contract
+## SSHScript 7.0.1 release contract
 
-This checkout requires the published `sshscript==7.0.0` release and its matching complete skill. Follow [the release identity and migration guide](docs/sshscript-7.md) for hashes, strict runtime checks, installation and verification limits. The release package/type files and skill payload match the previously reviewed development snapshot; official release provenance is now recorded explicitly.
+This checkout requires the published `sshscript==7.0.1` release and its matching complete skill. Follow [the release identity and migration guide](docs/sshscript-7.md) for hashes, strict runtime checks, installation and verification limits. The 7.0.1 execution files differ from reviewed 7.0.0 only in the package version. The complete skill is generated from the exact release source because the checked website ZIP still documents 7.0.0; provenance records both identities.
 
 
 ## Shared notifications, todos and backup checks

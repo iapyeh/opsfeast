@@ -1,6 +1,6 @@
 # Recipe assessments and execution accounts
 
-OpsFeast supplies recipe-assessment 0.1.0 and recipe-execution 0.1.0. They separate a recipe's interpretation of its findings from platform execution evidence. Start with [execution](recipe-execution.md), [Core](core-api.md), [configuration](recipe-sources.md) and [CLI](cli.md). These features require an updated OpsFeast installation; SSHScript execution uses the matching supported 7.0.0 distribution and skill snapshot.
+OpsFeast supplies recipe-assessment 0.1.0 and recipe-execution 0.1.0. They separate a recipe's interpretation of its findings from platform execution evidence. Start with [execution](recipe-execution.md), [Core](core-api.md), [configuration](recipe-sources.md) and [CLI](cli.md). These features require an updated OpsFeast installation; SSHScript execution uses the matching supported 7.0.1 distribution and skill snapshot.
 
 ## Execution state and recipe assessment
 
@@ -103,4 +103,4 @@ An operator can say: “Inspect this recipe and its current policy. Configure th
 
 [Public tests](../tests/test_recipe_execution_assessment.py) cover configuration inheritance/rejection, default login, synthetic su/sudo success/failure, UID mismatch, disabled policy, body suppression, restoration failure, result precedence, history and standalone Core use. Native local Bash pipe tests cover scanner JSON, multiline argv, exact stdin/EOF, independent stderr, capture flags and managed jobs. They do not establish new real-host SSH, su or sudo policy compatibility; verify those only within explicit operational scope.
 
-*Last modified: 2026-10-26 11:53:36*
+*Last modified: 2026-10-30 12:17:33*

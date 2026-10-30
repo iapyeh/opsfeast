@@ -23,11 +23,11 @@ platforms:
   - esxi
   planned: []
 compatibility:
-  sshscript: ==7.0.0
+  sshscript: ==7.0.1
 dependencies:
   controller:
   - Python >=3.11
-  - SSHScript ==7.0.0
+  - SSHScript ==7.0.1
   target:
   - Dell local RACADM storage get -o preferred for PERC and BOSS; alternatively PERC/StorCLI
     JSON or ESXi LSU partial queries
@@ -525,4 +525,4 @@ verification:
   local: not-tested
   ssh: 'tested: ESXi 7.0.0, local RACADM 11.0.0, PERC/BOSS physical and virtual state/capacity,
     group policy, retention and Vault; native Proxmox/PERC CLI not tested'
-# Last modified: 2026-10-27 11:15:42
+# Last modified: 2026-10-30 12:17:33

@@ -25,13 +25,13 @@ platforms:
   tested:
   - macos
 compatibility:
-  sshscript: ==7.0.0
-  note: Published sshscript==7.0.0, release source a1c76d016419484b6ffb930bf2b16f30bae61208; version and package files checked before connection.
+  sshscript: ==7.0.1
+  note: Published sshscript==7.0.1, release source b8d7c8fe88b4096e8a58e6609ba805ee2bf41049; version and package files checked before connection.
 dependencies:
   controller:
   - Python >=3.11
   - PyYAML
-  - SSHScript ==7.0.0
+  - SSHScript ==7.0.1
   target:
   - /bin/sh
   - uname

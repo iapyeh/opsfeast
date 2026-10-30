@@ -87,7 +87,7 @@ def check(content, installed=None):
             'installed_contract': source['documentation_contract'], 'candidate_contract': contract,
             'bundle_sha256': digest, 'bundle_changed': digest != source['bundle_sha256'],
             'local_matches_candidate': local == files,
-            'contract_matches_runner': contract == '7.0.0',
+            'contract_matches_runner': contract == '7.0.1',
             'status': 'unchanged' if digest == source['bundle_sha256'] and local == files else 'review_required'}
 
 

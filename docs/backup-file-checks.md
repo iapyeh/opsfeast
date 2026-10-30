@@ -24,7 +24,7 @@ for relative, content in files.items():
     target.write_bytes(content)
 ```
 
-Use the installation's real author defaults, not the reserved Bundle identity. Controller Python 3.11+, OpsFeast API/data services 0.1.0 and SSHScript 7.0.0 are declared prerequisites. The target needs POSIX Python 3.8+. Linux, FreeBSD and macOS are declared scanner implementations; native FreeBSD scanning remains unverified. Package the explicit reviewed files using recipes pack (bundle 0.2.0), then use [recipe installation plans and conflict handling](portability.md#recipe-packages-and-path-conflicts). Receiver settings are bound separately. The old descriptor(identity)/thin-wrapper helper remains a direct module-use option, but such a wrapper alone does not carry its domain implementation.
+Use the installation's real author defaults, not the reserved Bundle identity. Controller Python 3.11+, OpsFeast API/data services 0.1.0 and SSHScript 7.0.1 are declared prerequisites. The target needs POSIX Python 3.8+. Linux, FreeBSD and macOS are declared scanner implementations; native FreeBSD scanning remains unverified. Package the explicit reviewed files using recipes pack (bundle 0.2.0), then use [recipe installation plans and conflict handling](portability.md#recipe-packages-and-path-conflicts). Receiver settings are bound separately. The old descriptor(identity)/thin-wrapper helper remains a direct module-use option, but such a wrapper alone does not carry its domain implementation.
 
 The optional packaged consumers/backup-check directory is portable source. To use it on a receiver without the bundled policy, review/copy it into that profile's consumers/backup-check and explicitly register `source: local:consumers/backup-check`. Installation does not copy it into the active consumer directory or enable it. Use either that reviewed local consumer or the bundled consumer, with one owner for each condition; do not activate competing implementations.
 
@@ -97,4 +97,4 @@ Public tests in `tests/test_backup_check.py` cover local metadata scans, dates/e
 
 The producer now returns backup-specific assessment labels, including `BACKUPS OK · CLEANUP NEEDED` for hygiene findings despite successful daily presence checks. Run the supplied Recipe under inherited login/su/sudo policy without changing scanner code. [Results and accounts](recipe-results-and-accounts.md) explains fixed status, severity, prerequisites and verification limits. Existing private recipe copies need reviewed replacement to acquire new producer code; product update alone does not rewrite them.
 
-*Last modified: 2026-10-26 11:49:24*
+*Last modified: 2026-10-30 12:17:33*

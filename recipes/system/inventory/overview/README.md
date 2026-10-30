@@ -6,7 +6,7 @@ Start with the [collection table](collection-plan.md) for all 11 job IDs, conten
 
 ## Implementation choice
 
-The [job collector](jobs.py) uses SSHScript 7.0.0 sessions for bounded local/SSH commands and the shared verified collection-account policy. It reuses [platform parsers](details.py) and recipe-local helpers; no target agent/package is installed. The [internal runner](../../../../tools/recipe_runner.py) and [inventory service](../../../../tools/inventory_jobs.py) own session/actor acquisition, strict cleanup, raw saving and retention-consumer delivery. Public SSHScript skill provenance is in [SOURCE.json](../../../../skills/sshscript/SOURCE.json). Synthetic tests are separate from native evidence.
+The [job collector](jobs.py) uses SSHScript 7.0.1 sessions for bounded local/SSH commands and the shared verified collection-account policy. It reuses [platform parsers](details.py) and recipe-local helpers; no target agent/package is installed. The [internal runner](../../../../tools/recipe_runner.py) and [inventory service](../../../../tools/inventory_jobs.py) own session/actor acquisition, strict cleanup, raw saving and retention-consumer delivery. Public SSHScript skill provenance is in [SOURCE.json](../../../../skills/sshscript/SOURCE.json). Synthetic tests are separate from native evidence.
 
 ## Collection contract
 

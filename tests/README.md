@@ -576,6 +576,20 @@ The original checkout environment's first 1,093-test run had two failures: SSHSc
 
 Human CLI, recipe, retention/Vault and compatibility guidance, the capability map and relevant agent skills are updated together. No Core public API or retention import migration was added. No live profile rebuild, host connection, privilege operation, real storage query, environment upgrade, remote CI, push or release occurred. Textbook and figure-guide changes remain outside this delivery.
 
+
+## SSHScript 7.0.1 update verification
+
+On 2026-10-30, the selected Python 3.14.4 checkout environment was updated to the verified published 7.0.1 wheel without dependency upgrades. Pip removed stale 5.0.0 and 7.0.0 metadata before installation; import, distribution and CLI versions now all report 7.0.1 with a single matching metadata directory. Full readiness, pip check and the matching Agent Guide's exact-stdin local quickstart passed, with strict cleanup returning true. No other user environment was modified.
+
+PyPI wheel/sdist hashes match official metadata. All 32 wheel package/type files match official release source `b8d7c8fe88b4096e8a58e6609ba805ee2bf41049`; only `_version.py` differs from previously reviewed 7.0.0. The official website bundle still documented 7.0.0, so the exact release's reviewed `tools/sync_ai_docs.py outputs()` generated the complete eight-file 7.0.1 bundle. Bundled and project agent-local copies match every generated upstream byte and share SOURCE.json provenance. The new skill explicitly teaches CommandResult.exitcode; CalledProcessError.returncode remains the exception's native field. The stale website candidate is reported as review_required / contract_matches_runner false, without replacing the release-matched skill.
+
+The isolated public update snapshot passed **1,097 tests on each of CPython 3.11.15, 3.12.12, 3.13.13 and 3.14.4**, including wheel/sdist and isolated install smoke checks. The selected real checkout also passed its first 1,096-test full run before adding the stale-website regression; all 18 updated setup tests then passed. An additional extracted-wheel run outside the checkout passed **157 tests** across source guards, setup, local proxy/database fixtures, storage and Vault. The source-only dependency-surface case needs pyproject.toml/build_backend.py and is covered by full source discovery rather than transplanted into installed resources. Other interpreters used disposable QA environments referencing existing pure-Python packages and matching native CFFI from the local cache; no global/shared interpreter was upgraded.
+
+Public regressions preserve strict 7.0.0/older/newer/mismatched rejection before Session creation, same-version module/type drift rejection, metadata/dependency consistency, complete-skill requirements, borrowed Console/jobs/reuse and immutable stale-candidate checks. Python 3.11 grammar, JSON/YAML, skill frontmatter, document timestamps, local documentation links, upstream-byte comparison and diff whitespace passed. No new native SSH/su/sudo/database evidence is claimed.
+
+Current requirements, built metadata, runtime manifest, bundled recipe prerequisites, portable backup generator, human/agent guides and skill routing use 7.0.1 together. Core APIs, host YAML keys, data schemas and stored historical observations are unchanged. One existing private backup recipe descriptor and its preserved transfer snapshot still pin portability to 7.0.0; neither was rewritten. Review that private package's pin under its own installation scope before transferring/reinstalling it. Package/skill/local-guidance backups and artifacts remain in the checkout's ignored `.skill-downloads/sshscript-release-7.0.1-20261030/` area. Pending textbook/figure work and unrelated files are preserved. No host operation, live profile rebuild, remote CI, commit, push or release was performed.
+
+
 ## Host reference IP addresses
 
 `test_host_reference.py` covers last-successful replacement, failed/unrelated and
@@ -607,4 +621,23 @@ unchanged. Existing histories are not backfilled and connection settings never
 use the new reference metadata. Old-Linux tool fallbacks and ESXi interface
 normalization remain separate work.
 
-*Last modified: 2026-10-30 16:15:36*
+
+## Combined pre-push verification: SSHScript 7.0.1 and host references
+
+On 2026-10-30, the complete public source prepared for origin/main passed
+**1,109 tests on each of CPython 3.11.15, 3.12.12, 3.13.13 and 3.14.4**.
+This includes the pending host-init/Core, disk/RAID/Vault, reference-IP and
+SSHScript update work since the last remote main. Wheel/sdist construction and
+**169 extracted-wheel tests outside the checkout** passed, covering runtime/setup,
+proxy/database fixtures, storage, Vault and the reference-IP interfaces.
+
+Full environment readiness and pip check passed. The 32 installed SSHScript
+module/type hashes, official wheel/sdist digests and complete eight-file skill
+payload match the saved public release evidence. Python 3.11 grammar, JSON/YAML,
+skill metadata, document links/footers and staged whitespace were verified.
+Package inspection excludes textbook/figure drafts, reader-local settings,
+private scripts and the Console prototype. No managed host, private profile,
+credential, installed environment or remote setting was changed by this review.
+Remote CI and publication are separate from these local checks.
+
+*Last modified: 2026-10-30 16:41:49*
