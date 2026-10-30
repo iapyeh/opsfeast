@@ -141,6 +141,7 @@ class RenameTests(unittest.TestCase):
         self.assertFalse((self.checkout / 'feasts/main').exists())
 
     def test_new_cli_uses_an_isolated_registry(self):
+        shutil.copytree(Path(__file__).resolve().parents[1] / 'templates', self.checkout / 'templates')
         tools = self.checkout / 'tools'
         tools.mkdir()
         source = Path(__file__).resolve().parents[1] / 'tools'

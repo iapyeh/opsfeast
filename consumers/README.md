@@ -1,6 +1,6 @@
 # Retention consumers
 
-The bundled Vault consumer also subscribes to retention.run.updated for [explicit observation batches](../docs/observation-runs.md). Consumer/report readers use retention.runs()/run(run_id) for that independent contract; query/show continue to address individual retained records. See the [Vault consumer guide](vault/README.md) for current/report/batch presentation and optional DGMO support.
+The bundled Vault consumer also subscribes to retention.run.updated for [explicit observation batches](../docs/observation-runs.md). Consumer/report readers use retention.runs()/run(run_id) for that independent contract; query/show continue to address individual retained records. See the [Vault consumer guide](vault/README.md) for current/report/batch presentation and Mermaid diagrams.
 
 Consumers react to retained-data changes independently of collection recipes. Start with the [consumer contract, activation and recovery guide](../docs/retention-consumers.md).
 
@@ -13,4 +13,4 @@ User consumers live in `<profile-root>/consumers/NAME/` and require explicit `fe
 
 Notification/todo [presentations and delivery adapters](../docs/service-adapters.md) are a separate extension interface from retention consumers. Platform lifecycle is shared; multiple presentation/delivery adapters may be active.
 
-*Last modified: 2026-10-25 14:06:31*
+*Last modified: 2026-10-30 11:44:50*

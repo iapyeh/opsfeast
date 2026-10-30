@@ -5,6 +5,7 @@ import math
 import re
 import unicodedata
 from datetime import datetime, timezone
+from decimal import Decimal
 from urllib.parse import quote
 from retention_store import component, now, query
 from display_time import format_time, human_times
@@ -243,19 +244,17 @@ def readable_value(value):
     return value
 
 
-def dgmo_name(value, *, node=False):
-    """Quote one literal label; neutralize fence, escape and line injection.
+def mermaid_label(value):
+    """Quote literal display text without allowing markup or diagram directives.
 
     Full source spelling remains in the accompanying Markdown table/report.
     """
     value = ' '.join(str(value).split())
     value = ''.join(char for char in value if not unicodedata.category(char).startswith('C'))
-    value = value.replace('\\', '＼').replace('"', '″').replace('`', '′')
-    # Mindmap 0.85 preserves quote characters in displayed labels. Common safe
-    # identifiers need no quoting; unusual labels retain the protective quotes.
-    if node and re.fullmatch(r'[\w./:@%-]+', value) and not value.startswith('//') and value not in {
-            'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'teal', 'cyan', 'gray', 'black', 'white'}:
-        return value
+    value = value.translate(str.maketrans({
+        '\\': '＼', '"': '″', '`': '′', '<': '＜', '>': '＞',
+        '&': '＆', '#': '＃', '%': '％',
+    }))
     return '"' + value + '"'
 
 
@@ -278,10 +277,26 @@ def capacity_diagram(rows):
         measured.append((name, value))
     if not measured:
         return []
-    lines = ['### Filesystem usage', '', '```dgmo', 'bar Filesystem usage (%)',
-             'orientation-horizontal', 'y-label Used (%)']
-    lines += [dgmo_name(name) + ' ' + format(value, '.6g') for name, value in measured]
-    return lines + ['```', '', 'Only reported usage percentages are plotted; omitted filesystems are not zero.', '']
+    labels = [mermaid_label(name) for name, _ in measured]
+    # Long categories exceed Mermaid's reserved axis space. Use unique short
+    # keys with an exact table mapping rather than losing part of a path.
+    numbered = any(sum(2 if unicodedata.east_asian_width(c) in ('W', 'F') or c in 'WM@' else 1
+                       for c in label[1:-1]) > 20 for label in labels)
+    if numbered:
+        labels = [mermaid_label('FS ' + str(index)) for index in range(1, len(measured) + 1)]
+    lines = ['### Filesystem usage', '', '```mermaid', '---', 'config:',
+             '  xyChart:', '    width: 400', '    height: ' + str(max(260, 90 + 42 * len(measured))),
+             '---', 'xychart-beta horizontal',
+             '    title "Filesystem usage (%)"',
+             '    x-axis [' + ', '.join(labels) + ']',
+             '    y-axis "Used (%)" 0 --> 100',
+             # Mermaid XY numbers do not accept scientific notation.
+             '    bar [' + ', '.join(format(Decimal(format(value, '.6g')), 'f') for _, value in measured) + ']']
+    lines += ['```', '']
+    if numbered:
+        lines += markdown_table(['Filesystem', 'Reported label'], [
+            ('FS ' + str(index), name) for index, (name, _) in enumerate(measured, 1)]) + ['']
+    return lines + ['Only reported usage percentages are plotted; omitted filesystems are not zero.', '']
 
 
 def interface_diagram(host, rows):
@@ -301,10 +316,15 @@ def interface_diagram(host, rows):
         return []
     lines = ['### Interface overview', '',
              'Local interface/address configuration; this is not a network topology or connectivity test.', '',
-             '```dgmo', 'mindmap Local interfaces', '  Host ' + dgmo_name(host, node=True)]
-    for name, addresses in interfaces.items():
-        lines.append('    Interface ' + dgmo_name(name, node=True))
-        lines += ['      IP ' + dgmo_name(address, node=True) for address in addresses]
+             '```mermaid', 'flowchart LR', '    host[' + mermaid_label('Host ' + str(host)) + ']']
+    for index, (name, addresses) in enumerate(interfaces.items()):
+        interface_id = 'interface_' + str(index)
+        lines.append('    ' + interface_id + '[' + mermaid_label('Interface ' + name) + ']')
+        lines.append('    host --> ' + interface_id)
+        for address_index, address in enumerate(addresses):
+            address_id = 'address_' + str(index) + '_' + str(address_index)
+            lines.append('    ' + address_id + '[' + mermaid_label('IP ' + address) + ']')
+            lines.append('    ' + interface_id + ' --> ' + address_id)
     return lines + ['```', '']
 
 
@@ -718,6 +738,105 @@ def backup_lines(data, *, current=False):
     return lines
 
 
+def disks_raid_lines(data, *, current=False):
+    """Health/counts first; source fields use two-column tables, never one column per CSV field."""
+    def source_value(value, names):
+        if isinstance(value, dict):
+            for name in names:
+                if name in value and not isinstance(value[name], (dict, list)):
+                    return value[name]
+            for child in value.values():
+                found = source_value(child, names)
+                if found is not None:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = source_value(child, names)
+                if found is not None:
+                    return found
+        return None
+
+    summary = data.get('summary')
+    policy = data.get('policy', {})
+    if 'expected_disks' in policy:
+        scope_text = 'all reported physical disks, including boot, spare, unconfigured and standalone drives; RAID checks are independent.'
+    elif 'include_boot_devices' in policy:
+        scope_text = 'historical attempt: ' + ('boot devices included; see saved source coverage.' if policy['include_boot_devices'] else 'boot devices excluded by the saved policy.')
+    else:
+        scope_text = 'historical attempt; see its saved coverage and source evidence.'
+    lines = ['## Storage health', '']
+    if summary:
+        physical, raids = summary['physical_disks'], summary['raid_volumes']
+        count = lambda item: str(item['total']) if item['total'] is not None else 'Total unknown; observed ' + str(item['observed'])
+        lines += ['**' + text(summary['health']) + '**', '']
+        lines += markdown_table(['Item', 'Count', 'Expected', 'Health'], [
+            ('Physical disks', count(physical), physical['expected'] if physical['expected'] is not None else 'Not configured', physical['health']),
+            ('RAID volumes / arrays', count(raids), raids.get('expected') if raids.get('expected') is not None else '—', raids['health'])]) + ['']
+        lines += ['**Physical disk count: ' + text(physical['count_status']) + '**', '',
+                  'Scope: ' + scope_text, '']
+        if any(row.get('provider') == 'esxcli_lsu' for row in data['virtual_drives']):
+            lines += ['LSU count scope: members of selected local RAID volumes; unconfigured, unused and spare drives are not enumerated by this interface.', '']
+        if data.get('findings'):
+            lines += ['### Findings', '']
+            lines += ['- **' + text(f['severity'].upper()) + '** — ' + text(f['message']) for f in data['findings']] + ['']
+    else:
+        lines += ['Health/count policy was not assessed in this historical observation. Collect again for a saved health assessment.', '']
+    lines += ['Source health states are observations, not a self-test or proof of data consistency.', '']
+    if data.get('disk_groups'):
+        for index, group in enumerate(data['disk_groups'], 1):
+            caption = group['role'].capitalize() if group['id'] in ('data','boot','unknown') else 'Historical group ' + group['id']
+            lines += ['### Physical disks — ' + text(caption), '',
+                      'Role: ' + text(group['role']) + '; occupied trays: ' + str(group['observed']) +
+                      '; expected: ' + (str(group['expected']) if group['expected'] is not None else 'Not configured') +
+                      ' (' + text(group['expected_source']) + '); count: ' + text(group['count_status']) +
+                      '; health: **' + text(group['health']) + '**.', '']
+            members = [row for row in data['physical_drives'] if row['address'] in group['physical_ids']]
+            controllers = sorted({row.get('controller') for row in members if row.get('controller') is not None})
+            subsets = [(None, members)] if len(controllers) <= 1 else [(controller, [row for row in members if row.get('controller') == controller]) for controller in controllers]
+            for controller, rows in subsets:
+                if controller is not None:
+                    lines += ['#### Observed controller: ' + text(controller), '']
+                lines += markdown_table(['Tray', 'Use', 'State', 'Capacity', 'Health'], [
+                    (row.get('tray', row['address']), row.get('usage', 'unknown'), value_text(row['summary'].get('State')),
+                     value_text(row.get('capacity', row['summary'].get('Size'))), row.get('health', 'UNKNOWN'))
+                    for row in rows]) + ['']
+        tables = [('RAID volumes', ['RAID name', 'Health', 'RAID level', 'Total capacity'], [
+            (row['controller'], row.get('health', 'UNKNOWN'), row.get('raid_level', row['summary'].get('TYPE')),
+             row.get('capacity', row['summary'].get('Size'))) for row in data['virtual_drives']])]
+    else:
+        tables = [
+            ('Physical disks', ['Slot', 'Model', 'Serial', 'Source state', 'Health'], [
+                (item['address'], item['summary'].get('Model') or source_value(item['details'], ['Model Number', 'Model']),
+                 source_value(item['details'], ['SN', 'Serial Number']), item['summary'].get('State'), item.get('health', 'UNKNOWN'))
+                for item in data['physical_drives']]),
+            ('RAID volumes', ['Volume', 'RAID level', 'Source state', 'Health'], [
+                (item['summary'].get('Name') or 'Volume ' + str(index), item['summary'].get('TYPE', item['summary'].get('RAIDLevel')),
+                 item['summary'].get('State'), item.get('health', 'UNKNOWN')) for index, item in enumerate(data['virtual_drives'],1)]),
+            ('Linux MD arrays', ['Device', 'Level', 'Degraded members', 'Health'], [
+                (item['name'], item.get('level'), item.get('degraded'), item.get('health', 'UNKNOWN')) for item in data['md_arrays']])]
+    if data.get('disk_groups') and data['md_arrays']:
+        tables.append(('Linux MD arrays', ['Device', 'Level', 'Degraded members', 'Health'], [
+            (row['name'], row.get('level'), row.get('degraded'), row.get('health', 'UNKNOWN')) for row in data['md_arrays']]))
+    for title, columns, rows in tables:
+        if not rows:
+            continue
+        lines += ['### ' + title, '']
+        lines += markdown_table(columns, [[value_text(value) for value in row] for row in rows]) + ['']
+    lines += ['<details>', '<summary>Collection coverage and limitations</summary>', '']
+    lines += markdown_table(['Section', 'Coverage', 'Reason'], [
+        (label(name), item['status'], item.get('reason') or '') for name, item in data['coverage'].items()]) + ['']
+    lines += ['- ' + text(value) for value in data['limitations']] + ['', '</details>', '']
+    for key in ('controllers', 'os_disks', 'physical_drives', 'virtual_drives', 'md_arrays'):
+        if not data[key]:
+            continue
+        lines += ['<details>', '<summary>' + text(label(key)) + ' — source fields</summary>', '']
+        for index, row in enumerate(data[key],1):
+            lines += ['#### ' + label(key) + ' ' + str(index), '']
+            lines += markdown_table(['Field', 'Value'], [(label(name),value_text(value,name)) for name,value in flat_values(row)]) + ['']
+        lines += ['</details>', '']
+    return lines
+
+
 def render_current(record, history_names=None, host_icon=None, attention_policy=None):
     """Readable current views; historical rendering remains complete and independent."""
     data = record['data']
@@ -730,6 +849,8 @@ def render_current(record, history_names=None, host_icon=None, attention_policy=
         lines += backup_lines(data, current=True)
     elif replication:
         lines += replication_lines(data, current=True)
+    elif (record.get('retention_definition') or {}).get('contract') == 'disks-raid':
+        lines += disks_raid_lines(data)
     elif 'groups' in data:
         lines += current_jobs(record, history_names)
     elif data.get('inventory'):
@@ -763,6 +884,8 @@ def render_observation(record, *, current=False, history_names=None, host_icon=N
         lines += backup_lines(data)
     elif (record.get('retention_definition') or {}).get('contract') == 'mysql-replication':
         lines += replication_lines(data)
+    elif (record.get('retention_definition') or {}).get('contract') == 'disks-raid':
+        lines += disks_raid_lines(data)
     elif 'groups' in data:
         lines += ['## Inventory jobs', '', 'Each group retains its own source times. Missing samples are gaps, not carried-forward measurements.', '']
         for group in data['groups']:
@@ -846,7 +969,9 @@ def render_observation(record, *, current=False, history_names=None, host_icon=N
              value_text(probe['exitcode']), value_text(format_time(probe['observed_at']))] for probe in probes]) + ['']
         lines += ['Commands are recorded sources, not instructions to execute. Identity-adapter queries may supplement hardware fields; their raw execution evidence remains separate.', '']
     else:
-        if 'groups' in data:
+        if (record.get('retention_definition') or {}).get('contract') == 'disks-raid':
+            lines += command_outputs(record)
+        elif 'groups' in data:
             lines += ['### Collection queries', '']
             lines += markdown_table(['Source','Command','State','Reason','Sample time'],
                 [(p['id'],p.get('command') or 'Acquisition',p['status'],p.get('reason_code') or '',p['observed_at']) for p in data.get('probes',[])])+['']

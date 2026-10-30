@@ -135,7 +135,7 @@ class OpsTests(unittest.TestCase):
                          '{glob: "recipes/**/overview"}'):
             with self.subTest(selector=selector):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/system/inventory/overview}}]}}}}')
-                expected = (sorted([ops.REPOSITORY_RECIPES / 'database/mysql/check/replication', ops.REPOSITORY_RECIPES / 'system/account/check/identity', ops.REPOSITORY_RECIPES / 'system/network/check/port', ops.REPOSITORY_RECIPES / 'system/inventory/overview', ops.REPOSITORY_RECIPES / 'feast/report/retention-summary', ops.REPOSITORY_RECIPES / 'feast/report/execution-summary'])
+                expected = (sorted([ops.REPOSITORY_RECIPES / 'system/storage/inventory/disks-raid', ops.REPOSITORY_RECIPES / 'database/mysql/check/replication', ops.REPOSITORY_RECIPES / 'system/account/check/identity', ops.REPOSITORY_RECIPES / 'system/network/check/port', ops.REPOSITORY_RECIPES / 'system/inventory/overview', ops.REPOSITORY_RECIPES / 'feast/report/retention-summary', ops.REPOSITORY_RECIPES / 'feast/report/execution-summary'])
                             if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
                 self.assertEqual(self.check().selected['web'], expected)
 

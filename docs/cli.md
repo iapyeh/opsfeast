@@ -78,6 +78,8 @@ See [consumer contract 0.1.0](retention-consumers.md) for placement, exact descr
 
 ## Retention and vault commands
 
+Full `vault rebuild` and default enabled initialization also prepare the [bundled Obsidian reader style](host-vault.md#automatic-obsidian-reader-setup): copy managed CSS, enable it on first adoption, preserve other appearance settings and later opt-out. Invalid settings, symlinks and unmanaged CSS collisions fail content publication. `vault inspect` and `vault groups` do not configure reader assets. No application installation or host collection occurs.
+
 Use [retention contracts and examples](retention.md) before selecting data, and [offline replay](retention-replay.md) for recovery. Recipe discovery/show/inspect exposes `retention` declarations and retrieval instructions. Read commands do not create storage or connect.
 
 | Command | Behavior |
@@ -803,7 +805,7 @@ checks, Python 3.11 grammar, skill frontmatter, 194 changed-document local links
 diff whitespace passed. Offline browsing of an existing failed result showed unknown
 because collection never started; no host operation or saved-result rewrite occurred.
 
-Current inventory records use records/SUMMARY.md and topic-based current-title pages with icons, optional DGMO and nonempty Attention. They omit uncollected fields and redundant columns while keeping zero/false/observed empty lists; full yearly reports preserve detailed samples, units, source times/states and collection metadata. Packages/services are complete and name-sorted. See [current/report rendering](host-vault.md#recipe-retention-and-markdown); omitted values are not verified absence or health. Rebuild updates owned output without collection or retention changes, while unmanaged notes and deliberate manual links remain user-owned.
+Current inventory records use records/SUMMARY.md and topic-based current-title pages with icons, Mermaid diagrams and nonempty Attention. They omit uncollected fields and redundant columns while keeping zero/false/observed empty lists; full yearly reports preserve detailed samples, units, source times/states and collection metadata. Packages/services are complete and name-sorted. See [current/report rendering](host-vault.md#recipe-retention-and-markdown); omitted values are not verified absence or health. Rebuild updates owned output without collection or retention changes, while unmanaged notes and deliberate manual links remain user-owned.
 
 Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
 
@@ -917,4 +919,10 @@ Exit 0 means the local operation completed, 1 validation/storage/conflict/recove
 
 `recipes run` keeps fixed machine status/exit behavior; `PASS` means execution success. Optional assessment labels and severity appear in completion and saved observation views, with platform failures taking precedence. Configure whole-recipe login/su/sudo under exact-reference `recipes.<reference>.execution`; account settings are not CLI vars or new flags. See [results and accounts](recipe-results-and-accounts.md) for supported contracts, settings, saved evidence and examples.
 
-*Last modified: 2026-10-29 22:51:57*
+## Physical disks and separate RAID checks
+
+Use `opsfeast.py recipes run system/storage/inventory/disks-raid --profile NAME --host HOST --json`. Optional invocation inputs: `--var 'expected_disks={"data":4}' --var boot_policy=mirrored-ssd-pair --var expected_raids=2`. The physical data count includes spare, unconfigured and standalone drives across controllers; boot policy is a separate fixed pair, and RAID count is independent. Settings require no discovered hardware IDs. Save the same vars per host through the [recipe policy](recipe-sources.md).
+
+Inspect without connecting using `inspect-recipe system/storage/inventory/disks-raid --json`. Read [the recipe](../recipes/system/storage/inventory/disks-raid/README.md) for prerequisites, target/root scope, default auto boot policy, supported providers, source health and failures. Configured count mismatch/unverified and unknown/unhealthy required evidence produce a non-success result. Collection, assessment, retention and content receipts remain distinct. The 0.4.0 contract replaces expected_group_disks, expected_physical_disks and include_boot_devices without aliases; preserve old history and recollect after updating settings. No installation, repair or schedule is performed.
+
+*Last modified: 2026-10-30 11:44:50*

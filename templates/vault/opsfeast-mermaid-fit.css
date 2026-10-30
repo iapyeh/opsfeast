@@ -1,0 +1,32 @@
+/* Shared OpsFeast reader style. Canonical source: templates/vault/opsfeast-mermaid-fit.css.
+   Customize a separate snippet; generated Vault copies belong to OpsFeast. */
+.markdown-preview-view .mermaid,
+.markdown-source-view .mermaid {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-inline: 12px;
+  margin-block: 0 2rem;
+}
+
+.markdown-preview-view .mermaid svg,
+.markdown-source-view .mermaid svg {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  /* Mermaid XY endpoint ticks can extend slightly beyond its viewBox. */
+  overflow: visible;
+  margin-inline: auto;
+}
+
+/* Keep figure captions outside the diagram, aligned with the SVG border. */
+.markdown-preview-view .opsfeast-figure-caption,
+.markdown-source-view .opsfeast-figure-caption {
+  margin-block: 2rem 0 !important;
+  padding-inline-start: 8px;
+  text-align: left;
+  font-weight: 600;
+}
+/* Last modified: 2026-10-30 11:57:14 */

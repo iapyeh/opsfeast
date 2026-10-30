@@ -46,45 +46,93 @@ class RecordViewTests(unittest.TestCase):
         self.assertIn('No entries reported', current)
         self.assertIn('Some data was not obtained', current)
         self.assertIn('Observed: 2026-', current)
-        self.assertIn('```dgmo', current)
-        self.assertIn('"/empty (tmpfs)" 0', current)
+        self.assertIn('```mermaid', current)
+        self.assertIn('xychart-beta horizontal', current)
+        self.assertIn('x-axis ["/ (/dev/example)", "/empty (tmpfs)"]', current)
+        self.assertIn('bar [82, 0]', current)
         self.assertIn('Not available', history)
         self.assertIn('## Software', history)
         self.assertIn('## Collection metadata', history)
-        self.assertNotIn('```dgmo', history)
+        self.assertNotIn('```mermaid', history)
+        self.assertNotIn('```dgmo', current)
         self.assertEqual(data, before)
 
     def test_usage_only_plots_valid_bounded_values_and_never_computes_availability(self):
         rows = [{'mountpoint': str(i), 'used_percent': v} for i, v in enumerate(
                 [0, 100, '82%', None, '', 'bad', -1, 101, float('nan'), float('inf'), True])]
         plot = '\n'.join(content.capacity_diagram(rows))
-        self.assertIn('"0" 0', plot)
-        self.assertIn('"1" 100', plot)
-        self.assertIn('"2" 82', plot)
-        self.assertEqual(sum(line.startswith('"') for line in plot.splitlines()), 3)
+        self.assertIn('x-axis ["0", "1", "2"]', plot)
+        self.assertIn('y-axis "Used (%)" 0 --> 100', plot)
+        self.assertIn('bar [0, 100, 82]', plot)
         self.assertEqual(content.capacity_diagram([{'used_bytes': 80, 'total_bytes': 100}]), [])
 
     def test_interface_rows_are_grouped_without_inventing_peer_or_link_status(self):
         rows = record()['data']['inventory']['network']['interfaces']
         rows += [dict(rows[0]), {'name': 'eth1'}, {'address': '192.0.2.99'}]
         plot = '\n'.join(content.interface_diagram('example-node', rows))
-        self.assertEqual(plot.count('    Interface eth0'), 1)
-        self.assertEqual(plot.count('      IP 192.0.2.10/24'), 1)
+        self.assertIn('flowchart LR', plot)
+        self.assertEqual(plot.count('["Interface eth0"]'), 1)
+        self.assertEqual(plot.count('["IP 192.0.2.10/24"]'), 1)
         self.assertIn('2001:db8::1/64', plot)
-        self.assertIn('    Interface eth1', plot)
+        self.assertIn('["Interface eth1"]', plot)
+        self.assertIn('host --> interface_0', plot)
+        self.assertIn('interface_0 --> address_0_0', plot)
+        self.assertNotIn('interface_1 --> address_', plot)
         self.assertNotIn('192.0.2.99', plot)
         self.assertIn('not a network topology', plot)
 
+    def test_tiny_reported_percentages_use_decimal_chart_numbers(self):
+        plot = '\n'.join(content.capacity_diagram([
+            {'mountpoint': '/small', 'used_percent': 1e-8},
+            {'mountpoint': '/fraction', 'used_percent': 12.3456},
+        ]))
+        self.assertIn('bar [0.00000001, 12.3456]', plot)
+        self.assertNotIn('1e-08', plot)
+
+    def test_long_filesystem_labels_use_unique_keys_with_full_table_mapping(self):
+        name = '/very/long/filesystem/' + '資料' * 20
+        rows = [{'mountpoint': name + suffix, 'used_percent': value}
+                for suffix, value in (('/one', 0), ('/two', 100))]
+        before = copy.deepcopy(rows)
+        plot = '\n'.join(content.capacity_diagram(rows))
+        self.assertIn('x-axis ["FS 1", "FS 2"]', plot)
+        self.assertIn('| FS 1 | ' + name + '/one |', plot)
+        self.assertIn('| FS 2 | ' + name + '/two |', plot)
+        self.assertIn('bar [0, 100]', plot)
+        self.assertIn('    width: 400', plot)
+        self.assertEqual(rows, before)
+
     def test_labels_cannot_escape_fences_lines_or_quoted_nodes(self):
-        attack = 'a"\\\\\n```\n  injected description: hacked\x00'
-        name = content.dgmo_name(attack)
+        attack = 'a"\\\\\n```\n%%{init: {"securityLevel": "loose"}}%%\n<script>&#quot;\x00'
+        name = content.mermaid_label(attack)
         self.assertEqual(name.count('"'), 2)
         self.assertNotIn('`', name)
         self.assertNotIn('\n', name)
         self.assertNotIn('\\', name)
         self.assertNotIn('\x00', name)
+        for unsafe in ('<', '>', '&', '#', '%'):
+            self.assertNotIn(unsafe, name)
         body = '\n'.join(content.interface_diagram(attack, [{'name': attack, 'address': attack}]))
         self.assertEqual(body.count('```'), 2)
+        self.assertNotIn('%%{', body)
+        self.assertNotIn('<script>', body)
+        capacity = '\n'.join(content.capacity_diagram([{'mountpoint': attack, 'source': attack, 'used_percent': 12}]))
+        self.assertEqual(capacity.count('```'), 2)
+        diagram = capacity.split('```mermaid', 1)[1].split('```', 1)[0]
+        self.assertNotIn('%%{', diagram)
+        self.assertNotIn('<script>', capacity)
+        self.assertIn(content.text(attack), capacity)
+
+    def test_empty_diagrams_and_literal_labels_preserve_reported_scope(self):
+        self.assertEqual(content.capacity_diagram([]), [])
+        self.assertEqual(content.interface_diagram('example', []), [])
+        self.assertEqual(content.interface_diagram('example', [{'address': '192.0.2.1'}]), [])
+        labels = ['end', 'x-->y', '日本語 介面', 'a,b[0]', '0', 'false']
+        plot = '\n'.join(content.interface_diagram('end', [{'name': value} for value in labels]))
+        for value in ['end', 'x--＞y', '日本語 介面', 'a,b[0]', '0', 'false']:
+            self.assertIn('["Interface ' + value + '"]', plot)
+        self.assertEqual(plot.count('host --> interface_'), len(labels))
+        self.assertNotIn('address_', plot)
 
     def test_nested_missing_is_not_misrepresented_as_observed_empty(self):
         self.assertIsNone(content.readable_value([None, {'value': None}]))
@@ -112,7 +160,8 @@ class RecordViewTests(unittest.TestCase):
         self.assertIn('Some data was not obtained', current)
         self.assertIn(content.history_filename(dict(data, record_id='older-record', observed_at=older)), current)
         self.assertIn(content.format_time(older), current)
-        self.assertIn('"/ (/dev/example)" 82', current)
+        self.assertIn('x-axis ["/ (/dev/example)"]', current)
+        self.assertIn('bar [82]', current)
         self.assertEqual(data, before)
 
     def test_entity_tables_preserve_retained_units_and_separate_sample_times(self):

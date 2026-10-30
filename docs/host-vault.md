@@ -4,9 +4,25 @@ Vault is the bundled content application over [recipe retention](retention.md). 
 
 ## Identity and configuration
 
-Open `<profile-root>/vault/` in Obsidian or another Markdown reader. Reading tables requires no model, connection or plugin. The optional DGMO plugin renders `dgmo` fences; a DGMO MCP server is not required to generate these text definitions. Tables remain available when diagrams are unsupported. `feast.yaml` accepts `vault: {auto_refresh: false}` to disable automatic publication; it does not disable retention or change recipe selection.
+Open `<profile-root>/vault/` in Obsidian or another Markdown reader. Reading tables requires no model, connection or plugin. The generated `mermaid` fences use Obsidian’s [built-in Mermaid support](https://obsidian.md/help/advanced-syntax#Diagram). No Diagrammo plugin or MCP server is required. Other readers need Mermaid support, including XY charts; tables remain available when diagrams are unsupported. `feast.yaml` accepts `vault: {auto_refresh: false}` to disable automatic publication; it does not disable retention or change recipe selection.
 
 Host identity is namespace plus host ID. Primary group affects content routing, not identity or the independent annual SQLite archives. See [retention storage](retention.md#storage-and-execution-phases).
+
+## Automatic Obsidian reader setup
+
+For the Obsidian reading workflow, install the application separately; OpsFeast configures Vault assets without launching or installing it. Other Markdown readers can use the tables and their own Mermaid support. Structured retention/CLI operations retain their existing dependencies.
+
+The default enabled Vault consumer during initialization, subsequent full consumer rebuilds, and explicit `vault rebuild` prepare these profile-local files:
+
+- `vault/.obsidian/snippets/opsfeast-mermaid-fit.css`: managed copy of the public `templates/vault/opsfeast-mermaid-fit.css` asset; it fits diagrams to the prose width and styles external captions/spacing.
+- `vault/.obsidian/appearance.json`: on first adoption, add `opsfeast-mermaid-fit` to `enabledCssSnippets`, preserving all other keys and entries. Later rebuilds respect removal from that list, including deliberate disabling, while still repairing/updating the managed CSS.
+- `vault/.reader-assets.json`: dedicated CSS ownership/digest map, separate from Markdown ownership manifests. An edited owned copy can be replaced; put personal overrides in another snippet. An identical existing CSS copy can be adopted. A different unmanaged file at the reserved name causes a content failure rather than being overwritten.
+
+Invalid JSON, non-object appearance settings, a non-string-list `enabledCssSnippets`, malformed ownership metadata and symlink paths fail publication. Preflight runs before reader writes and generated page publication; files are replaced atomically one at a time, not as a whole Vault transaction. A first setup interrupted between asset/settings/manifest writes can be retried through full rebuild. Preserve the reported content failure separately from successfully retained data.
+
+`vault inspect` and `vault groups` do not install or activate reader assets. Disabling automatic Vault publication prevents that publication path; explicit full rebuild still prepares reader assets. If the Vault is already open in Obsidian, reopen it to load newly written reader settings; filesystem preparation does not prove that a running reader has loaded them. User-created Vaults, including a first opening of the textbook folder, need an agent-assisted copy/enable step using the supplied asset and existing settings. No community-plugin installation, model, host connection or new collection is involved.
+
+Public reader-setup tests cover settings preservation/opt-out, collisions, invalid input, symlink rejection, interrupted retry, initialization, asset packaging and exclusion of local reader settings. See [the reproducible tests and review evidence](../tests/README.md#vault-reader-and-storage-review). File preparation does not assert live reload in an already-running Obsidian instance.
 
 ## Enable or migrate
 
@@ -71,16 +87,34 @@ Current views omit null/empty-string fields and sections with no readable data. 
 
 Single cumulative I/O counters do not establish rates and are omitted from current views; measured-window CPU utilization remains. The renderer does not invent throughput or link topology. Data/coverage and identity warnings remain visible. A single top source-report link is used when all displayed sections share it; mixed-age sections link their own source reports when different. Current pages omit the full Collection metadata disclosure, which belongs in reports.
 
-The DGMO definitions add reported filesystem-usage bars and host/interface/address overviews. Example text generated from observed values:
+Mermaid definitions add reported filesystem-usage bars (`xychart-beta horizontal`) and host/interface/address grouping (`flowchart LR`). Example text generated from observed values:
 
-```dgmo
-bar Filesystem usage (%)
-orientation-horizontal
-y-label Used (%)
-"/ (/dev/example)" 82
+```mermaid
+---
+config:
+  xyChart:
+    width: 400
+    height: 260
+---
+xychart-beta horizontal
+    title "Filesystem usage (%)"
+    x-axis ["/ (/dev/example)"]
+    y-axis "Used (%)" 0 --> 100
+    bar [82]
 ```
 
-Only valid reported percentages in 0–100 are plotted; absent percentages are not calculated or treated as zero. Interface graphs show grouping/addresses, not physical links or inferred operational health. Labels are escaped/sanitized against fence/line/diagram injection. Diagram support is optional and introduces no collection or network dependency.
+```mermaid
+flowchart LR
+    host["Host example-node"]
+    interface_0["Interface eth0"]
+    host --> interface_0
+    address_0_0["IP 192.0.2.10/24"]
+    interface_0 --> address_0_0
+```
+
+XY charts use a 400-unit logical width, a row-dependent height and the bundled CSS gutter so narrow readers do not clip axis labels/ticks. Long filesystem labels use unique FS numbers with an adjacent table of complete reported labels; percentages and source data are unchanged. Only valid reported percentages in 0–100 are plotted; absent percentages are not calculated or treated as zero. Interface graphs show grouping/addresses, not physical links or inferred operational health. Node IDs are generated independently of labels. Labels collapse whitespace, remove control characters and replace markup/directive delimiters with display characters to prevent fence/line/diagram injection; original spelling remains in tables and reports. Diagram support introduces no collection or network dependency.
+
+Existing generated DGMO fences change to Mermaid when owned pages are next published or explicitly rebuilt with `vault rebuild`. No retention conversion or new collection is needed. Human-authored diagrams and unmanaged notes remain user-owned; rebuilding cannot convert those.
 
 ### Original command output
 
@@ -118,7 +152,7 @@ Use `host_vault.rebuild/refresh_groups/publish` and Vault CLI for content. Use C
 
 ## Consistency and verification limits
 
-Public synthetic tests cover current-view omission versus full reports, sorting, units, filesystem deduplication, I/O suppression, diagram-label safety, thresholds, batch snapshots, links, collisions, publication ownership, retention/replay and independent failure receipts. The local verification rendered 44 generated DGMO diagrams with @diagrammo/dgmo 0.85.0 without diagnostics; this is renderer evidence, not a universal editor/plugin compatibility guarantee. No new native SSH/privilege-policy evidence, hosting, transmission, whole-vault transaction or cryptographic authenticity claim is added.
+Public synthetic tests cover current-view omission versus full reports, sorting, units, filesystem deduplication, I/O suppression, diagram-label safety, thresholds, batch snapshots, links, collisions, publication ownership, retention/replay and independent failure receipts. See [review evidence](../tests/README.md#vault-reader-and-storage-review) for interpreter, package and standalone Mermaid rendering checks. Standalone rendering does not establish compatibility with every Obsidian or Markdown-reader version. No new native SSH/privilege-policy evidence, hosting, transmission, whole-vault transaction or cryptographic authenticity claim is added.
 
 ## Database replication content
 
@@ -168,4 +202,10 @@ Archive repairs bundled owned views and compacts active storage while preserving
 
 Vault presents saved recipe assessment and execution-account evidence separately from fixed operation status. A custom label cannot suppress platform failures, and historical content does not recompute live findings. See [results and accounts](recipe-results-and-accounts.md).
 
-*Last modified: 2026-10-26 11:49:24*
+## Physical disks and RAID views
+
+[disks-raid 0.4.0](../recipes/system/storage/inventory/disks-raid/README.md) leads with independent physical and RAID counts/health. Physical purpose groups are Data, Boot and Unknown; per-tray tables show use, source state, capacity and health. Spare/Ready/unconfigured/Non-RAID drives remain counted and visible even when no RAID references them. A physical group has no virtual membership or RAID health field. Multiple controllers can share one data expectation; observed IDs only disambiguate source trays.
+
+The independent RAID table preserves controller/volume names, health, level and capacity, with its own expected count. A failed RAID query does not erase known physical disks or their reported health. Unknown role classification can prevent the role baseline comparison while a complete physical total remains known. A Ready spare may be healthy without being Online. Controller, MD, boot mirror and source errors remain separate findings. Source details use narrow per-device tables and collapsed commands. Historical scope/assessment stays historical; current policy does not reinterpret old observations.
+
+*Last modified: 2026-10-30 11:57:14*

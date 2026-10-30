@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 import zipfile
@@ -55,6 +56,30 @@ class CoreDeliveryTests(unittest.TestCase):
     def write(self, code=CODE):
         (self.directory / 'recipe.yaml').write_text(json.dumps(self.meta))
         (self.directory / 'main.py').write_text(code)
+
+    def test_packages_exclude_reader_local_settings_but_include_public_css(self):
+        source = self.root / 'package-source'
+        source.mkdir()
+        for name in ('VERSION', 'README.md', 'AGENTS.md', 'pyproject.toml', 'build_backend.py',
+                     'requirements.txt', 'requirements-init.txt', 'requirements-tui.txt'):
+            (source / name).write_bytes((ROOT / name).read_bytes())
+        for name in ('docs/.obsidian/appearance.json', 'docs/textbook/zh-TW/.obsidian/workspace.json',
+                     'docs/textbook/zh-TW/.obsidian/snippets/personal.css'):
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('private reader configuration')
+        public = source / 'templates/vault/opsfeast-mermaid-fit.css'
+        public.parent.mkdir(parents=True)
+        public.write_text('/* Public bundled reader asset. */')
+        with patch.object(build_backend, 'ROOT', source):
+            wheel = self.root / build_backend.build_wheel(str(self.root))
+            sdist = self.root / build_backend.build_sdist(str(self.root))
+        with zipfile.ZipFile(wheel) as archive:
+            self.assertIn('_opsfeast_data/templates/vault/opsfeast-mermaid-fit.css', archive.namelist())
+            self.assertFalse(any('/.obsidian/' in name for name in archive.namelist()))
+        with tarfile.open(sdist) as archive:
+            self.assertTrue(any(name.endswith('/templates/vault/opsfeast-mermaid-fit.css') for name in archive.getnames()))
+            self.assertFalse(any('/.obsidian/' in name for name in archive.getnames()))
 
     def run_recipe(self, actor=None):
         actor = actor or Actor()
@@ -159,6 +184,8 @@ def execute(recipe):
             self.assertIn('_opsfeast_data/tools/observation_results.py', names)
             self.assertIn('_opsfeast_data/tools/cli_help.py', names)
             self.assertIn('_opsfeast_data/tools/collection_evidence.py', names)
+            self.assertIn('_opsfeast_data/templates/vault/opsfeast-mermaid-fit.css', names)
+            self.assertFalse(any('/.obsidian/' in name for name in names))
             self.assertIn('_opsfeast_data/schemas/collection-evidence.schema.json', names)
             self.assertIn('_opsfeast_data/tools/root_access.py', names)
             self.assertIn('_opsfeast_data/tools/sshscript_runtime.py', names)
@@ -226,6 +253,9 @@ from recipe_catalog import choose
 from recipe_reports import run_report
 from uuid import uuid4
 profile = instance.init_profile('smoke')
+assert (profile.root/'vault/.obsidian/snippets/opsfeast-mermaid-fit.css').is_file()
+import json
+assert 'opsfeast-mermaid-fit' in json.loads((profile.root/'vault/.obsidian/appearance.json').read_text())['enabledCssSnippets']
 metadata = {'id':'synthetic-check','version':'1','access_mode':'read','retention':{
     'contract':'host-values','version':'0.2.0','description':'Synthetic count only.',
     'fields':{'count':{'type':'integer','unit':'items','description':'Observed count'}}}}

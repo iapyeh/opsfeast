@@ -31,6 +31,7 @@ class FirstHostExamplesTests(unittest.TestCase):
             shutil.copytree(ROOT / 'opsfeast', Path(directory, 'opsfeast'), ignore=shutil.ignore_patterns('__pycache__'))
             shutil.copytree(ROOT / 'consumers', Path(directory, 'consumers'), ignore=shutil.ignore_patterns('__pycache__'))
             shutil.copytree(ROOT / 'recipes', Path(directory, 'recipes'), ignore=shutil.ignore_patterns('__pycache__'))
+            shutil.copytree(ROOT / 'templates', Path(directory, 'templates'))
             result = subprocess.run([sys.executable, '-B', str(Path(directory, 'tools/opsfeast.py')), 'init'],
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)

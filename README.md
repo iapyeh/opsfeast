@@ -1,6 +1,6 @@
 # OpsFeast
 
-Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and optional DGMO views](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
+Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and Mermaid diagrams](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
 
 For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). Recipe 0.4.0 supports immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
 
@@ -319,4 +319,4 @@ For daily backup presence and directory hygiene, reuse [backup-files-check 0.1.0
 
 [Transfer recipes, observations and retention independently](docs/portability.md). Reviewed import plans support merge or replacement, recipe path-conflict handling and rollback. Frozen archive plans verify packages outside the active profile before source removal, database compaction and resumable cleanup. [Recipe-carried data contracts](docs/portable-contracts.md) let users define structured data without modifying the platform registry. Imported history never activates recipes, consumers or notification delivery.
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-30 11:44:50*

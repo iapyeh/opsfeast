@@ -1,5 +1,11 @@
 # SSHScript Ops to OpsFeast
 
+## Vault diagrams use Mermaid
+
+Newly published current inventory pages use `mermaid` fences instead of `dgmo`. Obsidian renders Mermaid natively, without the Diagrammo community plugin. Readers need Mermaid XY-chart support for filesystem bars; Markdown tables preserve the same reported values. To update existing generated pages, run `python -B tools/opsfeast.py vault rebuild --profile PROFILE --json` for the intended profile. This refreshes owned output from retention without recollecting, changing retained/raw evidence or converting human notes. Human-authored DGMO diagrams remain unchanged. See [Vault rendering and ownership](host-vault.md).
+
+Full Vault publication now prepares `.obsidian/snippets/opsfeast-mermaid-fit.css` and initially enables it while preserving other appearance settings. Existing Vaults acquire it on their next full publication or explicit rebuild; group refresh/inspect do not apply it. Later manual disabling remains respected. Preserve a different unmanaged file at the reserved name and resolve that collision explicitly; malformed reader configuration and symlinks also fail content publication. Managed CSS edits are overwritten; place overrides in another snippet. See [reader ownership and recovery](host-vault.md#automatic-obsidian-reader-setup).
+
 ## Recipe policy and observation runs
 
 Recipe settings now use direct exact-reference mappings at default, group and host levels: `recipes: {system/inventory/overview: {enabled: true, vars: {...}}}`. Do not use descriptor IDs or flatten directory names into hyphens. `bundle:PATH` and bare PATH are equivalent; same-layer duplicates fail. `:PATH` stays profile-scoped and named prefixes stay source-scoped, without fallback. Mappings merge per leaf, ordered first-group precedence wins and lists replace. Nested input objects now retain inherited sibling fields; review inputs that relied on shallow replacement. Within invocation inputs, --var still replaces that same file-provided variable before preparation.
@@ -8,7 +14,7 @@ Every recipe defaults disabled; new init explicitly enables bundled inventory in
 
 New namespace-enabled operational invocations and saved inventory collections persist explicit [observation runs 0.1.0](observation-runs.md). Consumer descriptors/event readers must accept retention.run.updated; event record_id is a run UUID, read through retention.run rather than show. Completed batches snapshot policy/findings; rebuild does not fabricate old membership or apply new thresholds to historical runs. Run objects are separate from retention query/export records. No automatic migration, deletion or recollection is provided.
 
-Vault uses records/SUMMARY.md and readable topic-based current pages with optional DGMO definitions. Full yearly reports preserve detailed data/evidence. Observation filename collisions now use ordinal suffixes instead of failing or appending IDs/digests. Update hand-written links after rebuilding owned pages; unmanaged notes and prior retained/raw data remain intact. Current Attention uses current recipe vars; saved batch Attention uses the recorded policy. See [current/report separation](host-vault.md#recipe-retention-and-markdown).
+Vault uses records/SUMMARY.md and readable topic-based current pages with Mermaid definitions. Full yearly reports preserve detailed data/evidence. Observation filename collisions now use ordinal suffixes instead of failing or appending IDs/digests. Update hand-written links after rebuilding owned pages; unmanaged notes and prior retained/raw data remain intact. Current Attention uses current recipe vars; saved batch Attention uses the recorded policy. See [current/report separation](host-vault.md#recipe-retention-and-markdown).
 
 ## 2026-10-20: one recipe execution entrypoint
 
@@ -246,7 +252,7 @@ Core callers can use profile.hosts.groups(); profile.inspect and the TUI include
 same catalog. Run check locally after migration; no connection is required or implied.
 See [the canonical rules and example](hosts-yaml.md#host-groups).
 
-Current inventory records use records/SUMMARY.md and topic-based current-title pages with icons, optional DGMO and nonempty Attention. They omit uncollected fields and redundant columns while keeping zero/false/observed empty lists; full yearly reports preserve detailed samples, units, source times/states and collection metadata. Packages/services are complete and name-sorted. See [current/report rendering](host-vault.md#recipe-retention-and-markdown); omitted values are not verified absence or health. Rebuild updates owned output without collection or retention changes, while unmanaged notes and deliberate manual links remain user-owned.
+Current inventory records use records/SUMMARY.md and topic-based current-title pages with icons, Mermaid diagrams and nonempty Attention. They omit uncollected fields and redundant columns while keeping zero/false/observed empty lists; full yearly reports preserve detailed samples, units, source times/states and collection metadata. Packages/services are complete and name-sorted. See [current/report rendering](host-vault.md#recipe-retention-and-markdown); omitted values are not verified absence or health. Rebuild updates owned output without collection or retention changes, while unmanaged notes and deliberate manual links remain user-owned.
 
 Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
 
@@ -324,4 +330,4 @@ Imported units have independent origin-preserving storage in transfer/space.sqli
 
 Update OpsFeast before using recipe-assessment/recipe-execution 0.1.0 or installing packages declaring those features. Existing references default to login; no account is automatically escalated. Explicit Core su/sudo scopes now default to pipes, preserving stdout/stderr and finite stdin; terminal-dependent interactive code must explicitly request `get_pty=True`. Nondefault account policies on other runner contracts fail preflight. Existing stored evidence is preserved; no migration or history rewrite is needed. See [results and accounts](recipe-results-and-accounts.md).
 
-*Last modified: 2026-10-26 12:14:33*
+*Last modified: 2026-10-30 11:44:50*

@@ -3,6 +3,9 @@ name: opsfeast-result-data
 description: Interpret and recover OpsFeast retained observations, prepare selected JSON exchanges, validate or combine shared data, reuse existing data/result tools and Python modules, and guide recipient-selected analysis without exposing raw execution details.
 ---
 
+For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
+
+
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
 
 
@@ -151,7 +154,7 @@ Missing/unzoned instants do not acquire an invented timezone. Read [the canonica
 policy and synthetic verification](../../docs/cli.md#human-time-display-policy) before
 comparing display strings, interpreting DST or authoring another human report.
 
-Current inventory records prioritize readability: records/SUMMARY.md indexes records/current-<title>.md, with host icons, topic-grouped values, complete name-sorted packages/services, optional DGMO definitions and only nonempty Attention. Uncollected fields/sections and single cumulative I/O counters are omitted; zero/false/observed empty lists remain distinct. Full yearly reports preserve detailed sample/unit/source/time/state and collection metadata. Follow the source-report links and read structured retention instead of treating an omitted field as absence or health. See [current/report semantics](../../docs/host-vault.md#recipe-retention-and-markdown).
+Current inventory records prioritize readability: records/SUMMARY.md indexes records/current-<title>.md, with host icons, topic-grouped values, complete name-sorted packages/services, Mermaid definitions and only nonempty Attention. Uncollected fields/sections and single cumulative I/O counters are omitted; zero/false/observed empty lists remain distinct. Full yearly reports preserve detailed sample/unit/source/time/state and collection metadata. Follow the source-report links and read structured retention instead of treating an omitted field as absence or health. See [current/report semantics](../../docs/host-vault.md#recipe-retention-and-markdown).
 
 Current selection groups each host by origin namespace, recipe-source qualifier (the prefix before a colon, or the unqualified source) and stable recipe ID, then selects the whole record with the greatest (observed_at, record_id). Recipe-directory moves within that source therefore keep one current page without aliases or rewriting historical references. Partial results remain partial. Distinct sources, origin namespaces or recipe IDs remain independent; a shared output title still fails publication explicitly rather than silently replacing another dataset. All historical reports remain available.
 
@@ -240,4 +243,8 @@ Archive is verified external copy followed by selected source removal, SQLite co
 
 Read [saved assessment/account contracts](../../docs/recipe-results-and-accounts.md) when interpreting raw, retained or batch evidence. Prefer the exact saved verified actual actor; keep login identity distinct. Preserve optional assessment and execution_identity through export/import. Recipe labels/severity do not override fixed failure/partial states or authorize current incidents from historical data.
 
-*Last modified: 2026-10-26 11:49:24*
+Read [disks-raid 0.4.0](../../recipes/system/storage/inventory/disks-raid/README.md) through retention CLI/Core readers. policy contains expected_disks by semantic purpose, boot_policy and independent expected_raids; no FQDD is a count-settings key. disk_groups are Data/Boot/Unknown physical inventory only, with expected/observed/total/completeness/count state, physical IDs and observed controller references. Physical rows keep role, usage, tray/address, state/capacity and source-supported health. Spare/unconfigured/standalone disks remain counted even without a VD. Virtual rows and MD arrays have separate identity/count/health/level/capacity evidence; do not infer RAID membership from a physical Online state.
+
+A complete physical total can stay known while role assignment is unavailable; role count_status is then UNVERIFIED. A failed RAID query does not erase known physical inventory/health. LSU provides only member-location lower bounds, never a complete installed-disk total. Preserve unknown states, exact vendor units, original sample times and saved policies/findings through export/replay. Earlier observations retain their own schema/scope/assessment; recollect for 0.4.0 instead of migrating/reinterpreting historical data. Sharing does not authorize transmission.
+
+*Last modified: 2026-10-30 11:44:50*

@@ -84,6 +84,9 @@ class VaultTests(unittest.TestCase):
         profile = instance.init_profile('Team.Production', namespace='production')
         self.assertEqual(store.settings(profile.root)['namespace'], 'production')
         self.assertTrue((profile.root / 'vault/HOSTS.md').exists())
+        self.assertTrue((profile.root / 'vault/.obsidian/snippets/opsfeast-mermaid-fit.css').exists())
+        self.assertIn('opsfeast-mermaid-fit', json.loads(
+            (profile.root / 'vault/.obsidian/appearance.json').read_text())['enabledCssSnippets'])
         instance.init_profile('Team.Production')
         self.assertEqual(store.settings(profile.root)['namespace'], 'production')
 

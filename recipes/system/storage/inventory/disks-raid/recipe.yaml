@@ -1,0 +1,528 @@
+descriptor_version: 0.3.0
+author:
+  name: Bundle
+  contacts:
+  - Bundle
+license: MIT
+id: disks-raid
+version: 0.4.0
+title: Physical disk inventory and independent RAID health
+description: Count every reported data/boot physical disk including spare, standalone
+  and unconfigured drives using human-readable role expectations; assess RAID arrays
+  independently.
+access_mode: read
+runner:
+  contract: python-recipe
+  version: 0.1.0
+  entrypoint: main.py
+platforms:
+  implemented:
+  - linux
+  - esxi
+  tested:
+  - esxi
+  planned: []
+compatibility:
+  sshscript: ==7.0.0
+dependencies:
+  controller:
+  - Python >=3.11
+  - SSHScript ==7.0.0
+  target:
+  - Dell local RACADM storage get -o preferred for PERC and BOSS; alternatively PERC/StorCLI
+    JSON or ESXi LSU partial queries
+  - 'Linux: lsblk JSON with the documented columns; python3 for Linux MD sysfs'
+  - 'ESXi: esxcli CSV storage core device list and installed LSU for optional partial
+    RAID member locations; existing Core identity prerequisites apply'
+permissions:
+  account: root recommended; Linux can use Core Recipe.root() when require_root is
+    true
+side_effects:
+- Fixed read-only storage queries; possible tool audit records. No target software
+  installation or storage changes.
+- Controller saves raw results, declared retention and independently enabled consumer
+  output.
+inputs:
+  variables:
+    raid_cli:
+      type: string
+      default: auto
+    require_root:
+      type: boolean
+      default: true
+    command_timeout_seconds:
+      type: number
+      default: 20
+      minimum: 1
+      maximum: 120
+    expected_disks:
+      type: object
+      default: {}
+    boot_policy:
+      type: string
+      default: auto
+    expected_raids:
+      type: integer
+      minimum: 0
+output:
+  schema_version: 0.4.0
+retention:
+  contract: disks-raid
+  version: 0.4.0
+  mode: portable
+  description: Physical purpose inventory/count/usage/health includes spare, unconfigured
+    and standalone disks independently of RAID membership; separate RAID baseline/health/level/capacity
+    and immutable source evidence.
+  data_schema:
+    type: object
+    properties:
+      status:
+        enum:
+        - success
+        - partial
+        - failed
+      observed_at:
+        type: string
+        format: date-time
+      platform:
+        enum:
+        - linux
+        - esxi
+      privilege_scope:
+        enum:
+        - verified_root
+        - selected_execution_account
+      os_disks:
+        type: array
+        items:
+          type: object
+          required:
+          - path
+          - scope
+          properties:
+            path: &id001
+              type: string
+            scope:
+              const: os_visible_not_verified_physical
+            size_bytes:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            details: &id002
+              type: object
+      md_arrays:
+        type: array
+        items:
+          type: object
+          required:
+          - name
+          properties:
+            name: *id001
+            members:
+              type: array
+              items: *id002
+      controllers:
+        type: array
+        items:
+          type: object
+          required:
+          - controller
+          - details
+          properties:
+            controller:
+              type:
+              - string
+              - 'null'
+            address: *id001
+            summary: *id002
+            details: *id002
+      physical_drives:
+        type: array
+        items:
+          type: object
+          required:
+          - controller
+          - address
+          - summary
+          - details
+          properties:
+            controller:
+              type:
+              - string
+              - 'null'
+            address: *id001
+            summary: *id002
+            details: *id002
+            provider:
+              type: string
+              enum:
+              - esxcli_lsu
+              - racadm
+            logical_device:
+              type: string
+              description: Source OS logical device for LSU member/location or virtual-device
+                evidence; not a globally stable physical identity.
+            capacity:
+              type:
+              - string
+              - 'null'
+            tray:
+              type: string
+            usage:
+              enum:
+              - spare
+              - unconfigured
+              - standalone
+              - online
+              - unknown
+            role:
+              enum:
+              - data
+              - boot
+              - unknown
+      virtual_drives:
+        type: array
+        items:
+          type: object
+          required:
+          - controller
+          - summary
+          properties:
+            controller:
+              type:
+              - string
+              - 'null'
+            address: *id001
+            summary: *id002
+            details: *id002
+            provider:
+              type: string
+              enum:
+              - esxcli_lsu
+              - racadm
+            logical_device:
+              type: string
+              description: Source OS logical device for LSU member/location or virtual-device
+                evidence; not a globally stable physical identity.
+            capacity:
+              type:
+              - string
+              - 'null'
+      coverage:
+        type: object
+        properties:
+          os_disks: &id003
+            type: object
+            properties:
+              status:
+                enum:
+                - complete
+                - partial
+                - unknown
+                - not_applicable
+              reason: &id004
+                type:
+                - string
+                - 'null'
+            required:
+            - status
+            - reason
+            additionalProperties: false
+          md_arrays: *id003
+          controllers: *id003
+          physical_drives: *id003
+          virtual_drives: *id003
+        required:
+        - os_disks
+        - md_arrays
+        - controllers
+        - physical_drives
+        - virtual_drives
+        additionalProperties: false
+      probes:
+        type: array
+        items:
+          type: object
+          properties:
+            id: *id001
+            command: *id001
+            started_at:
+              type: string
+              format: date-time
+            completed_at:
+              type: string
+              format: date-time
+            observed_at:
+              type: string
+              format: date-time
+            stdout_truncated:
+              type: boolean
+            stderr_truncated:
+              type: boolean
+            status:
+              enum:
+              - success
+              - failed
+            error: *id004
+            exitcode:
+              type:
+              - integer
+              - 'null'
+            stdout: *id004
+            stderr: *id004
+            truncated:
+              type: boolean
+          required:
+          - id
+          - command
+          - started_at
+          - completed_at
+          - observed_at
+          - stdout_truncated
+          - stderr_truncated
+          - status
+          - error
+          - exitcode
+          - stdout
+          - stderr
+          - truncated
+          additionalProperties: false
+      limitations:
+        type: array
+        items: *id001
+      policy:
+        type: object
+        required:
+        - expected_disks
+        - boot_policy
+        - expected_raids
+        additionalProperties: false
+        properties:
+          expected_disks:
+            type: object
+            additionalProperties: false
+            properties:
+              data:
+                type: integer
+                minimum: 0
+          boot_policy:
+            enum:
+            - auto
+            - mirrored-ssd-pair
+          expected_raids:
+            type:
+            - integer
+            - 'null'
+            minimum: 0
+      scope:
+        type: object
+        properties:
+          excluded_devices:
+            type: array
+            items:
+              type: object
+              properties:
+                path:
+                  type: string
+                reason:
+                  const: boot_device
+              required:
+              - path
+              - reason
+              additionalProperties: false
+          selection_complete:
+            type: boolean
+        required:
+        - excluded_devices
+        - selection_complete
+        additionalProperties: false
+      enumeration:
+        type: object
+        properties:
+          complete:
+            type: boolean
+          queried_devices: &id005
+            type: integer
+            minimum: 0
+          failed_devices: *id005
+        required:
+        - complete
+        - queried_devices
+        - failed_devices
+        additionalProperties: false
+      summary:
+        type: object
+        properties:
+          health: &id007
+            enum:
+            - HEALTHY
+            - UNHEALTHY
+            - UNKNOWN
+          physical_disks:
+            type: object
+            properties:
+              observed: *id005
+              total: &id006
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              enumeration_complete:
+                type: boolean
+              expected: *id006
+              count_status:
+                enum:
+                - MATCH
+                - MISMATCH
+                - UNVERIFIED
+                - NOT CONFIGURED
+              health: *id007
+            required:
+            - observed
+            - total
+            - enumeration_complete
+            - expected
+            - count_status
+            - health
+            additionalProperties: false
+          raid_volumes:
+            type: object
+            properties:
+              observed: *id005
+              total: *id006
+              enumeration_complete:
+                type: boolean
+              health:
+                enum:
+                - HEALTHY
+                - UNHEALTHY
+                - UNKNOWN
+                - NOT CONFIGURED
+              expected:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              count_status:
+                enum:
+                - MATCH
+                - MISMATCH
+                - UNVERIFIED
+                - NOT CONFIGURED
+            required:
+            - observed
+            - total
+            - enumeration_complete
+            - health
+            - expected
+            - count_status
+            additionalProperties: false
+        required:
+        - health
+        - physical_disks
+        - raid_volumes
+        additionalProperties: false
+      findings:
+        type: array
+        items:
+          type: object
+          properties:
+            code:
+              type: string
+            severity:
+              enum:
+              - warning
+              - critical
+            message:
+              type: string
+          required:
+          - code
+          - severity
+          - message
+          additionalProperties: false
+      disk_groups:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              enum:
+              - data
+              - boot
+              - unknown
+            role:
+              enum:
+              - data
+              - boot
+              - unknown
+            expected: &id008
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            expected_source: &id010
+              type: string
+            observed:
+              type: integer
+              minimum: 0
+            total: *id008
+            enumeration_complete:
+              type: boolean
+            count_status:
+              enum:
+              - MATCH
+              - MISMATCH
+              - UNVERIFIED
+              - NOT CONFIGURED
+            disk_health: &id009
+              enum:
+              - HEALTHY
+              - UNHEALTHY
+              - UNKNOWN
+            health: *id009
+            physical_ids:
+              type: array
+              items: *id010
+            controller_ids:
+              type: array
+              items:
+                type: string
+          required:
+          - id
+          - role
+          - expected
+          - expected_source
+          - observed
+          - total
+          - enumeration_complete
+          - count_status
+          - disk_health
+          - health
+          - physical_ids
+          - controller_ids
+          additionalProperties: false
+    required:
+    - status
+    - observed_at
+    - platform
+    - privilege_scope
+    - os_disks
+    - md_arrays
+    - controllers
+    - physical_drives
+    - virtual_drives
+    - coverage
+    - probes
+    - limitations
+    - policy
+    - scope
+    - summary
+    - findings
+    additionalProperties: false
+verification:
+  synthetic: tested
+  local: not-tested
+  ssh: 'tested: ESXi 7.0.0, local RACADM 11.0.0, PERC/BOSS physical and virtual state/capacity,
+    group policy, retention and Vault; native Proxmox/PERC CLI not tested'
+# Last modified: 2026-10-27 11:15:42

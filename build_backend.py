@@ -24,7 +24,7 @@ def source_files():
     allowed = {'.py', '.md', '.yaml', '.json', '.txt', '.sh', '.html', '.css', '.js', '.svg', '.yang'}
     for directory in ('opsfeast', 'tools', 'recipes', 'consumers', 'skills', 'docs', 'schemas', 'templates', 'tests'):
         for path in sorted((ROOT / directory).rglob('*')):
-            if path.is_file() and not path.is_symlink() and (path.suffix in allowed or path.name == 'LICENSE') and '__pycache__' not in path.parts:
+            if path.is_file() and not path.is_symlink() and (path.suffix in allowed or path.name == 'LICENSE') and not {'__pycache__', '.obsidian'}.intersection(path.parts):
                 yield path.relative_to(ROOT)
 
 
