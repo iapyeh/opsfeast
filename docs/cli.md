@@ -925,4 +925,21 @@ Use `opsfeast.py recipes run system/storage/inventory/disks-raid --profile NAME 
 
 Inspect without connecting using `inspect-recipe system/storage/inventory/disks-raid --json`. Read [the recipe](../recipes/system/storage/inventory/disks-raid/README.md) for prerequisites, target/root scope, default auto boot policy, supported providers, source health and failures. Configured count mismatch/unverified and unknown/unhealthy required evidence produce a non-success result. Collection, assessment, retention and content receipts remain distinct. The 0.4.0 contract replaces expected_group_disks, expected_physical_disks and include_boot_devices without aliases; preserve old history and recollect after updating settings. No installation, repair or schedule is performed.
 
-*Last modified: 2026-10-30 11:44:50*
+## Read configured hosts and reference IPs
+
+`hosts list [--root PATH | --profile NAME] [--json]` and
+`hosts show HOST_ID [--root PATH | --profile NAME] [--json]` read current host IDs,
+labels/groups and last successfully saved inventory IPv4/IPv6 addresses. They do
+not connect, resolve DNS, scan retention or write. Terminals display tables;
+agents select `--json`. Unknown references have empty arrays, null observed_at and
+status unknown. Successful empty collections instead have status known. No
+primary IP is guessed and these addresses never select SSH endpoints. Successful
+saved interface collection replaces them; failed/unrelated/no-store queries keep
+the previous reference and timestamp. Read the [0.1.0 contract and examples](host-reference-ips.md).
+
+```sh
+python -B tools/opsfeast.py hosts list --profile main --json
+python -B tools/opsfeast.py hosts show node --profile main --json
+```
+
+*Last modified: 2026-10-30 16:02:12*

@@ -216,4 +216,17 @@ Use `profile.services` for standalone programs and the supplied `recipe.services
 
 Read [results/accounts](../../docs/recipe-results-and-accounts.md) for `Profile.recipe(..., execution={"via":"sudo","user":"root"})`, `Recipe.execution(policy)`, pipe-console exec/start and exact stdin. Default login requires no escalation; failed acquisition never yields the body, restoration failure disables reuse. Explicit su/sudo defaults changed to get_pty=False; request a PTY only for a reviewed interactive need. Reuse an already-selected root with recipe.root(); do not nest switching loops.
 
-*Last modified: 2026-10-30 11:44:50*
+## Read host reference addresses
+
+Use `profile.hosts.reference_ips(host_id)` for last successfully saved inventory
+IPv4/IPv6 lists and original observed_at; inside a recipe use
+`recipe.profile.hosts.reference_ips(recipe.host_id)`. It reads no connection data,
+performs no network operation and creates no files. The configured host must
+exist. A never-successful reference returns status unknown, empty arrays and null
+time. Existing `hosts.list/get` returns are unchanged. For command-line use,
+`opsfeast.py hosts list --profile NAME --json` and `hosts show HOST --profile NAME
+--json` expose the same reference data. Read the
+[complete 0.1.0 contract and source limits](../../docs/host-reference-ips.md)
+before interpreting values; these are not SSH endpoints or current-health claims.
+
+*Last modified: 2026-10-30 16:02:12*

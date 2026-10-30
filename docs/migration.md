@@ -330,4 +330,13 @@ Imported units have independent origin-preserving storage in transfer/space.sqli
 
 Update OpsFeast before using recipe-assessment/recipe-execution 0.1.0 or installing packages declaring those features. Existing references default to login; no account is automatically escalated. Explicit Core su/sudo scopes now default to pipes, preserving stdout/stderr and finite stdin; terminal-dependent interactive code must explicitly request `get_pty=True`. Nondefault account policies on other runner contracts fail preflight. Existing stored evidence is preserved; no migration or history rewrite is needed. See [results and accounts](recipe-results-and-accounts.md).
 
-*Last modified: 2026-10-30 11:44:50*
+## Inventory 0.4.1 reference IPs
+
+No configuration change or data migration is required. New `hosts list/show`
+queries and Core `profile.hosts.reference_ips(host_id)` initially show unknown
+until a newly successful saved interface collection. Existing history is not
+backfilled. Connection settings are unchanged, and failed queries retain the
+last successful reference. The separate local reference metadata is not included
+in observation/retention transfer packages. See [data contract and limits](host-reference-ips.md).
+
+*Last modified: 2026-10-30 16:02:12*

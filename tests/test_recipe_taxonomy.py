@@ -25,7 +25,7 @@ BUNDLED = {
     'database/mysql/check/replication': ('mysql-replication', '0.1.0'),
     'system/network/check/port': ('check-port', '0.1.0'),
     'system/account/check/identity': ('check-identity', '0.1.0'),
-    'system/inventory/overview': ('inventory-system', '0.4.0'),
+    'system/inventory/overview': ('inventory-system', '0.4.1'),
     'feast/report/execution-summary': ('report-summary', '0.1.2'),
     'feast/report/retention-summary': ('report-retention', '0.1.0'),
 }

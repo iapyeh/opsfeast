@@ -413,4 +413,16 @@ Prefer [system/storage/inventory/disks-raid 0.4.0](../recipes/system/storage/inv
 
 Reuse `opsfeast.py recipes run system/storage/inventory/disks-raid --profile NAME --host HOST --json`. Local RACADM is preferred for physical/controller/VD reads; PERC/LSU have explicit source limits. Physical inventory/count/health survive a failed RAID query; role uncertainty and RAID failure stay independent. Healthy Ready/spare/Non-RAID states are not forced to Online. Saved role/usage/count/source health and independent RAID policy/findings feed retention/Vault. Mismatch/unverified configured counts and unknown/unhealthy required evidence yield non-success. No installation, repair, notification or scheduling is implied. Native ESXi RACADM and synthetic spare/standalone cases are distinguished in the recipe.
 
-*Last modified: 2026-10-30 11:44:50*
+## Last successful host reference IPs 0.1.0
+
+For “list hosts and their known IPs”, prefer `opsfeast.py hosts list --profile NAME
+--json` or `hosts show HOST --profile NAME --json`; Core authors use
+`profile.hosts.reference_ips(host_id)`. No connection, DNS lookup, history scan or
+write occurs. Inventory recipe 0.4.1 supplies both address families from its
+successful interface probe after a saved run. Failures, unrelated selections and
+no-store queries preserve previous references. No primary address or connection
+endpoint is inferred. See [contract, availability, examples and source limits](host-reference-ips.md).
+Use retention APIs for historical network analysis; no backfill/replay refresh,
+TTL, automatic recollection or ESXi/old-Linux probe compatibility is added.
+
+*Last modified: 2026-10-30 16:02:12*

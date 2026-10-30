@@ -209,6 +209,10 @@ def execute(recipe):
             self.assertIn('opsfeast/services.py', names)
             self.assertIn('opsfeast/service_adapters.py', names)
             self.assertIn('opsfeast/backup_check.py', names)
+            self.assertIn('opsfeast/host_reference.py', names)
+            self.assertIn('_opsfeast_data/tools/hosts_cli.py', names)
+            self.assertIn('_opsfeast_data/schemas/host-reference-ips.json', names)
+            self.assertIn('_opsfeast_data/docs/host-reference-ips.md', names)
             for module in ('transfer', 'recipe_install', 'data_contract', 'recipe_assessment', 'recipe_execution'):
                 self.assertIn(f'opsfeast/{module}.py', names)
             for contract in ('portable-data-unit', 'data-package', 'portable-retention', 'recipe-assessment', 'recipe-execution', 'recipe-execution-evidence'):

@@ -319,4 +319,12 @@ For daily backup presence and directory hygiene, reuse [backup-files-check 0.1.0
 
 [Transfer recipes, observations and retention independently](docs/portability.md). Reviewed import plans support merge or replacement, recipe path-conflict handling and rollback. Frozen archive plans verify packages outside the active profile before source removal, database compaction and resumable cleanup. [Recipe-carried data contracts](docs/portable-contracts.md) let users define structured data without modifying the platform registry. Imported history never activates recipes, consumers or notification delivery.
 
-*Last modified: 2026-10-30 11:44:50*
+## Read host reference IPs
+
+Use `python -B tools/opsfeast.py hosts list --profile main --json` to read configured
+host IDs and last successfully saved IPv4/IPv6 inventory addresses. No connection
+or DNS lookup occurs. Successful saved network collection refreshes these
+references; failures preserve previous values and time. They never change SSH
+settings. See [the reference-IP guide](docs/host-reference-ips.md).
+
+*Last modified: 2026-10-30 16:02:12*

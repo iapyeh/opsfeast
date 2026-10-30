@@ -64,6 +64,13 @@ class Hosts:
         """Return an independent group catalog with metadata and member host IDs."""
         return _masked(self._config.groups)
 
+    def reference_ips(self, host_id):
+        """Last successfully saved inventory addresses, for reference only. No connection."""
+        if host_id not in self._config.hosts:
+            raise ConfigError('unknown host ID')
+        from .host_reference import read
+        return read(self.root, host_id)
+
     def get(self, host_id, *, reveal_secrets=False):
         if host_id not in self._config.hosts:
             raise ConfigError('unknown host ID')

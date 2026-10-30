@@ -247,4 +247,15 @@ Read [disks-raid 0.4.0](../../recipes/system/storage/inventory/disks-raid/README
 
 A complete physical total can stay known while role assignment is unavailable; role count_status is then UNVERIFIED. A failed RAID query does not erase known physical inventory/health. LSU provides only member-location lower bounds, never a complete installed-disk total. Preserve unknown states, exact vendor units, original sample times and saved policies/findings through export/replay. Earlier observations retain their own schema/scope/assessment; recollect for 0.4.0 instead of migrating/reinterpreting historical data. Sharing does not authorize transmission.
 
-*Last modified: 2026-10-30 11:44:50*
+## Reference addresses versus historical samples
+
+For the last successfully saved host IP list, use `opsfeast.py hosts list --profile
+NAME --json`, `hosts show HOST --profile NAME --json` or Core
+`profile.hosts.reference_ips(HOST_ID)`. These read a small profile-local reference
+rather than raw files/SQL/history, do not connect and never change SSH settings.
+Failed collection preserves old reference values/time. This differs intentionally
+from latest-attempt inventory gaps. For historical/quality analysis use retention
+query/show; replay/import/deletion/Vault rebuild do not update reference metadata.
+See [contract, source/namespace scope and verification limits](../../docs/host-reference-ips.md).
+
+*Last modified: 2026-10-30 16:02:12*

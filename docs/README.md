@@ -58,4 +58,10 @@ the route from exploration to reusable recipes.
 
 Extend the implemented Python-session contract only with versioned, tested capabilities. Implement candidate acquisition, installation records and distribution tools according to the guides above. The current guides do not claim those tools exist. Continue real Linux/FreeBSD/SSH and native su/sudo validation and the collect-record-repeat-compare workflow, including preservation of human notes.
 
-*Last modified: 2026-10-29 19:59:44*
+## Host reference IP addresses
+
+[Host reference IPs](host-reference-ips.md) explains automatic updates from saved
+inventory, read-only hosts list/show and Core queries, source times, unknown/empty
+states, reference-only use and current platform limits.
+
+*Last modified: 2026-10-30 16:02:12*

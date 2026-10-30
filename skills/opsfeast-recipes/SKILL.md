@@ -479,4 +479,17 @@ Count every reported physical drive once, including hot spare, Ready/unconfigure
 
 RACADM is preferred; PERC and LSU retain their limits. LSU member locations cannot certify all-installed-disk totals. Physical count/health remain available across RAID-query failure. A healthy Ready/spare/Non-RAID disk need not be Online; RAID health has its own rules and expected count. Preserve independent role count, disk use/state/capacity/health, RAID findings, saved policy and source probes. The recognized empty RACADM VD response is not proof that an expected RAID may disappear. Critical counts or unknown/unhealthy required evidence return non-success. Read the canonical recipe for interfaces/defaults/failure/version/extension rules; no installation, repair, remote-iDRAC login, notification or scheduling is implicit.
 
-*Last modified: 2026-10-30 11:50:41*
+## Consume host reference IPs
+
+Prefer Core `recipe.profile.hosts.reference_ips(recipe.host_id)` for reference
+addresses inside Python-session recipes, or `profile.hosts.reference_ips(HOST_ID)`
+from a selected Core profile. Users/agents can run `opsfeast.py hosts list --profile
+NAME --json` and `hosts show HOST --profile NAME --json`. Do not recreate raw-file
+or SQL scans. Inventory 0.4.1 publishes successful normalized interface results
+after saved raw/retention storage; failures/unrelated/no-store queries preserve the
+previous reference. No primary IP or SSH endpoint is inferred. Read
+[availability, schema, failure behavior, examples and producer extension points](../../docs/host-reference-ips.md).
+Other recipe outputs do not update this metadata automatically; custom producers
+need a reviewed integration. Historical analysis still uses retention APIs.
+
+*Last modified: 2026-10-30 16:02:12*

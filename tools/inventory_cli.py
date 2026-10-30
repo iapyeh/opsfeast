@@ -152,6 +152,8 @@ def main(argv=None):
                 print(table(['Group','Property','Entity','Value','State','Reason','Sample time'],
                     [(g['id'],s['property'],canonical(s['keys']),canonical(s['value']),s['status'],s.get('reason_code') or '',s['observed_at']) for g in result['groups'] for s in g['samples']]))
                 print('Status:',result['status'],'Retention:',result.get('retention',{}).get('status','unknown'))
+                if 'reference_ips_update' in result:
+                    print('Reference IPs:', result['reference_ips_update']['status'], result['reference_ips_update'].get('reason_code', ''))
                 print('Actor:',result['actor'].get('username') or 'unknown','Scope:',result['actor']['mode'])
                 print('Identity:',result['identity_warning'])
                 if result.get('result_path'):
@@ -162,7 +164,7 @@ def main(argv=None):
             print(json.dumps(result,indent=2,ensure_ascii=False,allow_nan=False))
         if args.command=='runs':
             return 0
-        return 0 if result.get('status','success') in ('success','skipped') and result.get('retention',{}).get('status')!='failed' and result.get('content_update',{}).get('status')!='failed' else 1
+        return 0 if result.get('status','success') in ('success','skipped') and result.get('retention',{}).get('status')!='failed' and result.get('content_update',{}).get('status')!='failed' and result.get('reference_ips_update',{}).get('status')!='failed' else 1
     except (ConfigError,OSError,ValueError,ImportError,ConsoleDependencyError) as exc:
         print('ERROR: '+(str(exc) if isinstance(exc,(ConfigError,ConsoleDependencyError)) else type(exc).__name__),file=sys.stderr)
         return 1

@@ -470,7 +470,7 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     summaries = []
     from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
-        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'access', 'actor', 'assessment', 'execution_identity') if key in report}
+        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity') if key in report}
         # The compact summary omits recipe/connection metadata used by the role
         # extractor. Project evidence before discarding those fields, for both
         # live rendering and machine output, just as saved observation views do.
@@ -498,4 +498,5 @@ def execution_exit_code(reports, content=None):
     return 0 if (content or {}).get('status')!='failed' and all(
         r['status']=='success' and not (r.get('access') or {}).get('degraded') and
         (r.get('retention') or {}).get('status')!='failed' and
+        (r.get('reference_ips_update') or {}).get('status')!='failed' and
         (r.get('content_update') or {}).get('status')!='failed' for r in reports) else 1

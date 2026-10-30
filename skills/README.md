@@ -114,4 +114,13 @@ For a custom result label, whole-recipe account selection or interpreting PASS, 
 
 For physical disk/RAID checks, route through [recipes](opsfeast-recipes/SKILL.md), [result-data](opsfeast-result-data/SKILL.md) and [disks-raid 0.4.0](../recipes/system/storage/inventory/disks-raid/README.md). Human configuration is expected_disks by purpose, boot_policy and an independent optional expected_raids count; no hardware-ID guessing or per-RAID physical baseline is needed. Count spare, unconfigured and standalone disks alongside active disks, with source use/state/capacity/health. Boot SSDs stay included. A Ready spare need not be Online to be healthy. Physical inventory and RAID count/health remain separate even when one source query fails. RACADM is preferred; PERC/LSU source limits and prior contract changes are documented. Reuse the runner/retention/Vault; no installation, repair, scheduling or sending is implicit.
 
-*Last modified: 2026-10-30 11:44:50*
+## Host reference address discovery
+
+For host IDs and last successfully saved IPs, route through
+[hosts](opsfeast-hosts/SKILL.md) and the [reference-IP contract](../docs/host-reference-ips.md):
+`opsfeast.py hosts list/show` and Core `profile.hosts.reference_ips(host_id)` are
+read-only, reference-only interfaces. Inventory 0.4.1 updates successful saved
+interface results; failed or unrelated queries preserve old values. Historical
+analysis uses result-data/retention, not this last-successful reference.
+
+*Last modified: 2026-10-30 16:02:12*

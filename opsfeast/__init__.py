@@ -1400,6 +1400,9 @@ def main(argv=None):
     if argv[:1] == ['inventory']:
         from inventory_cli import main as inventory_main
         return inventory_main(argv[1:])
+    if argv[:1] == ['hosts']:
+        from hosts_cli import main as hosts_main
+        return hosts_main(argv[1:])
     if argv[:1] == ['retention']:
         from retention_store import main as retention_main
         return retention_main(argv[1:])
@@ -1430,6 +1433,7 @@ def main(argv=None):
     commands.help_groups = COMMAND_GROUPS
     commands.add_parser('observation', help='list saved batches or inspect a batch/latest with host status filters')
     commands.add_parser('inventory', help='query inventory properties, save refreshes and manage opt-in collection schedules')
+    commands.add_parser('hosts', help='read configured hosts and last successfully saved reference IP addresses')
     commands.add_parser('recipes', help='catalog, execution, results, report artifacts, packages and reusable jobs')
     commands.add_parser('retention', help='query, export, replay and manage retained data; use retention --help')
     commands.add_parser('consumers', help='discover retention consumers, inspect deliveries and dispatch pending events')

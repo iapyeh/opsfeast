@@ -17,7 +17,7 @@ def digest(value):
 
 
 def raw_digest(report):
-    return digest({k: v for k, v in report.items() if k not in ('retention', 'content_update')})
+    return digest({k: v for k, v in report.items() if k not in ('retention', 'content_update', 'reference_ips_update')})
 
 
 def source_identity(report, fallback=None):

@@ -377,4 +377,15 @@ is introduced; use the canonical policy guide for compatibility and verified lim
 
 Use `profile.recipe(host_id, execution={"via": "sudo", "user": "root"})` for an explicitly selected standalone account, or `with recipe.execution(policy) as selected:` from a login scope. The runner resolves exact-reference settings automatically. `recipe.su`/`sudo` now default to pipe consoles; explicit interactive `get_pty=True` remains available. Read [results and accounts](recipe-results-and-accounts.md) before choosing policies or interpreting saved evidence; do not recreate credential retries or privilege loops.
 
-*Last modified: 2026-10-29 22:51:57*
+## Host reference IPs
+
+`profile.hosts.reference_ips(host_id)` returns the last successfully saved inventory
+addresses (`ipv4_addresses`, `ipv6_addresses`, `observed_at`, `status` and source
+provenance). Unknown configured hosts have status unknown and null time; an
+unconfigured host ID raises ConfigError. Reads do not connect, resolve DNS or
+write, and `hosts.list/get` retain their configuration-only returns. Inside a Core
+recipe, use `recipe.profile.hosts.reference_ips(recipe.host_id)`.
+Use this API instead of scanning recipe raw data; see the
+[reference-only 0.1.0 contract](host-reference-ips.md) for update rules and limits.
+
+*Last modified: 2026-10-30 16:02:12*

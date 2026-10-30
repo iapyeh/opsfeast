@@ -62,4 +62,23 @@ The optional attention object input defines enabled and thresholds for filesyste
 
 Saved manual execution joins one explicit batch; dispatch owns one batch for due work. Unsaved queries, dry runs, raw replay and content rebuild do not create batches or infer old membership. Read inventory runs list/show or Core retention.runs()/run(run_id) without connecting. Raw reports include observation_run_id and the validated nonsecret attention_policy outside the recipe-normalized payload, so existing registered normalizer/schema digests remain unchanged. Vault's [records/reports/batch views](../../../../docs/host-vault.md) are separate optional content over these contracts.
 
-*Last modified: 2026-10-24 22:22:19*
+## Reference IP publication (0.4.1)
+
+A successful interface probe emits raw `reference_ips` with deduplicated IPv4/IPv6
+addresses, original probe time and source ID. The shared saved-inventory service
+publishes the profile-local reference only after raw and retention storage succeed.
+The additive raw projection does not change inventory-job-observations 0.1.0,
+normalizer/schema digests or property/YANG definitions. `query` without `--save`
+never updates local references. Failed/unsupported address parsing and unrelated
+selections preserve earlier values; a successful empty enumeration replaces them
+with empty lists. Other probe failures do not invalidate successful addresses.
+
+Users/agents read `opsfeast.py hosts list --profile NAME --json` or Core
+`profile.hosts.reference_ips(HOST_ID)` without parsing this recipe's results.
+Addresses are reference-only and never affect SSH. See the
+[complete update, storage, provenance and platform contract](../../../../docs/host-reference-ips.md).
+Current ESXi opaque rows and old Linux without `ip -j` cannot supply the projection;
+this change does not add tool fallbacks. Public synthetic tests are in
+`tests/test_host_reference.py`; no new native host evidence is claimed.
+
+*Last modified: 2026-10-30 16:02:12*

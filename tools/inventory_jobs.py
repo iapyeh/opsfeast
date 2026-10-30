@@ -217,6 +217,7 @@ def _collect_host(root, host, *, jobs=None, properties=None, save=False, note=''
                              'sha256':hashlib.sha256((chosen['directory']/'jobs.py').read_bytes()).hexdigest()}
     if not save:
         raw['retention'] = {'status':'skipped','reason_code':'utility_no_store'}
+        raw['reference_ips_update'] = {'status':'skipped','reason_code':'utility_no_store'}
         raw['result_path'] = None
         return raw
     # Raw evidence is durable before normalization or consumer work.
@@ -231,6 +232,12 @@ def _collect_host(root, host, *, jobs=None, properties=None, save=False, note=''
         raw['retention'] = retain(root,raw)
     except Exception as exc:
         raw['retention'] = {'status':'failed','error_type':type(exc).__name__,'reason_code':'retention_failed'}
+    try:
+        from opsfeast.host_reference import update
+        raw['reference_ips_update'] = update(root, raw)
+    except Exception as exc:
+        raw['reference_ips_update'] = {'status':'failed','reason_code':'reference_ips_update_failed',
+                                       'error_type':type(exc).__name__}
     if observation_run_id:
         raw['content_update'] = {'status':'pending','reason_code':'observation_run_in_progress'}
     else:
@@ -341,7 +348,7 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
                 if result.get('result_path'):
                     from recipe_runner import save_receipt
                     save_receipt(Path(result['result_path']),result)
-        failed = any(r['status'] not in ('success','due','skipped') or r.get('retention',{}).get('status')=='failed' or r.get('content_update',{}).get('status')=='failed' for r in results)
+        failed = any(result_exit_code(r) for r in results)
         return {'status':'failed' if failed else 'success','dry_run':dry_run,'hosts':results,'attempted_at':stamp,'observation_run_id':run_id}
     if dry_run:
         return execute(schedule.read_state(root))
@@ -396,4 +403,5 @@ def result_exit_code(result, content=None):
         return 1
     return 0 if result.get('status') in ('success','skipped','due') and (
         result.get('retention') or {}).get('status')!='failed' and (
-        content or result.get('content_update') or {}).get('status')!='failed' else 1
+        content or result.get('content_update') or {}).get('status')!='failed' and (
+        result.get('reference_ips_update') or {}).get('status')!='failed' else 1

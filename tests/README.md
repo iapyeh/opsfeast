@@ -576,4 +576,35 @@ The original checkout environment's first 1,093-test run had two failures: SSHSc
 
 Human CLI, recipe, retention/Vault and compatibility guidance, the capability map and relevant agent skills are updated together. No Core public API or retention import migration was added. No live profile rebuild, host connection, privilege operation, real storage query, environment upgrade, remote CI, push or release occurred. Textbook and figure-guide changes remain outside this delivery.
 
-*Last modified: 2026-10-30 12:00:10*
+## Host reference IP addresses
+
+`test_host_reference.py` covers last-successful replacement, failed/unrelated and
+no-store preservation, both address families from a shared probe, changed and
+empty collections, invalid address rejection, success despite other probe
+failures, update/retention failure receipts, replay digest stability, older
+concurrent completion protection, Core/CLI reads, unknown hosts, terminal tables,
+help and symlink/malformed-record rejection. Recipe execution preserves the
+separate reference update receipt and returns nonzero for its persistence failure
+without changing collected samples. Packaging tests assert delivery of the new
+module, CLI, schema and canonical guide.
+
+The isolated feature commit snapshot passed **1,108 tests on each of CPython 3.11.15,
+3.12.12, 3.13.13 and 3.14.4**. Wheel/sdist construction and **12 reference tests
+against an extracted wheel outside the checkout** also passed. Python 3.11 grammar,
+JSON/YAML, skill frontmatter, document links/footers and whitespace were checked.
+Final focused tests cover the explicit unsupported-platform gate and recipe CLI
+receipt projection. All collection fixtures are synthetic; no managed-host
+connection, new native platform/privilege evidence, private-profile update,
+user-environment change, remote CI, commit, push or release was performed.
+Disposable QA environments used the existing published SSHScript 7.0.0 wheel to
+match this commit's unchanged dependency contract; the working checkout's separate
+7.0.1 upgrade remains outside this commit.
+
+Human/agent documentation, CLI/Core references, capability map, recipe guide,
+migration notes and host/recipe/result-data/Core skills are delivered together.
+The recipe is 0.4.1; property/YANG and normalized retention contracts remain
+unchanged. Existing histories are not backfilled and connection settings never
+use the new reference metadata. Old-Linux tool fallbacks and ESXi interface
+normalization remain separate work.
+
+*Last modified: 2026-10-30 16:15:36*

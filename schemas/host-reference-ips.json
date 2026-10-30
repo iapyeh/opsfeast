@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Host reference IP addresses 0.1.0",
+  "description": "Last successful saved interface enumeration, for reference only; never a connection setting.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "host_id", "status", "ipv4_addresses", "ipv6_addresses", "observed_at"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "host_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["known", "unknown"]},
+    "ipv4_addresses": {"type": "array", "uniqueItems": true, "items": {"type": "string", "format": "ipv4"}},
+    "ipv6_addresses": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "description": "IPv6 address, optionally retaining its observed zone identifier."}},
+    "observed_at": {"type": ["string", "null"], "format": "date-time"},
+    "source_id": {"type": "string", "minLength": 1},
+    "source_observation_id": {"type": "string", "format": "uuid"},
+    "source_record_id": {"type": "string", "minLength": 1},
+    "recipe": {"type": "string", "minLength": 1}
+  },
+  "allOf": [{
+    "if": {"properties": {"status": {"const": "known"}}},
+    "then": {"required": ["source_id", "source_observation_id", "source_record_id", "recipe"], "properties": {"observed_at": {"type": "string"}}},
+    "else": {"properties": {"observed_at": {"type": "null"}, "ipv4_addresses": {"maxItems": 0}, "ipv6_addresses": {"maxItems": 0}}}
+  }]
+}

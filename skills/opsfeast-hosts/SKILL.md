@@ -314,4 +314,17 @@ the selected password as its fallback when no explicit passphrase is supplied.
 
 Use exact-reference `recipes.<reference>.execution` with inherited via/user, supported for python-recipe. Read [the configuration/account guide](../../docs/recipe-results-and-accounts.md) before edits. Preserve host credential policy, validate effective settings locally, and execute only within operational authorization. Configuration validity is not native sudo/su evidence.
 
-*Last modified: 2026-10-29 22:51:57*
+## Read last successful inventory IP references
+
+For host IDs and known addresses use `python -B tools/opsfeast.py hosts list --profile
+NAME --json` or `hosts show HOST --profile NAME --json`. Core callers use
+`profile.hosts.reference_ips(host_id)`. These reads need existing configuration but
+no connection/retention scan and create no files. Never scrape inventory raw JSON
+for this routine question. Unknown means never successfully saved, not no IP;
+known empty lists represent a successful empty enumeration. Addresses are only
+references, retain their last successful probe time after failures, and never
+select SSH endpoints. Refresh requires a separately authorized saved interface
+query; no-store queries do not update references. Read the
+[0.1.0 contract, invocation and platform limits](../../docs/host-reference-ips.md).
+
+*Last modified: 2026-10-30 16:02:12*

@@ -5,7 +5,7 @@ author:
   - Bundle
 license: MIT
 id: inventory-system
-version: 0.4.0
+version: 0.4.1
 status: implemented
 title: System inventory
 description: Collect bounded system, hardware, storage, network, software and services
@@ -101,4 +101,4 @@ runner:
   contract: inventory-jobs
   version: 0.1.0
   entrypoint: jobs.py
-# Last modified: 2026-10-24 22:22:19
+# Last modified: 2026-10-30 16:07:03

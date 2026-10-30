@@ -1,6 +1,6 @@
 # Inventory jobs, immediate queries and periodic collection
 
-System inventory recipe 0.4.0 provides one collection program with independently selectable jobs. Read the [collection table](../recipes/system/inventory/overview/collection-plan.md) for job IDs, contents and starting intervals. The new job observation contract is `inventory-job-observations` 0.1.0; raw job results use schema 0.3.0. Historical whole-snapshot inventory/exchange files remain separate read/replay contracts; new collection has no snapshot execution path. No old-data migration or automatic deletion is performed, and no legacy payload is converted to job samples.
+System inventory recipe 0.4.1 provides one collection program with independently selectable jobs. Read the [collection table](../recipes/system/inventory/overview/collection-plan.md) for job IDs, contents and starting intervals. The new job observation contract is `inventory-job-observations` 0.1.0; raw job results use schema 0.3.0. Historical whole-snapshot inventory/exchange files remain separate read/replay contracts; new collection has no snapshot execution path. No old-data migration or automatic deletion is performed, and no legacy payload is converted to job samples.
 
 ## Discover before running
 
@@ -180,4 +180,17 @@ Current pages use current merged settings, so `vault rebuild` can apply new thre
 
 Unsupported field probes now retain the time when the collector determined the unsupported state. This prevents a missing observed_at KeyError during full non-Linux job conversion; unsupported fields remain unavailable gaps rather than discarding the entire collected result. Public synthetic Darwin tests cover full-job conversion; existing failed raw data is not rewritten and no real host is rerun. Diagnose saved failures with [observation result diagnosis](cli.md#diagnose-a-saved-failure) before loading complete detail output.
 
-_Last modified: 2026-10-21 12:30:58_
+## Reference IP update after saved collection
+
+Inventory recipe 0.4.1 automatically saves [host reference IPs](host-reference-ips.md)
+after a successful normalized interface enumeration and successful raw/retention
+save. This includes manual saved queries, runs, recipes run and scheduled dispatch.
+Other probe failures do not discard successfully collected addresses. Interface
+failure, no interface selection and no-store queries preserve the previous
+reference and its original source time. `reference_ips_update` reports a separate
+updated/skipped/failed receipt; persistence failure makes execution exit nonzero
+without changing collected samples. These reference addresses never change
+connection settings. Unlike `inventory latest`, which keeps latest failed attempts
+as gaps, `hosts list/show` deliberately retain the last successful address list.
+
+*Last modified: 2026-10-30 16:07:03*
