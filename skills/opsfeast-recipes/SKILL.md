@@ -3,6 +3,16 @@ name: opsfeast-recipes
 description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for turning interactive discovery into repeatable recipe/config/retention/consumer workflows, recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
 ---
 
+## Human trust during exploration and recipe execution
+
+**看得見、停得下來、查得到發生過什麼事。** — **Make operations visible, keep them stoppable, and preserve a record of what happened.** This principle builds human trust in AI-assisted operations. Apply it both to interactive exploration and to running existing recipes.
+
+- **Visible:** Before execution, show the target, identity, actual command/call or reviewed recipe invocation, purpose and expected effects. Expose progress and output as the interface permits; disclose buffering, redaction and missing visibility. A final summary alone does not provide live transparency.
+- **Stoppable:** Follow the user's agreed step boundaries and approval policy, such as an approved plan, confirmation before writes, or confirmation at every step. Reuse authorization within that agreement. Judge read/write by actual effects, not command names; seek confirmation for unclassified effects when using a read-only allowance. Do not hide multiple unapproved actions in one script or tool call. Identify the available pause/cancel boundary before starting; honor a stop request by withholding further operations and using supported interruption safely. Cancellation does not prove remote termination or undo completed changes.
+- **Traceable:** Preserve sanitized operation and approval evidence, output, failures and cleanup results, and give the user the actual record locations. Identify gaps explicitly; never label a summary as a complete transcript or log secrets.
+
+Use [the transparency procedure](references/exploration-to-recipe.md#transparency-first-prefer-failure-to-damage) for execution and evidence details. These are agent responsibilities, not a claim that OpsFeast supplies a live shared terminal, universal per-command approval gate or complete session logger. If the available interface cannot honor the agreed visibility, control or recording requirements, explain the gap before execution and agree on an acceptable alternative.
+
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
 

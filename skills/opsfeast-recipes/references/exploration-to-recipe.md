@@ -4,7 +4,15 @@ Use this workflow when a user and their agent discover an operational method and
 
 ## Transparency first; prefer failure to damage
 
+Apply the [human-trust principle](../SKILL.md#human-trust-during-exploration-and-recipe-execution) throughout exploration and subsequent recipe runs: **看得見、停得下來、查得到發生過什麼事。** Visibility, control and traceable evidence let the user assess operations and build trust progressively.
+
+Use the user's agreed approval unit: a reviewed plan, a recipe invocation, individual writes or every step. In step-confirmation mode, show the proposed operation, wait for approval, execute only that unit, show its result and wait before continuing. Under an agreed read-only allowance, reads may proceed within scope; writes and unclassified effects require confirmation. Reassess authorization when the target, identity, command or effects change. A recipe invocation does not supply internal approval checkpoints automatically; disclose that limit if the user requests finer control.
+
+Identify how progress/output will be visible, where execution can pause or be interrupted, and what evidence will remain. Use incremental output when supported; explain when the tool only returns output after completion. A stop request prevents further dispatch; report interruption, remote termination and cleanup as separate outcomes, preserving unknown states. If the agreed control is unavailable, resolve that gap with the user before starting.
+
 Before executing, show the actual command or API call with target, purpose and expected effects. Long reviewed code can be identified by its file plus the invocation and input structure; make the source available for inspection. Show changed commands and explain retries. Preserve time, target, identity, sanitized inputs, stdout/stderr or structured results, exit/error state, truncation and cleanup evidence. Do not describe a sanitized summary as a complete raw transcript. Platform/agent tool history can supply exploration records; a recipe must return or save its own repeatable, safe evidence. Secrets are placeholders with their source/transmission method, never literal arguments, history or report data. Mark redacted or omitted fields explicitly, including database error messages that can contain row values.
+
+Record the approval or existing authorization that covered each execution unit, linking it to the actual operation and outcome where the available tools permit. Give the user retrievable evidence locations and state missing events or outputs. Recipe raw results, retained data and agent history have different coverage; none alone guarantees a complete interaction log. This procedure does not introduce a new logging service or machine-enforced approval mechanism.
 
 Judge actual effects before running, including shell expansion, subprocesses and configured hooks. A check label or SELECT keyword alone is not evidence of safety. Deletion, overwriting system files, important configuration changes, database writes, service interruption and comparable destructive actions require explicit authorization covering concrete targets, commands and effects. Prepare reviewable changes first; explain rollback/backup limits where applicable. Reuse authorization already granted for the same scope; an exploratory read does not authorize repair, source-host access, privilege escalation or scheduling. Stop on uncertain targets or unbounded damage. Offer a safer alternative and refuse execution when risk cannot reasonably be controlled, even if a broad request was given.
 
@@ -66,4 +74,4 @@ recorded identity evidence; never repair a display gap by guessing configured
 accounts or reconnecting. Keep synthetic backend boundaries explicit when testing
 the real CLI so tests cannot accidentally execute a managed-host operation.
 
-*Last modified: 2026-10-29 19:58:09*
+*Last modified: 2026-10-31 06:55:32*
