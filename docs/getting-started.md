@@ -36,6 +36,8 @@ Read the [skills/ index](../skills/README.md) first, then the task-relevant skil
 
 README 是共同入口；AGENTS.md 是隨 Git 提供的專案工作規則。若 agent 沒有自動載入 AGENTS.md，請直接讀取它。不要將其他電腦的私人 checkout、絕對路徑或環境設定當成本專案的必備環境。
 
+Before host operations after changing interpreters or upgrading packages, run the selected Python with `-B tools/check_environment.py --json`. For mismatched import/distribution versions, duplicate metadata or source drift, follow [runtime diagnosis and repair](runtime-troubleshooting.md); checks never install packages or connect.
+
 ## Dependency evidence and Python reuse
 
 Prefer the user's selected, working Python 3.11+ interpreter. If none is selected, inspect existing candidates and their actual paths/versions before proposing a new installation. Check that the chosen interpreter can support venv/pip and use that same interpreter for environment creation, package installation and OpsFeast commands. Missing project packages alone do not justify replacing Python, upgrading it or repairing a global installation. If a candidate is incompatible or broken, report the concrete evidence and propose reuse of another suitable existing interpreter before new installation.
@@ -164,4 +166,4 @@ If proxy behavior differs between terminals, agents or scheduled processes, insp
 normalization, explicit per-connection overrides and sanitized hop evidence. It
 does not install proxy tools, modify global environment or authorize host connections.
 
-*Last modified: 2026-10-30 12:17:33*
+*Last modified: 2026-10-31 13:04:53*

@@ -57,6 +57,8 @@ Console presentation uses the checkout-level [console_output helpers](../tools/c
 
 Registered data semantics live in the owning recipe: [inventory retention](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract) supplies retention.py and retention.schema.json. Checkout `retention_contracts.validate_declaration/normalize/validate_payload` select supported contract/version implementations; static discovery only reads metadata/schema/digests. Inventory raw snapshots bind both normalizer and schema; missing/drifting snapshots need explicit reviewed --recipe-dir. Candidate normalizer imports are unsupported. Users reuse runner/replay/query interfaces rather than writing storage or adapter-selection code.
 
+For SSHScript import/distribution mismatch, duplicate metadata or source drift, reuse `tools/check_environment.py --json` with the failing interpreter. The checkout helper `sshscript_runtime.inspect_runtime()` supplies the same read-only diagnostic; it is not a new Core SDK service. Follow [reason codes, error contracts and authorized repair](runtime-troubleshooting.md) rather than writing another package scanner or editing hosts.yaml for an environment failure.
+
 ## Decide what to reuse
 
 1. Identify the requested outcome, selected Feast/targets/data and existing authorization. Discover relevant capabilities without running operations: recipe catalog/inspection, published contracts and implementation sources are the starting points.
@@ -425,4 +427,4 @@ endpoint is inferred. See [contract, availability, examples and source limits](h
 Use retention APIs for historical network analysis; no backfill/replay refresh,
 TTL, automatic recollection or ESXi/old-Linux probe compatibility is added.
 
-*Last modified: 2026-10-30 16:02:12*
+*Last modified: 2026-10-31 13:04:53*

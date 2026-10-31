@@ -64,4 +64,6 @@ Extend the implemented Python-session contract only with versioned, tested capab
 inventory, read-only hosts list/show and Core queries, source times, unknown/empty
 states, reference-only use and current platform limits.
 
-*Last modified: 2026-10-30 16:02:12*
+For interpreter/package failures before a host connection, start with [SSHScript runtime diagnosis and repair](runtime-troubleshooting.md): version mismatch, duplicate metadata, source checks, CLI/TUI evidence and selected-environment repair.
+
+*Last modified: 2026-10-31 13:04:53*

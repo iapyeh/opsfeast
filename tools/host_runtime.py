@@ -64,6 +64,10 @@ def diagnostic_error(exc, stage=None):
             error['hint'] = ('Check the selected credential source and account policy; '
                              'this error does not establish that the password is incorrect.')
     progress(f'{stage or "operation"}: failed ({error["type"]}, {error.get("reason", "unknown")})')
+    if 'environment' in error:
+        # Always visible, including in the TUI subprocess log; no debug flag needed.
+        print('SSHScript runtime check failed before Session creation: ' +
+              json.dumps(error, indent=2, ensure_ascii=False), file=sys.stderr)
     if _diagnostics.get()[2]:
         diagnostic_traceback(exc)
     return error
@@ -83,16 +87,9 @@ def load_config(root, host):
 
 
 def runtime_class():
-    from importlib.metadata import version
-    try:
-        import sshscript
-    except ImportError:
-        raise ConfigError('host diagnostics require SSHScript 7.0.1 in this interpreter') from None
-    if sshscript.__version__ != '7.0.1' or version('sshscript') != '7.0.1':
-        raise ConfigError('host diagnostics require matching SSHScript import/distribution 7.0.1')
-    from sshscript_runtime import require_source
-    require_source(sshscript)
-    return sshscript.Session
+    from sshscript_runtime import require_runtime
+    module, _ = require_runtime()
+    return module.Session
 
 
 @contextmanager
@@ -318,6 +315,8 @@ def initialize_host(config, host, timeout=30, session_class=None, refresh=False)
             report.update(discover(session, host, timeout))
     except Exception as exc:
         report.update(status='failed', reason_code='host_init_failed', error=diagnostic_error(exc))
+        if 'environment' in report['error']:
+            report['reason_code'] = report['error']['reason']
     report.update(target_fingerprint=target_fingerprint(config, host), selection_source='probe')
     if report['status'] == 'failed' and previous:
         report['previous_success'] = {k: previous[k] for k in ('observed_at', 'facts')}

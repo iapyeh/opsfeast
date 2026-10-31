@@ -229,4 +229,8 @@ time. Existing `hosts.list/get` returns are unchanged. For command-line use,
 [complete 0.1.0 contract and source limits](../../docs/host-reference-ips.md)
 before interpreting values; these are not SSH endpoints or current-health claims.
 
-*Last modified: 2026-10-30 16:02:12*
+## Local runtime diagnostics
+
+Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvironmentError` is a `ConfigError` subclass with a controlled diagnostic report; exact type strings have changed for these failures. Reuse the failing interpreter with `-B tools/check_environment.py --json` and follow [runtime diagnosis and authorized repair](../../docs/runtime-troubleshooting.md) for version/source failures or duplicate metadata. Do not implement a second scanner, retry sessions to diagnose packages, or modify environments without scope.
+
+*Last modified: 2026-10-31 13:04:53*

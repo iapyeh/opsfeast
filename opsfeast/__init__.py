@@ -27,6 +27,17 @@ class ConfigError(ValueError):
     pass
 
 
+class RuntimeEnvironmentError(ConfigError):
+    """A controlled local runtime diagnostic, safe to preserve in failure reports."""
+
+    def __init__(self, report):
+        self.report = report
+        super().__init__(f'{report["summary"]} Required SSHScript: {report["required_version"]}; '
+                         f'import: {report["import_version"]}; distribution: {report["distribution_version"]}; '
+                         f'Python: {report["interpreter"]}. No Session was created. '
+                         + '\n' + json.dumps(report, indent=2, ensure_ascii=False))
+
+
 class _MissingAuthenticationSource(ConfigError):
     """A resolved SSH hop has no user-selected authentication source."""
 
@@ -1181,6 +1192,10 @@ def connection_plan(config, host, session_class, contexts=None):
 def connection_error(exc):
     """Expose actionable categories without echoing third-party exception text."""
     error = {'type': type(exc).__name__}
+    if isinstance(exc, RuntimeEnvironmentError):
+        error.update(reason=exc.report['reason'], message=exc.report['summary'],
+                     hint=exc.report['hint'], environment=exc.report)
+        return error
     message = str(exc).lower()
     if isinstance(exc, _MissingAuthenticationSource):
         error['reason'] = 'missing_authentication_source'
@@ -1220,11 +1235,6 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
     if host not in config.hosts:
         raise ConfigError(f'unknown host ID: {host}')
     config.check_connections()
-    if init_host:
-        from host_runtime import runtime_class
-        session_class = runtime_class()
-    else:
-        session_class = load_session_class()
     report = {'host': host, 'connected': False, 'hops': [], 'commands': [], 'success': False}
     local = None
     current_hop = None
@@ -1240,6 +1250,11 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
             diagnostic_traceback(exc)
 
     try:
+        if init_host:
+            from host_runtime import runtime_class
+            session_class = runtime_class()
+        else:
+            session_class = load_session_class()
         contexts = []
         plan = connection_plan(config, host, session_class, contexts)
         local = session_class()
@@ -1291,6 +1306,10 @@ def test_connection(root, host, timeout, verbose=False, debug=False, show_traceb
         report['success'] = all(item.get('exitcode') == 0 for item in report['commands'])
     except Exception as exc:
         report['error'] = {'stage': stage, **connection_error(exc)}
+        if isinstance(exc, RuntimeEnvironmentError):
+            from host_runtime import diagnostic_error
+            diagnostic_error(exc)
+            report['reason_code'] = exc.report['reason']
         if current_hop is not None:
             report['error']['hop'] = dict(current_hop)
             if not current_hop['connected']:

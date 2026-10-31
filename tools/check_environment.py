@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def inspect_package(name, expected=None, distribution=None):
+    if name == 'sshscript':
+        from sshscript_runtime import inspect_runtime
+        return inspect_runtime()
     report = {'required_version': expected}
     try:
         module = import_module(name)
@@ -29,10 +32,6 @@ def inspect_environment(scope='full'):
                 'wcwidth': inspect_package('wcwidth')}
     if scope == 'full':
         packages['sshscript'] = inspect_package('sshscript', '7.0.1')
-        from sshscript_runtime import source_identity
-        packages['sshscript']['source'] = source_identity()
-        packages['sshscript']['ready'] = (packages['sshscript']['ready']
-                                          and packages['sshscript']['source']['source_matches'])
     try:
         source = json.loads((ROOT / 'skills/sshscript/SOURCE.json').read_text(encoding='utf-8'))
         skill = {'documentation_contract': source['documentation_contract'],

@@ -273,6 +273,8 @@ When sys.stdout.isatty() is true, stderr displays flushed host start/completion 
 
 Non-TTY stdout remains JSON. A positional-host-only invocation retains the existing single-host JSON shape. --all or --group returns batch report_version 0.1.0 with status, hosts (the existing per-host reports), excluded_hosts (host/reason_code), and counts (total/passed/failed/skipped). Counts cover attempted/explicitly skipped targets; excluded members are separate. Overall status is success only when every selected test succeeds; exit 0 means success, 1 means a failed/skipped selected test or selection/configuration failure. Argument syntax errors use exit 2. Retain per-host hops, errors, command results, cleanup_error and optional host_init when interpreting failures. Excluded disabled members do not cause failure when enabled selected hosts all pass. These behaviors have synthetic tests; no new native SSH evidence is implied.
 
+For local SSHScript runtime failures, diagnostics now include the interpreter, required/import/distribution versions, metadata locations, a stable reason and repair commands without requiring debug flags. `RuntimeEnvironmentError` remains a `ConfigError` subclass; duplicate metadata fails before Session creation even if the selected versions match. See [environment diagnosis, JSON fields, TUI views and repair](runtime-troubleshooting.md). Other exception messages remain filtered.
+
 ### Connection diagnostics and options
 
 All host-test/init commands accept `--timeout SECONDS`, default 30, a positive finite number. It bounds connection stages/commands and authenticated entry/exit where applicable, **not the complete run**. SSHScript base-shell/capability setup and recovery have separate contract limits.
@@ -942,4 +944,4 @@ python -B tools/opsfeast.py hosts list --profile main --json
 python -B tools/opsfeast.py hosts show node --profile main --json
 ```
 
-*Last modified: 2026-10-30 16:02:12*
+*Last modified: 2026-10-31 13:04:53*

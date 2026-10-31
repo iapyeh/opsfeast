@@ -5,7 +5,7 @@ import shlex
 import sys
 from threading import Lock
 
-from opsfeast import ConfigError
+from opsfeast import ConfigError, RuntimeEnvironmentError
 from console_output import user_label, host_label as console_host_label
 from host_runtime import connected, identity, verify_connection_identity, now, runtime_class, target_fingerprint, privilege_test, username
 
@@ -126,6 +126,10 @@ def check_access(config, host, timeout=30, session_class=None, *, inventory=Fals
                 report.update(status='success', reason_code=access.get('reason_code', 'access_verified'))
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__)
+        if isinstance(exc, RuntimeEnvironmentError):
+            from host_runtime import diagnostic_error
+            report['error'] = diagnostic_error(exc)
+            report['reason_code'] = report['error']['reason']
         if report['reason_code'] == 'identity_failed':
             report['identity_error'] = {'reason_code': getattr(exc, 'reason_code', 'identity_failed')}
         if report.get('access', {}).get('sudo', {}).get('status') == 'failed':

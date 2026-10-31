@@ -123,4 +123,6 @@ read-only, reference-only interfaces. Inventory 0.4.1 updates successful saved
 interface results; failed or unrelated queries preserve old values. Historical
 analysis uses result-data/retention, not this last-successful reference.
 
-*Last modified: 2026-10-30 16:02:12*
+For SSHScript runtime/version or duplicate-metadata failures, route to [hosts](opsfeast-hosts/SKILL.md) and [runtime diagnosis and repair](../docs/runtime-troubleshooting.md). Reuse the failing interpreter with `-B tools/check_environment.py --json`; this read-only check does not connect or install. Core and recipe execution share the same guard and repair guidance.
+
+*Last modified: 2026-10-31 13:04:53*

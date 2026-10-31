@@ -19,7 +19,6 @@ class SSHScriptUpdateTests(unittest.TestCase):
     def test_runtime_gates_accept_matching_supported_version(self):
         module = SimpleNamespace(__version__='7.0.1', Session=object())
         with patch.dict(sys.modules, sshscript=module), \
-                patch.object(recipe_runner, 'version', return_value='7.0.1'), \
                 patch.object(metadata, 'version', return_value='7.0.1'), \
                 patch.object(sshscript_runtime, 'source_identity', return_value={
                     'source_matches': True, 'source_commit': sshscript_runtime.SOURCE_COMMIT}):
@@ -35,7 +34,6 @@ class SSHScriptUpdateTests(unittest.TestCase):
             with self.subTest(imported=imported, installed=installed):
                 module = SimpleNamespace(__version__=imported)
                 with patch.dict(sys.modules, sshscript=module), \
-                        patch.object(recipe_runner, 'version', return_value=installed), \
                         patch.object(metadata, 'version', return_value=installed):
                     with self.assertRaisesRegex(ConfigError, '7.0.1'):
                         recipe_runner.load_runtime()
@@ -68,7 +66,6 @@ class SSHScriptUpdateTests(unittest.TestCase):
     def test_same_version_wrong_source_rejected_by_all_entrypoints(self):
         module = SimpleNamespace(__version__='7.0.1', Session=unittest.mock.Mock())
         with patch.dict(sys.modules, sshscript=module), \
-                patch.object(recipe_runner, 'version', return_value='7.0.1'), \
                 patch.object(metadata, 'version', return_value='7.0.1'), \
                 patch.object(sshscript_runtime, 'source_identity', return_value={'source_matches': False}):
             from opsfeast import load_session_class

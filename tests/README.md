@@ -640,4 +640,35 @@ private scripts and the Console prototype. No managed host, private profile,
 credential, installed environment or remote setting was changed by this review.
 Remote CI and publication are separate from these local checks.
 
-*Last modified: 2026-10-30 16:41:49*
+## SSHScript runtime diagnostics verification
+
+`test_runtime_diagnostics.py` uses synthetic modules and temporary distribution
+metadata to reproduce import/distribution mismatch, duplicate metadata (including
+same-version duplicates and repeated search-path discovery), unavailable imports,
+missing/unreadable metadata and source drift. It checks pre-Session rejection in
+host diagnostics, Core and the recipe runner; selected-interpreter shell quoting;
+no package installation; preserved host-init/access/connection and recipe batch
+errors; default stderr visibility; terminal rendering/TUI report data; and
+continued omission of arbitrary third-party exception messages.
+
+On 2026-10-31, the final full local CPython 3.14.4 run passed **1,124 tests**,
+including wheel/sdist, allowlist and isolated-import checks. The final added
+access-check regression also passed in the **16-test runtime diagnostics suite**.
+Full local environment readiness and pip check passed, with a single SSHScript
+7.0.1 metadata record. Changed Python files passed 3.11 grammar parsing; changed
+document links, skill frontmatter, timestamp footers and diff whitespace passed.
+This is not a full multi-interpreter execution matrix or evidence of pip repair
+on every installation. No managed-host connection, privilege operation, live
+profile change, environment installation, remote CI or publication was performed.
+
+Human guides, capability routing and hosts/Core/recipes skills describe the final
+diagnostics, stricter duplicate rejection, exact-type change and repair workflow.
+No new operational service, Core execution method, recipe descriptor or host YAML
+schema was introduced. Existing unrelated working-tree changes remain preserved.
+
+Before the requested commit, an index-only clean snapshot passed **1,125 tests**
+on CPython 3.14.4, including all 16 runtime diagnostics regressions and packaged
+wheel/sdist checks. Unrelated textbook, figure and private files were excluded;
+staged document links, skill metadata, timestamps and 3.11 grammar checks passed.
+
+*Last modified: 2026-10-31 22:38:08*

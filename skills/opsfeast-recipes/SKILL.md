@@ -492,4 +492,8 @@ previous reference. No primary IP or SSH endpoint is inferred. Read
 Other recipe outputs do not update this metadata automatically; custom producers
 need a reviewed integration. Historical analysis still uses retention APIs.
 
-*Last modified: 2026-10-30 16:02:12*
+## Execution environment failures
+
+Before recipe execution after changing Python environments or packages, run the selected interpreter with `-B tools/check_environment.py --json`. Runtime version/source failures and duplicate metadata are rejected before Session creation, with structured environment evidence in operational batch failures. Use [runtime diagnosis and repair](../../docs/runtime-troubleshooting.md) for reason codes, supported 7.0.1 identity, availability checks, exact-interpreter repair commands and failure limits. This is a shared execution prerequisite, not a recipe-level package installer or new service. Preserve authorization and use no automatic environment repair or host retries.
+
+*Last modified: 2026-10-31 13:04:53*

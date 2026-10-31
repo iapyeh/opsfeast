@@ -238,4 +238,8 @@ Broadcom's [SSH access guidance](https://knowledge.broadcom.com/external/article
 also distinguishes SSH shell access from UI-role restrictions; it does not establish
 this behavior on every ESXi installation.
 
-*Last modified: 2026-10-30 12:17:33*
+## Local runtime failures before connection
+
+For `RuntimeEnvironmentError` or SSHScript version/metadata/source errors, use the same interpreter to run `-B tools/check_environment.py --json` before retrying a host operation. See [runtime diagnosis and repair](runtime-troubleshooting.md) for reason codes, saved error fields, CLI/TUI views and authorized repair. A host configuration check does not check execution dependencies; no host connection is needed to diagnose this failure.
+
+*Last modified: 2026-10-31 13:04:53*

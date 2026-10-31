@@ -327,4 +327,6 @@ or DNS lookup occurs. Successful saved network collection refreshes these
 references; failures preserve previous values and time. They never change SSH
 settings. See [the reference-IP guide](docs/host-reference-ips.md).
 
-*Last modified: 2026-10-30 16:02:12*
+For SSHScript version mismatches or duplicate installation metadata, use [runtime diagnosis and repair](docs/runtime-troubleshooting.md). Run the failing interpreter with `-B tools/check_environment.py --json` before retrying host operations.
+
+*Last modified: 2026-10-31 13:04:53*

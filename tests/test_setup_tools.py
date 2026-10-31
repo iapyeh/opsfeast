@@ -187,9 +187,9 @@ class EnvironmentTests(unittest.TestCase):
         module = SimpleNamespace(__version__='5.0.0', __file__='/synthetic/module.py')
         with patch.object(environment, 'import_module', return_value=module), \
                 patch.object(environment.metadata, 'version', return_value='4.0.2'):
-            self.assertFalse(environment.inspect_package('sshscript', '5.0.0')['ready'])
+            self.assertFalse(environment.inspect_package('yaml', '5.0.0')['ready'])
         with patch.object(environment, 'import_module', side_effect=ImportError):
-            self.assertEqual(environment.inspect_package('sshscript')['error'], 'ImportError')
+            self.assertEqual(environment.inspect_package('yaml')['error'], 'ImportError')
 
     def test_pyyaml_uses_distribution_name(self):
         module = SimpleNamespace(__version__='6.0.3', __file__='/synthetic/yaml.py')

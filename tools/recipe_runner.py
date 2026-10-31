@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
-from importlib.metadata import version
 import json
 import os
 from pathlib import Path
@@ -99,12 +98,10 @@ def reporting(enabled, label, host=None):
 
 
 def load_runtime():
-    import sshscript
-    installed = version('sshscript')
-    if installed != sshscript.__version__ or installed != '7.0.1':
-        raise ConfigError('runner requires matching SSHScript import/distribution 7.0.1; no automatic upgrade')
-    from sshscript_runtime import require_source
-    source = require_source(sshscript)
+    from sshscript_runtime import require_runtime
+    sshscript, environment = require_runtime()
+    installed = environment['distribution_version']
+    source = environment['source']
     return sshscript.Session, {'python': sys.version.split()[0], 'interpreter': sys.executable,
                                'sshscript_import': sshscript.__version__, 'sshscript_distribution': installed,
                                'sshscript_source': source}
@@ -436,6 +433,13 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
                      content_update=report.get('content_update'))
                 return report, path
             except Exception as exc:
+                from opsfeast import RuntimeEnvironmentError
+                if isinstance(exc, RuntimeEnvironmentError):
+                    from host_runtime import diagnostic_error
+                    error = diagnostic_error(exc)
+                    emit('result', host=host, status='failed', reason_code=error['reason'])
+                    return {'host_id': host, 'status': 'failed', 'reason_code': error['reason'],
+                            'error': error}, None
                 progress(f'failed before completion: {type(exc).__name__}')
                 emit('result', host=host, status='failed', reason_code=type(exc).__name__)
                 return {'host_id': host, 'status': 'failed', 'reason_code': type(exc).__name__,
@@ -471,6 +475,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
     from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
         summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity') if key in report}
+        if isinstance(report.get('error'), dict) and 'environment' in report['error']:
+            summary['error'] = report['error']
         # The compact summary omits recipe/connection metadata used by the role
         # extractor. Project evidence before discarding those fields, for both
         # live rendering and machine output, just as saved observation views do.

@@ -281,6 +281,16 @@ def diagnostic(report, test='', icons=None, user=None):
         result += '\n' + table(['command', 'stdout', 'stderr', 'exitcode', 'error'], [
             [row.get('command'), row.get('stdout'), row.get('stderr'), row.get('exitcode'), row.get('error')]
             for row in connection['commands']])
+    def runtime_errors(item):
+        error = item.get('error') or {}
+        if 'environment' in error:
+            yield error
+        for child in (item.get('tests') or {}).values():
+            yield from runtime_errors(child)
+        if item.get('host_init'):
+            yield from runtime_errors(item['host_init'])
+    for error in runtime_errors(report):
+        result += '\n' + details(error)
     return result
 
 
@@ -458,6 +468,10 @@ def execution(report, icons=None, host=None, recipe=None, result_root=None):
     rows.extend([host_label(item['host'], icons), '-', f"SKIP ({item['reason_code']})", '-']
                 for item in report.get('excluded_hosts', []))
     rendered=table(['host', 'collection identity', 'result', 'result id'], rows)
+    for row in hosts:
+        error = row.get('error')
+        if isinstance(error, dict) and 'environment' in error:
+            rendered += '\n' + details(error)
     if report.get('observation_run_id'):
         rendered += '\nObservation ID: '+cell(report['observation_run_id'])
     destinations = execution_locations(report, result_root, host)

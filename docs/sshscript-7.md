@@ -30,6 +30,8 @@ An existing source installation with the same version may need an explicit revie
 
 Checkout helper `sshscript_runtime.source_identity()` returns source_commit, source_matches, expected_files, checked_files or a safe error_type. Internal `require_source(module)` enforces it; runtime receipts carry `sshscript_source`. This is a compatibility identity, not a sandbox or independent publisher signature. Review future package changes before updating hashes.
 
+For import/distribution mismatches or multiple `.dist-info` records, use [runtime diagnosis and repair](runtime-troubleshooting.md). Full readiness and shared runtime guards enumerate distinct SSHScript metadata records and reject duplicates, preserve controlled actionable diagnostics, and provide interpreter-specific repair commands. Version labels alone remain insufficient.
+
 ## Compatibility and existing private recipes
 
 OpsFeast now strictly requires 7.0.1. Update package, complete skill and this checkout together; 7.0.0 and mismatched versions remain rejected before execution. Existing private recipes/packages that explicitly pin `==7.0.0` need their own reviewed dependency update before reuse; this product update does not rewrite installed private recipe copies or historical records. Regenerate/review portable backup recipes only under their installation scope. Host connection keys and stored observations need no migration.
@@ -58,4 +60,4 @@ Use [the matching skill](../skills/sshscript/SKILL.md), [Agent Guide](../skills/
 
 Public tests cover release dependency/metadata consistency, strict version/file-drift rejection, current resolver arguments and native local borrowed Console/jobs/cleanup, alongside OpsFeast recipes, packaging and retained data. New package application and credential-free checks do not establish real-host SSH/su/sudo/database compatibility. Historical host results remain historical; run target verification only within separate operational authorization.
 
-*Last modified: 2026-10-30 16:38:14*
+*Last modified: 2026-10-31 13:04:53*

@@ -49,7 +49,7 @@ Start with the [central skill index](../README.md). Keep newly authored Feast-sp
 
 使用者指南與設定規格位於 [docs/hosts-yaml.md](../../docs/hosts-yaml.md)。開始設定工作時閱讀它；不要自行建立另一套欄位語意。這是 repository 內的 skill，使用時保留 repository 結構。若要獨立安裝，需一併打包指南並調整此連結；目前未提供 skill 安裝工具。
 
-Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 4.0.1+，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍。For the implemented inventory/Python-session runner, see the [execution contract](../../docs/recipe-execution.md). 先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
+Repository 提供 [tools/opsfeast.py](../../tools/opsfeast.py)：使用安裝 PyYAML 的 Python 執行 `init [名稱或路徑]` 建立樣板，或 `check [管理根目錄]` 做唯讀檢查；`dump <設定路徑> [管理根目錄]` 可輸出 include 合併後的指定設定（JSON 縮排 4 格），例如 `dump hosts.host-01 <管理根目錄>`。Dump 只做載入檢查，不等同完整 check，並會原樣輸出選取值，包括密碼欄位。使用者要求實際測試連線時，可用 `test-connection <host-id> [管理根目錄]`，需要 SSHScript 7.0.1，只在指定目標執行 hostname 與 date；先讀使用者指南中的工具範圍。For the implemented inventory/Python-session runner, see the [execution contract](../../docs/recipe-execution.md). 先確認 repository 的實際狀態，使用已存在的驗證入口。只做人工審閱或 YAML 語法檢查時，明確區分它們與完整語意驗證，不虛構 CLI、schema 或成功執行結果。
 
 Use tools/opsfeast.py for new commands. Existing CLI/configuration names remain supported; see [rename compatibility](../../docs/migration.md). Profiles select private Feast instances; [ecosystem terminology](../../docs/ecosystem.md) distinguishes these from planned Buffet exchanges.
 
@@ -327,4 +327,8 @@ select SSH endpoints. Refresh requires a separately authorized saved interface
 query; no-store queries do not update references. Read the
 [0.1.0 contract, invocation and platform limits](../../docs/host-reference-ips.md).
 
-*Last modified: 2026-10-30 16:02:12*
+## Diagnose local runtime failures
+
+Before retrying a host operation after an interpreter/package change, run the failing interpreter with `-B tools/check_environment.py --json`. For `RuntimeEnvironmentError`, inspect `error.environment` and its reason, versions, interpreter and distinct metadata paths. Follow [runtime diagnosis and repair](../../docs/runtime-troubleshooting.md), including CLI/TUI views and selected-interpreter repair commands. Duplicate metadata is an error even when selected versions match. Reuse existing environment-change authorization; checks never install or connect, and repair does not expand host scope. Do not expose third-party exception messages or edit version labels.
+
+*Last modified: 2026-10-31 13:04:53*
