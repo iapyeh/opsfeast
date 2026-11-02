@@ -1,5 +1,36 @@
 # AI Agent Guidance
 
+The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](../docs/web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
+
+
+## Interactive Web Console
+
+For chat-driven persistent shell interaction, read [the interactive skill](opsfeast-interactive/SKILL.md) and its [chat-shell procedure](opsfeast-interactive/references/chat-shell.md): show the river first, stream real output, acknowledge replies promptly and avoid routine login screenshots. For durable work/event protocol, exact plan approval, streaming/recovery and agent HTTP/CLI use, read [interactive Console](opsfeast-interactive/SKILL.md). This opt-in service is separate from host configuration and general logging.
+
+The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview) now includes synthetic recipe lists, notification/todo/issue layouts,
+activity/log and Skills inspection layouts, and exchange/archive/update controls.
+Browser filtering/navigation/disclosure and synthetic user/recipe draft editing
+are connected; draft saves do not write configuration or grant privileges; disabled controls do not
+perform domain operations. No general logging, issue service, upgrade service or
+new transfer API is introduced. Reuse existing services and portability contracts
+when those Web surfaces are implemented.
+
+For the local Web landing-page prototype, read the
+[Web preview guide](../web/README.md), also routed from the recipes skill.
+This is a design preview, not an operational UI or a presentation SDK.
+For owner-entered administrator credentials/login and profile state/create/attach/use,
+read [administrator and profiles](../docs/web-administrator.md); site tokens cannot
+manage profiles.
+For shared settings discovery, current site CLI/API and planned profile settings,
+read [settings](../docs/web-settings.md).
+For upgrade-preserved installation identity/site data, first read
+[storage 0.1.0](../docs/installation-storage.md); profiles keep their existing roots.
+For saved site name/slogan/logo/avatar and local editing, follow
+[installation presentation 0.1.0](../docs/site-presentation.md), routed through Core
+and recipes skills. This is separate from account login or an extension SDK.
+It includes signed-out/login/workspace layouts and a Traditional Chinese authoring
+catalog; English translation is deferred until explicitly requested.
+
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
 Agent documentation and skills, together with human guidance for operating OpsFeast through AI agents, are [core product priorities](../docs/vision.md#treat-agent-guidance-and-human-agent-operation-as-core-product-work). They are especially important while TUI coverage remains incomplete. Every development agent must preserve this priority and follow [the contributor handoff checklist](../docs/agent-guidance.md#carry-the-product-priority-across-development-agents); operational agents should use the task routing below. TUI's goal is independent human operation, and its fuller manual workflows follow completed, verified TUI updates.
@@ -77,7 +108,7 @@ When writing Python that consumes host settings, start with [runtime configurati
 - [opsfeast-hosts](opsfeast-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).
 - [opsfeast-recipes](opsfeast-recipes/SKILL.md): discover, author and execute inventory and compatible Python-session recipes with typed invocation inputs, share one or many recipes, and acquire, verify and review third-party candidates before authorized installation. Start with the [recipe user guide](../docs/recipes.md).
 - [opsfeast-result-data](opsfeast-result-data/SKILL.md): recover, interpret, export, validate and combine retained observations; start with the [result-data contracts](../docs/result-data.md).
-- [sshscript](sshscript/SKILL.md): SSHScript 7.0.1 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); this library API does not imply a formal persistent OpsFeast Console adapter. Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
+- [sshscript](sshscript/SKILL.md): SSHScript 7.0.1 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); for the shipped persistent chat-owned adapter use [Console worker 0.1.0](../docs/console-agent.md). Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
 
 These skills rely on the repository layout and can be read directly by any agent. The full public SSHScript skill snapshot lives in `skills/sshscript/`, including references and SOURCE.json; its presence does not imply installation or automatic loading by a particular agent.
 
@@ -125,4 +156,7 @@ analysis uses result-data/retention, not this last-successful reference.
 
 For SSHScript runtime/version or duplicate-metadata failures, route to [hosts](opsfeast-hosts/SKILL.md) and [runtime diagnosis and repair](../docs/runtime-troubleshooting.md). Reuse the failing interpreter with `-B tools/check_environment.py --json`; this read-only check does not connect or install. Core and recipe execution share the same guard and repair guidance.
 
-*Last modified: 2026-10-31 13:04:53*
+
+For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated human forms and agent wait/read/SSE, without executing commands), use [console records](opsfeast-console-records/SKILL.md). For incremental chat execution use the shipped [Console worker](../docs/console-agent.md); no temporary bridge is needed. It is separate from the exact-plan interactive executor.
+
+*Last modified: 2026-11-02 17:47:54*

@@ -1,0 +1,2 @@
+# Optional configuration writer; shared by CLI and Web, with comment retention.
+ruamel.yaml==0.19.1

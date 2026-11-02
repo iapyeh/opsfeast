@@ -1,5 +1,79 @@
 # Reuse OpsFeast tools and Python modules
 
+The [first-use Web guide](web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
+
+
+## Interactive Console 0.1.0
+
+An opt-in isolated `/interactive` page and `python -B -m opsfeast.interactive_client` expose persisted work snapshots, SSE deltas, exact plans, operator confirmation, checkpoints, feedback and text/table analysis. Use [the canonical contract](interactive-console.md) and [agent skill](../skills/opsfeast-interactive/SKILL.md). SSHScript 7.0.1 is required for execution. Default Web startup enables no target; there is one live Console per process, no Python/program stdin or privilege UI, no automatic reconnect/replay, and no general logging/retention integration.
+
+The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview) now includes synthetic recipe lists, notification/todo/issue layouts,
+activity/log and Skills inspection layouts, and exchange/archive/update controls.
+Browser filtering/navigation/disclosure and synthetic user/recipe draft editing
+are connected; draft saves do not write configuration or grant privileges; disabled controls do not
+perform domain operations. No general logging, issue service, upgrade service or
+new transfer API is introduced. Reuse existing services and portability contracts
+when those Web surfaces are implemented.
+
+## Local Web design preview
+
+For the landing page and navigation prototype, use
+`python -B -m opsfeast.web` from a checkout with optional `requirements-web.txt`.
+It binds to `127.0.0.1:8740`; Ctrl-C stops the foreground process. Read the
+[Web preview guide](../web/README.md) for routes, dependencies and tests. This
+provides single-administrator login, basic profile and real host configuration. The optional isolated interactive service is documented above; no presentation SDK or arbitrary user-extension hosting is provided.
+`/` is public; `/login` is enabled after the owner sets credentials. Workspace
+previews require login once configured; private profiles always require it.
+UI messages use the prototype-private locale layer; only Traditional Chinese
+(`zh-TW`) is authored until the operator requests English translation.
+
+## Local administrator and profile configuration
+
+Read [administrator/profile settings](web-administrator.md) before account or
+profile changes. `/settings/site` includes owner-entered credentials; no defaults
+are provisioned. `admin.status/verify/configure` and `settings admin show/set` share
+private salted-password storage. Web sessions protect account changes and profile
+APIs; local bootstrap capability cannot access profiles or change an existing
+account. A separate 30-minute HttpOnly site-edit session restores editing and first-account setup across navigation; see [unlock/lock](site-presentation.md#local-web-editing-capability). It does not authorize host operations. `profile_settings.inspect/create/use/attach` reuses Core with registry
+revisions; status does not verify connectivity. New Web roots are external; existing
+profile roots and registry locations remain unchanged. Multiple accounts/agent
+roles, profile rename/deletion and account recovery remain unimplemented.
+
+## Persistent installation storage 0.1.0
+
+Use [installation storage](installation-storage.md) for explicit separation and
+upgrade-safe reuse of identity, site settings and images. `python -B -m
+opsfeast.storage init --data-root ABSENT_ABSOLUTE_PATH` copies/verifies known
+prototype data without deleting sources; `attach --data-root EXISTING_PATH`
+connects a replacement checkout; `show` reports the selected root. Reuse checkout
+`resolve_data_root`, `initialize_data_root` and `bind_data_root`. A broken binding
+fails without fallback. Profile registrations and management roots are not moved;
+protect them separately before removing product directories. Web/site APIs require
+marked external data. No automatic format migration or independent backup is implied.
+
+## Shared settings discovery and site CLI
+
+Use [settings](web-settings.md), `/settings`, `GET /api/v1/settings/catalog`,
+`opsfeast.settings.catalog()` or `python -B -m opsfeast.settings catalog` to see
+actual availability. Site has Web/Python/HTTP plus `settings site show/update`
+CLI interfaces, with required update revisions and selected-field preservation.
+Profiles support admin-only status/create/attach/use through Core; see
+[account/profile interfaces](web-administrator.md). Host configuration is implemented through the shared [host settings](web-hosts.md) service; recipe management/defaults and retention settings remain planned in this area. Reuse existing domain tools
+within their own contracts. Bundled logo/avatar defaults are replaceable and do
+not overwrite persistent custom image references.
+
+## Installation presentation 0.1.0
+
+Use `/settings/site` and [the site presentation guide](site-presentation.md) for
+installation name inheritance/override, slogan and normalized PNG/JPEG logo/avatar.
+The settings/images are public before login; editing requires the per-launch local
+capability. Reuse checkout `opsfeast.site.read_site/public_site`,
+`upload_image(installation, bytes)` and `save_site(installation, settings,
+expected_revision=...)`; preserve UUID, existing name, profile namespace and other
+presentation fields. Revision conflicts require rereading/reconciliation. Image
+replacement/clearing does not delete old files. A single administrator is supported; no multi-user/agent roles, theme editor,
+animated avatar or general Web extension API is provided.
+
 ## MySQL and MariaDB replica checks
 
 Prefer [database/mysql/check/replication](../recipes/database/mysql/check/replication/README.md) for repeated replica-status checks. `opsfeast.py recipes run database/mysql/check/replication --profile NAME --host HOST --json` uses the supplied Core session, target python3 and mysql/mariadb batch clients. Configure instances, socket/TCP/TLS, protected credentials, expected source/channel mappings and delay policy through exact-reference recipe vars. It returns sanitized query/input/output/exit evidence, preserves unknown cleanup and defines registered mysql-replication 0.1.0 retention with builtin:vault current/full views. No extra SDK, native privilege escalation, source-host connection or database writes are used. Read the README for supported versions, permissions, failures, public tests and native verification limits. For new needs start with [exploration to reusable artifacts](../skills/opsfeast-recipes/references/exploration-to-recipe.md).
@@ -427,4 +501,21 @@ endpoint is inferred. See [contract, availability, examples and source limits](h
 Use retention APIs for historical network analysis; no backfill/replay refresh,
 TTL, automatic recollection or ESXi/old-Linux probe compatibility is added.
 
-*Last modified: 2026-10-31 13:04:53*
+
+## Chat-owned Console worker 0.1.0
+
+For incremental human-directed shell work, follow the [interactive skill](../skills/opsfeast-interactive/SKILL.md) and [chat-shell procedure](../skills/opsfeast-interactive/references/chat-shell.md). These define river-first startup, same-shell continuity, timely acknowledgements, no routine login screenshots and Python-preferred substantive analysis; prompt/input grouping remains a documented pending presentation change.
+
+Use `python -B -u -m opsfeast.console_agent --token-file FILE --profile NAME --host HOST` for incremental human/agent interaction. [Canonical startup and JSON-lines controls](console-agent.md) cover create-before-connect, connect/run/sudo/interrupt/close, immediate output, configured sudo opt-in and cleanup. The worker records its connection API call, readable login result and actual SSHScript prompt; raw SSH banners/remote PS1 are not exposed. Identity JSON stays outside river content with a readable toolbar summary. The worker owns one same-thread Console and publishes to existing block/SSE handlers; no temporary bridge is required. Python/SSHScript 7.0.1 and a running authenticated loopback Web record service are required. No browser command endpoint, automatic reconnect/replay, secret input, arbitrary Python, entered application, model wakeup or recipe retention is supplied.
+
+## Console blocks and human replies 0.2.0
+
+[Console blocks](console-records.md) provides HTTP/CLI block creation, idempotent
+byte-offset append, bounded snapshot/SSE previews, paged content readers and
+administrator-cookie form replies. `console_client wait/responses` delivers saved
+human responses to a waiting agent client without model wakeup. Browser users need
+login only; no extra reader unlock. Use [the agent skill](../skills/opsfeast-console-records/SKILL.md).
+It does not execute SSH, stop jobs, render arbitrary HTML/media or integrate recipe
+logging/retention. Old 0.1 data stays untouched but is not served by the new API.
+
+*Last modified: 2026-11-02 23:43:02*

@@ -95,16 +95,19 @@ class Profiles:
             items[name] = {'root': str(root), 'status': status, 'active': name == data['default_profile']}
         return items
 
-    def use(self, name):
+    def use(self, name, *, expected_revision=None):
         from .identity import _locked
         with _locked(self.instance.root / '.opsfeast-profiles.json'):
+            if expected_revision is not None:
+                from .profile_settings import check_revision
+                check_revision(self.instance.root, expected_revision)
             data = load_profiles(self.instance.root)
             registered_root(data, name, self.instance.root)
             data['default_profile'] = name
             save_profiles(data, self.instance.root)
         return self.instance.profile(name)
 
-    def attach(self, root, *, name=None):
+    def attach(self, root, *, name=None, expected_revision=None):
         from . import instance_definition, definition_path
         from .identity import _locked
         root = Path(root).expanduser().resolve(strict=True)
@@ -114,6 +117,9 @@ class Profiles:
             instance_definition(root)
         Validator(root).check()
         with _locked(self.instance.root / '.opsfeast-profiles.json'):
+            if expected_revision is not None:
+                from .profile_settings import check_revision
+                check_revision(self.instance.root, expected_revision)
             data = load_profiles(self.instance.root)
             if name in data['profiles']:
                 if profile_root(data['profiles'][name]['root'], self.instance.root) != root:
@@ -168,9 +174,14 @@ class Instance:
     def update_metadata(self, *, name=None, description=None):
         return update_identity(self.root, name=name, description=description)
 
-    def init_profile(self, name='main', *, root=None, namespace=None):
+    def init_profile(self, name='main', *, root=None, namespace=None, expected_revision=None, create_only=False):
         name = profile_name(name)
         registry = load_profiles(self.root)
+        if expected_revision is not None:
+            from .profile_settings import check_revision
+            check_revision(self.root, expected_revision)
+        if create_only and name in registry['profiles']:
+            raise ConfigError('profile name is already registered')
         if root is None and name in registry['profiles']:
             target = profile_root(registry['profiles'][name]['root'], self.root)
         else:
@@ -180,8 +191,13 @@ class Instance:
             raise ConfigError('profile name already refers to another root')
         if any(n != name and profile_root(item['root'], self.root) == target for n, item in registry['profiles'].items()):
             raise ConfigError('management root is already registered')
+        if create_only:
+            try:
+                target.mkdir(parents=True, exist_ok=False)
+            except FileExistsError:
+                raise ConfigError('new profile directory already exists; inspect or attach explicitly') from None
         initialize(target, quiet=True, profile=name, namespace=namespace)
-        profile = self.profiles.attach(target, name=name)
+        profile = self.profiles.attach(target, name=name, expected_revision=expected_revision)
         self.initialize()
         return profile
 
@@ -688,6 +704,54 @@ class Sessions:
         timeout = _timeout(timeout)
         with self._connect(host_id, timeout=timeout, session_class=runtime_class()) as connection:
             yield connection
+
+    def console_target(self, host_id):
+        """Read configured target metadata and a private-settings digest, no network."""
+        import hashlib
+        import json
+        from . import connection_plan
+        from host_runtime import runtime_class
+        from retention_store import settings
+        config=self.profile.hosts._config
+        if host_id not in config.hosts:raise ConfigError('unknown host ID')
+        if not config.hosts[host_id].get('enabled',True):raise CoreError('host_disabled')
+        plan=connection_plan(config,host_id,runtime_class())
+        definition=settings(self.profile.root) or {}
+        material={'root':str(self.profile.root),'namespace':definition.get('namespace'),'plan':plan}
+        digest=hashlib.sha256(json.dumps(material,sort_keys=True,default=str).encode()).hexdigest()
+        return {'namespace':definition.get('namespace'),'fingerprint':digest,
+                'hostname':plan[-1]['hostname'],'username':plan[-1]['username'],'hops':len(plan)}
+
+    @contextmanager
+    def console(self, host_id, *, timeout=30, expected_fingerprint=None, sudo_root=False,
+                stdout=None, stderr=None):
+        """Borrow a headless SSHScript Console over this profile's owned connection.
+
+        Construct/use/close on the calling thread. This is trusted code, not a
+        sandbox; callers own input authorization and output confidentiality.
+        """
+        from sshscript import Console, SwitchCredentials
+        if type(sudo_root) is not bool:
+            raise ConfigError('sudo_root must be Boolean')
+        config = copy.deepcopy(self.profile.hosts._config) if sudo_root else None
+        if expected_fingerprint is not None and self.console_target(host_id)['fingerprint'] != expected_fingerprint:
+            raise CoreError('console_target_changed')
+        def resolve_switch(request):
+            env = request.environment
+            if (not sudo_root or request.kind != 'sudo' or request.username != 'root'
+                    or not env.identity_verified or env.effective_user != env.connection_user
+                    or env.kind != 'ssh' or request.credential_supplied):
+                raise CoreError('console_privilege_switch_unsupported')
+            from host_runtime import privilege_password
+            password, source = privilege_password(config, host_id, env.effective_user,
+                                                  'sudo', env.connection_user)
+            if source == 'sudo_disabled':
+                raise CoreError('sudo_disabled')
+            return SwitchCredentials(password=password)
+        with self.connect(host_id, timeout=timeout) as connection:
+            with Console(connection._actor, terminal=False, get_pty=True,
+                         credential_resolver=resolve_switch, stdout=stdout, stderr=stderr) as console:
+                yield console
 
     @contextmanager
     def _connect(self, host_id, *, timeout=30, session_class):

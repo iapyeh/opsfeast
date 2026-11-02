@@ -18,7 +18,52 @@ Read [recipe taxonomy and relocation](../../docs/recipe-taxonomy.md) for the cur
 
 For automatic retention handlers/converters, read [consumer contract 0.1.0](../../docs/retention-consumers.md) and the [bundled Vault consumer](../../consumers/vault/README.md). First discover existing programs with `consumers list --recipe system/inventory/overview --profile NAME --json` or `recipes show`. Sources are checkout consumers/NAME and Feast-local consumers/NAME; candidate discovery never activates code. Before enabling a reviewed program, verify its Python/dependencies, supported retention contracts, input sources, output ownership and authorized side effects. Register source/enabled explicitly in feast.yaml; default builtin:vault is already enabled. Author `execute(context)` with context.retention.query/show and metadata event hints, preserving partial/unknown/identity context. Outputs must tolerate at-least-once delivery, deletion and stale creation hints. Reuse the documented dispatcher rather than modifying runner, scanning raw files or writing SQL acknowledgement code. Inspect per-consumer status/attempts in content_update.consumers or `consumers inspect`; retry with `consumers dispatch [ID]`. Disabled backlog is processed after activation, while eventless historical data needs explicit application rebuild. In-process Python is not sandboxed or time-limited; no network delivery, installer or scheduler is implied.
 
+For [single-administrator and profile settings](../../docs/web-administrator.md),
+use `/settings/site` (站台設定), `/settings/profiles` and their documented APIs.
+There are no default credentials: let the human enter their username/password
+privately. Local token access can bootstrap only the first admin; account changes
+require login/current password and invalidate sessions. Profile APIs require an
+admin session, never the site token. Reuse `opsfeast.admin` and
+`opsfeast.profile_settings` with revisions, or existing profile CLI. Status is
+local configuration evidence, not connectivity. New roots use external data;
+existing roots/registry locations remain unchanged. Never recreate or overwrite
+an existing environment to satisfy a create request.
+
+For Web/CLI/agent configuration, use the [shared settings guide](../../docs/web-settings.md)
+and discover availability with `python -B -m opsfeast.settings catalog` or
+`GET /api/v1/settings/catalog`. Site show/update are implemented, using the same
+presentation services with required revisions; profile status/create/attach/use are implemented; host/recipe/default/retention
+editing is still planned in this surface. Do not infer authority or usable write
+APIs from category pages. Null custom logo/avatar references use bundled defaults;
+user assets remain in persistent data, never replace product resources.
+
+For persistent installation identity/site data across product upgrades, read
+[storage 0.1.0](../../docs/installation-storage.md). Initialize an absent external
+root explicitly with `python -B -m opsfeast.storage init --data-root PATH`, or
+attach a known existing root on a replacement checkout with `storage attach`.
+Never initialize a fresh identity when the intent is to reuse an installation.
+Sources remain recovery copies; runtime never falls back to old site files.
+Profile registries/management roots are not relocated. Inspect their actual paths
+before any product-directory replacement. Site image/settings APIs accept the
+marked data root or a bound checkout; Web also accepts an explicit `--data-root`.
+
+For installation site name/slogan/logo/avatar, use the separate checkout module
+`opsfeast.site` and [presentation 0.1.0](../../docs/site-presentation.md). It reuses
+instance identity for name inheritance without altering the Core instance schema,
+UUID, name or profile namespace. Read first with `read_site`, ingest authorized
+PNG/JPEG through `upload_image`, then `save_site(..., expected_revision=...)`.
+Public-before-login assets, revision conflict handling and local Web edit tokens
+have explicit limits; these do not create user accounts or operational authority.
+
 # Operate and compose OpsFeast Core
+
+For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
+
+## Headless Console integration
+
+For chat-driven sessions use the shipped [Console worker](../../docs/console-agent.md); start it, immediately open its returned reader URL, then send connect/run/sudo/close controls. No temporary bridge is needed. Core `sessions.console(..., sudo_root=True)` explicitly opts into configured login-account sudo to root; the default denies managed switches. Optional `stdout`/`stderr` streams expose synchronous output too. This is trusted code, not an authorization sandbox.
+
+Core now supplies `profile.sessions.console_target(host_id)` (read-only metadata/fingerprint) and the same-thread `profile.sessions.console(host_id, timeout=30, expected_fingerprint=...)` context manager over the shared configured connection. Read [protocol and limits](../../docs/interactive-console.md) and the [interactive skill](../opsfeast-interactive/SKILL.md). This is trusted code, not a sandbox; the Web adapter exposes shell jobs only and keeps operator approval separate from agent credentials.
 
 The checkout [replay/deletion interfaces](../../docs/retention-replay.md#modules-and-schemas) are available alongside the Core API. `operation_intent` may link source_observation_id; linked write/unknown evidence is protected. Default offline general replay uses a saved data-declaration snapshot and never executes a Core/session operation.
 
@@ -233,4 +278,4 @@ before interpreting values; these are not SSH endpoints or current-health claims
 
 Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvironmentError` is a `ConfigError` subclass with a controlled diagnostic report; exact type strings have changed for these failures. Reuse the failing interpreter with `-B tools/check_environment.py --json` and follow [runtime diagnosis and authorized repair](../../docs/runtime-troubleshooting.md) for version/source failures or duplicate metadata. Do not implement a second scanner, retry sessions to diagnose packages, or modify environments without scope.
 
-*Last modified: 2026-10-31 13:04:53*
+*Last modified: 2026-11-02 17:03:25*

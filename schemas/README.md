@@ -1,5 +1,29 @@
 # Schemas
 
+- [First-use status](setup-status.schema.json) and [host settings](host-settings.schema.json): versioned Web progress and private host configuration read/receipt projections.
+
+## Interactive events
+
+[interactive-event.schema.json](interactive-event.schema.json) documents the 0.1.0 serialized event/delta envelope. See [snapshots, API, lifecycle and validation limits](../docs/interactive-console.md). The current service validates typed actions; it does not run a JSON Schema validator for every internal event.
+
+[Profile settings status](profile-settings.schema.json) describes basic local
+profile evidence, not connectivity or operational readiness.
+
+
+[Administrator 0.1.0](administrator.schema.json) is private salted-credential
+storage, not a public response; see [account/profile interfaces](../docs/web-administrator.md).
+
+
+[Settings catalog 0.1.0](settings-catalog.schema.json) describes current versus
+planned configuration interfaces; see [the shared settings guide](../docs/web-settings.md).
+
+
+Installation Web data uses [site presentation 0.1.0](site-presentation.schema.json),
+[storage binding 0.1.0](installation-storage.schema.json) and
+[data-root marker 0.1.0](installation-data.schema.json). See
+[storage lifecycle](../docs/installation-storage.md) and [site data](../docs/site-presentation.md).
+
+
 [collection-evidence.schema.json](collection-evidence.schema.json) defines optional local raw/retained-envelope collection provenance 0.1.0: verified actor and bounded query metadata without outputs or credentials. It is referenced by host-vault-record and inventory raw schemas, independent of the unchanged normalized inventory/exchange payload. See [local evidence semantics](../docs/retention.md#local-collection-evidence).
 
 Replay adds [raw-retention-context.schema.json](raw-retention-context.schema.json), [retention-snapshot.schema.json](retention-snapshot.schema.json) and optional [retention-provenance.schema.json](retention-provenance.schema.json) in retention envelopes. Operation events can link a source observation UUID. Read [runtime validation and compatibility](../docs/retention-replay.md); SHA-256 equality and cross-record deletion protection are enforced by code beyond JSON Schema.
@@ -44,4 +68,4 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [recipe-assessment.schema.json](recipe-assessment.schema.json) defines optional label, severity and summary separately from fixed execution status. [recipe-execution.schema.json](recipe-execution.schema.json) describes partial operator policy; effective inherited su/sudo policies require an explicit target. [recipe-execution-evidence.schema.json](recipe-execution-evidence.schema.json) preserves verified login/actual identities and restoration evidence. Retained envelopes, batch targets and compact observation views reference the applicable metadata contracts. Read [results and accounts](../docs/recipe-results-and-accounts.md) for configuration, failure precedence and verification limits.
 
-*Last modified: 2026-10-26 12:19:58*
+*Last modified: 2026-11-01 23:27:07*

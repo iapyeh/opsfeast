@@ -1,0 +1,18 @@
+:root{color-scheme:light;font-family:system-ui,-apple-system,sans-serif;color:#26352c;background:#f3f5f0;font-size:17px}*{box-sizing:border-box}body{margin:0}main{max-width:1100px;margin:auto;padding:24px}a{color:#216453}h1{font-size:24px;font-weight:650;margin:18px 0 8px}p{line-height:1.65}.note,footer{color:#5a685f;font-size:14px}details,#toolbar{background:#fff;padding:18px;border:1px solid #d7dfd6;border-radius:8px;margin:18px 0}label{display:grid;gap:8px;margin:16px 0}input{font:inherit;padding:10px;max-width:550px}button{font:inherit;padding:9px 14px;border:1px solid #a5b6aa;border-radius:5px;background:#fff;color:#244c3e;cursor:pointer}.actions{display:flex;gap:15px;align-items:center;flex-wrap:wrap}#connection{padding:12px;background:#e6ede4;border-radius:5px}#state{font-weight:650}#follow{font-size:14px;color:#58695b}#transcript{height:60vh;min-height:300px;overflow:auto;background:#18221e;color:#e6eee5;border:1px solid #364b3f;border-radius:8px;padding:20px;overflow-wrap:anywhere}.event{padding:12px 0;border-bottom:1px solid #33483d}.event header{font:13px system-ui;color:#a4bbae;display:flex;gap:12px;flex-wrap:wrap}.event pre{font:16px/1.6 ui-monospace,SFMono-Regular,monospace;white-space:pre-wrap;margin:7px 0}.event.command pre{color:#c1e4ac}.event.stderr pre,.event.error pre{color:#ffc3ae}.event.authorization pre{color:#ffe19c}.event.analysis pre{font-family:system-ui;color:#c3d7ed}footer{margin:22px 0}#identity{font-size:15px}[hidden]{display:none!important}@media(max-width:650px){main{padding:16px}#transcript{padding:14px}.event pre{font-size:15px}}
+.event h2{font:600 18px/1.5 system-ui;margin:8px 0}.block-stats{font:13px system-ui;color:#b5c8bc}.event .actions{margin:10px 0}.event .actions a{color:#c5e6dc}.event button{font-size:15px}.event .full-content{max-height:65vh;overflow:auto;background:#111b15;padding:14px}.reply-form{background:#eef3e9;color:#223c2c;border-radius:7px;padding:0 16px}.reply-form:empty{display:none}.reply-form form{padding:12px 0}.reply-form input,.reply-form select,.reply-form textarea{padding:9px;font:inherit;max-width:100%;color:#223c2c;background:white}.reply-form input[type=checkbox]{width:22px;height:22px}.reply-form button{margin:5px 12px 5px 0}.reply-form pre{color:#223c2c}
+
+.block-page #transcript{height:auto;min-height:0}.block-page .full-content{max-height:none}
+
+/* River Console output keeps small block gaps; metadata remains on the dedicated page. */
+.event .text-control{font:inherit;font-size:16px;line-height:1.6;padding:0 2px;min-width:1em;border:0;border-radius:0;background:none;color:#a9c7b7;text-decoration:none;cursor:pointer}
+.event .text-control:hover{color:#fff}.event .text-control:focus-visible{outline:1px solid #c1e4ac;outline-offset:2px}
+.event .actions:has(.text-control){gap:6px;margin:4px 0}
+.terminal-block{position:relative;padding:10px 48px 10px 12px;border:0;border-radius:4px;margin:0 0 8px;background:#263142}
+.terminal-block.command{background:#293b27}
+.terminal-block.stdout,.terminal-block.stderr{background:#1d2c29}
+.terminal-block pre{margin:0;line-height:1.6}
+.terminal-block .actions{position:absolute;right:6px;top:10px;margin:0!important}
+.terminal-block .full-content{padding:0;background:none}
+.terminal-block .text-control{opacity:.55}.terminal-block:hover .text-control,.terminal-block:focus-within .text-control{opacity:1}
+.event.analysis{margin:0 0 8px;padding:10px 12px;border:0;border-radius:4px;background:#263142}
+.event.form{margin:12px 0;padding:12px 0}

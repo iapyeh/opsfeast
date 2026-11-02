@@ -461,6 +461,10 @@ class Validator:
             raise ConfigError(f'path outside management root: {path}')
         return resolved
 
+    def read_document(self, path):
+        """Internal seam for validating an uncommitted configuration document."""
+        return read_yaml(path)
+
     def path(self, text, source):
         string(text, f'{source}: path')
         if '://' in text:
@@ -543,7 +547,7 @@ class Validator:
         if path in self.loaded:
             return
         entry = path == self.inside(self.root / 'hosts.yaml') and not self.active
-        data = mapping(read_yaml(path), str(path), ('include', 'hosts', 'groups', 'recipe_sources', 'default') if entry else ('include', 'hosts', 'groups'))
+        data = mapping(self.read_document(path), str(path), ('include', 'hosts', 'groups', 'recipe_sources', 'default') if entry else ('include', 'hosts', 'groups'))
         if entry:
             defaults = mapping(data.get('default', {}), f'{path}: default')
             if 'groups' in defaults:

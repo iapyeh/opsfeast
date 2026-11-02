@@ -40,6 +40,8 @@ After updating an installation to a different OpsFeast release, the user's agent
 Read the actual updated checkout or its complete installed documentation, not remembered definitions or documentation for another release. The required reading covers:
 
 - [Host configuration](hosts-yaml.md): host fields, connection variants, accounts, credentials, includes and selectors. This guide is authoritative even though no standalone host JSON Schema is currently provided.
+- [Local administrator and profile settings](web-administrator.md): private credentials, sessions, bootstrap scope and profile configuration APIs.
+- [Installation storage](installation-storage.md) and [site presentation](site-presentation.md): data-root binding/marker, preserved identity, settings/assets, public visibility and explicit upgrade attachment.
 - [Core API](core-api.md) and [profiles](profiles.md): installation identity/metadata, profile selection, host snapshots, Recipe/session objects, ownership and inspection results.
 - [Recipe execution](recipe-execution.md) and [recipe experience contracts](recipe-experience.md): descriptors, inputs/contexts, execution results, reports/artifacts, bundles and saved jobs.
 - [Schema index](../schemas/README.md) and its implemented schemas, [result-data contracts](result-data.md) and [inventory access/data semantics](inventory-access.md): inventory values, raw/retained/exchange structures, identity and failure/partial/unknown interpretation.
@@ -134,4 +136,4 @@ For a release with portability changes, reread [portability](portability.md), [p
 
 After an update providing these services, include [recipe assessments/accounts](recipe-results-and-accounts.md) and its linked assessment, execution-policy and evidence schemas in the mandatory data-contract reread. Existing SSHScript snapshot provenance remains unchanged; this is an OpsFeast service, not a new SSHScript release.
 
-*Last modified: 2026-10-30 12:22:37*
+*Last modified: 2026-11-01 13:20:29*

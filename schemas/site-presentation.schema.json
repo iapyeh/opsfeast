@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsfeast.local/schemas/site-presentation/0.1.0",
+  "title": "Installation presentation 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "site_name", "slogan", "logo", "avatar"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "revision": {"type": "integer", "minimum": 0},
+    "site_name": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "minLength": 1, "maxLength": 80, "allOf": [{"pattern": "\\S"}, {"pattern": "^[^\\u0000-\\u001f\\u007f]*$"}]}
+      ]
+    },
+    "slogan": {"type": "string", "maxLength": 160, "pattern": "^[^\\u0000-\\u001f\\u007f]*$"},
+    "logo": {"$ref": "#/$defs/asset"},
+    "avatar": {"$ref": "#/$defs/asset"}
+  },
+  "$defs": {
+    "asset": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[0-9a-f]{64}\\.png$"}]}
+  },
+  "$comment": "Last modified: 2026-11-01 12:22:18"
+}

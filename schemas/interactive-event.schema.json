@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Interactive event 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "work_id",
+    "event_id",
+    "seq",
+    "received_at",
+    "actor",
+    "type",
+    "delta",
+    "payload"
+  ],
+  "properties": {
+    "protocol_version": {
+      "const": "0.1.0"
+    },
+    "work_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "enum": [
+        "operator",
+        "agent",
+        "executor",
+        "server"
+      ]
+    },
+    "type": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "delta": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "path",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "enum": [
+              "set",
+              "append",
+              "append_text"
+            ]
+          },
+          "path": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "not": {
+                "enum": [
+                  "__proto__",
+                  "prototype",
+                  "constructor"
+                ]
+              }
+            }
+          },
+          "value": {}
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-11-01 18:57:50"
+}

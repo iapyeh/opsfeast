@@ -3,6 +3,34 @@
 The inventory-specific [job/utility/periodic collection service](inventory-jobs.md) now implements deterministic minute dispatch with opt-in hosts, source-timestamped samples and public YANG model reuse. References below to planned scheduling concern a general scheduler; they do not negate this narrower implemented capability.
 
 
+## User-centered system administration and transparent collaboration
+
+OpsFeast assists the human administrator and their chosen AI agents with system
+administration, work management and issue investigation. The human defines goals
+and retains control of the workspace and its records; OpsFeast provides supporting
+tools. Overview should foreground actionable notifications, todos and issues.
+Recipes organize their executions, observations and retained outputs without
+preventing cross-recipe analysis or independent data exchange.
+
+Transparency includes inspectable bundled and user-provided Skills, source/version
+information, and records of interactive SSHScript, recipe execution and future IRC
+conversations. Available guidance is distinct from evidence that an agent actually
+used it. Records should explain requester, target, identity, progress, failure,
+stopping, cleanup and outcome uncertainty, with secrets handled before persistence.
+
+Notifications, todos and logs need explicit management options, including archive,
+restore and deletion. Archive, completion, export and deletion have different
+meanings and must expose their scope and consequences. Existing protected-evidence
+rules must be reconciled explicitly with human ownership before implementation;
+this principle does not itself bypass current contracts or authorize deleting data.
+Recipe and retention exchange should support colleague-to-colleague reuse while
+preserving private bindings, source provenance and independent execution consent.
+
+The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview)
+illustrates these directions using synthetic records and disabled mutation controls.
+General logging, issue management, update services and these Web management actions
+remain planned; existing services/portability interfaces retain their own scope.
+
 ## Host-centered management and portable knowledge
 
 A logical host is identified by user-selected namespace + host ID. Its history continues across replacement, VM relocation and OS reinstall; native identifiers are observations. Keep authoritative structured data and durable write-operation history in retention/, independent of content applications. Bundle a plain vault/ for host/group Markdown and human notes. Users can add human notes beside generated Markdown. See [implemented contracts and limits](host-vault.md). Recipe adapters and product read interfaces own normalization so users and agents need not repeatedly clean raw outputs.
@@ -160,6 +188,58 @@ For a feature, recipe or documentation change, assess the relevant questions bef
 Report gaps and tradeoffs rather than presenting goals as implemented features. Project contributors follow [AGENTS.md](../AGENTS.md); recipe authors follow the [authoring guide](recipe-authoring.md), [sharing guide](recipe-sharing.md) and [acquisition guide](recipe-acquisition.md).
 
 
+## Make the user's workspace the protagonist
+
+OpsFeast is a supporting tool. The human owner defines the goals and manages
+their systems, with assistance from their own AI agent. The installation should
+feel like the owner's workspace, not an OpsFeast promotional surface. Carry this
+principle into layout, visual identity, language and interaction design.
+
+Reserve prominent identity positions on the welcome/login pages, workspace
+header, navigation and user presentations for the owner's installation name,
+representative image, title and optional introduction. Offer coherent appearance
+settings so these are data-driven choices, not source-code edits or a request for
+the user's agent to rewrite CSS. Unconfigured workspaces should use neutral
+placeholders and make customization discoverable, without inventing an identity
+or filling every reserved position with the product logo and slogan.
+
+OpsFeast attribution remains necessary but discreet: a small product mark or
+"Powered by OpsFeast" attribution, with product/version information in About or
+equivalent secondary locations. Keep attribution legible and discoverable without
+competing with the owner's identity. Its role is to be a quiet, trustworthy
+indicator of the supporting tool. Product slogans must not occupy space reserved
+for the owner's own title or message.
+
+Design versioned data contracts before connecting personalization to real data.
+Distinguish installation identity/presentation (shared name, image, title,
+introduction and appearance), individual users (stable user ID, display name,
+avatar and personal preferences), and authentication/authorization. Reuse the
+existing installation UUID/name/description contract where applicable rather than
+creating a parallel installation identity. A display name, avatar or theme never
+grants access or changes operation ownership. Switching profiles must not silently
+change the installation's identity or another user's preferences.
+
+Define which installation presentation fields may appear before login; never
+expose a private user directory, avatar or operational data through a public
+welcome page by default. User images need explicit asset ownership, visibility,
+validation and replacement/deletion rules. Use validated asset references and
+bounded appearance settings rather than arbitrary executable HTML/CSS. Keep
+private personalization in the management environment, out of product sources and
+portable recipe examples. Human owners and their agents need documented read/
+update interfaces, available controls and verification guidance when delivered.
+
+An owner may explicitly use the bundled OpsFeast mark as the initial logo/avatar;
+these remain replaceable owner slots, not permanent product promotion. Shared
+configuration must have Web, CLI and agent API adapters over the same services.
+The [settings area](web-settings.md) records current and planned domain coverage.
+
+This is a continuing development and design requirement. [Installation presentation
+0.1.0](site-presentation.md) now provides site-name inheritance/override, slogan,
+validated logo/avatar assets and local capability-protected settings. A [single local administrator](web-administrator.md) now provides actual login
+and profile management. Multiple-user/agent identities, personal preferences,
+themes and operational authorization remain separate work. Local site-token
+access is not an administrator session.
+
 ## Implemented shared notification and todo foundation
 
 [Services 0.1.0](services.md) now supply platform-owned data objects, condition deduplication, revision-checked lifecycle, audit and shared Recipe/Core/consumer access. Presentation and delivery are adaptable through [versioned interfaces](service-adapters.md), with bundled Vault and SMTP implementations. Lifecycle stays in the platform. Historical replay does not create current incidents through consumer services. Todo scheduling records intended work but does not execute it or wake an agent. General logging and a general scheduler remain future work; provider configuration and real delivery evidence remain explicit deployment concerns.
@@ -169,4 +249,4 @@ Report gaps and tradeoffs rather than presenting goals as implemented features. 
 
 Recipe source, raw observation evidence and structured retention are independent portable units. The implemented [transfer foundation](portability.md) supports origin-preserving copy/import, explicit recipe conflicts/rollback and verified resumable archival with storage compaction. User [data contracts](portable-contracts.md) travel with recipes/data rather than requiring a product registry edit. Human authority remains explicit for code activation, transmission and destructive source removal; historical import never becomes a live incident. Network distribution, a general scheduler and automatic recovery-package cleanup remain outside this implementation.
 
-*Last modified: 2026-10-25 15:28:33*
+*Last modified: 2026-11-01 16:06:51*

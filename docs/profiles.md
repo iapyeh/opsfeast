@@ -70,6 +70,17 @@ python -B tools/opsfeast.py dump hosts.localhost --profile inventory
 
 profiles is read-only and shows available/missing/invalid/unavailable based on directory, definition and entry-file checks. This basic status does not validate YAML content, recipes, connectivity or privileges. Missing entries remain registered; nothing is automatically removed. use changes the default; without a name it offers selection only in an interactive terminal, and noninteractive use requires an explicit name. Cancellation preserves the registry. --profile selects a Feast for one invocation on either CLI without changing the default. Explicit roots and --profile cannot be combined for execution/configuration commands. Diagnostics and recipe execution require their own authorization.
 
+## Web profile settings
+
+`/settings/profiles` provides administrator-only basic status, create, attach and
+switch through Core. New Web-created roots use the persistent installation data
+root's `profiles/NAME`; existing registered roots are unchanged. Reads do not prove
+connectivity. Mutations carry registry digest checks, and initialization can leave
+a candidate directory after late failure. Profile registration storage remains
+checkout-local and must be preserved separately on replacement. See
+[administrator/profile interfaces](web-administrator.md) for exact APIs, permissions
+and verification. No Web rename, detach or deletion is implemented.
+
 ## TUI profile selection
 
 Bare `python -B tools/opsfeast.py` includes a Profiles table with the same availability checks. Enter or Switch selected profile updates the persisted default and refreshes Hosts; cursor movement is read-only. Invalid/unavailable rows and failed writes preserve the default. Explicit recipe root/profile form values remain unchanged. See [terminal UI](terminal-ui.md#profiles) for navigation, execution boundaries and limits.
@@ -96,4 +107,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-10-19 15:24:36_
+_Last modified: 2026-11-01 13:20:29_

@@ -7,6 +7,8 @@ Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed o
 
 ## Exact-reference recipe policy
 
+For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
+
 Before editing execution settings, read [recipe sources and policy](../../docs/recipe-sources.md). Use default/group/host recipes mappings keyed by exact filesystem references, with enabled/vars; bare PATH and bundle:PATH are the same bundle key, :PATH is profile-only, NAME:PATH is a registered source. Do not flatten paths or substitute descriptor IDs. Discover references with `python -B tools/opsfeast.py recipes list --profile NAME --json`. Mappings merge by leaf; lists replace, explicit false wins and the first resolved group wins overlapping leaves. Recipes default disabled; new init enables bundled inventory explicitly, preserving existing configs.
 
 For bulk/group or scheduled execution, host, source and resolved recipe must all be enabled (plus schedule opt-in/due checks). Explicit recipe/inventory --host overrides those three gates for that target only; invalid references/vars/paths and disabled jump hosts still fail. This rule does not change host diagnostics or standalone Core connect. check validates all mapping references/basic declared inputs, including disabled/unused entries; business validation belongs to each recipe. Existing selection lists are not a bulk enabled opt-in. Changing execution enablement does not remove retention or hide current pages. Use [migration actions](../../docs/migration.md#recipe-policy-and-observation-runs) when updating existing workflows.
@@ -331,4 +333,4 @@ query; no-store queries do not update references. Read the
 
 Before retrying a host operation after an interpreter/package change, run the failing interpreter with `-B tools/check_environment.py --json`. For `RuntimeEnvironmentError`, inspect `error.environment` and its reason, versions, interpreter and distinct metadata paths. Follow [runtime diagnosis and repair](../../docs/runtime-troubleshooting.md), including CLI/TUI views and selected-interpreter repair commands. Duplicate metadata is an error even when selected versions match. Reuse existing environment-change authorization; checks never install or connect, and repair does not expand host scope. Do not expose third-party exception messages or edit version labels.
 
-*Last modified: 2026-10-31 13:04:53*
+*Last modified: 2026-11-01 23:27:07*

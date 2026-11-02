@@ -17,6 +17,8 @@ def _path(installation):
     root = Path(installation).expanduser().resolve(strict=True)
     if not root.is_dir():
         raise ConfigError('installation must be a directory')
+    from .storage import resolve_data_root
+    root = resolve_data_root(root)
     path = root / FILENAME
     if path.is_symlink() or (path.exists() and not path.is_file()):
         raise ConfigError('instance metadata must be a regular file')

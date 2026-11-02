@@ -1,5 +1,9 @@
 # Core Python API 0.1.0
 
+## Configured headless SSHScript Console
+
+`profile.sessions.console_target(host_id)` returns namespace, configured endpoint/login, hop count and a SHA-256 fingerprint of root/namespace/resolved connection settings. It reads configuration and checks the runtime without connecting. Credential values remain private; the digest is a change detector, not publisher authentication. `with profile.sessions.console(host_id, timeout=30, expected_fingerprint=fingerprint) as console:` yields the SSHScript 7.0.1 Console through the existing connection owner. A changed expected target fails before connecting; host/jump enabled policy and strict cleanup remain shared. Construct/use/close on the same thread. Managed su/sudo is denied by default. Explicit `sudo_root=True` permits only verified SSH login-account sudo to root, using the configured credential source once (including enabled/passwordless policy); other actors, explicit credentials and su remain denied. Invoke `console.submit('$.sudo(username="root", enter_timeout=15)')` only under the human's privilege authorization. Optional `stdout=stream, stderr=stream` forward output as it arrives, including synchronous switch output; corresponding ConsoleUpdate fields are empty when redirected. Trusted arbitrary Console code is not sandboxed. For incremental chat operations prefer the shipped [Console worker](console-agent.md), not a temporary bridge. For the restricted Web adapter, use [interactive protocol](interactive-console.md).
+
 For automatic derived content, use [retention consumers](retention-consumers.md). Their `execute(context)` receives the shared read-only retention facade. Core retention reading remains unchanged; registration/discovery/dispatch are checkout module and CLI interfaces. Standalone journal batches call `retention_store.refresh_content(root)` after completion; it now dispatches consumers and returns their individual attempts.
 
 ## Host vault integration
@@ -11,6 +15,14 @@ Use checkout `retention_store.operation_intent/operation_result` for explicit st
 ## Installation, instance and profile
 
 An **instance** is the entire OpsFeast installation/checkout. Its ignored `.opsfeast-instance.json` contains schema_version `0.1.0`, UUID `id`, required nonblank single-line `name`, optional string `description`, and the absolute `installation_path` used for copy detection. A **profile** selects one management root, usually `feasts/NAME/`, possibly an externally attached directory. `feasts/` is a container, not an instance. Existing `feast.yaml` definitions and profile registries retain their current formats.
+
+When a checkout is attached through [installation storage 0.1.0](installation-storage.md),
+identity metadata is authoritative in that external data root; `installation_path`
+then records the persistent identity location. `Instance.open(product_path).identity`
+and metadata updates follow the binding. Replacing/moving product code does not
+change identity while the data root stays put. Profile registrations and management
+roots retain their existing locations/semantics. An unbound Core installation
+retains the identity behavior below, while Web requires initialized external data.
 
 First successful CLI `init` creates the installation UUID; subsequent init and profile changes preserve it. `Instance.initialize()` initializes identity only; `Instance.init_profile(name="main", root=None, namespace=None)` explicitly scaffolds and registers a profile, enables its vault and initializes installation identity. Namespace defaults to its saved Feast value or the first profile name; namespace-unsafe names require a valid override, and a saved namespace cannot be changed through reinit. It creates initial Markdown/group views without connections or collection. Reads never initialize storage. Metadata writes use a POSIX advisory lock, a private temporary file and atomic replacement. Cooperating Core metadata writers serialize; this is not a multi-file transaction or protection from unrelated editors.
 
@@ -27,6 +39,27 @@ First successful CLI `init` creates the installation UUID; subsequent init and p
 A copy into another directory must obtain a different UUID. Use initialize on the copy; do not use relocate for copies. The default name follows a regenerated UUID; custom name and description survive. Copy detection compares resolved absolute paths, so a symlink alias is the same location. Independent physical copies mounted at the same absolute path cannot be detected: explicitly renew their identity. UUIDs identify records, not authenticated communication peers. Existing retained-observation source IDs and host identities remain separate contracts; this installation UUID does not rewrite historical identity. Names need not be unique. Nil UUID use explicitly accepts duplicate-identity risk.
 
 The UUID ending in `000000000001` is reserved for the original OpsFeast development installation. Normal initialization uses UUID v4; copies must not inherit that reservation. The development assignment is private local metadata, never a tracked default.
+
+### Profile configuration concurrency
+
+`Profiles.use(name, expected_revision=None)` and
+`Profiles.attach(root, name=None, expected_revision=None)` optionally check the
+registry digest under their existing lock. `Instance.init_profile` additionally
+accepts `expected_revision=None` and `create_only=False`; create_only refuses
+registered names and occupied directories, while normal init retains its existing
+behavior. Use [profile settings](web-administrator.md#profile-state-and-changes)
+for read-only state, external-root creation and Web/CLI scope. Late initialization
+failure can preserve a candidate directory; do not claim a multi-file transaction.
+
+### Installation Web presentation
+
+[Presentation 0.1.0](site-presentation.md) supplies a separate checkout module and
+schema for site-name overrides, slogan and logo/avatar images. It inherits the
+existing instance name by default without modifying identity/copy detection,
+profile namespace or this Core API. Read/update through `opsfeast.site` with
+revision checks. Web editing accepts a per-launch site capability or administrator session. The
+capability can bootstrap the first administrator but does not grant profile access.
+See [account/profile settings](web-administrator.md). All published presentation fields appear before login.
 
 ## Import and package delivery
 
@@ -388,4 +421,4 @@ recipe, use `recipe.profile.hosts.reference_ips(recipe.host_id)`.
 Use this API instead of scanning recipe raw data; see the
 [reference-only 0.1.0 contract](host-reference-ips.md) for update rules and limits.
 
-*Last modified: 2026-10-30 16:02:12*
+*Last modified: 2026-11-02 17:03:25*

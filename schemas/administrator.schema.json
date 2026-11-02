@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Private local administrator 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "username", "algorithm", "salt", "digest"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "revision": {"type": "integer", "minimum": 1},
+    "username": {"type": "string", "pattern": "^[A-Za-z0-9_.-]{3,64}$"},
+    "algorithm": {"const": "scrypt-16384-8-1"},
+    "salt": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$comment": "Private storage only; never return salt/digest through Web or CLI. Last modified: 2026-11-01 13:20:29"
+}

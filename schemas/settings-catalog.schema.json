@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings capability catalog 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "categories"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "scope", "status", "route", "apis", "cli", "guide"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "scope": {"enum": ["installation", "profile"]},
+          "status": {"enum": ["available", "planned"]},
+          "route": {"type": "string", "pattern": "^/settings/"},
+          "apis": {"type": "array", "items": {"type": "string"}},
+          "cli": {"type": "array", "items": {"type": "string"}},
+          "guide": {"type": "string"}
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-11-01 12:56:08"
+}

@@ -32,3 +32,14 @@
 /.inventory-dispatch.lock
 /inventory-errors/
 /inventory-cron-errors.log
+
+# Private installation presentation and per-launch Web editing capability.
+/.opsfeast-site.json
+/.opsfeast-site.lock
+/.opsfeast-site-*.tmp
+/.opsfeast-site-assets/
+/.opsfeast-web-edit-*.token
+
+# Local binding to persistent installation data (not distributed).
+/.opsfeast-storage.json
+/.opsfeast-storage.lock

@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Host configuration snapshot and success receipt 0.1.0",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ]
+          }
+        },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host_id": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "parent_group": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "label": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "connection": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "hostname": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "user": {
+                    "type": "string"
+                  },
+                  "identity_file": {
+                    "type": "string"
+                  },
+                  "allow_agent": {
+                    "type": "boolean"
+                  },
+                  "look_for_keys": {
+                    "type": "boolean"
+                  },
+                  "local": {
+                    "type": "boolean"
+                  },
+                  "ssh_config_alias": {
+                    "type": "string"
+                  },
+                  "via": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "host": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "host"
+                    ]
+                  }
+                }
+              },
+              "advanced_connection": {
+                "type": "boolean"
+              },
+              "login_user": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "sudo": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "sudo"
+                  ]
+                }
+              },
+              "recipe_references": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reference_ips": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "known",
+                      "unknown"
+                    ]
+                  },
+                  "ipv4_addresses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "ipv6_addresses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "observed_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "status",
+                  "ipv4_addresses",
+                  "ipv6_addresses",
+                  "observed_at"
+                ]
+              }
+            },
+            "required": [
+              "host_id",
+              "source",
+              "parent_group",
+              "groups",
+              "enabled",
+              "label",
+              "description",
+              "connection",
+              "advanced_connection",
+              "login_user",
+              "users",
+              "recipe_references",
+              "reference_ips"
+            ]
+          }
+        },
+        "connectivity_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "profile",
+        "revision",
+        "groups",
+        "hosts",
+        "connectivity_verified"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "action": {
+          "enum": [
+            "create",
+            "update",
+            "delete"
+          ]
+        },
+        "profile": {
+          "type": "string"
+        },
+        "host_id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "previous_revision": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "backup_id": {
+          "type": "string"
+        },
+        "backup_kind": {
+          "const": "pre-change"
+        },
+        "changed_at": {
+          "type": "string"
+        },
+        "remote_effects": {
+          "const": false
+        },
+        "configuration_changed": {
+          "const": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "action",
+        "profile",
+        "host_id",
+        "source",
+        "previous_revision",
+        "revision",
+        "backup_id",
+        "backup_kind",
+        "changed_at",
+        "remote_effects",
+        "configuration_changed"
+      ]
+    }
+  ],
+  "$comment": "Last modified: 2026-11-01 23:27:07"
+}

@@ -22,6 +22,24 @@ Read [the enduring principle and TUI/manual boundaries](docs/vision.md#treat-age
 
 TUI is intended to support independent human management and operation without an AI agent. Its incomplete coverage does not reduce that goal, and later TUI completion does not remove the need for good agent interfaces. Organize the human manual around concepts, workflows, reference material and end-to-end cases. Document verified current TUI behavior accurately; add the fuller TUI workflows after their implementation and verification. These are delivery responsibilities for every future development agent, independent of agent product or automatic skill loading.
 
+## Owner-centered Web identity
+
+For Web identity and visual design, follow [make the user's workspace the
+protagonist](docs/vision.md#make-the-users-workspace-the-protagonist). The human
+owner's installation name, representative image and title take the prominent
+positions; OpsFeast remains a discreet, legible supporting attribution. Deliver
+personalization through documented, versioned data/settings rather than source
+edits. Keep installation presentation, user preferences and access rights distinct;
+use [installation presentation 0.1.0](docs/site-presentation.md) for the shipped
+settings/image contract. User accounts and personal preferences remain separate
+from this local installation configuration.
+
+Keep owner identity/site settings and images outside replaceable product code,
+following [installation storage](docs/installation-storage.md). Reuse/attach the
+existing data root on upgrade; never regenerate identity for a replacement
+checkout. The current separation does not relocate profile registries or their
+management roots; preserve those independently before destructive replacement.
+
 ## First-use conversations
 
 The single first-use prompt authorizes cloning OpsFeast into “this project's directory,” then reading guidance and checking prerequisites. Resolve the active workspace from context. An empty workspace can become the checkout; a nonempty workspace uses an opsfeast/ child, preserving existing files. Verify repository identity and checkout markers before reusing an existing clone; do not pull, reset or overwrite it. Report missing Git/access, download failures and destination conflicts rather than installing software or deleting files under clone-only authorization. Follow [agent-led checkout bootstrap](docs/getting-started.md#agent-led-checkout-bootstrap) for selection and failure handling. Explicitly read newly cloned instructions; automatic discovery is not assumed. Use the actual checkout for commands and a later approved .venv even when the workspace is its parent, without requiring a new conversation or project reopening.
@@ -145,4 +163,4 @@ For dated backup presence, expiry and unexpected-entry lists, use [the shipped b
 
 For sharing/import/archival, read [portability](docs/portability.md), [portable retention authoring](docs/portable-contracts.md) and the recipe/result-data skills. Recipe, observation and retention are independent units. Use transfer plans and expected digests, origin-preserving merge/replace and explicit recipe path-conflict resolution; do not build parallel copy/delete/SQL tools. Archive-plan freezes source-time selection, and apply verifies an external package before source deletion/compaction. Preserve protected operations, shared attachments, recovery receipts, service lifecycle and human notes. No candidate code/consumer/provider runs during data import. Bundle 0.2.0 rejects the old format; no migration or compatibility layer is required.
 
-*Last modified: 2026-10-29 19:58:09*
+*Last modified: 2026-11-01 12:47:51*

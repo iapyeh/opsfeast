@@ -5,6 +5,22 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 ## Human trust during exploration and recipe execution
 
+For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
+
+## Interactive work before recipe authoring
+
+For incremental chat-owned exploration use the shipped [Console worker 0.1.0](../../docs/console-agent.md) and [record-service skill](../opsfeast-console-records/SKILL.md). It creates a reader before connection and forwards output automatically; no generated bridge is needed. Read the documented startup flags, JSON-lines controls, configured sudo opt-in, failure/cleanup and privacy limits. Existing recipes still use their supplied Recipe/session; do not launch this worker inside routine recipes or bypass an approved exact-plan work.
+
+For an authorized exploration through the real opt-in Web Console, follow [the interactive skill](../opsfeast-interactive/SKILL.md) and [protocol](../../docs/interactive-console.md). Reuse its HTTP/CLI rather than opening parallel SSH to bypass operator approval. Preserve reviewed findings as a recipe later; interactive events do not automatically create retention.
+
+The [Web roadmap preview](../../web/README.md#human-centered-management-roadmap-preview) now includes synthetic host/recipe lists, notification/todo/issue layouts,
+activity/log and Skills inspection layouts, and exchange/archive/update controls.
+Browser filtering/navigation/disclosure and synthetic user/recipe draft editing
+are connected; draft saves do not write configuration or grant privileges; disabled controls do not
+perform domain operations. No general logging, issue service, upgrade service or
+new transfer API is introduced. Reuse existing services and portability contracts
+when those Web surfaces are implemented.
+
 **看得見、停得下來、查得到發生過什麼事。** — **Make operations visible, keep them stoppable, and preserve a record of what happened.** This principle builds human trust in AI-assisted operations. Apply it both to interactive exploration and to running existing recipes.
 
 - **Visible:** Before execution, show the target, identity, actual command/call or reviewed recipe invocation, purpose and expected effects. Expose progress and output as the interface permits; disclose buffering, redaction and missing visibility. A final summary alone does not provide live transparency.
@@ -57,6 +73,58 @@ For readable Vault observations, reuse the bundled vault_content.render_observat
 For automatic retention handlers/converters, read [consumer contract 0.1.0](../../docs/retention-consumers.md) and the [bundled Vault consumer](../../consumers/vault/README.md). First discover existing programs with `consumers list --recipe system/inventory/overview --profile NAME --json` or `recipes show`. Sources are checkout consumers/NAME and Feast-local consumers/NAME; candidate discovery never activates code. Before enabling a reviewed program, verify its Python/dependencies, supported retention contracts, input sources, output ownership and authorized side effects. Register source/enabled explicitly in feast.yaml; default builtin:vault is already enabled. Author `execute(context)` with context.retention.query/show and metadata event hints, preserving partial/unknown/identity context. Outputs must tolerate at-least-once delivery, deletion and stale creation hints. Reuse the documented dispatcher rather than modifying runner, scanning raw files or writing SQL acknowledgement code. Inspect per-consumer status/attempts in content_update.consumers or `consumers inspect`; retry with `consumers dispatch [ID]`. Disabled backlog is processed after activation, while eventless historical data needs explicit application rebuild. In-process Python is not sandboxed or time-limited; no network delivery, installer or scheduler is implied.
 
 # OpsFeast recipes
+
+For [single-administrator and profile settings](../../docs/web-administrator.md),
+use `/settings/site` (站台設定), `/settings/profiles` and their documented APIs.
+There are no default credentials: let the human enter their username/password
+privately. Site unlock/lock exchanges local edit capability for a 30-minute HttpOnly session that survives navigation; it is not operator approval or profile access. Local token access can bootstrap only the first admin; account changes
+require login/current password and invalidate sessions. Profile APIs require an
+admin session, never the site token. Reuse `opsfeast.admin` and
+`opsfeast.profile_settings` with revisions, or existing profile CLI. Status is
+local configuration evidence, not connectivity. New roots use external data;
+existing roots/registry locations remain unchanged. Never recreate or overwrite
+an existing environment to satisfy a create request.
+
+For Web/CLI/agent configuration, use the [shared settings guide](../../docs/web-settings.md)
+and discover availability with `python -B -m opsfeast.settings catalog` or
+`GET /api/v1/settings/catalog`. Site show/update are implemented, using the same
+presentation services with required revisions; profile status/create/attach/use and host configuration are implemented; recipe/default/retention editing is still planned in this surface. Do not infer authority or usable write
+APIs from category pages. Null custom logo/avatar references use bundled defaults;
+user assets remain in persistent data, never replace product resources.
+
+For persistent installation identity/site data across product upgrades, read
+[storage 0.1.0](../../docs/installation-storage.md). Initialize an absent external
+root explicitly with `python -B -m opsfeast.storage init --data-root PATH`, or
+attach a known existing root on a replacement checkout with `storage attach`.
+Never initialize a fresh identity when the intent is to reuse an installation.
+Sources remain recovery copies; runtime never falls back to old site files.
+Profile registries/management roots are not relocated. Inspect their actual paths
+before any product-directory replacement. Site image/settings APIs accept the
+marked data root or a bound checkout; Web also accepts an explicit `--data-root`.
+
+## Web presentation availability
+
+Read the [Web preview guide](../../web/README.md) before using the local Web
+prototype. `python -B -m opsfeast.web` serves a public checkout preview
+on `127.0.0.1:8740` with optional `requirements-web.txt`; stop with Ctrl-C.
+The prototype has single-administrator login, private profile/host configuration and separate opt-in Console execution. Extension registration and bundled public presentation SDK/libraries are not provided. Do not treat its
+planned-feature cards or internal JS/CSS as usable recipe services. User
+presentations, routes and utilities require future versioned contracts; existing
+consumer activation does not register Web code. Recipe/retention workflows below
+remain authoritative and unchanged.
+The signed-out `/` stays public; `/login` performs administrator authentication
+after owner setup. Workspace previews require login once configured, and private
+profiles always require it. Keep new prototype UI
+messages in `web/assets/locales/zh-TW.mjs` and use the private locale helpers;
+English UI translation waits for the operator's explicit request. Interface
+language never translates command output, identifiers or operational evidence.
+When designing presentations, follow the [owner-centered product principle](../../docs/vision.md#make-the-users-workspace-the-protagonist):
+reserve prominent name/image/title positions for the human owner's workspace,
+with discreet OpsFeast attribution. Use [installation presentation 0.1.0](../../docs/site-presentation.md)
+for available settings, image limits, public visibility, local edit capability and
+checkout Python APIs. Preserve UUID/name/namespace, pass the current revision, and
+reconcile conflicts rather than overwriting. Display identity grants no account
+permissions; the current preview still has no presentation SDK.
 
 For inventory recipe 0.4.0, use the [collection table](../../recipes/system/inventory/overview/collection-plan.md) and [inventory job guide](../../docs/inventory-jobs.md). Discover properties/jobs and fixed public YANG node mappings with `inventory describe --json`; use `inventory query --host HOST --property PROPERTY --json` without storage, add `--save --note TEXT` for an immediate retained comparison, or use `inventory run --job JOB`. `recipes run` also uses the new job flow for this recipe. `inventory configure` writes opt-in inventory.yaml settings; `inventory dispatch` runs due work once and `inventory cron` manages a marked current-user minute entry. Failures leave gaps and advance the normal interval; no automatic retry or AI wakeup is implemented. Manual saves do not advance schedules. Retention contract inventory-job-observations 0.1.0 preserves source/sample times, actor/model evidence and partial scope. Use `inventory latest` or retention APIs for mixed-age views/trends; preserve failures and source IDs. These internal jobs differ from saved invocations and the retention-consumer dispatcher. Standard mappings are sparse node-referenced observations, not complete RFC 7951/NETCONF conformance. Read the guide before connections, scheduling or interpreting platform support.
 
@@ -506,4 +574,7 @@ need a reviewed integration. Historical analysis still uses retention APIs.
 
 Before recipe execution after changing Python environments or packages, run the selected interpreter with `-B tools/check_environment.py --json`. Runtime version/source failures and duplicate metadata are rejected before Session creation, with structured environment evidence in operational batch failures. Use [runtime diagnosis and repair](../../docs/runtime-troubleshooting.md) for reason codes, supported 7.0.1 identity, availability checks, exact-interpreter repair commands and failure limits. This is a shared execution prerequisite, not a recipe-level package installer or new service. Preserve authorization and use no automatic environment repair or host retries.
 
-*Last modified: 2026-10-31 13:04:53*
+
+For an authorized transcript producer, use the separate [console records service](../../docs/console-records.md) and [skill](../opsfeast-console-records/SKILL.md): 0.2.0 HTTP/CLI block append, bounded previews/ranges/SSE and human forms with agent wait. Browser access uses normal login. No source execution, stop control or recipe lifecycle/retention integration is supplied; do not substitute it for recipe results or services.
+
+*Last modified: 2026-11-02 23:43:02*

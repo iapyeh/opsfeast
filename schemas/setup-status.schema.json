@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsfeast.example/schema/setup-status-0.1.0",
+  "title": "First-use public status 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "admin_configured": {
+      "type": "boolean"
+    },
+    "authenticated": {
+      "type": "boolean"
+    },
+    "edit_unlocked": {
+      "type": "boolean"
+    },
+    "local_unlock_available": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "admin_configured",
+    "authenticated",
+    "edit_unlocked",
+    "local_unlock_available"
+  ],
+  "$comment": "Last modified: 2026-11-01 23:27:07"
+}

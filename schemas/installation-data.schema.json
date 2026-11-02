@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Installation data root marker 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "kind": {"const": "opsfeast-installation-data"}
+  },
+  "$comment": "Last modified: 2026-11-01 12:47:51"
+}

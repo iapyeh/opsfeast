@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Installation storage binding 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "data_root"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "data_root": {"type": "string", "pattern": "^/", "description": "Absolute POSIX path to an existing, independently preserved installation data root."}
+  },
+  "$comment": "Last modified: 2026-11-01 12:47:51"
+}

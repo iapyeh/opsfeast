@@ -1,5 +1,18 @@
 # OpsFeast
 
+For incremental human/agent operations, use the shipped [Console worker 0.1.0](docs/console-agent.md): it creates the river before connecting and automatically forwards Console output. No temporary bridge is needed.
+
+
+For the local Web preview and saved site identity/images, see [Web](web/README.md)
+and [persistent installation data](docs/installation-storage.md). Keep that data
+root across upgrades; explicitly attach replacement checkouts. Profile data keeps
+its existing management roots and must also be preserved.
+The isolated [interactive Console 0.1.0](docs/interactive-console.md) now provides
+opt-in SSHScript execution with exact plan approval, durable SSE events and an
+[agent skill](skills/opsfeast-interactive/SKILL.md). No target is enabled by default;
+[Real host configuration](docs/web-hosts.md) is independently available through Web/CLI/API and never starts a Console.
+The [first-use Web guide](docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists.
+
 Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and Mermaid diagrams](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
 
 For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). Recipe 0.4.0 supports immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
@@ -329,4 +342,4 @@ settings. See [the reference-IP guide](docs/host-reference-ips.md).
 
 For SSHScript version mismatches or duplicate installation metadata, use [runtime diagnosis and repair](docs/runtime-troubleshooting.md). Run the failing interpreter with `-B tools/check_environment.py --json` before retrying host operations.
 
-*Last modified: 2026-10-31 13:04:53*
+*Last modified: 2026-11-02 17:05:42*

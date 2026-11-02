@@ -1,5 +1,26 @@
 # Documentation
 
+For chat-owned live SSHScript execution and streamed Console output, use [Console worker 0.1.0](console-agent.md).
+
+
+- [Web host configuration](web-hosts.md): real host creation, connection/groups, revision checks and confirmed deletion.
+
+## Interactive Console
+
+For the real opt-in Web Console, server-push serialization, confirmation controls, recovery and agent CLI, read [interactive Console protocol 0.1.0](interactive-console.md). Synthetic host-page drafts remain separate.
+
+[Local administrator and profiles](web-administrator.md) covers owner-entered
+credentials, login/session limits and Core-backed profile configuration.
+
+
+Use [shared settings](web-settings.md) for the Web area, current site CLI/API,
+bundled defaults and planned hosts/recipes/defaults/retention configuration.
+
+
+For Web personalization and upgrade-preserved installation identity/site assets,
+read [presentation](site-presentation.md), [persistent storage](installation-storage.md)
+and the [Web preview](../web/README.md). Profile management roots are separate.
+
 Use [recipe classification and location](recipe-taxonomy.md) for the current bundled paths, variable-depth domain/action convention, user profile/shared-source placement and relocation effects on configuration, jobs, consumers and historical evidence.
 
 For agents operating OpsFeast or developing Python integrations, start with [the existing tool/module capability map](agent-capabilities.md) and [skill index](../skills/README.md). Reuse suitable capabilities before creating new implementations.
@@ -66,4 +87,7 @@ states, reference-only use and current platform limits.
 
 For interpreter/package failures before a host connection, start with [SSHScript runtime diagnosis and repair](runtime-troubleshooting.md): version mismatch, duplicate metadata, source checks, CLI/TUI evidence and selected-environment repair.
 
-*Last modified: 2026-10-31 13:04:53*
+
+For the independent agent-written Console transcript reader, see [console records](console-records.md): 0.2.0 block append, bounded snapshot/SSE, paged content, human form replies and agent wait; login only, no remote execution adapter.
+
+*Last modified: 2026-11-02 17:03:25*

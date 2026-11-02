@@ -1,5 +1,42 @@
 # Ops command-line reference
 
+For configuration-only host creation, selected-field updates and confirmed deletion,
+use the shared [host-settings CLI 0.1.0](web-hosts.md#python-and-cli):
+`python -B -m opsfeast.host_settings --profile NAME list|create|update|delete`.
+Create/update take JSON changes on stdin and require `--expected-revision`; delete
+also requires `--confirm-host HOST`. This never connects or changes retained data.
+
+
+## Interactive Console client
+
+For incremental chat-owned execution use `python -B -u -m opsfeast.console_agent --token-file FILE --profile NAME --host HOST`. It returns a reader URL before connecting, then accepts JSON-lines connect/run/sudo/close controls; `--local` is an explicit local-test target. Read [the complete worker protocol](console-agent.md) for flags, interruption, states, output retrieval, authorization and cleanup limits. The separate `console_client` supplies records, forms and immediate response wait/read. No temporary bridge is required.
+
+`python -B -m opsfeast.interactive_client --help` documents the separate loopback JSON/SSE adapter. Read [its exact payload, token-role and retry contract](interactive-console.md#http-and-agent-cli) before use. This command talks to the running Web server and does not open SSH locally. It is separate from `tools/opsfeast.py` operational recipe commands.
+
+The optional Web launcher uses separate Python-module entrypoints:
+`python -B -m opsfeast.storage init|attach|show` selects persistent installation
+identity/site storage; `python -B -m opsfeast.web [--data-root PATH] [--port 8740]`
+starts the foreground loopback server. See [storage](installation-storage.md)
+for exact setup, selection, preservation and failure rules, and
+[Web](../web/README.md) for dependencies/routes. These are not
+`opsfeast.py` subcommands and do not connect or execute recipes.
+
+
+## Settings discovery and installation presentation
+
+`python -B -m opsfeast.settings catalog` lists available/planned settings without
+reading private data. `python -B -m opsfeast.settings site show` reads settings;
+`site update --expected-revision REVISION` updates selected fields/images. All
+emit JSON; read [exact flags and examples](web-settings.md#current-site-cli-and-shared-module).
+These module entrypoints do not add operational writes or new opsfeast.py commands.
+
+For administrator status and private password entry, use
+`python -B -m opsfeast.settings admin show` or `admin set --username NAME
+--expected-revision REV`. Terminal prompting or explicit `--password-stdin` keeps
+passwords off argv; nonterminal calls without that flag fail immediately. Existing
+`opsfeast.py profiles/init/attach/use` remain the CLI profile controls. See
+[account/profile contracts](web-administrator.md) for scope, permissions and failure states.
+
 ## Revisit an observation batch
 
 An Observation ID identifies one explicit execution batch over selected hosts; a Result ID identifies one host's saved raw result. Use the same profile/root as the original execution:
@@ -944,4 +981,16 @@ python -B tools/opsfeast.py hosts list --profile main --json
 python -B tools/opsfeast.py hosts show node --profile main --json
 ```
 
-*Last modified: 2026-10-31 13:04:53*
+
+## Console block recording and response client
+
+`python -B -m opsfeast.console_client --token-file FILE` exposes create, block,
+append, finish, show, content, stream, responses and wait. It is independent of
+opsfeast.py execution and performs only loopback HTTP requests. Read the complete
+[Console blocks 0.2.0 contract](console-records.md#cli) for exact stdin fields,
+UUID/idempotency rules, byte offsets, limits, return cursors and exit codes.
+`wait --session SID --after N --timeout 30` returns durable human responses or an
+explicit timed_out result; it does not wake a model or authorize execution.
+Browser users use normal administrator login, without another reader unlock.
+
+*Last modified: 2026-11-02 17:03:25*
