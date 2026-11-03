@@ -13,7 +13,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url',default='http://127.0.0.1:8740')
     parser.add_argument('--token-file',type=Path,required=True)
-    parser.add_argument('operation',choices=['create','block','append','finish','show','content','stream','responses','wait'])
+    parser.add_argument('operation',choices=['create','block','append','finish','activity','show','content','stream','responses','wait'])
     parser.add_argument('--session');parser.add_argument('--block')
     parser.add_argument('--after',type=int,default=0)
     parser.add_argument('--offset',type=int,default=0)
@@ -31,6 +31,7 @@ def main():
     base=args.url.rstrip('/')+'/api/v1/console-sessions'
     path='' if args.operation=='create' else '/'+args.session
     if args.operation=='block':path+='/blocks'
+    if args.operation=='activity':path+='/activity'
     if args.operation in ('append','finish','content'):path+='/blocks/'+args.block+'/'+args.operation
     if args.operation=='content':path+=f'?offset={args.offset}&limit={args.limit}'
     if args.operation=='stream':path+='/stream?after='+str(args.after)
@@ -53,7 +54,7 @@ def main():
                 if remaining==0:break
             print(json.dumps({'seq':cursor,'responses':[],'timed_out':True}));return 0
         body=None
-        if args.operation in ('create','block','append','finish'):
+        if args.operation in ('create','block','append','finish','activity'):
             raw=sys.stdin.read(65537)
             if len(raw.encode())>65536:parser.error('JSON exceeds 64 KiB')
             body=json.loads(raw)

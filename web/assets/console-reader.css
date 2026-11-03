@@ -22,3 +22,9 @@
 .processing::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.05em;animation:console-processing 1s linear infinite}
 @keyframes console-processing{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.processing::before{animation:none}}
+
+/* Agent activity is distinct from a running command and expires without renewal. */
+#transcript>.thinking{color:#d4b9ed}
+.thinking::before{content:"● ● ●";display:inline-block;font-size:.55em;letter-spacing:.12em;margin-right:.65em;vertical-align:.15em;animation:console-thinking 1.4s ease-in-out infinite}
+@keyframes console-thinking{0%,100%{opacity:.35}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.thinking::before{animation:none;opacity:1}}

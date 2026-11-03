@@ -13,7 +13,7 @@ import os
 from collections import deque
 import sys
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 from urllib.request import Request, urlopen
 import uuid
 
@@ -129,6 +129,11 @@ class Publisher:
     def status(self, text):
         self.block('status', text, complete=True)
 
+    def activity(self, state, lease_seconds=120):
+        return self.transport.post('/' + self.sid + '/activity', {
+            'event_id': str(uuid.uuid4()), 'state': state,
+            'lease_seconds': lease_seconds if state == 'thinking' else 0})['activity']
+
 
 class Output:
     """Forward Console writes, including synchronous sudo output, without line buffering."""
@@ -188,13 +193,17 @@ class Worker:
         self.seen.add(rid)
         op = body.get('op')
         allowed = {'connect': set(), 'run': {'command', 'timeout'},
-                   'sudo': {'timeout'}, 'close': set()}
+                   'sudo': {'timeout'}, 'close': set(), 'activity': {'state'}}
         if not isinstance(op, str) or op not in allowed or set(body) - {'op', 'request_id'} - allowed[op]:
             raise ControlError('unsupported_operation_or_fields')
         if self.closed:
             raise ControlError('worker_closed')
         if op == 'close':
             return {'state': 'closed', 'cleanup': self.close()}
+        if op == 'activity':
+            state=body.get('state')
+            if state not in ('thinking','idle'):raise ControlError('invalid_activity')
+            return {'state':'activity_reported','activity':self.publisher.activity(state)}
         if op == 'connect':
             if self.console:
                 raise ControlError('already_connected')
@@ -212,6 +221,7 @@ class Worker:
             identity = self._identity()
             self.publisher.status('登入成功：' + identity['host'] + '（' + identity['effective_user']
                                   + '）；SSHScript Console 已就緒。以下提示符來自 SSHScript Console。')
+            self.publisher.activity('thinking')
             return {'state': 'ready', 'identity': identity}
         if self.console is None:
             raise ControlError('connect_required')
@@ -267,6 +277,8 @@ class Worker:
             if recoverable:
                 self.publisher.status('指令失敗（exitcode=' + str(update.result.exitcode)
                                       + '）；連線保留，等待下一個指示，不自動重試。')
+            else:
+                self.publisher.activity('thinking')
         return result
 
     def close(self):
@@ -290,6 +302,7 @@ class Worker:
             label = 'Console 清理結果不明；cleanup=' if reuse == 'unknown' else 'Console 已關閉；cleanup='
             self.publisher.status(label + reuse
                                   + '。通道關閉不保證所有遠端子程序均已終止。')
+            self.publisher.activity('idle')
         return reuse
 
 
@@ -350,7 +363,8 @@ def main(argv=None):
         controls = Controls(sys.stdin.fileno())
         # Configuration is read-only; no SSH connection occurs before connect.
         emit({'type': 'created', 'protocol_version': VERSION, 'session_id': publisher.sid,
-              'reader_url': transport.origin + '/console/' + publisher.sid,
+              'reader_url': transport.origin + '/console/' + publisher.sid + ('' if profile is None else
+                  '?' + urlencode({'profile': profile.name, 'host_id': args.host})),
               'profile': None if profile is None else profile.name,
               'hosts_file': None if profile is None else str(profile.root / 'hosts.yaml'),
               'state': 'awaiting_connect'})

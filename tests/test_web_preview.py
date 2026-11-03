@@ -376,6 +376,15 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         cookie=login[1][b'set-cookie'].split(b';')[0]
         self.assertEqual((await self.request('/console/'+sid,headers=[(b'cookie',cookie)],app=app))[0],200)
         self.assertEqual((await self.request('/console/'+sid+'/blocks/'+bid,headers=[(b'cookie',cookie)],app=app))[0],200)
+        for suffix in ('/history','/history/blocks/'+bid):
+            path='/console/'+sid+suffix+'?profile=lab&host_id=web-01'
+            status,headers,_=await self.request(path,app=app)
+            self.assertEqual(status,303)
+            from urllib.parse import parse_qs, urlsplit
+            self.assertEqual(parse_qs(urlsplit(headers[b'location'].decode()).query)['next'],[path])
+            before=app.state.console_records.snapshot(sid)
+            self.assertEqual((await self.request(path,headers=[(b'cookie',cookie)],app=app))[0],200)
+            self.assertEqual(app.state.console_records.snapshot(sid),before)
         schema={'fields':[],'choices':[{'id':'yes','label':'Yes'}],'expires_at':None}
         self.assertEqual((await call('/'+sid+'/blocks',{**block,'event_id':str(uuid.uuid4()),'block_id':fid,'kind':'form','form':schema}))[0],200)
         reply={'event_id':str(uuid.uuid4()),'revision':1,'choice':'yes','values':{}}
@@ -388,6 +397,64 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(replies['responses'][0]['response']['actor'],'synthetic')
         self.assertEqual((await call(path,{**reply,'event_id':str(uuid.uuid4())},cookie=cookie))[0],409)
         self.assertEqual((await call('/'+sid+'/stream?after=99',token='r'))[0],409)
+
+    async def test_host_console_history_requires_admin_and_exact_registered_scope(self):
+        import uuid
+        from opsfeast.web.app import create_app
+        from opsfeast import admin
+        for name in ('lab','other'):
+            (self.root/name).mkdir()
+            (self.root/name/'hosts.yaml').write_text('hosts:\n  web-01:\n    connection:\n      local: true\n  empty:\n    connection:\n      local: true\n')
+        (self.root/'.opsfeast.yaml').write_text(json.dumps({'schema_version':2,'default_profile':'lab',
+            'profiles':{name:{'root':name} for name in ('lab','other')}}))
+        app=create_app(self.root,edit_token='site',console_options={'writer_token':'w','reader_token':'r'})
+        records=app.state.console_records
+        ids=[]
+        for scope in ('lab / web-01','other / web-01','lab / web-010'):
+            sid=str(uuid.uuid4());ids.append(sid)
+            records.create({'session_id':sid,'title':'saved','host_id':scope,'work_id':None})
+        records.add_block(ids[0],{'event_id':str(uuid.uuid4()),'block_id':str(uuid.uuid4()),'kind':'stdout','title':'output','text':'not in history','form':None})
+        path='/api/v1/console-sessions?profile=lab&host_id=web-01&limit=1'
+        for token in (None,'site','w','r'):
+            headers=[] if token is None else [(b'authorization',('Bearer '+token).encode())]
+            self.assertEqual((await self.request(path,headers=headers,app=app))[0],401)
+        admin.configure(self.root,username='synthetic',password='fixture-only-123',expected_revision=0)
+        login=await self.request('/api/v1/auth/login','POST',body=json.dumps({'username':'synthetic','password':'fixture-only-123'}).encode(),headers=[(b'content-type',b'application/json')],app=app)
+        cookie=[(b'cookie',login[1][b'set-cookie'].split(b';')[0])]
+        status,_,raw=await self.request(path,headers=cookie,app=app)
+        self.assertEqual(status,200);data=json.loads(raw)
+        self.assertEqual((data['profile'],data['host_id']),('lab','web-01'))
+        self.assertEqual([s['session_id'] for s in data['sessions']],[ids[0]])
+        self.assertNotIn(b'not in history',raw)
+        self.assertEqual((await self.request(path,headers=cookie+[(b'origin',b'http://elsewhere.invalid')],app=app))[0],403)
+        for query in ('profile=missing&host_id=web-01','profile=lab&host_id=missing','profile=&host_id=web-01','profile=lab&host_id=web-01&limit=0','profile=lab&host_id=web-01&limit=101'):
+            self.assertEqual((await self.request('/api/v1/console-sessions?'+query,headers=cookie,app=app))[0],422)
+        self.assertEqual((await self.request(path+'&before='+ids[1],headers=cookie,app=app))[0],409)
+        empty=json.loads((await self.request('/api/v1/console-sessions?profile=lab&host_id=empty',headers=cookie,app=app))[2])
+        self.assertEqual(empty['sessions'],[])
+        self.assertEqual(records.snapshot(ids[0])['seq'],1)
+
+    async def test_console_activity_writer_authentication_restore_and_input_clear(self):
+        import uuid
+        from opsfeast.web.app import create_app
+        app=create_app(self.root,console_options={'writer_token':'w','reader_token':'r'})
+        sid=str(uuid.uuid4());records=app.state.console_records
+        records.create({'session_id':sid,'title':'fixture','host_id':'test','work_id':None})
+        path='/api/v1/console-sessions/'+sid
+        body={'event_id':str(uuid.uuid4()),'state':'thinking','lease_seconds':120}
+        async def report(token='w',extra=()):
+            return await self.request(path+'/activity','POST',body=json.dumps(body).encode(),
+                headers=[(b'authorization',('Bearer '+token).encode()),(b'content-type',b'application/json'),*extra],app=app)
+        self.assertEqual((await report('r'))[0],401)
+        self.assertEqual((await report(extra=[(b'origin',b'http://elsewhere.invalid')]))[0],403)
+        self.assertEqual((await report())[0],200)
+        snapshot=json.loads((await self.request(path,headers=[(b'authorization',b'Bearer r')],app=app))[2])
+        self.assertEqual(snapshot['session']['activity']['state'],'thinking');self.assertEqual(snapshot['blocks'],[])
+        self.assertEqual(records.events(sid,0)[0]['type'],'activity.updated')
+        body['lease_seconds']=301;body['event_id']=str(uuid.uuid4())
+        self.assertEqual((await report())[0],409)
+        records.add_block(sid,{'event_id':str(uuid.uuid4()),'block_id':str(uuid.uuid4()),'kind':'command','title':'input','text':'pwd','form':None})
+        self.assertEqual(records.snapshot(sid)['session']['activity']['state'],'idle')
 
     async def test_console_sse_covers_snapshot_to_stream_race_and_new_delta(self):
         import uuid

@@ -512,16 +512,36 @@ Omit `--profile` to use `.opsfeast.yaml` `default_profile`; use an explicit name
 
 ## Console blocks and human replies 0.2.0
 
+Below the latest visible block, the river distinguishes source-reported agent thinking from running work.
+Reuse `Records.activity(sid, {event_id,state,lease_seconds})`, writer-authorized
+`POST /api/v1/console-sessions/{sid}/activity`, or `console_client activity`.
+See [activity contracts](console-records.md#agent-thinking-and-chat-handoff) for
+120-second worker handoffs, 1–300-second explicit leases, idle-before-chat rules,
+activity-only SSE events, expiry and absence of a chat/model heartbeat. No extra
+SSH operation, output block or remote polling is needed.
+
 [Console blocks](console-records.md) provides HTTP/CLI block creation, idempotent
 byte-offset append, bounded snapshot/SSE previews, paged content readers and
 administrator-cookie form replies. `console_client wait/responses` delivers saved
 human responses to a waiting agent client without model wakeup. Browser users need
 login only; no extra reader unlock. Use [the agent skill](../skills/opsfeast-console-records/SKILL.md).
+The host's Console 紀錄 tab discovers both human-directed and agent-led records
+through administrator-only `GET /api/v1/console-sessions?profile=lab&host_id=web-01`.
+Reuse checkout-level `Records.list_sessions('lab / web-01', limit=25, before=None)`
+for exact-target local summaries; see [history contracts and availability](console-records.md#discover-saved-console-history-by-host).
+No transcript body, live-connection assertion, host connection or command replay is
+part of discovery. Existing 0.2.0 worker sessions require no data rewrite.
 It does not execute SSH, stop jobs, render arbitrary HTML/media or integrate recipe
 logging/retention. Old 0.1 data stays untouched but is not served by the new API.
+
+The live reader `/console/{sid}` and read-only `/console/{sid}/history` are
+session-specific views. History links open separately, disable SSE/form submission
+and bound expansion to the loaded snapshot's byte sizes. Breadcrumbs/titles expose
+target/task/session; optional exact-match Profile/host query context supplies return
+navigation without selecting execution. Reuse [reader-mode contracts](console-records.md#separate-live-interaction-from-historical-reading), not a global current-tab/current-host selector.
 
 ## Host knowledge notes
 
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 07:24:53*

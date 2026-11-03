@@ -235,6 +235,26 @@ and [file responses](https://fastapi.tiangolo.com/advanced/custom-response/#file
 
 ## Console block river and human replies
 
+Live `/console/{sid}` and read-only `/console/{sid}/history` pages have explicit
+session/target/task breadcrumbs and browser titles. History opens in a separate
+tab, makes no SSE subscription or form submission, and bounds expanded content to
+the loaded byte sizes. Block pages preserve the view mode. Opening a page never
+creates or takes over a shell. See [reader-mode contracts](../docs/console-records.md#separate-live-interaction-from-historical-reading).
+
+
+
+Below the latest visible block, the river distinguishes execution progress from **Agent 思考中…**. Successful
+worker results report thinking; the next input or an explicit idle report before
+chat output clears it. Thinking expires without renewal and respects reduced
+motion. See [the activity handoff](../docs/console-records.md#agent-thinking-and-chat-handoff)
+for integration limits; the page cannot observe another application's chat.
+
+The real host detail's **Console 紀錄** tab now lists saved human-directed and
+agent-led sessions for the selected Profile/host, with timestamps, recorded
+block states, manual refresh and older-page loading. Each row opens the existing
+river; browsing never connects or retries work. See [history discovery](../docs/console-records.md#discover-saved-console-history-by-host)
+for exact matching, administrator-only enumeration and limitations.
+
 The separate [Console blocks 0.2.0 service](../docs/console-records.md) supplies
 `/console/{sid}` and `/console/{sid}/blocks/{bid}` with login-only access, streamed
 bounded previews, UTF-8 range reads and authenticated typed form responses.
@@ -244,4 +264,4 @@ stop channel, model wakeup or arbitrary HTML/media renderer is provided. The old
 `/interactive` also loads directly with administrator login; its execution gates
 remain separate. Read [the agent skill](../skills/opsfeast-console-records/SKILL.md).
 
-*Last modified: 2026-11-02 23:43:02*
+*Last modified: 2026-11-04 07:24:53*

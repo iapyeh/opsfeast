@@ -2,9 +2,11 @@ export function consume(snapshot,event){
   if(event.session_id!==snapshot.session.session_id)throw Error('wrong_session');
   if(event.seq<=snapshot.seq)return snapshot;
   if(event.seq!==snapshot.seq+1)throw Error('event_gap');
+  const session=Object.hasOwn(event,'activity')?{...snapshot.session,activity:event.activity}:snapshot.session;
+  if(event.type==='activity.updated')return {...snapshot,session,seq:event.seq};
   const blocks=snapshot.blocks.slice(),index=blocks.findIndex(b=>b.id===event.block.id);
   if(index<0)blocks.push(event.block);else blocks[index]=event.block;
-  return {...snapshot,seq:event.seq,blocks};
+  return {...snapshot,session,seq:event.seq,blocks};
 }
 export function displayText(raw){return raw.replace(/\r\n/g,'\n').split('\n').map(line=>line.split('\r').at(-1)).join('\n').replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');}
 export function preview(block,compact=false){
@@ -18,6 +20,13 @@ export function visibleInRiver(block){return block.kind!=='identity';}
 export function processingState(blocks){
   const busy=blocks.some(b=>['command','analysis','status'].includes(b.kind)&&b.status==='streaming');
   return {busy,label:busy?'處理中…':'目前沒有進行中的操作回報'};
+}
+export function activityState(snapshot,now=Date.now()){
+  const work=processingState(snapshot.blocks),activity=snapshot.session.activity;
+  if(work.busy||activity?.state!=='thinking')return {...work,thinking:false};
+  const expires=Date.parse(activity.expires_at);
+  if(!Number.isFinite(expires)||expires<=now)return {busy:false,thinking:false,label:'Agent 狀態未更新'};
+  return {busy:false,thinking:true,label:'Agent 思考中…'};
 }
 export function identityLabel(block){
   if(!block)return '尚無身分回報';

@@ -13,6 +13,39 @@ For chat-owned SSH Console execution, first use the shipped [worker 0.1.0](../..
 This is a checkout-level record/response service, not a command executor, recipe
 retention/logger, SSH adapter, stop controller or model wakeup mechanism.
 
+For silent analysis after command completion, use the separate [agent activity
+contract](../../docs/console-records.md#agent-thinking-and-chat-handoff). The worker
+automatically reports thinking after successful results; new input clears it.
+Before sending any chat commentary/final reply or waiting for the human, send
+worker `activity` with `state: "idle"` and a fresh request ID. Resume thinking
+explicitly only when continuing analysis. If no worker remains, use
+`console_client activity --session SID` or `Records.activity(sid, body)` with
+`{event_id,state,lease_seconds}`; idle requires 0, thinking accepts 1–300 seconds.
+HTTP uses writer-authorized `POST /api/v1/console-sessions/{sid}/activity`.
+This creates no output block, SSH connection or model wakeup. The current reader
+handles activity-only SSE events without a `block`; do not assume every event is
+a block update. Explicit reports and expiry are required because the service
+cannot detect chat output or infer whether an agent is actually thinking.
+
+For concurrent readers, preserve [the live/history distinction](../../docs/console-records.md#separate-live-interaction-from-historical-reading).
+Use `/console/{sid}` for the worker's live interaction and
+`/console/{sid}/history` for read-only evidence. Historical pages neither stream
+nor submit forms; block links preserve that mode. Host-history links open separately.
+Bind a worker to its exact session UUID; never replace another session's tab or
+interpret a manually opened page as a new connection or operation authorization.
+
+For saved history, start with [host history discovery](../../docs/console-records.md#discover-saved-console-history-by-host).
+The host's Console 紀錄 tab lists human-directed and agent-led worker sessions
+using their exact `PROFILE / HOST` target and opens the existing reader. It needs
+administrator login, with no execution or reconnect. The discovery HTTP route is
+`GET /api/v1/console-sessions?profile=lab&host_id=web-01&limit=25`; Console tokens
+cannot enumerate it. Local agents can use the documented checkout-level
+`Records.list_sessions('lab / web-01', limit=25, before=None)` against the resolved
+installation record store, without borrowing administrator cookies or writing a
+parallel SQL/index reader. Follow `next_cursor` for older records; counts and
+unfinished blocks do not certify liveness or outcomes. Unscoped producers remain
+accessible by reader URL; do not silently relabel or migrate their evidence.
+
 1. Establish target, scope and source execution authorization separately. Writer
    credentials and a work/session ID do not authorize operations. The separate
    [interactive executor](../opsfeast-interactive/SKILL.md) keeps its own rules.
@@ -55,4 +88,4 @@ create a new session. Chart/media/custom renderer blocks, delete/archive/export 
 full terminal emulation are not supplied. All access is installation-wide, not a
 per-host permission system. See contract for limits, errors and test evidence.
 
-*Last modified: 2026-11-03 15:46:22*
+*Last modified: 2026-11-04 07:24:53*

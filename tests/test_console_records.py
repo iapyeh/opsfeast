@@ -17,6 +17,45 @@ class RecordsTests(unittest.TestCase):
         self.body={'session_id':self.sid,'title':'synthetic','host_id':'test','work_id':None};self.records.create(self.body)
     def add(self,text='',kind='stdout',schema=None):
         body=block(text,kind,schema);self.records.add_block(self.sid,body);return body['block_id']
+    def test_history_exact_scope_stable_pagination_and_bounded_summaries(self):
+        ids=[str(uuid.UUID(int=i)) for i in range(1,5)]
+        with patch('opsfeast.console_records.now',return_value='2000-01-01T00:00:00.000+00:00'):
+            for sid in ids:
+                self.records.create({'session_id':sid,'title':'saved','host_id':'lab / web-01','work_id':None})
+        for scope in ('other / web-01','lab / web-010','lab / web-01 / suffix','web-01'):
+            self.records.create({'session_id':uid(),'title':'not this host','host_id':scope,'work_id':None})
+        raw=block('private output '*1000)
+        with patch('opsfeast.console_records.now',return_value='2001-01-01T00:00:00.000+00:00'):
+            self.records.add_block(ids[-1],raw)
+        first=self.records.list_sessions('lab / web-01',limit=2)
+        self.assertEqual([s['session_id'] for s in first['sessions']],list(reversed(ids[2:])))
+        self.assertEqual(first['next_cursor'],ids[2])
+        item=first['sessions'][0]
+        self.assertEqual(item['block_states'],{'streaming':1})
+        self.assertEqual(item['block_count'],1)
+        self.assertGreater(item['updated_at'],item['created_at'])
+        self.assertNotIn('private output',json.dumps(first))
+        self.assertEqual(item['reader_url'],'/console/'+ids[-1])
+        with patch('opsfeast.console_records.now',return_value='2002-01-01T00:00:00.000+00:00'):
+            self.records.create({'session_id':uid(),'title':'new arrival','host_id':'lab / web-01','work_id':None})
+        second=self.records.list_sessions('lab / web-01',limit=2,before=first['next_cursor'])
+        self.assertEqual([s['session_id'] for s in second['sessions']],list(reversed(ids[:2])))
+        self.assertIsNone(second['next_cursor'])
+        self.assertEqual(self.records.snapshot(ids[-1])['seq'],1)
+        self.assertEqual(self.records.list_sessions('absent')['sessions'],[])
+    def test_history_preserves_block_states_empty_records_and_invalid_cursors(self):
+        self.assertEqual(self.records.list_sessions('test')['sessions'][0]['block_states'],{})
+        for status in ('completed','failed','interrupted','cancelled'):
+            bid=self.add('saved');self.records.finish(self.sid,bid,{'event_id':uid(),'status':status})
+        self.add('form','form',form())
+        item=self.records.list_sessions('test')['sessions'][0]
+        self.assertEqual(item['block_count'],5)
+        self.assertEqual(item['block_states'],dict.fromkeys(('completed','failed','interrupted','cancelled','waiting'),1))
+        for limit in (0,101,True,'25'):
+            with self.assertRaisesRegex(RecordError,'invalid_limit'):self.records.list_sessions('test',limit=limit)
+        with self.assertRaisesRegex(RecordError,'invalid_cursor'):self.records.list_sessions('other',before=self.sid)
+        with self.assertRaisesRegex(RecordError,'invalid_id'):self.records.list_sessions('test',before='bad')
+        with self.assertRaisesRegex(RecordError,'unknown_session'):self.records.list_sessions('test',before=uid())
     def test_empty_stream_can_be_read_and_then_appended(self):
         bid=self.add()
         summary=self.records.snapshot(self.sid)['blocks'][0]
@@ -29,6 +68,34 @@ class RecordsTests(unittest.TestCase):
         self.assertEqual(self.records.content(self.sid,bid,9)['text'],'')
         with self.assertRaisesRegex(RecordError,'invalid_text'):
             self.records.append(self.sid,bid,{'event_id':uid(),'offset':9,'text':''})
+    def test_agent_activity_lease_restore_idempotency_and_command_handoff(self):
+        body={'event_id':uid(),'state':'thinking','lease_seconds':120}
+        with patch('opsfeast.console_records.now',return_value='2026-01-01T00:00:00.000+00:00'):
+            result=self.records.activity(self.sid,body)
+        self.assertEqual(result['activity']['expires_at'],'2026-01-01T00:02:00.000+00:00')
+        self.assertEqual(self.records.activity(self.sid,body),result)
+        snapshot=Records(self.tmp.name).snapshot(self.sid)
+        self.assertEqual(snapshot['session']['activity'],result['activity'])
+        self.assertEqual(snapshot['blocks'],[])
+        event=self.records.events(self.sid,0)[0]
+        self.assertEqual(event['type'],'activity.updated');self.assertNotIn('block',event)
+        # Incoming stdout cannot imply that the agent stopped thinking.
+        self.add('tail output');self.assertEqual(self.records.snapshot(self.sid)['session']['activity']['state'],'thinking')
+        # Actual input/communication ends the lease in that same durable event.
+        self.add('next command','command')
+        self.assertEqual(self.records.snapshot(self.sid)['session']['activity']['state'],'idle')
+        self.assertEqual(self.records.events(self.sid,2)[0]['activity']['state'],'idle')
+        self.records.activity(self.sid,{'event_id':uid(),'state':'thinking','lease_seconds':1})
+        idle=self.records.activity(self.sid,{'event_id':uid(),'state':'idle','lease_seconds':0})
+        self.assertIsNone(idle['activity']['expires_at'])
+    def test_agent_activity_validation_and_event_conflicts_do_not_change_state(self):
+        before=self.records.snapshot(self.sid)
+        for state,seconds in [('unknown',120),('idle',1),('thinking',0),('thinking',301),('thinking',True),('thinking','120')]:
+            with self.subTest(state=state,seconds=seconds),self.assertRaisesRegex(RecordError,'invalid_activity'):
+                self.records.activity(self.sid,{'event_id':uid(),'state':state,'lease_seconds':seconds})
+        self.assertEqual(self.records.snapshot(self.sid),before)
+        body={'event_id':uid(),'state':'thinking','lease_seconds':60};self.records.activity(self.sid,body)
+        with self.assertRaisesRegex(RecordError,'event_conflict'):self.records.activity(self.sid,{**body,'lease_seconds':120})
     def test_bounded_snapshot_range_utf8_and_restore(self):
         bid=self.add('前言\n');raw=('繁體中文一行\n'*1000).encode();offset=len('前言\n'.encode())
         self.records.append(self.sid,bid,{'event_id':uid(),'offset':offset,'text':raw.decode()})

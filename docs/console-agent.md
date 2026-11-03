@@ -8,6 +8,11 @@ connection. This is separate from the older exact-plan `/interactive` executor.
 
 For the human/agent operating principles agreed during interactive trials, read [the chat-shell skill procedure](../skills/opsfeast-interactive/references/chat-shell.md). Each run/sudo command block contains the actual current Console prompt and input on one line. The reader shows an accessible processing indicator while a command, analysis or status block is streaming. Routine login does not require a screenshot or browser QA before reporting success.
 
+The returned `reader_url` identifies the worker session and includes Profile/host
+navigation context for remote targets. Keep the worker handle and session UUID
+paired; never infer the execution target from the human's selected browser tab.
+New workers get separate tabs. See [live and historical readers](console-records.md#separate-live-interaction-from-historical-reading).
+
 ## Availability and authorization
 
 Run from the trusted OpsFeast checkout with its selected Python and SSHScript
@@ -67,7 +72,7 @@ Console environment metadata after the attempt. `connect` uses Core's host/jump
 enabled policy, connection plan, target fingerprint check and cleanup ownership.
 It does not run host-init, inspect cron, retry or switch profiles automatically.
 
-Supported normal operations are exactly connect, run, sudo and close. Every
+Supported normal operations are connect, run, sudo, activity and close. Every
 request requires a unique nonempty `request_id` (max 100 characters). Duplicate
 IDs are rejected, never executed again; IDs are tracked only for this worker's
 lifetime. Unknown fields/operations and invalid single-line command/deadline input
@@ -126,7 +131,28 @@ executing, then the worker remains available unless it has closed.
 
 ## Processing display
 
-The river toolbar and active command/analysis/status blocks show “處理中…” while those blocks are streaming. Finish (including failed/interrupted/cancelled) clears the indicator; SSE refresh and history recovery derive it from stored block states. If connection opening or command submission raises, cleanup finishes the outstanding command block as interrupted so the processing display ends. This does not establish remote process termination or successful cleanup. Animation respects reduced-motion preferences. This is source-reported unfinished work, not a worker/model heartbeat or proof of a live connection. The separate connection notice reports SSE interruptions. Agents doing analysis between commands can keep an analysis/status block streaming and finish it when that work ends; an ended model turn does not keep doing work.
+The river footer below the latest block and active command/analysis/status blocks show “處理中…” while those blocks are streaming. Finish (including failed/interrupted/cancelled) clears that work indicator. Successful connect/run/sudo then automatically publishes a separate 120-second **Agent 思考中…** report, rendered with pulsing dots. The next command clears thinking before execution. A normal nonzero result waiting for human direction does not automatically claim thinking; cleanup clears it. If connection opening or command submission raises, cleanup finishes the outstanding command block as interrupted. None of these states establishes remote process termination or successful cleanup.
+
+Before writing commentary or a final chat reply, send on the same worker:
+
+```json
+{"op":"activity","request_id":"before-chat-1","state":"idle"}
+```
+
+When substantive analysis continues after that reply, explicitly report thinking
+again with a fresh request ID and `state: "thinking"`. This operation returns
+`state: "activity_reported"` and `activity` metadata, never starts a command or
+connects, and can also be used before connect. During a running command it is
+rejected under the existing busy-control rule; command submission has already
+cleared thinking. Preserve fresh request IDs and do not treat a report as a
+heartbeat. If the worker has closed, use the record client's activity operation
+against that same session rather than reconnecting solely to update the display.
+
+See [the complete activity contract](console-records.md#agent-thinking-and-chat-handoff)
+for HTTP/CLI fields, explicit renewal, expiry and event shapes. The browser cannot
+sense external chat output; agents must clear before replying or waiting for a
+human. Expiry stops stale animation without network polling. Animation respects
+reduced-motion preferences. SSE status separately reports record-stream outages.
 
 ## Questions and response delivery
 
@@ -156,4 +182,4 @@ shell state, active close, control validation, duplicate refusal and no retry.
 Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-03 17:35:47*
+*Last modified: 2026-11-04 07:27:59*

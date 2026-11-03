@@ -5,6 +5,21 @@ The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) open
 
 ## Interactive Web Console
 
+For the handoff from command execution to agent thinking and chat output, read
+[the interactive procedure](opsfeast-interactive/references/chat-shell.md#show-the-handoff-from-commands-to-thought-and-speech)
+and [activity contract](../docs/console-records.md#agent-thinking-and-chat-handoff).
+The worker reports thinking after successful results; agents must clear it before
+speaking or waiting for humans. It is separate from a command's processing icon.
+
+For simultaneous live work and old records, use [session-specific reader modes](../docs/console-records.md#separate-live-interaction-from-historical-reading).
+The worker's URL is live; host history opens `/console/{sid}/history` separately.
+Bind browser tabs to session UUIDs, never the human's selected tab.
+
+For saved human-directed or agent-led Console history, use the host's
+**Console 紀錄** tab and [record-service skill](opsfeast-console-records/SKILL.md).
+The administrator-only exact Profile/host list opens existing rivers without
+connecting or rerunning work; see [history discovery](../docs/console-records.md#discover-saved-console-history-by-host).
+
 For chat-driven persistent shell interaction, read [the interactive skill](opsfeast-interactive/SKILL.md) and its [chat-shell procedure](opsfeast-interactive/references/chat-shell.md): show the river first, stream real output, acknowledge replies promptly and avoid routine login screenshots. For durable work/event protocol, exact plan approval, streaming/recovery and agent HTTP/CLI use, read [interactive Console](opsfeast-interactive/SKILL.md). This opt-in service is separate from host configuration and general logging.
 
 The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview) now includes synthetic recipe lists, notification/todo/issue layouts,
@@ -163,4 +178,4 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 07:24:53*

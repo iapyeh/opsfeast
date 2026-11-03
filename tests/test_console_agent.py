@@ -1,5 +1,6 @@
 """Reproducible worker tests: no managed-host connection or real credentials."""
 import contextlib
+import concurrent.futures
 import io
 import json
 import os
@@ -11,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 from unittest.mock import Mock, MagicMock, patch
@@ -26,6 +28,8 @@ class StoreTransport:
         parts = path.strip('/').split('/')
         if not path:
             return self.records.create(body)
+        if len(parts)==2 and parts[1]=='activity':
+            return self.records.activity(parts[0],body)
         if len(parts) == 2:
             return self.records.add_block(parts[0], body)
         method = self.records.append if parts[-1] == 'append' else self.records.finish
@@ -108,6 +112,29 @@ class WorkerTests(unittest.TestCase):
         self.records = Records(Path(tmp.name))
         self.publisher = Publisher(StoreTransport(self.records), title='Synthetic', host_id='local')
 
+    def test_concurrent_tasks_on_same_host_have_distinct_sessions_and_isolated_events(self):
+        barrier = threading.Barrier(2)
+        def task(text):
+            barrier.wait(timeout=5)
+            publisher = Publisher(StoreTransport(self.records), title='Same task title', host_id='lab / web-01')
+            publisher.block('stdout', text, complete=True)
+            publisher.activity('thinking' if text=='first' else 'idle')
+            return publisher.sid
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            first, second = list(pool.map(task, ('first','second')))
+        self.assertNotEqual(first, second)
+        history = self.records.list_sessions('lab / web-01')['sessions']
+        self.assertEqual({item['reader_url'] for item in history}, {'/console/'+first,'/console/'+second})
+        for sid,text,state in ((first,'first','thinking'),(second,'second','idle')):
+            snapshot = self.records.snapshot(sid)
+            self.assertEqual([b['head'] for b in snapshot['blocks']], [text])
+            self.assertEqual(snapshot['session']['activity']['state'], state)
+            self.assertTrue(all(event['session_id']==sid for event in self.records.events(sid,0)))
+        from opsfeast.console_records import RecordError
+        with self.assertRaisesRegex(RecordError,'session_conflict'):
+            self.records.create({'session_id':first,'title':'A different task','host_id':'lab / web-01','work_id':None})
+        self.assertEqual(self.records.snapshot(first)['session']['title'],'Same task title')
+
     def test_first_event_contains_text_and_large_unicode_writes_keep_offsets(self):
         text = '即時' * 2100
         bid = self.publisher.block('stdout', text)
@@ -127,6 +154,35 @@ class WorkerTests(unittest.TestCase):
         worker = Worker(self.publisher, None, lambda value: None)
         worker.console = console
         self.assertEqual(worker.request({'op':'run','request_id':'live','command':'sleep 1'})['state'], 'completed')
+
+    def test_thinking_handoff_chat_idle_next_command_and_close(self):
+        console=Mock(prompt='synthetic> ',session_reuse='confirmed')
+        def start(command,**options):
+            self.assertEqual(self.records.snapshot(self.publisher.sid)['session']['activity']['state'],'idle')
+            return SimpleNamespace(state='completed',result=SimpleNamespace(exitcode=0),error_type=None)
+        console.start_command.side_effect=start
+        worker=Worker(self.publisher,None,lambda value:None)
+        worker.console,worker.scope=console,MagicMock()
+        worker.request({'op':'activity','request_id':'thinking','state':'thinking'})
+        worker.request({'op':'run','request_id':'command-1','command':'pwd'})
+        self.assertEqual(self.records.snapshot(self.publisher.sid)['session']['activity']['state'],'thinking')
+        worker.request({'op':'activity','request_id':'chat','state':'idle'})
+        self.assertEqual(self.records.snapshot(self.publisher.sid)['session']['activity']['state'],'idle')
+        worker.request({'op':'run','request_id':'command-2','command':'pwd'})
+        self.assertEqual(self.records.snapshot(self.publisher.sid)['session']['activity']['state'],'thinking')
+        worker.close()
+        self.assertEqual(self.records.snapshot(self.publisher.sid)['session']['activity']['state'],'idle')
+        self.assertEqual(console.start_command.call_count,2)
+        worker.scope.__exit__.assert_called_once()
+
+    def test_activity_control_has_no_execution_effect_and_validates_state(self):
+        opener=Mock();worker=Worker(self.publisher,opener,lambda value:None)
+        result=worker.request({'op':'activity','request_id':'prepare','state':'thinking'})
+        self.assertEqual(result['state'],'activity_reported');opener.assert_not_called()
+        with self.assertRaisesRegex(ControlError,'invalid_activity'):
+            worker.request({'op':'activity','request_id':'bad','state':'live'})
+        worker.request({'op':'close','request_id':'stop'})
+        self.assertEqual(self.records.snapshot(self.publisher.sid)['session']['activity']['state'],'idle')
 
     def test_create_does_not_connect_and_validation_never_executes(self):
         opener = Mock()
@@ -346,11 +402,26 @@ class NativeWorkerTests(unittest.TestCase):
         return ''.join(self.records.content(self.sid, b['id'], 0, 16384)['text']
                        for b in self.records.snapshot(self.sid)['blocks'] if b['kind'] in ('stdout','stderr'))
 
+    def test_record_client_activity_after_worker_closes_never_reconnects(self):
+        self.send({'op':'close','request_id':'close'})
+        self.assertEqual(self.event('result')['cleanup'],'not_connected')
+        self.process.wait(timeout=5)
+        args=[sys.executable,'-B','-m','opsfeast.console_client','--url',
+              'http://127.0.0.1:'+str(self.server.server_port),'--token-file',
+              str(Path(self.tmp.name)/'token'),'activity','--session',self.sid]
+        for state,seconds in (('thinking',120),('idle',0)):
+            result=subprocess.run(args,input=json.dumps({'event_id':str(uuid.uuid4()),'state':state,'lease_seconds':seconds}),
+                                  text=True,capture_output=True,timeout=5)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertEqual(json.loads(result.stdout)['activity']['state'],state)
+        self.assertFalse(any(b['kind']=='command' for b in self.records.snapshot(self.sid)['blocks']))
+
     def test_created_first_then_streams_before_completion_and_retains_shell(self):
         self.assertEqual(self.created['state'], 'awaiting_connect')
         self.assertEqual(self.records.snapshot(self.sid)['blocks'], [])
         self.send({'op':'connect','request_id':'connect'})
         self.assertEqual(self.event('result')['state'], 'ready')
+        self.assertEqual(self.records.snapshot(self.sid)['session']['activity']['state'],'thinking')
         blocks = self.records.snapshot(self.sid)['blocks']
         self.assertEqual(blocks[0]['kind'], 'command')
         self.assertIn('Console(session', blocks[0]['head'])
@@ -368,6 +439,10 @@ class NativeWorkerTests(unittest.TestCase):
         self.assertEqual(result['exitcode'], 0)
         self.assertIn('後段', self.content())
         self.assertIn('ERR', self.content())
+        self.assertEqual(self.records.snapshot(self.sid)['session']['activity']['state'],'thinking')
+        self.send({'op':'activity','request_id':'chat-output','state':'idle'})
+        self.assertEqual(self.event('result')['state'],'activity_reported')
+        self.assertEqual(self.records.snapshot(self.sid)['session']['activity']['state'],'idle')
         self.send({'op':'run','request_id':'env','command':'export OPSFEAST_WORKER_FIXTURE=retained'})
         self.event('result')
         self.send({'op':'run','request_id':'read-env','command':'printf "$OPSFEAST_WORKER_FIXTURE"'})

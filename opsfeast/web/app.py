@@ -127,8 +127,8 @@ def create_app(installation=None, *, data_root=None, edit_token=None, interactiv
             check_origin=check_origin,authenticated=authenticated,json_body=json_body)
 
     from .console_api import install as install_console_records
-    install_console_records(app,root=root,web_root=WEB_ROOT,options=console_options,
-                            check_origin=check_origin,authenticated=authenticated,json_body=json_body)
+    install_console_records(app,root=root,product=product,web_root=WEB_ROOT,options=console_options,
+                            check_origin=check_origin,authenticated=authenticated,require_admin=require_admin,json_body=json_body)
 
     from .host_api import install as install_hosts
     install_hosts(app,product=product,require_admin=require_admin,json_body=json_body)

@@ -3,7 +3,7 @@
 This stores evidence and decisions; it never executes commands or wakes a model.
 """
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
 import json
 import os
@@ -128,6 +128,35 @@ class Records:
             ids=db.execute('SELECT id FROM block WHERE session=? ORDER BY position',(sid,)).fetchall()
             blocks=[self._summary(db,sid,r[0]) for r in ids]
             return {'protocol_version':VERSION,'session':{**json.loads(row['metadata']),'bytes':row['bytes']},'seq':row['seq'],'blocks':blocks}
+    def list_sessions(self,host_id,*,limit=25,before=None):
+        """Bounded, exact-target history; summaries never read block content.
+
+        host_id is the worker's recorded target (``PROFILE / HOST``). Status
+        counts describe stored blocks, not worker liveness or remote outcomes.
+        """
+        string(host_id,200)
+        if type(limit) is not int or not 1<=limit<=100:raise RecordError('invalid_limit')
+        with self.db() as db:
+            db.execute('BEGIN')
+            where="json_extract(metadata,'$.host_id')=?";args=[host_id]
+            if before is not None:
+                cursor=self._session(db,before)
+                metadata=json.loads(cursor['metadata'])
+                if metadata['host_id']!=host_id:raise RecordError('invalid_cursor')
+                where+=" AND (json_extract(metadata,'$.created_at'),id)<(?,?)"
+                args.extend([metadata['created_at'],before])
+            rows=db.execute("SELECT * FROM session WHERE "+where+" ORDER BY json_extract(metadata,'$.created_at') DESC,id DESC LIMIT ?",[*args,limit+1]).fetchall()
+            items=[]
+            for row in rows[:limit]:
+                counts=dict(db.execute('SELECT status,count(*) FROM block WHERE session=? GROUP BY status',(row['id'],)).fetchall())
+                event=db.execute('SELECT stored FROM event WHERE session=? AND seq=?',(row['id'],row['seq'])).fetchone()
+                metadata=json.loads(row['metadata'])
+                items.append({**metadata,'bytes':row['bytes'],'seq':row['seq'],
+                              'block_count':sum(counts.values()),'block_states':counts,
+                              'updated_at':json.loads(event['stored'])['received_at'] if event else metadata['created_at'],
+                              'reader_url':'/console/'+row['id']})
+            return {'protocol_version':VERSION,'host_id':host_id,'sessions':items,
+                    'next_cursor':items[-1]['session_id'] if len(rows)>limit else None}
     def events(self,sid,after):
         with self.db() as db:
             row=self._session(db,sid)
@@ -137,10 +166,29 @@ class Records:
             return [json.loads(r[0]) for r in rows]
     def _emit(self,db,sid,kind,bid,extra=None):
         seq=self._session(db,sid)['seq']+1
-        event={'seq':seq,'session_id':sid,'type':kind,'received_at':now(),'block':self._summary(db,sid,bid),**(extra or {})}
+        activity=json.loads(self._session(db,sid)['metadata']).get('activity')
+        event={'seq':seq,'session_id':sid,'type':kind,'received_at':now(),'activity':activity,**(extra or {})}
+        if bid is not None:event['block']=self._summary(db,sid,bid)
         db.execute('UPDATE session SET seq=? WHERE id=?',(seq,sid))
         db.execute('INSERT INTO event VALUES(?,?,?)',(sid,seq,json.dumps(event,ensure_ascii=False)))
-        return {'accepted':True,'seq':seq,'block':event['block']}
+        return {'accepted':True,'seq':seq,**({'block':event['block']} if bid is not None else {'activity':activity})}
+    def _set_activity(self,db,sid,state,lease_seconds):
+        metadata=json.loads(self._session(db,sid)['metadata']);timestamp=now()
+        metadata['activity']={'state':state,'updated_at':timestamp,
+                              'expires_at':(time_value(timestamp)+timedelta(seconds=lease_seconds)).isoformat(timespec='milliseconds') if state=='thinking' else None}
+        db.execute('UPDATE session SET metadata=? WHERE id=?',(json.dumps(metadata),sid))
+    def activity(self,sid,body):
+        """Report a bounded agent activity lease; never execute or wake a model."""
+        exact(body,'event_id state lease_seconds')
+        if not isinstance(body['state'],str) or body['state'] not in ('thinking','idle'):raise RecordError('invalid_activity')
+        seconds=body['lease_seconds']
+        if type(seconds) is not int:raise RecordError('invalid_activity')
+        if body['state']=='thinking' and not 1<=seconds<=300:raise RecordError('invalid_activity')
+        if body['state']=='idle' and seconds!=0:raise RecordError('invalid_activity')
+        def apply(db):
+            self._set_activity(db,sid,body['state'],seconds)
+            return self._emit(db,sid,'activity.updated',None)
+        return self._action(sid,body['event_id'],'activity',body,apply)
     def _action(self,sid,request_id,action,body,callback,actor='writer'):
         identifier(request_id)
         try:digest=hashlib.sha256(json.dumps([action,body,actor],sort_keys=True,allow_nan=False).encode()).hexdigest()
@@ -168,6 +216,9 @@ class Records:
             count=db.execute('SELECT count(*) FROM block WHERE session=?',(sid,)).fetchone()[0]
             if count>=2000:raise RecordError('block_count_limit')
             if self._session(db,sid)['bytes']+len(raw)>SESSION_LIMIT:raise RecordError('session_limit_reached')
+            if kind in ('command','analysis','status','authorization','error','form'):
+                activity=json.loads(self._session(db,sid)['metadata']).get('activity')
+                if activity and activity['state']=='thinking':self._set_activity(db,sid,'idle',0)
             db.execute('INSERT INTO block VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',(sid,bid,count+1,kind,body['title'],'waiting' if form else 'streaming',1,raw,raw.count(b'\n'),json.dumps(form) if form else None,None,now()))
             db.execute('UPDATE session SET bytes=bytes+? WHERE id=?',(len(raw),sid))
             return self._emit(db,sid,'block.created',bid)

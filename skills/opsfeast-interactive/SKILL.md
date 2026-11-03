@@ -5,7 +5,18 @@ description: Operate a persistent SSHScript shell with a human through chat and 
 
 # Use the interactive Console service
 
+Every Console session is interactive. Agent-led operation means the human can
+remain silent while the agent decides within the agreed scope; it is not a
+different record mode or permission grant.
+
 ## Choose the interaction mode
+
+Switching to root requires the human's **explicit permission** for the relevant
+host and task. A request to connect, inspect or diagnose alone does not grant
+root entry; neither configured sudo access nor `--sudo-root` is permission.
+Ask once when the grant is missing, before enabling/entering root. Reuse an
+existing explicit grant within its scope without asking again. Root permission
+does not expand an inspection-only task into changes, restarts or termination.
 
 For “connect to a host; I want to interact,” use the shipped chat-owned worker,
 not the exact-plan executor below. For this worker, omit `--profile` unless the human selects a specific profile: the checkout's `.opsfeast.yaml` `default_profile` is authoritative. Never copy `main` from an example; check returned `profile` and `hosts_file` before connecting. Read [the chat-shell procedure](references/chat-shell.md)
@@ -14,6 +25,20 @@ one step at a time; do not demand a complete plan or repeat approval for already
 explicitly authorized connection, sudo or read-only commands.
 
 The worker combines prompt/input in one command block and the reader shows streaming work as processing. A confirmed ordinary nonzero run retains the shell and returns `session_state: "ready"`; report failure and wait for the next instruction without retrying. Unsafe/unknown recovery still closes. See the chat-shell procedure for processing reports during analysis.
+
+After a successful result the worker reports **Agent 思考中…** automatically.
+The next input clears it; **before every chat commentary/final reply or wait for
+human input**, report `{"op":"activity","request_id":"chat-1","state":"idle"}`
+using a fresh request ID. Explicitly report thinking again if analysis continues.
+Read [the activity handoff](../../docs/console-agent.md#processing-display): the
+reader cannot detect external chat output and the signal expires without renewal.
+
+Before privileged or potentially slow work, read [closure prevention and long
+operations](references/chat-shell.md#prevent-avoidable-console-closures): enter
+root through the worker's `sudo` operation, budget costly commands separately,
+distinguish client/scope failure from remote service progress, and honor the
+human's monitoring cadence. Run shell tools directly; Python is for substantive
+analysis, not a wrapper around ordinary shell commands.
 
 For an operator-selected exact plan with Web approval/checkpoints, follow the
 separate procedure below. Never switch modes to bypass an existing approval gate.
@@ -70,8 +95,46 @@ read it before operating. An external agent may need the user to provide the
 reachable server/checkout and agent-token file path; never assume localhost refers
 to the same machine across remote agent environments.
 
+## Keep concurrent sessions and history distinct
+
+Bind each worker process to its returned session UUID. Reuse only a live reader
+for that exact session; open a new tab for a new worker and preserve the human's
+other readers. Host history opens `/console/{sid}/history` in a separate read-only
+tab, without SSE updates or form replies. A human opening another page does not
+change the worker target or create a connection. Follow [the reader modes](../../docs/console-records.md#separate-live-interaction-from-historical-reading).
+
 ## Accumulate host experience after work
 
-Follow [host notes](../../docs/host-notes.md). Read relevant host notes before diagnosis. After each concluded interactive or noninteractive Console task, proactively ask whether to extract reusable experience. Only after agreement, draft facts, uncertainties and evidence; save with source `console` only after final content confirmation. Reuse already granted confirmation. Use the shared notes CLI, read back the saved UUID and timestamp, and never interpret a note as remote execution permission. This is agent guidance, not an automated approval gate.
+Saved sessions, including agent-led work, are discoverable from the host's
+**Console 紀錄** tab. Reuse [the record-service history reader](../opsfeast-console-records/SKILL.md)
+and its exact Profile/host matching; opening history never reconnects. Preserve
+direct reader URLs and distinguish recorded block state from current liveness.
 
-*Last modified: 2026-11-03 20:01:37*
+Follow [host notes](../../docs/host-notes.md). Read relevant host notes before diagnosis. After each concluded human-directed or agent-led Console task, proactively ask whether to extract reusable experience. Only after agreement, draft facts, uncertainties and evidence; save with source `console` only after final content confirmation. Reuse already granted confirmation. Use the shared notes CLI, read back the saved UUID and timestamp, and never interpret a note as remote execution permission. This is agent guidance, not an automated approval gate.
+
+## Carry verified tool lessons into skills
+
+After a demonstrated tool failure or an operator correction, distinguish reusable
+execution guidance from private host facts. For the reusable lesson, identify the
+trigger, verified cause, supported alternative, authorization boundary and evidence
+limits. Check the current implementation and version-matched contract; do not turn
+an unexplained failure or one successful workaround into a universal rule.
+
+When skill maintenance is authorized, update the existing authoritative skill and
+its relevant reference, making the lesson discoverable from this entrypoint.
+Reuse authorization already given; otherwise propose the focused update without
+silently changing shared skills. Check known loaded copies for conflicts before
+editing, following [skill storage and conflict resolution](../../docs/agent-guidance.md#skill-storage-and-conflict-resolution).
+Keep the upstream SSHScript snapshot intact and put OpsFeast worker guidance here.
+Use synthetic examples; host names, private bindings, credentials, incident output
+and host-specific conclusions belong outside public skills. Host notes retain
+their separate confirmation workflow above.
+
+Validate skill structure, links and consistency with the current worker contract;
+report what was verified and what remains uncertain. Documenting a procedure does
+not fix runtime behavior or prove real-host behavior. Do not rerun host operations
+merely to validate a prose correction. Preserve unrelated work and report the
+updated source; do not claim installed or cached copies were refreshed unless
+that separate action was actually authorized and completed.
+
+*Last modified: 2026-11-04 07:24:53*

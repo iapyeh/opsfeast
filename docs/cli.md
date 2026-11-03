@@ -986,7 +986,7 @@ python -B tools/opsfeast.py hosts show node --profile main --json
 
 ## Console block recording and response client
 
-`python -B -m opsfeast.console_client --token-file FILE` exposes create, block,
+`python -B -m opsfeast.console_client --token-file FILE` exposes create, block, activity,
 append, finish, show, content, stream, responses and wait. It is independent of
 opsfeast.py execution and performs only loopback HTTP requests. Read the complete
 [Console blocks 0.2.0 contract](console-records.md#cli) for exact stdin fields,
@@ -999,4 +999,4 @@ Browser users use normal administrator login, without another reader unlock.
 
 Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show|create|update|merge|delete`. All output is JSON. Read [host notes 0.1.0](host-notes.md) for exact stdin/revision/confirmation arguments, no-history deletion, error states and agent review procedure. These local operations never connect to hosts.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 06:45:56*

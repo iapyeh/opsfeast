@@ -1,4 +1,5 @@
 import {mountHostNotes} from './host-notes.mjs';
+import {mountHostConsoleHistory} from './host-console-history.mjs';
 export function hostManagementUrl(profile,host=null,view='summary') {
   return '/hosts?'+new URLSearchParams({profile,...(host===null?{}:{host,view})});
 }
@@ -55,7 +56,7 @@ export async function mountHostManager(root,{m,e,search,setBreadcrumb}) {
     if(view==='notes'){void mountHostNotes(detail,{profile,host_id:host.host_id,e,request});return;}
     if(view==='settings'){renderEditor(host,detail);return;}
     if(view==='recipes'){detail.innerHTML=`<section class="panel"><h2>${e(l.recipes)}</h2><p>${e(l.recipesNote)}</p><ul>${host.recipe_references.map(reference=>`<li>${e(reference)}</li>`).join('')}</ul></section>`;return;}
-    if(view==='console'){detail.innerHTML=`<section class="panel"><h2>${e(l.console)}</h2><p>${e(l.consoleNote)}</p></section>`;return;}
+    if(view==='console'){void mountHostConsoleHistory(detail,{profile,host_id:host.host_id,e,request});return;}
     detail.innerHTML=`<section class="panel"><h2>${e(l.inventory)}</h2><p>${e(l.summaryNote)}</p><dl class="log-metadata"><dt>IPv4</dt><dd>${e(host.reference_ips.ipv4_addresses?.join(', ')||l.unknown)}</dd><dt>IPv6</dt><dd>${e(host.reference_ips.ipv6_addresses?.join(', ')||l.unknown)}</dd><dt>${e(l.sampledAt)}</dt><dd>${e(host.reference_ips.observed_at||l.unknown)}</dd><dt>${e(l.groups)}</dt><dd>${e(host.groups.join(' / '))}</dd><dt>${e(l.source)}</dt><dd>${e(host.source)}</dd></dl></section>`;
   }
   function renderEditor(host,target=root){

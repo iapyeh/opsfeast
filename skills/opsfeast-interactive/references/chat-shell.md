@@ -9,14 +9,17 @@ fields, states, credentials, supported operations and limitations.
 ## Start quickly, then keep the same shell
 
 - Use the shipped `python -B -u -m opsfeast.console_agent --token-file FILE
-  --host HOST`. Add `--sudo-root` only when root entry is within
-  the user's authorized scope. No temporary bridge program is needed.
+  --host HOST`. Add `--sudo-root` only after the user explicitly permits root
+  for this host/task. Connecting or diagnosing, available sudo credentials and
+  the flag itself do not supply that permission. Ask only if an explicit grant
+  is missing; reuse an applicable grant rather than asking again. An inspection
+  remains read-only after root entry. No temporary bridge program is needed.
 - When the human has not selected a profile, omit `--profile` to use `.opsfeast.yaml` `default_profile`. Never substitute `main` from an example. Use `--profile NAME` only for an explicitly selected scope. Inspect the returned `profile` and `hosts_file` before connect; stop on a mismatch. Invalid/missing configuration is an error, not permission to choose another profile.
 - Preserve worker stdin across turns. For an execution tool that closes piped stdin
   immediately, choose its persistent interactive mode (for example `tty=true` in
   exec_command). Retain both its process handle and OpsFeast session ID.
 - As soon as `created` returns, open its reader_url in the visible browser and
-  preserve the tab. Verify that its visible heading/profile/host match the new session; posting a link alone does not show the river. Reuse the existing visible river tab when appropriate. Do this before connecting, not after login finishes. Do not
+  preserve the tab. Verify that its visible heading/profile/host match the new session; posting a link alone does not show the river. Reuse a tab only when its exact session UUID matches this worker. For a new session, open a separate tab; never navigate the selected tab away from another session or from a historical view. Do this before connecting, not after login finishes. Do not
   spend time on screenshots, browser QA or extra discovery before showing it.
 - Send `{"op":"connect","request_id":"connect-1"}` to that same worker.
   When authorized, follow with `{"op":"sudo","request_id":"root-1","timeout":15}`.
@@ -29,7 +32,7 @@ fields, states, credentials, supported operations and limitations.
   a second shell for each command. Report failure honestly; do not automatically
   retry, change target/profile/account or repair configuration.
 
-For observation-only requests, the human can watch the river without entering commands or joining an interactive shell. The agent owns execution and publishes actual commands, incremental output and status. Reuse an already visible reader or provide its URL; do not open an additional interaction page just to show progress. The record service can also carry reviewed program output independently of this shell worker; it does not execute that program itself.
+For observation-only requests, the human can watch the river without entering commands or joining an interactive shell. The agent owns execution and publishes actual commands, incremental output and status. Reuse an already visible reader for the same session or provide its URL; do not open an additional interaction page just to show progress. The record service can also carry reviewed program output independently of this shell worker; it does not execute that program itself.
 
 ## Make the actual operation visible
 
@@ -47,7 +50,27 @@ backgrounds for input/commands, output and agent commentary/analysis/status,
 with compact spacing. Meaningful analysis can be published through console_client
 block on the same session; use kind=analysis and finish the block when complete.
 
-The worker renders shell commands as `$(...)` with Python string-literal escaping; bare shell text after the Python Console prompt is invalid. Its execution adapter uses public `Console.start_command` on the raw command for streaming, while the river shows the copyable Console-input expression. The worker records the actual current prompt and input on one line in one command block, e.g. `host [root]> $('df -h')`, without a standalone prompt card. Active command/analysis/status blocks display a processing indicator until finished. For substantive analysis between commands, publish a streaming analysis/status block on the same session, then finish it when done; do not leave a false busy indication after work ends. This display reflects source reports, not continuous worker/model liveness.
+The worker renders shell commands as `$(...)` with Python string-literal escaping; bare shell text after the Python Console prompt is invalid. Its execution adapter uses public `Console.start_command` on the raw command for streaming, while the river shows the copyable Console-input expression. The worker records the actual current prompt and input on one line in one command block, e.g. `host [root]> $('df -h')`, without a standalone prompt card. Active command/analysis/status blocks display a processing indicator until finished. Publish meaningful analysis as analysis blocks and finish them; use the separate activity signal below for silent thought rather than creating an empty unfinished block. Both displays reflect source reports, not continuous worker/model liveness.
+
+### Show the handoff from commands to thought and speech
+
+Successful connect/run/sudo automatically starts the worker's 120-second thinking
+lease. Keep this **Agent 思考中…** signal during real analysis between commands;
+the next command clears it automatically. Before **every** commentary or final
+reply in chat, or when waiting for human input, send
+`{"op":"activity","request_id":"before-chat-1","state":"idle"}` with a fresh
+request ID to the same worker. Do this before writing the reply, not after it.
+If analysis continues afterward, send a new activity request with
+`state: "thinking"`. Renew only while genuinely continuing work; an ended turn
+does not keep thinking. Do not use thinking as a substitute for execution progress.
+
+If the SSH worker has closed but analysis of recorded evidence continues, use
+`console_client activity --session SID` with `{event_id,state,lease_seconds}`;
+thinking uses 1–300 seconds, idle uses 0. This only reports activity and never
+reconnects. See [the canonical contract](../../../docs/console-records.md#agent-thinking-and-chat-handoff).
+The browser cannot observe another application's chat, so agent-side idle reports
+are required. Expiry bounds a missing cleanup report and stops stale animation
+without adding remote checks. Keep authorization and thinking separate.
 
 ## Decisions, stopping and replies
 
@@ -70,6 +93,55 @@ On “disconnect,” send close to the existing worker, wait for its closed resu
 and promptly report cleanup. Do not run unrelated inspection first. Keep the
 history and analyses. Cleanup confirmed is not proof that every remote descendant
 terminated; distinguish a stop request, command result and cleanup evidence.
+
+## Prevent avoidable Console closures
+
+The current worker closes its scope after command deadlines and unexpected
+exceptions, including some errors before remote submission. A closed worker alone
+does not establish an SSH/network failure. Read its `error_type`, command/output
+blocks and cleanup result before explaining the cause; preserve uncertainty when
+the safe error type is insufficient. Check the matching public SSHScript source
+or bundled contract when necessary; do not guess from an exception class alone.
+
+- **Enter privileges before running commands.** Start with `--sudo-root` only
+  within authorization, then send `{"op":"sudo","request_id":"root-1","timeout":15}`
+  and verify the returned effective identity before `run`. SSHScript 7.0.1's
+  foreground job validation rejects raw `su`/`sudo` command heads, including
+  `sudo -n du ...`, with `ValueError`. This is an adapter usage error, not evidence
+  of bad credentials or an unstable SSH connection. Do not wrap or disguise the
+  rejected command to bypass validation.
+- **Budget each costly inspection separately.** The chat worker accepts integer
+  timeouts of 1–300 seconds; the separate exact-plan executor has a 1–60 second
+  contract. These are distinct from the execution tool's yield/poll wait. A
+  shorter tool wait does not change the remote command deadline. Large recursive
+  scans can exceed 60 seconds even when their output is small. Discover mounts,
+  container mappings and log sizes first, then inspect the relevant paths with
+  explicit budgets. Avoid combining several expensive scans into one deadline.
+  Label an unfinished scan partial; output received before timeout is not a total.
+- **Reconcile before another action.** A deadline or local validation exception
+  may close a healthy SSH scope. Report command failure, scope closure and cleanup
+  separately. Do not replay an uncertain command or reconnect automatically;
+  reuse applicable explicit authorization and ask only when a new connection or
+  action lacks it. If authorized to continue, correct the identified cause before
+  opening the next visible reader and connecting. Increasing a polling wait alone
+  does not fix an unsuitable command or remote deadline.
+
+## Long operations and observation cadence
+
+Separate the command client, SSH shell and service doing the work. For a service
+such as Docker, a client timeout may leave a daemon-owned operation running.
+Inspect service state and actual effects before considering another mutation;
+neither a timeout nor a container's transitional `Dead` state alone proves that
+deletion failed or completed. Do not resubmit deletion just because the client
+stopped waiting. Do not generalize daemon independence to ordinary shell jobs.
+
+Honor the human's monitoring interval; once progress is established, one-minute
+checks can be sufficient. Simple bounded shell loops are appropriate for `df`
+and container-state checks. Keep remote checks separate from reading already
+recorded river output. When the human asks to stop monitoring, stop it and close
+the Console if requested. Explain whether the operation has been verified to
+continue independently, and report the last observation and final-state gaps.
+Do not promise completion, later checks or notifications that were not arranged.
 
 ## Default to action and a brief acknowledgement
 
@@ -95,6 +167,12 @@ remediation. These inspection examples do not themselves grant host access.
 ## Use Python for substantive analysis
 
 Simple navigation/listing such as cd, pwd, ls or df naturally uses shell commands.
+Run ordinary shell tools directly through `run`, including `du`, `docker`,
+`curl`, and straightforward shell loops. A preference for Python analysis does
+not call for `python3 -c` plus `subprocess` merely to execute those tools, chain
+commands, add deadlines or poll their status. Use the worker's command budget
+and suitable shell control flow. Use Python when it contributes actual parsing,
+aggregation or other substantive logic, not as an extra execution wrapper.
 Prefer Python for structured log parsing, date/time selection, aggregation,
 correlation and anomaly interpretation instead of increasingly complex awk/sed
 pipelines. Reuse reviewed analysis programs/modules when suitable, verify the
@@ -112,6 +190,6 @@ in OpsFeast rather than requiring a new connection/record bridge each time.
 
 ## Offer host notes at completion
 
-After each concluded interaction (including noninteractive Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
+After each concluded interaction (including agent-led Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 07:24:53*

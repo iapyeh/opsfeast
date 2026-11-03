@@ -2,9 +2,10 @@
 import asyncio
 import hmac
 import json
+import sqlite3
 import time
 from urllib.parse import quote
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from opsfeast import admin
@@ -12,7 +13,7 @@ from opsfeast.console_records import Records, RecordError
 
 STREAM_RECHECK_SECONDS=.25  # Cross-process writes remain discoverable without notifications.
 
-def install(app, *, root, web_root, options, check_origin, authenticated, json_body):
+def install(app, *, root, product, web_root, options, check_origin, authenticated, require_admin, json_body):
     records=Records(root/'console-records');app.state.console_records=records
     changed=asyncio.Condition()
     async def mutate(method,*args):
@@ -30,7 +31,7 @@ def install(app, *, root, web_root, options, check_origin, authenticated, json_b
         raise HTTPException(401,'console_writer_required' if write else 'administrator_login_required')
     def page(request,filename):
         check_origin(request)
-        if not authenticated(request):return RedirectResponse('/login?next='+quote(request.url.path,safe=''),status_code=303)
+        if not authenticated(request):return RedirectResponse('/login?next='+quote(request.url.path+('?' + request.url.query if request.url.query else ''),safe=''),status_code=303)
         return FileResponse(web_root/filename)
     @app.exception_handler(RecordError)
     async def error(request,exc):
@@ -39,17 +40,35 @@ def install(app, *, root, web_root, options, check_origin, authenticated, json_b
     def reader(session_id:str,request:Request):return page(request,'console.html')
     @app.get('/console/{session_id}/blocks/{block_id}')
     def block_page(session_id:str,block_id:str,request:Request):return page(request,'console-block.html')
+    @app.get('/console/{session_id}/history')
+    def history_page(session_id:str,request:Request):return page(request,'console.html')
+    @app.get('/console/{session_id}/history/blocks/{block_id}')
+    def history_block_page(session_id:str,block_id:str,request:Request):return page(request,'console-block.html')
     @app.post('/api/v1/console-sessions')
     async def create(request:Request):
         authorize(request,True)
         result=await run_in_threadpool(records.create,await json_body(request,4096))
         return {**result,'reader_url':'/console/'+result['session']['session_id']}
+    @app.get('/api/v1/console-sessions')
+    def history(request:Request,profile:str,host_id:str,limit:int=Query(25,ge=1,le=100),before:str|None=None):
+        require_admin(request)
+        from opsfeast.core import Instance
+        try:
+            selected=Instance.open(product).profile(profile)
+            selected.hosts.get(host_id)
+            result=records.list_sessions(selected.name+' / '+host_id,limit=limit,before=before)
+        except (OSError,sqlite3.Error):
+            raise HTTPException(422,'console_history_unavailable') from None
+        return {**result,'profile':selected.name,'host_id':host_id}
     @app.get('/api/v1/console-sessions/{session_id}')
     async def snapshot(session_id:str,request:Request):
         authorize(request);return await run_in_threadpool(records.snapshot,session_id)
     @app.post('/api/v1/console-sessions/{session_id}/blocks')
     async def add(session_id:str,request:Request):
         authorize(request,True);return await mutate(records.add_block,session_id,await json_body(request,65536))
+    @app.post('/api/v1/console-sessions/{session_id}/activity')
+    async def activity(session_id:str,request:Request):
+        authorize(request,True);return await mutate(records.activity,session_id,await json_body(request,4096))
     @app.post('/api/v1/console-sessions/{session_id}/blocks/{block_id}/append')
     async def append(session_id:str,block_id:str,request:Request):
         authorize(request,True);return await mutate(records.append,session_id,block_id,await json_body(request,65536))

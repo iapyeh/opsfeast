@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {consume,displayText,preview,visibleInRiver,identityLabel,processingState} from '../web/assets/console-reader-state.mjs';
+import {consume,displayText,preview,visibleInRiver,identityLabel,processingState,activityState} from '../web/assets/console-reader-state.mjs';
 test('stream updates one block without retaining every text chunk in browser history',()=>{
   const original={session:{session_id:'one'},seq:0,blocks:[]};
   const e={session_id:'one',seq:1,block:{id:'b',revision:1,head:'first',tail:'',size:5}};
@@ -38,4 +38,24 @@ test('processing follows unfinished work through completion, failure and restore
   assert.equal(processingState(first.blocks).busy,true);
   const done=consume(first,{session_id:'one',seq:2,block:{id:'command',kind:'command',status:'failed'}});
   assert.equal(processingState(done.blocks).busy,false);
+});
+test('thinking fills the command handoff, expires locally and clears on next input or chat report',()=>{
+ const now=Date.parse('2026-01-01T00:00:00Z');
+ const initial={session:{session_id:'one'},seq:0,blocks:[{id:'command',kind:'command',status:'completed'}]};
+ const activity={state:'thinking',updated_at:new Date(now).toISOString(),expires_at:new Date(now+120000).toISOString()};
+ const thinking=consume(initial,{type:'activity.updated',session_id:'one',seq:1,activity});
+ assert.equal(thinking.blocks,initial.blocks);
+ assert.deepEqual(activityState(thinking,now),{busy:false,thinking:true,label:'Agent 思考中…'});
+ assert.equal(activityState(thinking,now+120000).thinking,false);
+ assert.equal(activityState(thinking,now+120000).label,'Agent 狀態未更新');
+ const running={...thinking,blocks:[{id:'next',kind:'command',status:'streaming'}]};
+ assert.equal(activityState(running,now).busy,true);assert.equal(activityState(running,now).thinking,false);
+ const idle={state:'idle',expires_at:null};
+ const chat=consume(thinking,{type:'activity.updated',session_id:'one',seq:2,activity:idle});
+ assert.equal(activityState(chat,now).thinking,false);
+ const command=consume(thinking,{type:'block.created',session_id:'one',seq:2,activity:idle,block:{id:'next',kind:'command',status:'streaming'}});
+ assert.equal(command.session.activity.state,'idle');assert.equal(activityState(command,now).busy,true);
+ assert.equal(consume(command,{type:'activity.updated',session_id:'one',seq:1,activity}),command);
+ assert.throws(()=>consume(thinking,{type:'activity.updated',session_id:'one',seq:3,activity}),/event_gap/);
+ assert.equal(activityState({...thinking,session:{activity:{state:'thinking',expires_at:'bad'}}},now).thinking,false);
 });

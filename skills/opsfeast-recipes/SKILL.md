@@ -577,8 +577,21 @@ Before recipe execution after changing Python environments or packages, run the 
 
 For an authorized transcript producer, use the separate [console records service](../../docs/console-records.md) and [skill](../opsfeast-console-records/SKILL.md): 0.2.0 HTTP/CLI block append, bounded previews/ranges/SSE and human forms with agent wait. Browser access uses normal login. No source execution, stop control or recipe lifecycle/retention integration is supplied; do not substitute it for recipe results or services.
 
+Producers can also report [thinking/idle activity](../../docs/console-records.md#agent-thinking-and-chat-handoff)
+through `Records.activity`, the writer HTTP route or `console_client activity`.
+Thinking has an explicit expiry; clear it before chat output or human waits.
+Worker results automatically begin thinking and new input ends it. This separate
+metadata does not claim command execution or model liveness and needs no recipe
+retention integration; the record skill owns exact payloads and recovery.
+
+Saved Console transcripts are also discoverable in each host's Console 紀錄 tab,
+including agent-led worker runs. For the exact `PROFILE / HOST` producer
+convention, administrator-only paged HTTP discovery and local
+`Records.list_sessions` summaries, read [the history contract](../../docs/console-records.md#discover-saved-console-history-by-host).
+This read-only view neither executes recipes nor proves current host health.
+
 ## Host-specific experience
 
 Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 06:45:56*

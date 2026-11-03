@@ -148,8 +148,24 @@ Public tests: `tests/test_host_settings.py`, real host API tests in
 synthetic local profiles and preserve source/backup evidence. No real host has to
 be added/deleted, connected or initialized to validate this feature.
 
+## Saved Console history
+
+Open a host's **Console 紀錄** tab to browse saved human-directed and agent-led
+worker sessions for that exact Profile/host. It shows titles, creation/latest
+record times, block counts and recorded failure/unfinished states, with links to
+a separate read-only `/console/{session_id}/history` page in a new tab. Refresh and older-page loading are read-only and never
+connect or replay commands. Unfinished blocks do not prove a live connection.
+See [Console history discovery](console-records.md#discover-saved-console-history-by-host)
+for matching, administrator access, pagination and producer conventions.
+
+Example: ask your agent, “Show the saved Console records for web-01 in lab without
+connecting.” In the Web UI, select that Profile and host, open Console 紀錄, then
+choose a saved title or 檢視紀錄. Empty history and read errors are distinct; retry
+a failed read with 重新整理. Keep a direct river URL if the host definition is
+later removed. Viewing history does not verify the host's present health.
+
 ## Host notes
 
 The host detail now includes a **主機筆記** tab with real shared profile-local notes, search, add/edit and confirmed delete. See [host notes 0.1.0](host-notes.md) for UUID/source/timestamp, CLI/API, concurrency and merge semantics. These notes are independent of configuration backups and preserved Vault README files.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 07:24:53*
