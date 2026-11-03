@@ -1,3 +1,4 @@
+import {mountHostNotes} from './host-notes.mjs';
 export function hostManagementUrl(profile,host=null,view='summary') {
   return '/hosts?'+new URLSearchParams({profile,...(host===null?{}:{host,view})});
 }
@@ -46,11 +47,12 @@ export async function mountHostManager(root,{m,e,search,setBreadcrumb}) {
   function renderDetail(){
     const host=snapshot.hosts.find(item=>item.host_id===query.get('host'));
     if(!host){root.innerHTML=heading(l.missing);setBreadcrumb([{label:l.title,url:listUrl()},{label:l.missing}]);return;}
-    const tabs=[['summary',l.summary],['settings',l.settings],['console',l.console],['recipes',l.recipes]],view=query.get('view')||'summary';
+    const tabs=[['summary',l.summary],['settings',l.settings],['notes','主機筆記'],['console',l.console],['recipes',l.recipes]],view=query.get('view')||'summary';
     const label=tabs.find(([id])=>id===view)?.[1]||l.summary;
     setBreadcrumb([{label:l.title,url:listUrl()},{label:host.host_id,url:hostManagementUrl(profile,host.host_id)},{label}]);
     root.innerHTML=heading(host.host_id,profile)+`<nav class="draft-tabs">${tabs.map(([id,name])=>`<a href="${e(hostManagementUrl(profile,host.host_id,id))}" ${view===id?'aria-current="page"':''}>${e(name)}</a>`).join('')}</nav><div id="managed-host-detail"></div>`;
     const detail=root.querySelector('#managed-host-detail');
+    if(view==='notes'){void mountHostNotes(detail,{profile,host_id:host.host_id,e,request});return;}
     if(view==='settings'){renderEditor(host,detail);return;}
     if(view==='recipes'){detail.innerHTML=`<section class="panel"><h2>${e(l.recipes)}</h2><p>${e(l.recipesNote)}</p><ul>${host.recipe_references.map(reference=>`<li>${e(reference)}</li>`).join('')}</ul></section>`;return;}
     if(view==='console'){detail.innerHTML=`<section class="panel"><h2>${e(l.console)}</h2><p>${e(l.consoleNote)}</p></section>`;return;}

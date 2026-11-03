@@ -333,4 +333,8 @@ query; no-store queries do not update references. Read the
 
 Before retrying a host operation after an interpreter/package change, run the failing interpreter with `-B tools/check_environment.py --json`. For `RuntimeEnvironmentError`, inspect `error.environment` and its reason, versions, interpreter and distinct metadata paths. Follow [runtime diagnosis and repair](../../docs/runtime-troubleshooting.md), including CLI/TUI views and selected-interpreter repair commands. Duplicate metadata is an error even when selected versions match. Reuse existing environment-change authorization; checks never install or connect, and repair does not expand host scope. Do not expose third-party exception messages or edit version labels.
 
-*Last modified: 2026-11-01 23:27:07*
+## Host notes
+
+Use [host notes 0.1.0](../../docs/host-notes.md) for private knowledge: `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list`. Read relevant notes before operations; assess age/evidence without treating notes as execution authority. Use the shared CLI/Python/API for create/update/delete/merge, explicit profile/host and current revision. Present exact proposed content and UUID removals for human confirmation before organization. Preserve semantic conflicts, never silently choose a winner; do not edit storage or generated Vault pages directly.
+
+*Last modified: 2026-11-03 20:01:37*

@@ -148,4 +148,8 @@ Public tests: `tests/test_host_settings.py`, real host API tests in
 synthetic local profiles and preserve source/backup evidence. No real host has to
 be added/deleted, connected or initialized to validate this feature.
 
-*Last modified: 2026-11-01 23:38:13*
+## Host notes
+
+The host detail now includes a **主機筆記** tab with real shared profile-local notes, search, add/edit and confirmed delete. See [host notes 0.1.0](host-notes.md) for UUID/source/timestamp, CLI/API, concurrency and merge semantics. These notes are independent of configuration backups and preserved Vault README files.
+
+*Last modified: 2026-11-03 20:01:37*

@@ -70,4 +70,8 @@ read it before operating. An external agent may need the user to provide the
 reachable server/checkout and agent-token file path; never assume localhost refers
 to the same machine across remote agent environments.
 
-*Last modified: 2026-11-03 15:04:46*
+## Accumulate host experience after work
+
+Follow [host notes](../../docs/host-notes.md). Read relevant host notes before diagnosis. After each concluded interactive or noninteractive Console task, proactively ask whether to extract reusable experience. Only after agreement, draft facts, uncertainties and evidence; save with source `console` only after final content confirmation. Reuse already granted confirmation. Use the shared notes CLI, read back the saved UUID and timestamp, and never interpret a note as remote execution permission. This is agent guidance, not an automated approval gate.
+
+*Last modified: 2026-11-03 20:01:37*

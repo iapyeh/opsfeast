@@ -159,4 +159,8 @@ For SSHScript runtime/version or duplicate-metadata failures, route to [hosts](o
 
 For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated human forms and agent wait/read/SSE, without executing commands), use [console records](opsfeast-console-records/SKILL.md). For incremental chat execution use the shipped [Console worker](../docs/console-agent.md); no temporary bridge is needed. It is separate from the exact-plan interactive executor.
 
-*Last modified: 2026-11-02 17:47:54*
+## Host notes
+
+For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
+
+*Last modified: 2026-11-03 20:01:37*

@@ -995,4 +995,8 @@ UUID/idempotency rules, byte offsets, limits, return cursors and exit codes.
 explicit timed_out result; it does not wake a model or authorize execution.
 Browser users use normal administrator login, without another reader unlock.
 
-*Last modified: 2026-11-03 15:04:46*
+## Host notes
+
+Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show|create|update|merge|delete`. All output is JSON. Read [host notes 0.1.0](host-notes.md) for exact stdin/revision/confirmation arguments, no-history deletion, error states and agent review procedure. These local operations never connect to hosts.
+
+*Last modified: 2026-11-03 20:01:37*

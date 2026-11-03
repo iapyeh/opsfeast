@@ -16,7 +16,7 @@ fields, states, credentials, supported operations and limitations.
   immediately, choose its persistent interactive mode (for example `tty=true` in
   exec_command). Retain both its process handle and OpsFeast session ID.
 - As soon as `created` returns, open its reader_url in the visible browser and
-  preserve the tab. Do this before connecting, not after login finishes. Do not
+  preserve the tab. Verify that its visible heading/profile/host match the new session; posting a link alone does not show the river. Reuse the existing visible river tab when appropriate. Do this before connecting, not after login finishes. Do not
   spend time on screenshots, browser QA or extra discovery before showing it.
 - Send `{"op":"connect","request_id":"connect-1"}` to that same worker.
   When authorized, follow with `{"op":"sudo","request_id":"root-1","timeout":15}`.
@@ -110,4 +110,8 @@ within that interface; larger analysis requires a supported, authorized delivery
 method. The shipped worker disables PTY canonical input/echo before created and restores terminal settings on exit, so the OS line limit does not truncate its JSON controls. Keep the worker's 16 KiB command and control-message limits; do not automatically replay a command after uncertain delivery. Earlier already-running workers retain their startup terminal mode; keep their controls short until a newly authorized worker replaces them. A reusable product gap should be fixed
 in OpsFeast rather than requiring a new connection/record bridge each time.
 
-*Last modified: 2026-11-03 17:31:02*
+## Offer host notes at completion
+
+After each concluded interaction (including noninteractive Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
+
+*Last modified: 2026-11-03 20:01:37*

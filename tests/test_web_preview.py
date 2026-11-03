@@ -92,6 +92,44 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(b'synthetic-setup-capability',body)
         self.assertEqual((await self.request('/api/v1/setup',headers=[(b'origin',b'https://untrusted.example')],app=app))[0],403)
 
+    async def test_host_notes_admin_origin_crud_merge_and_conflicts(self):
+        from opsfeast import admin, profile_settings
+        from opsfeast.web.app import create_app
+        profile_settings.create(self.root,self.root,name='main',expected_revision=profile_settings.inspect(self.root)['revision'])
+        (self.root/'profiles/main/hosts.yaml').write_text('hosts: {sample: {connection: {local: true}}}\n')
+        app=create_app(self.root,edit_token='synthetic-notes-token')
+        endpoint='/api/v1/host-notes?profile=main&host_id=sample'
+        content=(b'content-type',b'application/json')
+        async def call(method='GET',data=None,headers=(),path=endpoint):
+            return await self.request(path,method,body=json.dumps(data).encode() if data is not None else b'',headers=[content,*headers],app=app)
+        for method in ('GET','POST','PATCH','DELETE'):
+            self.assertEqual((await call(method,headers=[(b'authorization',b'Bearer synthetic-notes-token')]))[0],401)
+        password='Synthetic-notes-password-001'
+        admin.configure(self.root,username='synthetic',password=password,expected_revision=0)
+        _,headers,_=await self.request('/api/v1/auth/login','POST',body=json.dumps({'username':'synthetic','password':password}).encode(),headers=[content],app=app)
+        cookie=(b'cookie',headers[b'set-cookie'].split(b';')[0])
+        self.assertEqual((await call(headers=[cookie,(b'origin',b'https://untrusted.example')]))[0],403)
+        state=json.loads((await call(headers=[cookie]))[2])
+        body={'profile':'main','host_id':'sample','expected_revision':state['revision'],'changes':{'title':'Test','content':'<script>plain text</script>','source':'agent'}}
+        status,_,raw=await call('POST',body,[cookie]);self.assertEqual(status,200,raw)
+        first=json.loads(raw);self.assertEqual(first['note']['source'],'user')
+        self.assertEqual((await call('POST',body,[cookie]))[0],409)
+        body['expected_revision']=first['revision']
+        status,_,raw=await call('POST',body,[cookie]);self.assertEqual(status,200)
+        second=json.loads(raw)
+        body['expected_revision']=second['revision'];body['note_uuid']=first['note']['uuid']
+        status,_,raw=await call('PATCH',body,[cookie]);self.assertEqual(status,200)
+        updated=json.loads(raw)
+        body.update(expected_revision=updated['revision'],remove=[second['note']['uuid']],confirmation=[second['note']['uuid']])
+        status,_,raw=await call('POST',body,[cookie],path='/api/v1/host-notes/merge');self.assertEqual(status,200,raw)
+        merged=json.loads(raw)
+        deletion={'profile':'main','host_id':'sample','expected_revision':merged['revision'],'note_uuid':first['note']['uuid'],'confirmation':'wrong'}
+        self.assertEqual((await call('DELETE',deletion,[cookie]))[0],422)
+        deletion['confirmation']=first['note']['uuid']
+        self.assertEqual((await call('DELETE',deletion,[cookie]))[0],200)
+        self.assertEqual(json.loads((await call(headers=[cookie]))[2])['notes'],[])
+        self.assertEqual((await call('POST',dict(body,unexpected=True),[cookie]))[0],422)
+
     async def test_real_host_api_requires_admin_revision_and_delete_confirmation(self):
         try:__import__('ruamel.yaml')
         except ImportError:self.skipTest('optional host writer unavailable')

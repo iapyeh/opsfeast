@@ -90,4 +90,8 @@ For interpreter/package failures before a host connection, start with [SSHScript
 
 For the independent agent-written Console transcript reader, see [console records](console-records.md): 0.2.0 block append, bounded snapshot/SSE, paged content, human form replies and agent wait; login only, no remote execution adapter.
 
-*Last modified: 2026-11-02 17:03:25*
+## Host experience
+
+[Host notes](host-notes.md): review/edit private host knowledge on the Web, share CLI/Python/API operations, resolve conflicts and confirm experience extraction.
+
+*Last modified: 2026-11-03 20:01:37*

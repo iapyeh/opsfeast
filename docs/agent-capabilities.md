@@ -520,4 +520,8 @@ login only; no extra reader unlock. Use [the agent skill](../skills/opsfeast-con
 It does not execute SSH, stop jobs, render arbitrary HTML/media or integrate recipe
 logging/retention. Old 0.1 data stays untouched but is not served by the new API.
 
-*Last modified: 2026-11-03 15:46:22*
+## Host knowledge notes
+
+Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
+
+*Last modified: 2026-11-03 20:01:37*

@@ -577,4 +577,8 @@ Before recipe execution after changing Python environments or packages, run the 
 
 For an authorized transcript producer, use the separate [console records service](../../docs/console-records.md) and [skill](../opsfeast-console-records/SKILL.md): 0.2.0 HTTP/CLI block append, bounded previews/ranges/SSE and human forms with agent wait. Browser access uses normal login. No source execution, stop control or recipe lifecycle/retention integration is supplied; do not substitute it for recipe results or services.
 
-*Last modified: 2026-11-03 15:46:22*
+## Host-specific experience
+
+Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
+
+*Last modified: 2026-11-03 20:01:37*

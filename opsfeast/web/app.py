@@ -133,6 +133,9 @@ def create_app(installation=None, *, data_root=None, edit_token=None, interactiv
     from .host_api import install as install_hosts
     install_hosts(app,product=product,require_admin=require_admin,json_body=json_body)
 
+    from .host_notes_api import install as install_host_notes
+    install_host_notes(app,product=product,require_admin=require_admin,json_body=json_body)
+
     @app.get('/api/v1/auth/status')
     def auth_status(request: Request):
         state=admin.status(root)
