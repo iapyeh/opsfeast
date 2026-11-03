@@ -10,8 +10,16 @@ from starlette.concurrency import run_in_threadpool
 from opsfeast import admin
 from opsfeast.console_records import Records, RecordError
 
+STREAM_RECHECK_SECONDS=.25  # Cross-process writes remain discoverable without notifications.
+
 def install(app, *, root, web_root, options, check_origin, authenticated, json_body):
     records=Records(root/'console-records');app.state.console_records=records
+    changed=asyncio.Condition()
+    async def mutate(method,*args):
+        result=await run_in_threadpool(method,*args)
+        # Notify only after durable commit, including exact idempotent retries.
+        async with changed:changed.notify_all()
+        return result
     def authorize(request,write=False):
         check_origin(request)
         if authenticated(request):return
@@ -41,13 +49,13 @@ def install(app, *, root, web_root, options, check_origin, authenticated, json_b
         authorize(request);return await run_in_threadpool(records.snapshot,session_id)
     @app.post('/api/v1/console-sessions/{session_id}/blocks')
     async def add(session_id:str,request:Request):
-        authorize(request,True);return await run_in_threadpool(records.add_block,session_id,await json_body(request,65536))
+        authorize(request,True);return await mutate(records.add_block,session_id,await json_body(request,65536))
     @app.post('/api/v1/console-sessions/{session_id}/blocks/{block_id}/append')
     async def append(session_id:str,block_id:str,request:Request):
-        authorize(request,True);return await run_in_threadpool(records.append,session_id,block_id,await json_body(request,65536))
+        authorize(request,True);return await mutate(records.append,session_id,block_id,await json_body(request,65536))
     @app.post('/api/v1/console-sessions/{session_id}/blocks/{block_id}/finish')
     async def finish(session_id:str,block_id:str,request:Request):
-        authorize(request,True);return await run_in_threadpool(records.finish,session_id,block_id,await json_body(request,4096))
+        authorize(request,True);return await mutate(records.finish,session_id,block_id,await json_body(request,4096))
     @app.get('/api/v1/console-sessions/{session_id}/blocks/{block_id}/content')
     async def content(session_id:str,block_id:str,request:Request,offset:int=0,limit:int=16384):
         authorize(request);return await run_in_threadpool(records.content,session_id,block_id,offset,limit)
@@ -56,7 +64,7 @@ def install(app, *, root, web_root, options, check_origin, authenticated, json_b
         check_origin(request)
         if not authenticated(request):raise HTTPException(401,'administrator_login_required')
         actor=admin.status(root)['username']
-        return await run_in_threadpool(records.respond,session_id,block_id,await json_body(request,32768),actor)
+        return await mutate(records.respond,session_id,block_id,await json_body(request,32768),actor)
     @app.get('/api/v1/console-sessions/{session_id}/responses')
     async def responses(session_id:str,request:Request,after:int=0,wait:int=0):
         authorize(request)
@@ -74,15 +82,23 @@ def install(app, *, root, web_root, options, check_origin, authenticated, json_b
     async def stream(session_id:str,request:Request,after:int=0):
         authorize(request);await run_in_threadpool(records.events,session_id,after)
         async def generate():
-            cursor=after;heartbeat=0
+            cursor=after;heartbeat=time.monotonic()
             while not await request.is_disconnected():
                 try:authorize(request)
                 except HTTPException:return
-                batch=await run_in_threadpool(records.events,session_id,cursor)
+                # Read and enter the wait under the same lock: a commit cannot
+                # notify in the gap between an empty read and subscribing.
+                async with changed:
+                    batch=await run_in_threadpool(records.events,session_id,cursor)
+                    if not batch:
+                        try:await asyncio.wait_for(changed.wait(),STREAM_RECHECK_SECONDS)
+                        except asyncio.TimeoutError:pass
+                        batch=await run_in_threadpool(records.events,session_id,cursor)
+                try:authorize(request)
+                except HTTPException:return
                 for event in batch:
                     cursor=event['seq']
                     yield f'id: {cursor}\ndata: '+json.dumps(event,ensure_ascii=False)+'\n\n'
-                heartbeat+=1
-                if heartbeat>=40:yield ': heartbeat\n\n';heartbeat=0
-                if len(batch)<100:await asyncio.sleep(.25)
-        return StreamingResponse(generate(),media_type='text/event-stream',headers={'X-Accel-Buffering':'no'})
+                if time.monotonic()-heartbeat>=10:
+                    yield ': heartbeat\n\n';heartbeat=time.monotonic()
+        return StreamingResponse(generate(),media_type='text/event-stream',headers={'X-Accel-Buffering':'no','Cache-Control':'no-cache'})

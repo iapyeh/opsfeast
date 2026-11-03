@@ -16,3 +16,9 @@
 .terminal-block .text-control{opacity:.55}.terminal-block:hover .text-control,.terminal-block:focus-within .text-control{opacity:1}
 .event.analysis{margin:0 0 8px;padding:10px 12px;border:0;border-radius:4px;background:#263142}
 .event.form{margin:12px 0;padding:12px 0}
+
+/* Source-reported active work; the animation is not a worker heartbeat. */
+.operation-progress{font:14px/1.5 system-ui;color:#c1d9b6;margin:5px 0 0}
+.processing::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.05em;animation:console-processing 1s linear infinite}
+@keyframes console-processing{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.processing::before{animation:none}}

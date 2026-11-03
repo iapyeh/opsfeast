@@ -13,9 +13,9 @@ import time
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 
-from opsfeast.console_agent import Controls, ControlError, Publisher, Transport, Worker
+from opsfeast.console_agent import Controls, ControlError, Publisher, Transport, Worker, main
 from opsfeast.console_records import Records
 
 
@@ -32,12 +32,101 @@ class StoreTransport:
         return method(parts[0], parts[2], body)
 
 
+class ProfileSelectionTests(unittest.TestCase):
+    def setUp(self):
+        from opsfeast import Instance
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name).resolve()
+        for name in ('main', 'selected'):
+            (self.root / name).mkdir()
+            (self.root / name / 'hosts.yaml').write_text('hosts: {}\n')
+        self.registry = self.root / '.opsfeast.yaml'
+        self.registry.write_text(json.dumps({'schema_version': 2, 'default_profile': 'selected',
+            'profiles': {name: {'root': name} for name in ('main', 'selected')}}))
+        self.instance = Instance.open(self.root)
+        self.token = self.root / 'token'
+        self.token.write_text('fixture-only')
+
+    def launch(self, *args):
+        output = io.StringIO()
+        with patch('opsfeast.Instance.open', return_value=self.instance) as opened, \
+                patch('opsfeast.console_agent.Transport') as transport, \
+                patch('opsfeast.console_agent.Publisher') as publisher, \
+                patch('opsfeast.console_agent.Worker') as worker, \
+                patch('opsfeast.console_agent.Controls'), contextlib.redirect_stdout(output):
+            publisher.return_value.sid = 'fixture'
+            transport.return_value.origin = 'http://127.0.0.1:8740'
+            worker.return_value.closed = True
+            code = main(['--token-file', str(self.token), *args])
+            return code, json.loads(output.getvalue()), opened, publisher, worker
+
+    def test_omitted_profile_uses_locator_default_without_connecting(self):
+        before = self.registry.read_bytes()
+        code, created, _, publisher, worker = self.launch('--host', 'synthetic')
+        self.assertEqual(code, 0)
+        self.assertEqual(created['profile'], 'selected')
+        self.assertEqual(created['hosts_file'], str(self.root / 'selected' / 'hosts.yaml'))
+        self.assertEqual(publisher.call_args.kwargs['host_id'], 'selected / synthetic')
+        worker.return_value.request.assert_not_called()
+        self.assertEqual(self.registry.read_bytes(), before)
+
+    def test_explicit_profile_overrides_without_changing_default(self):
+        before = self.registry.read_bytes()
+        code, created, _, _, _ = self.launch('--host', 'synthetic', '--profile', 'main')
+        self.assertEqual(code, 0)
+        self.assertEqual(created['profile'], 'main')
+        self.assertEqual(self.registry.read_bytes(), before)
+
+    def test_unknown_profile_does_not_fall_back_or_create_reader(self):
+        code, event, _, publisher, worker = self.launch('--host', 'synthetic', '--profile', 'missing')
+        self.assertEqual(code, 1)
+        self.assertEqual(event['error_type'], 'ConfigError')
+        publisher.assert_not_called()
+        worker.assert_not_called()
+
+    def test_missing_default_does_not_fall_back_to_main(self):
+        self.registry.unlink()
+        code, event, _, publisher, _ = self.launch('--host', 'synthetic')
+        self.assertEqual(code, 1)
+        self.assertEqual(event['error_type'], 'ConfigError')
+        publisher.assert_not_called()
+
+    def test_local_does_not_resolve_profile(self):
+        self.registry.unlink()
+        code, created, opened, _, _ = self.launch('--local')
+        self.assertEqual(code, 0)
+        self.assertIsNone(created['profile'])
+        self.assertIsNone(created['hosts_file'])
+        opened.assert_not_called()
+
+
 class WorkerTests(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.records = Records(Path(tmp.name))
         self.publisher = Publisher(StoreTransport(self.records), title='Synthetic', host_id='local')
+
+    def test_first_event_contains_text_and_large_unicode_writes_keep_offsets(self):
+        text = '即時' * 2100
+        bid = self.publisher.block('stdout', text)
+        events = self.records.events(self.publisher.sid, 0)
+        self.assertTrue(events[0]['block']['head'].startswith('即時'))
+        self.assertEqual(self.records.content(self.publisher.sid, bid, 0, 16384)['text'], text)
+        self.assertEqual(self.publisher.offsets[bid], len(text.encode()))
+
+    def test_command_is_durable_before_console_starts(self):
+        console = Mock(prompt='synthetic> ')
+        def start(command, **options):
+            blocks = self.records.snapshot(self.publisher.sid)['blocks']
+            self.assertEqual(blocks[-1]['head'], 'synthetic> $(' + repr(command) + ')')
+            self.assertEqual(blocks[-1]['status'], 'streaming')
+            return SimpleNamespace(state='completed', result=SimpleNamespace(exitcode=0), error_type=None)
+        console.start_command.side_effect = start
+        worker = Worker(self.publisher, None, lambda value: None)
+        worker.console = console
+        self.assertEqual(worker.request({'op':'run','request_id':'live','command':'sleep 1'})['state'], 'completed')
 
     def test_create_does_not_connect_and_validation_never_executes(self):
         opener = Mock()
@@ -50,6 +139,26 @@ class WorkerTests(unittest.TestCase):
         opener.assert_not_called()
         worker.close()
 
+    def test_cleanup_finishes_command_when_connect_or_submission_raises(self):
+        for operation in ('connect', 'run'):
+            with self.subTest(operation=operation):
+                scope = MagicMock()
+                scope.__enter__.side_effect = RuntimeError('synthetic failure')
+                worker = Worker(self.publisher, Mock(return_value=scope), lambda value: None)
+                body = {'op':operation,'request_id':'exception'}
+                if operation == 'run':
+                    worker.console = Mock(prompt='synthetic> ', session_reuse='confirmed')
+                    worker.console.start_command.side_effect = RuntimeError('synthetic failure')
+                    worker.scope = scope
+                    body['command'] = 'pwd'
+                with self.assertRaises(RuntimeError):
+                    worker.request(body)
+                bid = worker.active_command
+                worker.close()
+                block = next(b for b in self.records.snapshot(self.publisher.sid)['blocks'] if b['id']==bid)
+                self.assertEqual(block['status'], 'interrupted')
+                self.assertIsNone(worker.active_command)
+
     def test_duplicate_request_never_repeats_command(self):
         console = Mock(prompt='synthetic [test]> ')
         console.start_command.return_value = SimpleNamespace(state='completed', result=SimpleNamespace(exitcode=0), error_type=None)
@@ -60,8 +169,8 @@ class WorkerTests(unittest.TestCase):
             worker.request({'op':'run','request_id':'once','command':'printf once'})
         console.start_command.assert_called_once()
 
-    def test_failure_closes_scope_and_keeps_exit_status(self):
-        console = Mock(session_reuse='confirmed')
+    def test_unknown_failure_closes_scope_and_keeps_exit_status(self):
+        console = Mock(prompt='synthetic> ', session_reuse='confirmed')
         console.start_command.return_value = SimpleNamespace(state='failed', result=SimpleNamespace(exitcode=9), error_type=None)
         worker = Worker(self.publisher, None, lambda value: None)
         worker.console, worker.scope = console, MagicMock()
@@ -69,6 +178,34 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(result['exitcode'], 9)
         self.assertTrue(worker.closed)
         worker.scope.__exit__.assert_called_once()
+
+    def test_normal_nonzero_exit_keeps_scope_without_retry(self):
+        console = Mock(prompt='synthetic [root]> ', session_reuse='confirmed')
+        console.start_command.return_value = SimpleNamespace(state='failed',
+            result=SimpleNamespace(exitcode=9, termination_status='confirmed'), error_type=None)
+        worker = Worker(self.publisher, None, lambda value: None)
+        worker.console, worker.scope = console, MagicMock()
+        result = worker.request({'op':'run','request_id':'fail','command':'false'})
+        self.assertEqual(result['state'], 'failed')
+        self.assertEqual(result['exitcode'], 9)
+        self.assertEqual(result['session_state'], 'ready')
+        self.assertFalse(worker.closed)
+        worker.scope.__exit__.assert_not_called()
+        console.start_command.assert_called_once()
+        commands = [b for b in self.records.snapshot(self.publisher.sid)['blocks'] if b['kind']=='command']
+        self.assertEqual(commands[0]['head'], "synthetic [root]> $('false')")
+
+    def test_error_or_unknown_termination_still_closes_scope(self):
+        for error, termination in ((None, 'unknown'), ('TimeoutError', 'confirmed')):
+            with self.subTest(error=error, termination=termination):
+                console = Mock(prompt='synthetic> ', session_reuse='confirmed')
+                console.start_command.return_value = SimpleNamespace(state='failed',
+                    result=SimpleNamespace(exitcode=1, termination_status=termination), error_type=error)
+                worker = Worker(self.publisher, None, lambda value: None)
+                worker.console, worker.scope = console, MagicMock()
+                result = worker.request({'op':'run','request_id':'fail','command':'false'})
+                self.assertTrue(worker.closed)
+                self.assertIn('cleanup', result)
 
     def test_invalid_commands_and_deadlines_do_not_reach_console(self):
         worker = Worker(self.publisher, None, lambda value: None)
@@ -112,6 +249,37 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(controls.read()['op'], 'close')
         os.write(write, b'bad\n')
         self.assertEqual(controls.read()['op'], 'invalid')
+
+    def test_pty_controls_accept_long_unicode_without_canonical_truncation_and_restore(self):
+        import termios
+        master, slave = os.openpty()
+        self.addCleanup(os.close, master)
+        self.addCleanup(os.close, slave)
+        before = termios.tcgetattr(slave)
+        controls = Controls(slave)
+        self.addCleanup(controls.close)
+        body = {'op':'run','request_id':'long','command':'字'*600}
+        raw = (json.dumps(body,ensure_ascii=False)+'\n').encode()
+        self.assertGreater(len(raw), 1024)
+        # PTY input queues can be smaller than this line: write concurrently,
+        # as the real caller/worker do, rather than blocking this reader thread.
+        def send():
+            offset = 0
+            while offset < len(raw):
+                offset += os.write(master,raw[offset:])
+        writer = threading.Thread(target=send,daemon=True)
+        writer.start()
+        self.assertEqual(controls.read(2),body)
+        writer.join(2)
+        self.assertFalse(writer.is_alive())
+        controls.close()
+        restored = termios.tcgetattr(slave)
+        # macOS sets the transient kernel PENDIN bit when canonical input is
+        # restored; compare configured flags, not pending-input bookkeeping.
+        pending = getattr(termios, 'PENDIN', 0)
+        restored[3] &= ~pending
+        before[3] &= ~pending
+        self.assertEqual(restored,before)
 
 
 class NativeWorkerTests(unittest.TestCase):
@@ -187,7 +355,7 @@ class NativeWorkerTests(unittest.TestCase):
         self.assertEqual(blocks[0]['kind'], 'command')
         self.assertIn('Console(session', blocks[0]['head'])
         self.assertTrue(any('登入成功' in b['head'] for b in blocks))
-        self.assertTrue(any(b['title']=='SSHScript Console prompt' and '> ' in b['head'] for b in blocks))
+        self.assertFalse(any(b['title']=='SSHScript Console prompt' for b in blocks))
         self.send({'op':'run','request_id':'stream','command':"printf '前段'; sleep 1.2; printf '後段\\n'; printf 'ERR\\n' >&2"})
         self.event('started')
         end = time.monotonic()+1
@@ -211,6 +379,30 @@ class NativeWorkerTests(unittest.TestCase):
         self.assertEqual(result['cleanup'], 'confirmed')
         self.assertEqual(self.process.wait(timeout=10), 0)
 
+    def test_failed_command_preserves_shell_and_groups_prompt_with_next_input(self):
+        self.send({'op':'connect','request_id':'connect'})
+        self.event('result')
+        self.send({'op':'run','request_id':'setup','command':'export OPSFEAST_KEEP=same-shell; cd /tmp'})
+        self.event('result')
+        self.send({'op':'run','request_id':'fail','command':'false'})
+        self.event('started')
+        result = self.event('result')
+        self.assertEqual(result['state'], 'failed')
+        self.assertEqual(result['exitcode'], 1)
+        self.assertEqual(result['session_state'], 'ready')
+        self.assertIsNone(self.process.poll())
+        self.send({'op':'run','request_id':'after','command':'printf "$OPSFEAST_KEEP"; pwd'})
+        self.event('started')
+        self.assertEqual(self.event('result')['state'], 'completed')
+        self.assertIn('same-shell/tmp', self.content())
+        blocks = self.records.snapshot(self.sid)['blocks']
+        commands = [b for b in blocks if b['kind']=='command']
+        self.assertIn("> $('false')", commands[-2]['head'])
+        self.assertEqual(commands[-2]['status'], 'failed')
+        self.assertFalse(any(b['title']=='SSHScript Console prompt' for b in blocks))
+        self.send({'op':'close','request_id':'close'})
+        self.assertEqual(self.event('result')['cleanup'], 'confirmed')
+
     def test_running_close_interrupts_and_exits_without_rerun(self):
         self.send({'op':'connect','request_id':'connect'})
         self.event('result')
@@ -232,3 +424,24 @@ class NativeWorkerTests(unittest.TestCase):
         self.assertEqual(result['state'], 'closed')
         self.assertEqual(result['cleanup'], 'confirmed')
         self.assertEqual(self.process.wait(timeout=10), 0)
+
+    def test_displayed_input_executes_in_python_console_with_literal_quotes(self):
+        import shlex
+        from sshscript import Session, Console
+        value = '繁體 \'single\' "double" $literal \\path'
+        command = "printf '%s' " + shlex.quote(value)
+        self.send({'op':'connect','request_id':'connect'})
+        self.event('result')
+        self.send({'op':'run','request_id':'quoted','command':command})
+        self.event('started')
+        self.assertEqual(self.event('result')['exitcode'], 0)
+        block = [b for b in self.records.snapshot(self.sid)['blocks'] if b['kind']=='command'][-1]
+        displayed = self.records.content(self.sid, block['id'])['text']
+        expression = displayed.split('> ', 1)[1]
+        self.assertTrue(expression.startswith('$('))
+        # Execute the saved input itself, not a separately reconstructed command.
+        with contextlib.closing(Session()) as session:
+            with Console(session, terminal=False) as console:
+                update = console.submit(expression)
+                self.assertEqual(update.state, 'completed')
+                self.assertIn(value, update.stdout)

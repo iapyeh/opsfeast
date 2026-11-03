@@ -9,8 +9,9 @@ fields, states, credentials, supported operations and limitations.
 ## Start quickly, then keep the same shell
 
 - Use the shipped `python -B -u -m opsfeast.console_agent --token-file FILE
-  --profile NAME --host HOST`. Add `--sudo-root` only when root entry is within
+  --host HOST`. Add `--sudo-root` only when root entry is within
   the user's authorized scope. No temporary bridge program is needed.
+- When the human has not selected a profile, omit `--profile` to use `.opsfeast.yaml` `default_profile`. Never substitute `main` from an example. Use `--profile NAME` only for an explicitly selected scope. Inspect the returned `profile` and `hosts_file` before connect; stop on a mismatch. Invalid/missing configuration is an error, not permission to choose another profile.
 - Preserve worker stdin across turns. For an execution tool that closes piped stdin
   immediately, choose its persistent interactive mode (for example `tty=true` in
   exec_command). Retain both its process handle and OpsFeast session ID.
@@ -28,9 +29,11 @@ fields, states, credentials, supported operations and limitations.
   a second shell for each command. Report failure honestly; do not automatically
   retry, change target/profile/account or repair configuration.
 
+For observation-only requests, the human can watch the river without entering commands or joining an interactive shell. The agent owns execution and publishes actual commands, incremental output and status. Reuse an already visible reader or provide its URL; do not open an additional interaction page just to show progress. The record service can also carry reviewed program output independently of this shell worker; it does not execute that program itself.
+
 ## Make the actual operation visible
 
-Commands and stdout/stderr must go to the river automatically as they occur,
+Commands are saved with prompt/input in the very first block write before Console submission. The reader receives commit-triggered SSE updates. Commands and stdout/stderr must go to the river automatically as they occur,
 including partial output without a newline. Keep output in the same logical block
 as it streams, not a new card per transport chunk. Long content has a bounded
 preview, small arrow controls and on-demand full/paged reading. A PTY can merge
@@ -44,11 +47,7 @@ backgrounds for input/commands, output and agent commentary/analysis/status,
 with compact spacing. Meaningful analysis can be published through console_client
 block on the same session; use kind=analysis and finish the block when complete.
 
-**Agreed presentation requirement, still pending in the current worker:** prompt
-and input belong on one line in one input block, e.g. `host [root]> df -h`.
-Do not treat a standalone prompt card as the desired interaction. The current
-worker still emits separate prompt blocks; these instructions record the accepted
-design, not a claim that prompt grouping has already been implemented.
+The worker renders shell commands as `$(...)` with Python string-literal escaping; bare shell text after the Python Console prompt is invalid. Its execution adapter uses public `Console.start_command` on the raw command for streaming, while the river shows the copyable Console-input expression. The worker records the actual current prompt and input on one line in one command block, e.g. `host [root]> $('df -h')`, without a standalone prompt card. Active command/analysis/status blocks display a processing indicator until finished. For substantive analysis between commands, publish a streaming analysis/status block on the same session, then finish it when done; do not leave a false busy indication after work ends. This display reflects source reports, not continuous worker/model liveness.
 
 ## Decisions, stopping and replies
 
@@ -64,6 +63,8 @@ reply in chat once received, then check the form/revision/scope before acting.
 Do not delay acknowledgement for another screenshot or redundant response check.
 A waiting client can receive replies; an ended model turn is not automatically
 awakened. Do not promise an unsupported wakeup or browser stop control.
+
+A normally terminated nonzero run with no Console error keeps the shell and returns `state: "failed"` plus `session_state: "ready"`. Report the failure and wait for the human's next instruction; do not retry or disconnect merely because the exit code is nonzero. Deadlines, unknown recovery/termination, sudo or transport failures still close the scope. Preserve the returned cleanup evidence.
 
 On “disconnect,” send close to the existing worker, wait for its closed result,
 and promptly report cleanup. Do not run unrelated inspection first. Keep the
@@ -101,12 +102,12 @@ remote interpreter before relying on it, and preserve scope/timezone/coverage,
 parse failures, proxy/source-IP ambiguity and unknown states. Python preference
 is not permission to install packages, upload code or broaden data access.
 
+SSHScript Console Python executes in the managing Python process; SSH/sudo changes the command channel, not where Python imports or sockets run. Use controller-side Python for analysis of retrieved data. Code that must inspect the remote filesystem/network/runtime needs a remote command/interpreter (or an appropriate remote API); never assume a Python socket opened in the Console is on the SSH host.
+
 The worker's run currently accepts single-line shell commands, not arbitrary
 Python cells. Use a reviewed Python entrypoint or bounded `python3 -c` invocation
 within that interface; larger analysis requires a supported, authorized delivery
-method. A tool's PTY canonical line limit may be lower than the worker's 16 KiB
-command limit. Do not paste a large JSON/program into that PTY or automatically
-replay a command after uncertain delivery. A reusable product gap should be fixed
+method. The shipped worker disables PTY canonical input/echo before created and restores terminal settings on exit, so the OS line limit does not truncate its JSON controls. Keep the worker's 16 KiB command and control-message limits; do not automatically replay a command after uncertain delivery. Earlier already-running workers retain their startup terminal mode; keep their controls short until a newly authorized worker replaces them. A reusable product gap should be fixed
 in OpsFeast rather than requiring a new connection/record bridge each time.
 
-*Last modified: 2026-11-02 17:53:57*
+*Last modified: 2026-11-03 17:31:02*

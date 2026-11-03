@@ -8,10 +8,12 @@ description: Operate a persistent SSHScript shell with a human through chat and 
 ## Choose the interaction mode
 
 For “connect to a host; I want to interact,” use the shipped chat-owned worker,
-not the exact-plan executor below. Read [the chat-shell procedure](references/chat-shell.md)
+not the exact-plan executor below. For this worker, omit `--profile` unless the human selects a specific profile: the checkout's `.opsfeast.yaml` `default_profile` is authoritative. Never copy `main` from an example; check returned `profile` and `hosts_file` before connecting. Read [the chat-shell procedure](references/chat-shell.md)
 and [worker protocol 0.1.0](../../docs/console-agent.md). Default to execution plus a brief acknowledgement; do not proactively analyze or repeat visible output. Analyze only when the human explicitly requests it. The human can supply details
 one step at a time; do not demand a complete plan or repeat approval for already
 explicitly authorized connection, sudo or read-only commands.
+
+The worker combines prompt/input in one command block and the reader shows streaming work as processing. A confirmed ordinary nonzero run retains the shell and returns `session_state: "ready"`; report failure and wait for the next instruction without retrying. Unsafe/unknown recovery still closes. See the chat-shell procedure for processing reports during analysis.
 
 For an operator-selected exact plan with Web approval/checkpoints, follow the
 separate procedure below. Never switch modes to bypass an existing approval gate.
@@ -68,4 +70,4 @@ read it before operating. An external agent may need the user to provide the
 reachable server/checkout and agent-token file path; never assume localhost refers
 to the same machine across remote agent environments.
 
-*Last modified: 2026-11-02 17:49:53*
+*Last modified: 2026-11-03 15:04:46*

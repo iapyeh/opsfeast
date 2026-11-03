@@ -504,9 +504,11 @@ TTL, automatic recollection or ESXi/old-Linux probe compatibility is added.
 
 ## Chat-owned Console worker 0.1.0
 
-For incremental human-directed shell work, follow the [interactive skill](../skills/opsfeast-interactive/SKILL.md) and [chat-shell procedure](../skills/opsfeast-interactive/references/chat-shell.md). These define river-first startup, same-shell continuity, timely acknowledgements, no routine login screenshots and Python-preferred substantive analysis; prompt/input grouping remains a documented pending presentation change.
+For incremental human-directed shell work, follow the [interactive skill](../skills/opsfeast-interactive/SKILL.md) and [chat-shell procedure](../skills/opsfeast-interactive/references/chat-shell.md). These define river-first startup, same-shell continuity, timely acknowledgements, no routine login screenshots and Python-preferred substantive analysis; prompt/input share one command block with shell input rendered as a valid escaped `$(...)` Console expression, active source-reported work displays a processing indicator, and normally terminated nonzero commands retain the shell while waiting for the next instruction.
 
-Use `python -B -u -m opsfeast.console_agent --token-file FILE --profile NAME --host HOST` for incremental human/agent interaction. [Canonical startup and JSON-lines controls](console-agent.md) cover create-before-connect, connect/run/sudo/interrupt/close, immediate output, configured sudo opt-in and cleanup. The worker records its connection API call, readable login result and actual SSHScript prompt; raw SSH banners/remote PS1 are not exposed. Identity JSON stays outside river content with a readable toolbar summary. The worker owns one same-thread Console and publishes to existing block/SSE handlers; no temporary bridge is required. Python/SSHScript 7.0.1 and a running authenticated loopback Web record service are required. No browser command endpoint, automatic reconnect/replay, secret input, arbitrary Python, entered application, model wakeup or recipe retention is supplied.
+Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST [--profile NAME]` for incremental human/agent interaction. [Canonical startup and JSON-lines controls](console-agent.md) cover create-before-connect, connect/run/sudo/interrupt/close, immediate output, configured sudo opt-in and cleanup. The worker publishes initial command/output text in the first write and the HTTP service notifies SSE readers on commit, before command completion. The worker records its connection API call, readable login result and actual SSHScript prompt; raw SSH banners/remote PS1 are not exposed. Identity JSON stays outside river content with a readable toolbar summary. PTY control input avoids canonical-line truncation and restores terminal settings at exit. The worker owns one same-thread Console and publishes to existing block/SSE handlers; no temporary bridge is required. Python/SSHScript 7.0.1 and a running authenticated loopback Web record service are required. No browser command endpoint, automatic reconnect/replay, secret input, arbitrary Python, entered application, model wakeup or recipe retention is supplied.
+
+Omit `--profile` to use `.opsfeast.yaml` `default_profile`; use an explicit name only for a selected override. Check the returned `profile` and `hosts_file` before connecting. Invalid selection fails without fallback or changing the registry; local mode does not load a profile.
 
 ## Console blocks and human replies 0.2.0
 
@@ -518,4 +520,4 @@ login only; no extra reader unlock. Use [the agent skill](../skills/opsfeast-con
 It does not execute SSH, stop jobs, render arbitrary HTML/media or integrate recipe
 logging/retention. Old 0.1 data stays untouched but is not served by the new API.
 
-*Last modified: 2026-11-02 23:43:02*
+*Last modified: 2026-11-03 15:46:22*

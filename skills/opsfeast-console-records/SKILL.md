@@ -8,7 +8,7 @@ description: Publish durable Console blocks, stream bounded previews and read au
 For human-directed shell work, follow the [interactive chat-shell procedure](../opsfeast-interactive/references/chat-shell.md), including immediate reader display, no routine login screenshots and the agreed prompt/input presentation.
 
 Read the complete [0.2.0 contract](../../docs/console-records.md) before use.
-For chat-owned SSH Console execution, first use the shipped [worker 0.1.0](../../docs/console-agent.md), not an ad hoc bridge. Announce that this skill is being used. Start `python -B -u -m opsfeast.console_agent --token-file FILE --profile NAME --host HOST`, immediately show its returned reader_url, then send JSON-lines controls to that process. The worker owns execution; this service stores its records. A received human response should be acknowledged in chat immediately, before optional UI checks.
+For chat-owned SSH Console execution, first use the shipped [worker 0.1.0](../../docs/console-agent.md), not an ad hoc bridge. Announce that this skill is being used. Start `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST`, immediately show its returned reader_url, then send JSON-lines controls to that process. Omit `--profile` to use `.opsfeast.yaml` default_profile; override only for an explicitly selected scope and inspect returned profile/hosts_file before connecting. Prompt/input share one command block using valid escaped `$(...)` Console syntax for shell commands, with initial text in its creation write before execution. HTTP commits wake SSE readers immediately; do not wait for completion to publish output. The reader shows processing for streaming command/analysis/status blocks; finish them when the reported work ends. This is not a heartbeat. The worker owns execution; this service stores its records. A received human response should be acknowledged in chat immediately, before optional UI checks.
 
 This is a checkout-level record/response service, not a command executor, recipe
 retention/logger, SSH adapter, stop controller or model wakeup mechanism.
@@ -55,4 +55,4 @@ create a new session. Chart/media/custom renderer blocks, delete/archive/export 
 full terminal emulation are not supplied. All access is installation-wide, not a
 per-host permission system. See contract for limits, errors and test evidence.
 
-*Last modified: 2026-11-02 17:47:54*
+*Last modified: 2026-11-03 15:46:22*

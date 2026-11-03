@@ -28,6 +28,20 @@ class Controls:
     """Bounded fd reader: no TextIO read-ahead, no blocking partial JSON line."""
     def __init__(self, fd):
         self.fd, self.buffer, self.pending, self.eof = fd, b'', deque(), False
+        self.terminal_settings = None
+        if os.isatty(fd):
+            import termios
+            self.terminal_settings = termios.tcgetattr(fd)
+            settings = termios.tcgetattr(fd)
+            settings[3] &= ~(termios.ICANON | termios.ECHO)
+            settings[6][termios.VMIN], settings[6][termios.VTIME] = 1, 0
+            termios.tcsetattr(fd, termios.TCSANOW, settings)
+
+    def close(self):
+        if self.terminal_settings is not None:
+            import termios
+            termios.tcsetattr(self.fd, termios.TCSANOW, self.terminal_settings)
+            self.terminal_settings = None
 
     def read(self, timeout=0):
         if self.pending:
@@ -94,9 +108,9 @@ class Publisher:
         bid = str(uuid.uuid4())
         self.transport.post('/' + self.sid + '/blocks', {
             'event_id': str(uuid.uuid4()), 'block_id': bid, 'kind': kind,
-            'title': title or kind, 'text': '', 'form': None})
-        self.offsets[bid] = 0
-        self.append(bid, text)
+            'title': title or kind, 'text': text[:4000], 'form': None})
+        self.offsets[bid] = len(text[:4000].encode())
+        self.append(bid, text[4000:])
         if complete:
             self.finish(bid)
         return bid
@@ -125,8 +139,9 @@ class Output:
         if not text:
             return 0
         if self.bid is None:
-            self.bid = self.publisher.block(self.kind)
-        self.publisher.append(self.bid, text)
+            self.bid = self.publisher.block(self.kind, text)
+        else:
+            self.publisher.append(self.bid, text)
         return len(text)
 
     def flush(self):
@@ -155,9 +170,7 @@ class Worker:
         self.closed = False
         self.opening = False
         self.connect_source = connect_source
-
-    def _prompt(self):
-        self.publisher.block('stdout', self.console.prompt, title='SSHScript Console prompt', complete=True)
+        self.active_command = None
 
     def _identity(self):
         env = asdict(self.console.environments[-1])
@@ -186,6 +199,7 @@ class Worker:
             if self.console:
                 raise ControlError('already_connected')
             call = self.publisher.block('command', self.connect_source, title='建立 Console 的 API 呼叫')
+            self.active_command = call
             self.publisher.status('正在建立 SSHScript Console；尚未確認登入成功。')
             self.scope = self.opener(self.stdout, self.stderr)
             self.opening = True
@@ -194,10 +208,10 @@ class Worker:
             self.stdout.finish('completed')
             self.stderr.finish('completed')
             self.publisher.finish(call)
+            self.active_command = None
             identity = self._identity()
             self.publisher.status('登入成功：' + identity['host'] + '（' + identity['effective_user']
                                   + '）；SSHScript Console 已就緒。以下提示符來自 SSHScript Console。')
-            self._prompt()
             return {'state': 'ready', 'identity': identity}
         if self.console is None:
             raise ControlError('connect_required')
@@ -207,10 +221,11 @@ class Worker:
             if (not isinstance(command, str) or not command.strip() or len(command.encode()) > 16384
                     or any(c in command for c in '\x00\r\n')):
                 raise ControlError('single_command_line_required')
-            source = command
+            source = '$(' + repr(command) + ')'
         else:
             source = '$.sudo(username="root", enter_timeout=' + str(seconds) + ')'
-        bid = self.publisher.block('command', source)
+        bid = self.publisher.block('command', self.console.prompt.rstrip() + ' ' + source)
+        self.active_command = bid
         self.emit({'type': 'started', 'request_id': rid, 'command_block': bid})
         update = (self.console.start_command(command, timeout=seconds) if op == 'run'
                   else self.console.submit(source))
@@ -235,16 +250,23 @@ class Worker:
                 update = self.console.poll()
         status = 'completed' if update.state == 'completed' else 'failed'
         self.publisher.finish(bid, status)
+        self.active_command = None
         out, err = self.stdout.finish(status), self.stderr.finish(status)
         result = {'state': update.state, 'exitcode': update.result.exitcode if update.result else None,
                   'error_type': update.error_type, 'stdout_block': out, 'stderr_block': err}
         if op == 'sudo':
             result['identity'] = self._identity()
-        # Failure pauses the session: never silently continue or retry.
-        if closing or update.state != 'completed':
+        # A normally terminated nonzero command is not a broken connection.
+        recoverable = (op == 'run' and update.state == 'failed' and update.error_type is None
+                       and update.result is not None and update.result.exitcode != 0
+                       and getattr(update.result, 'termination_status', None) == 'confirmed')
+        if closing or (update.state != 'completed' and not recoverable):
             result['cleanup'] = self.close()
         else:
-            self._prompt()
+            result['session_state'] = 'ready'
+            if recoverable:
+                self.publisher.status('指令失敗（exitcode=' + str(update.result.exitcode)
+                                      + '）；連線保留，等待下一個指示，不自動重試。')
         return result
 
     def close(self):
@@ -262,6 +284,9 @@ class Worker:
             reuse = 'unknown'
             raise
         finally:
+            if self.active_command:
+                self.publisher.finish(self.active_command, 'interrupted')
+                self.active_command = None
             label = 'Console 清理結果不明；cleanup=' if reuse == 'unknown' else 'Console 已關閉；cleanup='
             self.publisher.status(label + reuse
                                   + '。通道關閉不保證所有遠端子程序均已終止。')
@@ -275,7 +300,7 @@ def main(argv=None):
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument('--host')
     target.add_argument('--local', action='store_true', help='credential-free local Console; explicit opt-in')
-    parser.add_argument('--profile', default='main')
+    parser.add_argument('--profile', help='registered profile; default: .opsfeast.yaml default_profile')
     parser.add_argument('--title', default='互動 Console')
     parser.add_argument('--sudo-root', action='store_true', help='allow configured login-account sudo to root; not an authorization grant')
     parser.add_argument('--idle-timeout', type=int, default=900)
@@ -288,7 +313,7 @@ def main(argv=None):
     def emit(value):
         output.write(json.dumps(value, ensure_ascii=False) + '\n')
         output.flush()
-    worker = None
+    worker = controls = None
     try:
         import importlib.metadata
         import sshscript
@@ -296,8 +321,12 @@ def main(argv=None):
                 or sshscript.__version__ != '7.0.1'):
             raise ControlError('sshscript_7_0_1_required')
         transport = Transport(args.url, args.token_file.read_text().strip())
+        profile = None
+        if not args.local:
+            from opsfeast import Instance
+            profile = Instance.open().profile(args.profile)
         publisher = Publisher(transport, title=args.title,
-                              host_id='localhost' if args.local else args.profile + ' / ' + args.host)
+                              host_id='localhost' if args.local else profile.name + ' / ' + args.host)
         @contextmanager
         def opener(stdout, stderr):
             if args.local:
@@ -309,8 +338,6 @@ def main(argv=None):
                                  stderr=stderr, credential_resolver=reject) as console:
                         yield console
             else:
-                from opsfeast import Instance
-                profile = Instance.open().profile(args.profile)
                 target = profile.sessions.console_target(args.host)
                 with profile.sessions.console(args.host, expected_fingerprint=target['fingerprint'],
                                               sudo_root=args.sudo_root, stdout=stdout, stderr=stderr) as console:
@@ -318,11 +345,15 @@ def main(argv=None):
         source = ('Console(session, terminal=False, get_pty=True)' if args.local else
                   f'profile.sessions.console({args.host!r}, sudo_root={args.sudo_root!r})')
         worker = Worker(publisher, opener, emit, connect_source=source)
-        # First output precedes profile loading, SSH connection and browser QA.
+        # Prepare PTY input before announcing readiness: canonical mode can
+        # discard long JSON lines before Python ever receives them.
+        controls = Controls(sys.stdin.fileno())
+        # Configuration is read-only; no SSH connection occurs before connect.
         emit({'type': 'created', 'protocol_version': VERSION, 'session_id': publisher.sid,
               'reader_url': transport.origin + '/console/' + publisher.sid,
+              'profile': None if profile is None else profile.name,
+              'hosts_file': None if profile is None else str(profile.root / 'hosts.yaml'),
               'state': 'awaiting_connect'})
-        controls = Controls(sys.stdin.fileno())
         while not worker.closed:
             body = controls.read(args.idle_timeout)
             if body is None:
@@ -351,6 +382,8 @@ def main(argv=None):
                 emit({'type': 'closed', 'cleanup': worker.close()})
             except BaseException as exc:
                 emit({'type': 'cleanup_failed', 'error_type': type(exc).__name__, 'cleanup': 'unknown'})
+        if controls:
+            controls.close()
 
 
 if __name__ == '__main__':

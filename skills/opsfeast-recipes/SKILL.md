@@ -9,7 +9,7 @@ For real Web/CLI host creation, group autocomplete/updates and confirmed configu
 
 ## Interactive work before recipe authoring
 
-For incremental chat-owned exploration use the shipped [Console worker 0.1.0](../../docs/console-agent.md) and [record-service skill](../opsfeast-console-records/SKILL.md). It creates a reader before connection and forwards output automatically; no generated bridge is needed. Read the documented startup flags, JSON-lines controls, configured sudo opt-in, failure/cleanup and privacy limits. Existing recipes still use their supplied Recipe/session; do not launch this worker inside routine recipes or bypass an approved exact-plan work.
+For incremental chat-owned exploration use the shipped [Console worker 0.1.0](../../docs/console-agent.md) and [record-service skill](../opsfeast-console-records/SKILL.md). It creates a reader before connection and forwards output automatically; no generated bridge is needed. Prompt/input share one command block with valid escaped `$(...)` shell-command syntax, published before execution; output chunks stream through commit-triggered SSE and active work shows processing. A confirmed normally terminated nonzero run retains the shell (`session_state: "ready"`), reports failure and waits without retrying; uncertain recovery still closes. Read the documented startup flags, JSON-lines controls, configured sudo opt-in, failure/cleanup and privacy limits. Existing recipes still use their supplied Recipe/session; do not launch this worker inside routine recipes or bypass an approved exact-plan work.
 
 For an authorized exploration through the real opt-in Web Console, follow [the interactive skill](../opsfeast-interactive/SKILL.md) and [protocol](../../docs/interactive-console.md). Reuse its HTTP/CLI rather than opening parallel SSH to bypass operator approval. Preserve reviewed findings as a recipe later; interactive events do not automatically create retention.
 
@@ -577,4 +577,4 @@ Before recipe execution after changing Python environments or packages, run the 
 
 For an authorized transcript producer, use the separate [console records service](../../docs/console-records.md) and [skill](../opsfeast-console-records/SKILL.md): 0.2.0 HTTP/CLI block append, bounded previews/ranges/SSE and human forms with agent wait. Browser access uses normal login. No source execution, stop control or recipe lifecycle/retention integration is supplied; do not substitute it for recipe results or services.
 
-*Last modified: 2026-11-02 23:43:02*
+*Last modified: 2026-11-03 15:46:22*

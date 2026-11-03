@@ -15,6 +15,10 @@ export function preview(block,compact=false){
 }
 
 export function visibleInRiver(block){return block.kind!=='identity';}
+export function processingState(blocks){
+  const busy=blocks.some(b=>['command','analysis','status'].includes(b.kind)&&b.status==='streaming');
+  return {busy,label:busy?'處理中…':'目前沒有進行中的操作回報'};
+}
 export function identityLabel(block){
   if(!block)return '尚無身分回報';
   try{const env=JSON.parse(block.head);if(typeof env.host==='string'&&typeof env.effective_user==='string')return `${env.host} · 登入 ${env.connection_user??'未知'} · 目前 ${env.effective_user} · ${env.identity_verified?'身分已核對':'身分未核對'}`;}catch{}

@@ -54,6 +54,8 @@ form. Commands/output/identity/analysis/authorization are writer reports, not pr
 of execution or authenticated human decisions. Source-time support is not supplied
 in 0.2.0; created_at and event received_at are server receive times.
 
+The reader shows a processing indicator for streaming command/analysis/status blocks, both in the toolbar and beside the active block. This reports unfinished source work, not a worker/model heartbeat. Finishing those blocks clears it; other streaming content (such as stdout alone) does not assert that an operation is active.
+
 Text block states: streaming → completed / failed / interrupted / cancelled.
 Form states: waiting → answered or cancelled; expiry is checked at submission.
 Do not mark a truncated or interrupted source completed. Finish ends a block, not
@@ -64,7 +66,7 @@ Limits: 32 MiB per block, 64 MiB total text per session, 2,000 blocks and 100,00
 mutation events. Each create/append text is at most 32 KiB UTF-8, and each HTTP body
 at most 64 KiB (so heavily escaped JSON may need smaller appends). Title max 500 bytes.
 Limits reject writes explicitly, never silently truncate existing data. Metadata is
-bounded separately by typed form/title limits. Each mutation is a SQLite transaction;
+bounded separately by typed form/title limits. HTTP mutations notify waiting SSE readers after commit, so ordinary delivery does not wait for the 250 ms cross-process recheck. SSE responses disable intermediary caching/buffering. Each mutation is a SQLite transaction;
 event journal, metadata, content and response update commit atomically. Polling SSE
 reads committed events, so delivery cannot precede durable acceptance.
 
@@ -210,4 +212,4 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-02 17:13:17*
+*Last modified: 2026-11-03 15:16:44*

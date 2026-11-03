@@ -9,7 +9,9 @@ also requires `--confirm-host HOST`. This never connects or changes retained dat
 
 ## Interactive Console client
 
-For incremental chat-owned execution use `python -B -u -m opsfeast.console_agent --token-file FILE --profile NAME --host HOST`. It returns a reader URL before connecting, then accepts JSON-lines connect/run/sudo/close controls; `--local` is an explicit local-test target. Read [the complete worker protocol](console-agent.md) for flags, interruption, states, output retrieval, authorization and cleanup limits. The separate `console_client` supplies records, forms and immediate response wait/read. No temporary bridge is required.
+For incremental chat-owned execution use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST [--profile NAME]`. It returns a reader URL before connecting, then accepts JSON-lines connect/run/sudo/close controls; `--local` is an explicit local-test target. Prompt/input share one block; streaming work shows processing. A confirmed normal nonzero run retains the shell with `state: "failed"` and `session_state: "ready"`, without automatic retry; uncertain recovery still closes. Read [the complete worker protocol](console-agent.md) for flags, interruption, states, output retrieval, authorization and cleanup limits. The separate `console_client` supplies records, forms and immediate response wait/read. No temporary bridge is required.
+
+Omit `--profile` to use `.opsfeast.yaml` `default_profile`; use an explicit name only for a selected override. Check the returned `profile` and `hosts_file` before connecting. Invalid selection fails without fallback or changing the registry; local mode does not load a profile.
 
 `python -B -m opsfeast.interactive_client --help` documents the separate loopback JSON/SSE adapter. Read [its exact payload, token-role and retry contract](interactive-console.md#http-and-agent-cli) before use. This command talks to the running Web server and does not open SSH locally. It is separate from `tools/opsfeast.py` operational recipe commands.
 
@@ -993,4 +995,4 @@ UUID/idempotency rules, byte offsets, limits, return cursors and exit codes.
 explicit timed_out result; it does not wake a model or authorize execution.
 Browser users use normal administrator login, without another reader unlock.
 
-*Last modified: 2026-11-02 17:03:25*
+*Last modified: 2026-11-03 15:04:46*

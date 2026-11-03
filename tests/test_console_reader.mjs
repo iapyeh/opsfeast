@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {consume,displayText,preview,visibleInRiver,identityLabel} from '../web/assets/console-reader-state.mjs';
+import {consume,displayText,preview,visibleInRiver,identityLabel,processingState} from '../web/assets/console-reader-state.mjs';
 test('stream updates one block without retaining every text chunk in browser history',()=>{
   const original={session:{session_id:'one'},seq:0,blocks:[]};
   const e={session_id:'one',seq:1,block:{id:'b',revision:1,head:'first',tail:'',size:5}};
@@ -23,4 +23,19 @@ test('identity metadata stays outside river content and has a readable toolbar l
   assert.equal(visibleInRiver({kind:'status'}),true);
   assert.equal(identityLabel(block),'synthetic · 登入 test · 目前 root · 身分已核對');
   assert.doesNotMatch(identityLabel({...block,head:'legacy private text'}),/legacy/);
+});
+test('processing follows unfinished work through completion, failure and restored snapshots',()=>{
+  for(const kind of ['command','analysis','status']){
+    const b={kind,status:'streaming'};
+    assert.equal(processingState([b]).busy,true);
+    for(const status of ['completed','failed','interrupted','cancelled'])
+      assert.equal(processingState([{...b,status}]).busy,false);
+  }
+  assert.equal(processingState([]).busy,false);
+  assert.equal(processingState([{kind:'stdout',status:'streaming'}]).busy,false);
+  const initial={session:{session_id:'one'},seq:0,blocks:[]};
+  const first=consume(initial,{session_id:'one',seq:1,block:{id:'command',kind:'command',status:'streaming'}});
+  assert.equal(processingState(first.blocks).busy,true);
+  const done=consume(first,{session_id:'one',seq:2,block:{id:'command',kind:'command',status:'failed'}});
+  assert.equal(processingState(done.blocks).busy,false);
 });

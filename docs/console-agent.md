@@ -6,7 +6,7 @@ SSHScript Console and its configured connection; the Web server owns durable blo
 read/response handlers and SSE. Creation returns a reader URL before any SSH
 connection. This is separate from the older exact-plan `/interactive` executor.
 
-For the human/agent operating principles agreed during interactive trials, read [the chat-shell skill procedure](../skills/opsfeast-interactive/references/chat-shell.md). Prompt/input grouping is an accepted presentation requirement that the current separate prompt blocks do not yet implement. Routine login does not require a screenshot or browser QA before reporting success.
+For the human/agent operating principles agreed during interactive trials, read [the chat-shell skill procedure](../skills/opsfeast-interactive/references/chat-shell.md). Each run/sudo command block contains the actual current Console prompt and input on one line. The reader shows an accessible processing indicator while a command, analysis or status block is streaming. Routine login does not require a screenshot or browser QA before reporting success.
 
 ## Availability and authorization
 
@@ -30,19 +30,23 @@ Do not run commands producing secrets: output is not automatically redacted.
 ```sh
 python -B -u -m opsfeast.console_agent \
   --token-file /srv/opsfeast-data/.opsfeast-console-writer-8740.token \
-  --profile main --host web-01 --title 'web-01 interactive inspection'
+  --host web-01 --title 'web-01 interactive inspection'
 ```
+
+For configured hosts, omitting `--profile` selects `default_profile` from the checkout's `.opsfeast.yaml`, using the same Core selection as other commands. An explicit `--profile NAME` overrides it for this worker only; it never changes the saved default. Do not assume `main` or copy an example profile. Read-only configuration loading happens before reader creation; invalid/missing selection fails without a reader or connection, with no fallback. The selected profile/configuration snapshot is held for this worker; start a new authorized worker to select another profile.
 
 Optional flags: `--url http://127.0.0.1:8740`, `--idle-timeout 900` (1–3600
 seconds), `--sudo-root`. `--local` replaces `--host` for credential-free local
 verification; it cannot use `--sudo-root` and also requires execution permission.
 
-Keep this process's stdin open in the agent's execution tool. Its first stdout
+Keep this process's stdin open in the agent's execution tool. For PTY stdin, the worker disables canonical input and echo before reporting created, preserving signal handling and restoring the original terminal settings on exit. This avoids OS canonical-line truncation of JSON controls; the documented worker byte limits still apply. Its first stdout
 JSON line is:
 
 ```json
-{"type":"created","protocol_version":"0.1.0","session_id":"UUID","reader_url":"http://127.0.0.1:8740/console/UUID","state":"awaiting_connect"}
+{"type":"created","protocol_version":"0.1.0","session_id":"UUID","reader_url":"http://127.0.0.1:8740/console/UUID","profile":"selected-profile","hosts_file":"/srv/feast/hosts.yaml","state":"awaiting_connect"}
 ```
+
+`profile` and `hosts_file` identify the actual selection before connection; both are null for `--local`. Check these against the authorized scope. A mismatch requires stopping before `connect`, not switching targets automatically. These fields are additive protocol 0.1.0 metadata.
 
 **Immediately open this returned URL in the user's visible browser and preserve
 that tab.** Do not wait for connection success or run a browser QA sequence first.
@@ -73,9 +77,9 @@ applications and full terminal emulation are not exposed by this worker.
 
 ## Output, state and stopping
 
-Connection records include the Core/Console API call before connection, a readable login-success status after entry, and the actual SSHScript `Console.prompt` at readiness and after successful commands. This is the SSHScript prompt, not the remote shell PS1. Raw SSH banners, authentication dialogues and shell startup prompts are not exposed by the current Console API and are not fabricated. The prompt property is verified against the public [SSHScript 7.0.1 source](https://github.com/iapyeh/sshscript/blob/b8d7c8fe88b4096e8a58e6609ba805ee2bf41049/src/sshscript/interactive.py). Identity JSON remains stored but appears only as a readable toolbar summary in the river; the dedicated identity-block page retains full details. Small gaps separate visible blocks.
+Connection records include the Core/Console API call before connection, a readable login-success status after entry, and the actual current SSHScript `Console.prompt` joined with each run/sudo input in one command block. A run is displayed as `$(PYTHON_STRING_LITERAL)`, for example `web-01 [root]> $('df -h')`, using Python literal escaping so quotes, backslashes, dollar signs and Unicode remain copyable into SSHScript Console. The worker executes the raw shell command through public `Console.start_command` for streaming and interruption; the displayed dollar expression is its Console-input form, not a bare shell line in a Python REPL. No standalone prompt blocks are emitted. This is the SSHScript prompt, not the remote shell PS1. Raw SSH banners, authentication dialogues and shell startup prompts are not exposed by the current Console API and are not fabricated. The prompt property is verified against the public [SSHScript 7.0.1 source](https://github.com/iapyeh/sshscript/blob/b8d7c8fe88b4096e8a58e6609ba805ee2bf41049/src/sshscript/interactive.py). Identity JSON remains stored but appears only as a readable toolbar summary in the river; the dedicated identity-block page retains full details. Small gaps separate visible blocks.
 
-The worker writes command text before submitting it. Console stdout/stderr streams
+The worker durably creates each command block with its initial prompt/input text in the first HTTP write, before submitting anything to Console. First output is likewise included when its output block is created, then appended as chunks arrive. The SSE service wakes subscribed readers immediately after each HTTP commit instead of waiting for the periodic recheck; the 250 ms recheck remains for writes from another process. Browser rendering, network/SSH latency and application-side buffering still apply; no absolute latency guarantee is made. Console stdout/stderr streams
 forward received text immediately, including text without a newline and output
 from synchronous sudo. There is no wait for whole-command completion. Output is
 stored as append-only deltas in one block per stream/operation and reaches the
@@ -88,7 +92,7 @@ Worker stdout remains JSON-lines control/result data; it does not mix terminal
 text into the protocol. `started` includes request_id and command_block. `result`
 includes request_id, state, exitcode, safe error_type, stdout_block/stderr_block
 (or null when empty), plus identity for connect/sudo and cleanup when applicable.
-The actual output is in the river and can be read by the existing
+`session_state: "ready"` reports that the worker retained its shell after a successful command or a confirmed, normally terminated nonzero command. It does not turn a failed command into success or authorize another command. The actual output is in the river and can be read by the existing
 `console_client content --session SID --block BID`. Do not infer success from
 silence, a preview or a prompt; inspect the returned state/exitcode.
 
@@ -102,8 +106,7 @@ During a running shell command, the same control pipe accepts only:
 Other requests receive `busy_or_invalid_control`; they are not queued for later
 execution. Interrupt uses SSHScript's bounded foreground recovery. The immediate
 `control_received` message explicitly does not certify a confirmed stop. Inspect
-the final result and cleanup. A failed command closes the scope rather than
-silently continuing. Close during a command interrupts first, then closes.
+the final result and cleanup. A run with a nonzero exit code, no Console error and confirmed termination is reported as failed while retaining the same shell (`session_state: "ready"`); wait for the human's next instruction, without retrying. Sudo failure, deadline/recovery errors, unknown termination and transport/storage exceptions still close the scope. Explicit close also closes after interrupting. Close during a command interrupts first, then closes.
 Synchronous connection/sudo calls cannot read control until they return; their
 finite budgets still apply. There is no browser stop button in this version.
 
@@ -120,6 +123,10 @@ Successful worker/control completion exits 0 (a command may still have a nonzero
 exitcode in its result); worker/runtime/transport failure exits 1, usage exits 2,
 and keyboard interruption exits 130. Invalid controls are rejected without
 executing, then the worker remains available unless it has closed.
+
+## Processing display
+
+The river toolbar and active command/analysis/status blocks show “處理中…” while those blocks are streaming. Finish (including failed/interrupted/cancelled) clears the indicator; SSE refresh and history recovery derive it from stored block states. If connection opening or command submission raises, cleanup finishes the outstanding command block as interrupted so the processing display ends. This does not establish remote process termination or successful cleanup. Animation respects reduced-motion preferences. This is source-reported unfinished work, not a worker/model heartbeat or proof of a live connection. The separate connection notice reports SSE interruptions. Agents doing analysis between commands can keep an analysis/status block streaming and finish it when that work ends; an ended model turn does not keep doing work.
 
 ## Questions and response delivery
 
@@ -146,7 +153,7 @@ not added by this worker.
 Reproducible tests: `tests/test_console_agent.py` exercises local HTTP + real local
 SSHScript, partial Unicode before completion, stdout/stderr visibility, persistent
 shell state, active close, control validation, duplicate refusal and no retry.
-Core tests cover configured sudo policy and output hooks. These are local/mocked
+Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-02 17:47:54*
+*Last modified: 2026-11-03 17:35:47*

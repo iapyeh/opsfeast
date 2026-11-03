@@ -370,6 +370,44 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
             second=await asyncio.wait_for(anext(iterator),2);self.assertIn('first second',second);self.assertIn('id: 2',second)
         finally:await iterator.aclose()
 
+    async def test_console_http_commit_wakes_waiting_sse_without_poll_delay(self):
+        import uuid
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from opsfeast.web.app import create_app
+        app=create_app(self.root,console_options={'writer_token':'w','reader_token':'r'})
+        records=app.state.console_records;sid=str(uuid.uuid4());bid=str(uuid.uuid4())
+        records.create({'session_id':sid,'title':'Live SSE','host_id':'synthetic','work_id':None})
+        async def disconnected():return False
+        req=SimpleNamespace(headers={'authorization':'Bearer r'},cookies={},is_disconnected=disconnected)
+        route=next(r for r in app.routes if getattr(r,'path','')=='/api/v1/console-sessions/{session_id}/stream')
+        response=await route.endpoint(sid,req,0);iterator=response.body_iterator
+        self.assertEqual(response.headers['cache-control'],'no-cache')
+        waiting=asyncio.Event();loop=asyncio.get_running_loop();original=records.events
+        def read(*args):
+            result=original(*args)
+            if not result:loop.call_soon_threadsafe(waiting.set)
+            return result
+        pending=None
+        try:
+            with patch('opsfeast.web.console_api.STREAM_RECHECK_SECONDS',30), patch.object(records,'events',side_effect=read):
+                pending=asyncio.create_task(anext(iterator))
+                await asyncio.wait_for(waiting.wait(),2)
+                body={'event_id':str(uuid.uuid4()),'block_id':bid,'title':'command','kind':'command',
+                      'text':'synthetic> sleep 30','form':None}
+                status,_,_=await self.request('/api/v1/console-sessions/'+sid+'/blocks','POST',
+                    body=json.dumps(body).encode(),headers=[(b'authorization',b'Bearer w'),(b'content-type',b'application/json')],app=app)
+                self.assertEqual(status,200)
+                event=await asyncio.wait_for(pending,2)
+                self.assertIn('synthetic> sleep 30',event)
+                self.assertIn('streaming',event)
+        finally:
+            if pending and not pending.done():
+                pending.cancel()
+                try:await pending
+                except asyncio.CancelledError:pass
+            await iterator.aclose()
+
 
 
 if __name__ == "__main__":
