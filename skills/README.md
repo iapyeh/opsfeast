@@ -1,3 +1,5 @@
+For entered programs and safe human password input, use [interactive worker 0.2.0](../docs/console-agent.md#entered-programs-and-private-input-worker-020) and [ephemeral secret delivery](../docs/console-secrets.md), routed through the interactive/Console-record skills. Passwords never belong in ordinary river forms.
+
 # AI Agent Guidance
 
 The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](../docs/web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
@@ -123,7 +125,7 @@ When writing Python that consumes host settings, start with [runtime configurati
 - [opsfeast-hosts](opsfeast-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).
 - [opsfeast-recipes](opsfeast-recipes/SKILL.md): discover, author and execute inventory and compatible Python-session recipes with typed invocation inputs, share one or many recipes, and acquire, verify and review third-party candidates before authorized installation. Start with the [recipe user guide](../docs/recipes.md).
 - [opsfeast-result-data](opsfeast-result-data/SKILL.md): recover, interpret, export, validate and combine retained observations; start with the [result-data contracts](../docs/result-data.md).
-- [sshscript](sshscript/SKILL.md): SSHScript 7.0.1 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); for the shipped persistent chat-owned adapter use [Console worker 0.1.0](../docs/console-agent.md). Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
+- [sshscript](sshscript/SKILL.md): SSHScript 7.0.1 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); for the shipped persistent chat-owned adapter use [Console worker 0.2.0](../docs/console-agent.md). Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
 
 These skills rely on the repository layout and can be read directly by any agent. The full public SSHScript skill snapshot lives in `skills/sshscript/`, including references and SOURCE.json; its presence does not imply installation or automatic loading by a particular agent.
 
@@ -178,4 +180,4 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-04 07:24:53*
+*Last modified: 2026-11-04 12:05:52*

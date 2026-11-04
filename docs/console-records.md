@@ -29,7 +29,7 @@ also perform writer operations. Same-origin checks apply to all requests. These
 installation-wide capabilities grant access to all its transcripts, not per-host ACLs.
 Same OS-user agents may read owner files; this is not OS-user isolation. Keep token
 values out of URLs, argv, logs and prompts. Never write passwords or private keys;
-no automatic output redaction is supplied. Do not collect secrets in form fields.
+no automatic output redaction is supplied. Do not collect secrets in form fields. For program passwords, use the separate [ephemeral secret channel](console-secrets.md), which bypasses this record/form store.
 
 SQLite is `<installation-data>/console-records/console-blocks.sqlite3`, in a private
 directory with a 0600 database. 0.2.0 is intentionally incompatible with the earlier
@@ -383,4 +383,4 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-04 07:38:00*
+*Last modified: 2026-11-04 12:03:41*

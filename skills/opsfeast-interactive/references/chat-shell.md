@@ -6,6 +6,24 @@ supporting execution/record tool. Do not require the human to predict all detail
 in advance. Read the [worker contract](../../../docs/console-agent.md) for exact
 fields, states, credentials, supported operations and limitations.
 
+
+## Enter a text program and request its password safely
+
+Read [worker 0.2.0](../../../docs/console-agent.md#entered-programs-and-private-input-worker-020)
+and [ephemeral secret delivery](../../../docs/console-secrets.md) before this workflow.
+Use enter → observe waiting_secret → secret → observe waiting_input → input → leave
+on the same worker. Exact field names, literal prompts, timeout/exit behavior and
+an example MySQL command are in the canonical worker guide. MySQL root does not
+authorize OS root. Ordinary SQL/input is recorded; passwords never belong in chat,
+input operations, command arguments or ordinary durable forms. The secret operation
+opens an authenticated, short-lived password field; the worker consumes its value
+without returning it to the agent. Keep the worker alive and report expiry,
+cancellation, uncertain delivery and authentication failures without retrying.
+Historical readers provide no secret field. Old workers must be replaced and the
+Web service restarted after this update; preserve existing records and reconcile
+active work before doing so. No automatic reconnect or program replay exists.
+
+
 ## Start quickly, then keep the same shell
 
 - Use the shipped `python -B -u -m opsfeast.console_agent --token-file FILE
@@ -192,4 +210,4 @@ in OpsFeast rather than requiring a new connection/record bridge each time.
 
 After each concluded interaction (including agent-led Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
 
-*Last modified: 2026-11-04 07:24:53*
+*Last modified: 2026-11-04 12:03:41*

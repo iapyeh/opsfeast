@@ -15,6 +15,19 @@ STREAM_RECHECK_SECONDS=.25  # Cross-process writes remain discoverable without n
 
 def install(app, *, root, product, web_root, options, check_origin, authenticated, require_admin, json_body):
     records=Records(root/'console-records');app.state.console_records=records
+    from opsfeast.console_secrets import SecretBroker
+    broker = SecretBroker()
+    app.state.console_secrets = broker
+    from contextlib import asynccontextmanager
+    previous_lifespan = app.router.lifespan_context
+    @asynccontextmanager
+    async def lifespan(application):
+        async with previous_lifespan(application) as state:
+            try:
+                yield state
+            finally:
+                broker.close()
+    app.router.lifespan_context = lifespan
     changed=asyncio.Condition()
     async def mutate(method,*args):
         result=await run_in_threadpool(method,*args)
@@ -29,6 +42,40 @@ def install(app, *, root, product, web_root, options, check_origin, authenticate
             expected=('Bearer '+options[role+'_token']).encode() if options else b''
             if expected and hmac.compare_digest(supplied,expected):return
         raise HTTPException(401,'console_writer_required' if write else 'administrator_login_required')
+    def secret_writer(request):
+        check_origin(request)
+        expected = ('Bearer '+options['writer_token']).encode() if options else b''
+        if not expected or not hmac.compare_digest(request.headers.get('authorization','').encode(), expected):
+            raise HTTPException(401, 'console_writer_required')
+
+    # Values bypass Records, SSE, SQLite and ordinary form replies entirely.
+    @app.get('/api/v1/console-sessions/{session_id}/secret-requests')
+    def secret_pending(session_id:str, request:Request):
+        require_admin(request)
+        records.snapshot(session_id)
+        return {'requests': broker.pending(session_id)}
+    @app.post('/api/v1/console-sessions/{session_id}/secret-requests')
+    async def secret_create(session_id:str, request:Request):
+        secret_writer(request)
+        await run_in_threadpool(records.snapshot, session_id)
+        return broker.create(session_id, await json_body(request, 2048))
+    @app.post('/api/v1/console-sessions/{session_id}/secret-requests/{request_id}/submit')
+    async def secret_submit(session_id:str, request_id:str, request:Request):
+        require_admin(request)
+        return broker.submit(session_id, request_id, await json_body(request, 32768))
+    @app.post('/api/v1/console-sessions/{session_id}/secret-requests/{request_id}/take')
+    async def secret_take(session_id:str, request_id:str, request:Request):
+        secret_writer(request)
+        return broker.take(session_id, request_id, await json_body(request, 2048))
+    @app.post('/api/v1/console-sessions/{session_id}/secret-requests/{request_id}/cancel')
+    async def secret_cancel(session_id:str, request_id:str, request:Request):
+        if authenticated(request):
+            require_admin(request)
+            body = await json_body(request, 2048)
+            if body: raise HTTPException(422, 'invalid_fields')
+            return broker.cancel(session_id, request_id)
+        secret_writer(request)
+        return broker.cancel(session_id, request_id, await json_body(request, 2048))
     def page(request,filename):
         check_origin(request)
         if not authenticated(request):return RedirectResponse('/login?next='+quote(request.url.path+('?' + request.url.query if request.url.query else ''),safe=''),status_code=303)

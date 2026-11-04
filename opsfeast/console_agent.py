@@ -1,7 +1,7 @@
 """Persistent chat-owned Console worker, JSON-lines control protocol 0.1.0.
 
 Creates the durable reader before connecting. No remote connection until an
-explicit connect request; no arbitrary Python input, retries or credential input.
+explicit connect request; no arbitrary Python input or automatic retries.
 """
 import argparse
 from contextlib import contextmanager
@@ -17,7 +17,7 @@ from urllib.parse import urlparse, urlencode
 from urllib.request import Request, urlopen
 import uuid
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 
 class ControlError(ValueError):
@@ -139,20 +139,49 @@ class Output:
     """Forward Console writes, including synchronous sudo output, without line buffering."""
     def __init__(self, publisher, kind):
         self.publisher, self.kind, self.bid = publisher, kind, None
+        self.secrets, self.pending, self.tail = [], '', ''
+
+    def protect(self, value):
+        if value and value not in self.secrets:
+            self.secrets.append(value)
+
+    def _redact(self, text, final=False):
+        text = self.pending + text
+        self.pending = ''
+        for secret in self.secrets:
+            text = text.replace(secret, '[hidden]')
+        if not final:
+            hold = max((n for secret in self.secrets for n in range(1, min(len(secret), len(text)+1))
+                        if text.endswith(secret[:n])), default=0)
+            if hold:
+                text, self.pending = text[:-hold], text[-hold:]
+        elif any(text and secret.startswith(text) for secret in self.secrets):
+            text = '[hidden]'
+        return text
 
     def write(self, text):
         if not text:
             return 0
+        size = len(text)
+        text = self._redact(text)
+        self.tail = (self.tail + text)[-2048:]
+        if not text:
+            return size
+        self._publish(text)
+        return size
+
+    def _publish(self, text):
         if self.bid is None:
             self.bid = self.publisher.block(self.kind, text)
         else:
             self.publisher.append(self.bid, text)
-        return len(text)
 
     def flush(self):
         pass
 
     def finish(self, status):
+        if self.pending:
+            self._publish(self._redact('', final=True))
         if self.bid:
             self.publisher.finish(self.bid, status)
         bid, self.bid = self.bid, None
@@ -176,6 +205,133 @@ class Worker:
         self.opening = False
         self.connect_source = connect_source
         self.active_command = None
+        self.program = None
+        self.program_state = None
+        self.control = None
+
+    def password(self, _prompt):
+        """Private callback: never return its result through the agent protocol."""
+        rid = str(uuid.uuid4())
+        seconds, label = self.secret_options
+        base = '/' + self.publisher.sid + '/secret-requests'
+        transport = self.publisher.transport
+        reply = transport.post(base, {'request_id': rid, 'label': label, 'timeout': seconds})
+        claim = {'claim': reply['claim']}
+        self.publisher.activity('idle')
+        self.publisher.status('請在河道的安全輸入欄位提供密碼；不會保存於紀錄。')
+        self.emit({'type': 'secret_requested', 'request_id': rid, 'expires_at': reply['expires_at']})
+        end = time.monotonic() + seconds
+        try:
+            while time.monotonic() < end:
+                incoming = self.control() if self.control else None
+                if incoming is not None:
+                    if isinstance(incoming, dict) and incoming.get('op') in ('close', 'interrupt'):
+                        raise ControlError('secret_input_cancelled')
+                    self.emit({'type': 'rejected', 'error_type': 'waiting_for_secret'})
+                result = transport.post(base+'/'+rid+'/take', claim)
+                if result['state'] == 'consumed':
+                    value = result.pop('value')
+                    self.stdout.protect(value)
+                    self.stderr.protect(value)
+                    return value
+                time.sleep(.2)
+            raise ControlError('secret_input_expired')
+        finally:
+            try:
+                transport.post(base+'/'+rid+'/cancel', claim)
+            except Exception:
+                pass  # Consumed/expired requests are already gone. Never retry input.
+
+    @staticmethod
+    def _line(value, name, limit=16384, empty=False):
+        if (not isinstance(value, str) or (not empty and not value.strip())
+                or len(value.encode()) > limit or any(c in value for c in '\x00\r\n')):
+            raise ControlError('invalid_'+name)
+        return value
+
+    def _program_request(self, op, body, control):
+        seconds = deadline(body.get('timeout', 30))
+        if op == 'enter':
+            if self.program:
+                raise ControlError('leave_program_first')
+            command = self._line(body.get('command'), 'command')
+            prompt = self._line(body.get('prompt'), 'prompt', 200)
+            exit_text = self._line(body.get('exit'), 'exit', 200)
+            secret_prompt = self._line(body.get('secret_prompt', ''), 'secret_prompt', 200, empty=True)
+            source = '$.enter('+repr(command)+', prompt='+repr(prompt)+', exit='+repr(exit_text)+')'
+        else:
+            if not self.program:
+                raise ControlError('entered_program_required')
+            if op in ('input', 'secret') and self.program_state not in ('waiting_input', 'waiting_secret'):
+                raise ControlError('program_not_ready')
+            if op == 'input':
+                if self.program_state == 'waiting_secret':
+                    raise ControlError('use_secret_operation')
+                text = self._line(body.get('text'), 'input', empty=True)
+                source = '$.input('+repr(text)+')'
+            elif op == 'secret':
+                if self.program_state != 'waiting_secret':
+                    raise ControlError('secret_prompt_required')
+                label = self._line(body.get('label', '程式密碼'), 'label', 200)
+                self.secret_options = seconds, label
+                source = '$.input(secret=True)'
+            elif op == 'leave':
+                source = '$.exit()'
+            else:
+                source = '$.poll()'
+        self.publisher.activity('idle')
+        bid = self.publisher.block('command', self.console.prompt.rstrip()+' '+source)
+        self.active_command = bid
+        self.emit({'type':'started', 'request_id':body['request_id'], 'command_block':bid})
+        self.control = control
+        self.stdout.tail = self.stderr.tail = ''
+        if op == 'enter':
+            self.program = {'secret_prompt': secret_prompt}
+            update = self.console.submit(source)
+        elif op == 'input':
+            update = self.console.send_input(text, timeout=min(seconds, 2))
+        elif op == 'secret':
+            self.console.input(secret=True, timeout=min(seconds, 2))
+            update = self.console.poll()
+        elif op == 'leave':
+            update = self.console.submit(source)
+        else:
+            update = self.console.poll()
+        end = time.monotonic() + (min(seconds, 15) if op == 'secret' else seconds)
+        while update.state == 'running' and time.monotonic() < end:
+            marker = self.program['secret_prompt'] if self.program else ''
+            if marker and marker in self.stdout.tail + self.stderr.tail:
+                break
+            incoming = control() if control else None
+            if incoming is not None:
+                if isinstance(incoming, dict) and incoming.get('op') in ('close','interrupt'):
+                    update = self.console.interrupt()
+                    if incoming['op'] == 'close':
+                        return {'state':'closed','cleanup':self.close()}
+                else:
+                    self.emit({'type':'rejected','error_type':'busy_or_invalid_control'})
+            time.sleep(.04)
+            update = self.console.poll()
+        in_program = self.console.environments[-1].kind == 'program'
+        marker = self.program['secret_prompt'] if self.program else ''
+        state = ('waiting_secret' if in_program and marker and marker in self.stdout.tail+self.stderr.tail
+                 else update.state)
+        self.program_state = state
+        if not in_program:
+            self.program = None
+        status = 'failed' if update.state == 'failed' else 'completed'
+        self.publisher.finish(bid, status)
+        self.active_command = None
+        out, err = self.stdout.finish(status), self.stderr.finish(status)
+        if update.state == 'failed' and update.error_type:
+            return {'state':'failed', 'error_type':update.error_type,
+                    'stdout_block':out, 'stderr_block':err, 'cleanup':self.close()}
+        if state == 'waiting_secret':
+            self.publisher.status('程式正在等待密碼；請使用 secret 操作啟用安全輸入。')
+        self.publisher.activity('idle' if in_program else 'thinking')
+        return {'state':state, 'session_state':'program' if in_program else 'ready',
+                'exitcode':update.result.exitcode if update.result else None,
+                'error_type':update.error_type, 'stdout_block':out, 'stderr_block':err}
 
     def _identity(self):
         env = asdict(self.console.environments[-1])
@@ -193,7 +349,10 @@ class Worker:
         self.seen.add(rid)
         op = body.get('op')
         allowed = {'connect': set(), 'run': {'command', 'timeout'},
-                   'sudo': {'timeout'}, 'close': set(), 'activity': {'state'}}
+                   'sudo': {'timeout'}, 'close': set(), 'activity': {'state'},
+                   'enter': {'command','prompt','exit','secret_prompt','timeout'},
+                   'input': {'text','timeout'}, 'secret': {'label','timeout'},
+                   'poll': {'timeout'}, 'leave': {'timeout'}}
         if not isinstance(op, str) or op not in allowed or set(body) - {'op', 'request_id'} - allowed[op]:
             raise ControlError('unsupported_operation_or_fields')
         if self.closed:
@@ -225,6 +384,17 @@ class Worker:
             return {'state': 'ready', 'identity': identity}
         if self.console is None:
             raise ControlError('connect_required')
+        if op in ('enter','input','secret','poll','leave'):
+            try:
+                return self._program_request(op, body, control)
+            except ControlError:
+                if self.active_command:
+                    self.stdout.finish('interrupted')
+                    self.stderr.finish('interrupted')
+                    self.close()
+                raise
+        if self.program:
+            raise ControlError('leave_program_first')
         seconds = deadline(body.get('timeout', 30))
         if op == 'run':
             command = body.get('command')
@@ -303,6 +473,8 @@ class Worker:
             self.publisher.status(label + reuse
                                   + '。通道關閉不保證所有遠端子程序均已終止。')
             self.publisher.activity('idle')
+            self.stdout.secrets.clear()
+            self.stderr.secrets.clear()
         return reuse
 
 
@@ -348,12 +520,14 @@ def main(argv=None):
                     raise ControlError('local_privilege_switch_unsupported')
                 with Session() as session:
                     with Console(session, terminal=False, get_pty=True, stdout=stdout,
-                                 stderr=stderr, credential_resolver=reject) as console:
+                                 stderr=stderr, credential_resolver=reject,
+                                 password_func=lambda prompt: worker.password(prompt)) as console:
                         yield console
             else:
                 target = profile.sessions.console_target(args.host)
                 with profile.sessions.console(args.host, expected_fingerprint=target['fingerprint'],
-                                              sudo_root=args.sudo_root, stdout=stdout, stderr=stderr) as console:
+                                              sudo_root=args.sudo_root, stdout=stdout, stderr=stderr,
+                                              password_func=lambda prompt: worker.password(prompt)) as console:
                     yield console
         source = ('Console(session, terminal=False, get_pty=True)' if args.local else
                   f'profile.sessions.console({args.host!r}, sudo_root={args.sudo_root!r})')

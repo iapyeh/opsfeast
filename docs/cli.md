@@ -999,4 +999,9 @@ Browser users use normal administrator login, without another reader unlock.
 
 Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show|create|update|merge|delete`. All output is JSON. Read [host notes 0.1.0](host-notes.md) for exact stdin/revision/confirmation arguments, no-history deletion, error states and agent review procedure. These local operations never connect to hosts.
 
-*Last modified: 2026-11-04 06:45:56*
+
+## Interactive Console programs and private input
+
+Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.2.0 control reference](console-agent.md#entered-programs-and-private-input-worker-020) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
+
+*Last modified: 2026-11-04 12:05:52*

@@ -724,7 +724,7 @@ class Sessions:
 
     @contextmanager
     def console(self, host_id, *, timeout=30, expected_fingerprint=None, sudo_root=False,
-                stdout=None, stderr=None):
+                stdout=None, stderr=None, password_func=None):
         """Borrow a headless SSHScript Console over this profile's owned connection.
 
         Construct/use/close on the calling thread. This is trusted code, not a
@@ -750,7 +750,8 @@ class Sessions:
             return SwitchCredentials(password=password)
         with self.connect(host_id, timeout=timeout) as connection:
             with Console(connection._actor, terminal=False, get_pty=True,
-                         credential_resolver=resolve_switch, stdout=stdout, stderr=stderr) as console:
+                         credential_resolver=resolve_switch, stdout=stdout, stderr=stderr,
+                         password_func=password_func) as console:
                 yield console
 
     @contextmanager

@@ -1,6 +1,6 @@
 # Documentation
 
-For chat-owned live SSHScript execution and streamed Console output, use [Console worker 0.1.0](console-agent.md).
+For chat-owned live SSHScript execution and streamed Console output, use [Console worker 0.2.0](console-agent.md).
 
 
 - [Web host configuration](web-hosts.md): real host creation, connection/groups, revision checks and confirmed deletion.
@@ -94,4 +94,4 @@ For the independent agent-written Console transcript reader, see [console record
 
 [Host notes](host-notes.md): review/edit private host knowledge on the Web, share CLI/Python/API operations, resolve conflicts and confirm experience extraction.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-04 12:05:52*

@@ -1,4 +1,4 @@
-# Chat-owned Console worker 0.1.0
+# Chat-owned Console worker 0.2.0
 
 Use the shipped `python -B -u -m opsfeast.console_agent` worker for incremental
 human/agent Console work. Do not generate a temporary bridge. The worker owns one
@@ -28,7 +28,7 @@ sudo to root only and does not itself grant human authorization. It is disabled
 by default. No credential arguments, automatic retries, alternate accounts or
 fallback connections exist. Shell commands are trusted and can have arbitrary
 effects; this is not a shell sandbox or an enforced read-only permission system.
-Do not run commands producing secrets: output is not automatically redacted.
+Do not run commands producing unknown secrets. Values delivered through the private input channel are redacted from subsequent output, including split chunks; this is not general output-secret detection.
 
 ## Start, show, then connect
 
@@ -48,10 +48,10 @@ Keep this process's stdin open in the agent's execution tool. For PTY stdin, the
 JSON line is:
 
 ```json
-{"type":"created","protocol_version":"0.1.0","session_id":"UUID","reader_url":"http://127.0.0.1:8740/console/UUID","profile":"selected-profile","hosts_file":"/srv/feast/hosts.yaml","state":"awaiting_connect"}
+{"type":"created","protocol_version":"0.2.0","session_id":"UUID","reader_url":"http://127.0.0.1:8740/console/UUID","profile":"selected-profile","hosts_file":"/srv/feast/hosts.yaml","state":"awaiting_connect"}
 ```
 
-`profile` and `hosts_file` identify the actual selection before connection; both are null for `--local`. Check these against the authorized scope. A mismatch requires stopping before `connect`, not switching targets automatically. These fields are additive protocol 0.1.0 metadata.
+`profile` and `hosts_file` identify the actual selection before connection; both are null for `--local`. Check these against the authorized scope. A mismatch requires stopping before `connect`, not switching targets automatically. These fields are additive protocol 0.2.0 metadata.
 
 **Immediately open this returned URL in the user's visible browser and preserve
 that tab.** Do not wait for connection success or run a browser QA sequence first.
@@ -77,8 +77,53 @@ request requires a unique nonempty `request_id` (max 100 characters). Duplicate
 IDs are rejected, never executed again; IDs are tracked only for this worker's
 lifetime. Unknown fields/operations and invalid single-line command/deadline input
 are rejected. Run command max 16 KiB UTF-8; timeout is integer 1–300 seconds.
-Raw Python/dollar evaluation, arbitrary privilege targets, password input, entered
-applications and full terminal emulation are not exposed by this worker.
+Raw Python/dollar evaluation, arbitrary privilege targets and full terminal emulation are not exposed. Entered programs and private input use the bounded operations below.
+
+## Entered programs and private input (worker 0.2.0)
+
+The worker now keeps an explicitly entered text program in the same Console.
+This is separate from finite shell `run`: never launch a password-prompting
+application through `run`. No arbitrary Console Python cells are accepted.
+The supplied command is trusted code; authorization and database privileges remain
+the operator's responsibility. Database root is distinct from operating-system root.
+
+```json
+{"op":"enter","request_id":"db-enter","command":"mysql -uroot -p example_db","prompt":"> ","secret_prompt":"Enter password:","exit":"\\q","timeout":15}
+{"op":"secret","request_id":"db-password","label":"MySQL root password for this host / example_db","timeout":120}
+{"op":"input","request_id":"db-identity","text":"SELECT DATABASE(), CURRENT_USER();","timeout":15}
+{"op":"leave","request_id":"db-leave","timeout":15}
+```
+
+Send each operation only after inspecting its predecessor. `prompt` and
+`secret_prompt` are literal output markers, not regular expressions. `enter`
+requires command, prompt and exit; secret_prompt is optional. Use a marker that
+matches the actual application's prompt, not example SQL output. `waiting_secret`
+means the configured secret marker was observed; `secret` is accepted only then.
+It contains no password argument. The worker emits `secret_requested` with a public
+request UUID and expiry, then waits for the signed-in human's password submission.
+A successful submission is not proof of authentication: inspect the following
+`waiting_input`, actual client greeting and an authorized identity query.
+No credentials are retried automatically. Do not repeat `secret` after an
+uncertain submission; reconcile the recorded result and program state.
+
+`input` sends one ordinary line without evaluating Python, and is rejected while
+waiting for a secret. It is recorded, so never put credentials there. `poll`
+observes later output; a read budget ending in `running` retains the program and
+does not claim readiness or completion. `leave` sends the configured exit sequence
+once; confirm `session_state: ready` before shell work. Input/secret need a reported
+ready/secret state. Ordinary `run`, sudo and nested enter are refused while a
+program is active. `session_state: program` is distinct from shell readiness.
+Prompt/input output is source evidence, not a full terminal emulator. Neither
+`waiting_input` nor a processing indicator proves SQL success.
+
+The private input channel is [ephemeral secret delivery 0.1.0](console-secrets.md).
+Only its redacted lifecycle messages are recorded. Never ask for a password in
+chat or ordinary river forms. The worker must stay running while the human replies;
+a completed agent turn has no automatic wakeup. A new worker and Web restart are
+required to activate this newly installed code; old workers retain old behavior.
+Restart preserves saved records but disconnects active record forwarding and
+invalidates launch tokens. Reconcile existing work before restarting. Do not
+silently reconnect, rerun SQL or switch profiles after restart.
 
 ## Output, state and stopping
 
@@ -182,4 +227,4 @@ shell state, active close, control validation, duplicate refusal and no retry.
 Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-04 07:27:59*
+*Last modified: 2026-11-04 16:29:57*

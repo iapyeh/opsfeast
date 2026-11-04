@@ -9,6 +9,24 @@ Every Console session is interactive. Agent-led operation means the human can
 remain silent while the agent decides within the agreed scope; it is not a
 different record mode or permission grant.
 
+
+## Enter a text program and request its password safely
+
+Read [worker 0.2.0](../../docs/console-agent.md#entered-programs-and-private-input-worker-020)
+and [ephemeral secret delivery](../../docs/console-secrets.md) before this workflow.
+Use enter → observe waiting_secret → secret → observe waiting_input → input → leave
+on the same worker. Exact field names, literal prompts, timeout/exit behavior and
+an example MySQL command are in the canonical worker guide. MySQL root does not
+authorize OS root. Ordinary SQL/input is recorded; passwords never belong in chat,
+input operations, command arguments or ordinary durable forms. The secret operation
+opens an authenticated, short-lived password field; the worker consumes its value
+without returning it to the agent. Keep the worker alive and report expiry,
+cancellation, uncertain delivery and authentication failures without retrying.
+Historical readers provide no secret field. Old workers must be replaced and the
+Web service restarted after this update; preserve existing records and reconcile
+active work before doing so. No automatic reconnect or program replay exists.
+
+
 ## Choose the interaction mode
 
 Switching to root requires the human's **explicit permission** for the relevant
@@ -20,7 +38,7 @@ does not expand an inspection-only task into changes, restarts or termination.
 
 For “connect to a host; I want to interact,” use the shipped chat-owned worker,
 not the exact-plan executor below. For this worker, omit `--profile` unless the human selects a specific profile: the checkout's `.opsfeast.yaml` `default_profile` is authoritative. Never copy `main` from an example; check returned `profile` and `hosts_file` before connecting. Read [the chat-shell procedure](references/chat-shell.md)
-and [worker protocol 0.1.0](../../docs/console-agent.md). Default to execution plus a brief acknowledgement; do not proactively analyze or repeat visible output. Analyze only when the human explicitly requests it. The human can supply details
+and [worker protocol 0.2.0](../../docs/console-agent.md). Default to execution plus a brief acknowledgement; do not proactively analyze or repeat visible output. Analyze only when the human explicitly requests it. The human can supply details
 one step at a time; do not demand a complete plan or repeat approval for already
 explicitly authorized connection, sudo or read-only commands.
 
@@ -137,4 +155,4 @@ merely to validate a prose correction. Preserve unrelated work and report the
 updated source; do not claim installed or cached copies were refreshed unless
 that separate action was actually authorized and completed.
 
-*Last modified: 2026-11-04 07:24:53*
+*Last modified: 2026-11-04 12:03:41*

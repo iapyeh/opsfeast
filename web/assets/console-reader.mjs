@@ -1,5 +1,6 @@
 import {consume,displayText,preview,visibleInRiver,identityLabel,activityState} from './console-reader-state.mjs';
 import {readerLocation,readerLink,readerScope,contentWindow} from './console-navigation.mjs';
+import {mountSecretInput} from './console-secret-input.mjs';
 const $=id=>document.getElementById(id),{sid,bid,history}=readerLocation(location.pathname),api='/api/v1/console-sessions/'+encodeURIComponent(sid);
 const labels={command:'輸入',stdout:'輸出',stderr:'錯誤輸出',identity:'身分回報',analysis:'分析',authorization:'授權回報',error:'錯誤',status:'狀態回報',form:'等待你的回覆'};
 const statuses={streaming:'接收中',completed:'完成',failed:'失敗',interrupted:'中斷',cancelled:'已取消',waiting:'等待回覆',answered:'已回覆'};
@@ -20,7 +21,7 @@ function navigation(){
   $('new-window').href=readerLink(sid,{history,bid,scope});
   $('history-view').hidden=history;$('history-view').href=readerLink(sid,{history:true,scope});
 }
-function bottom(){if(follow)$('transcript').scrollTop=$('transcript').scrollHeight;}
+function bottom(){const secret=$('secret-input');if(secret&&!history)$('transcript').insertBefore(secret,$('activity'));if(follow)$('transcript').scrollTop=$('transcript').scrollHeight;}
 function meta(){const s=snapshot.session;navigation();$('title').textContent=s.title;$('target').textContent=s.host_id+' · '+s.session_id;$('cursor').textContent=`${snapshot.blocks.length} 個區塊 · 更新 #${snapshot.seq}`;const identity=snapshot.blocks.filter(b=>b.kind==='identity').at(-1);$('identity').textContent=history?'歷史身分回報：'+identityLabel(identity).replace(' · 目前 ',' · 當時 '):identityLabel(identity);updateActivity();const state=snapshot.blocks.filter(b=>b.kind==='status').at(-1);$('state').textContent=state?'來源最後回報：'+state.head:'紀錄服務已就緒';$('toolbar').hidden=false;}
 function updateActivity(){if(!snapshot)return;if(history){$('activity').hidden=true;return;}const state=activityState(snapshot);if($('activity').textContent!==state.label)$('activity').textContent=state.label;$('activity').classList.toggle('processing',state.busy);$('activity').classList.toggle('thinking',state.thinking);$('activity').hidden=!state.label;}
 function responseUI(card,block){
@@ -53,5 +54,9 @@ $('transcript').addEventListener('scroll',()=>{const el=$('transcript');follow=e
 $('latest').onclick=()=>{follow=true;bottom();$('follow').textContent='跟隨最新內容';};
 if(bid)$('follow').textContent='逐頁閱讀';
 const activityTimer=history?null:setInterval(updateActivity,1000);
-window.addEventListener('pagehide',()=>{controller?.abort();clearInterval(activityTimer);});
+// Historical readers never enumerate or submit live secrets.
+const secretRoot=document.createElement('section');secretRoot.id='secret-input';secretRoot.className='reply-form';secretRoot.setAttribute('aria-label','安全輸入');
+if(!history)$('transcript').insertBefore(secretRoot,$('activity'));
+const stopSecrets=history?()=>{}:mountSecretInput(secretRoot,{api,onChange:bottom,onError:error=>{secretRoot.textContent=error.message;}});
+window.addEventListener('pagehide',()=>{controller?.abort();clearInterval(activityTimer);stopSecrets();});
 restore();
