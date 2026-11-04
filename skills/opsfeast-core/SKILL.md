@@ -61,7 +61,7 @@ For real Web/CLI host creation, group autocomplete/updates and confirmed configu
 
 ## Headless Console integration
 
-For chat-driven sessions use the shipped [Console worker](../../docs/console-agent.md); start it, immediately open its returned reader URL, then send connect/run/sudo/close controls. No temporary bridge is needed. Core `sessions.console(..., sudo_root=True)` explicitly opts into configured login-account sudo to root; the default denies managed switches. Optional `stdout`/`stderr` streams expose synchronous output too. This is trusted code, not an authorization sandbox.
+For chat-driven sessions use the shipped [Console worker](../../docs/console-agent.md); start it, immediately open its returned reader URL, then send connect/run/sudo/close controls. No temporary bridge is needed. Core `sessions.console(..., switch_authorizer=callback)` checks a scoped runtime grant for each sudo/su; the default denies switches. Use the [runtime account contract](../../docs/console-agent.md#runtime-account-switching-worker-030), including actor-versus-target credentials and one-layer leave. `sudo_root` and --sudo-root are removed. Optional `stdout`/`stderr` streams expose synchronous output too. This is trusted code, not an authorization sandbox.
 
 Core now supplies `profile.sessions.console_target(host_id)` (read-only metadata/fingerprint) and the same-thread `profile.sessions.console(host_id, timeout=30, expected_fingerprint=...)` context manager over the shared configured connection. Read [protocol and limits](../../docs/interactive-console.md) and the [interactive skill](../opsfeast-interactive/SKILL.md). This is trusted code, not a sandbox; the Web adapter exposes shell jobs only and keeps operator approval separate from agent credentials.
 
@@ -278,4 +278,4 @@ before interpreting values; these are not SSH endpoints or current-health claims
 
 Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvironmentError` is a `ConfigError` subclass with a controlled diagnostic report; exact type strings have changed for these failures. Reuse the failing interpreter with `-B tools/check_environment.py --json` and follow [runtime diagnosis and authorized repair](../../docs/runtime-troubleshooting.md) for version/source failures or duplicate metadata. Do not implement a second scanner, retry sessions to diagnose packages, or modify environments without scope.
 
-*Last modified: 2026-11-02 17:03:25*
+*Last modified: 2026-11-04 17:05:04*

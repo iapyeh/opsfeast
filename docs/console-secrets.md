@@ -2,7 +2,7 @@
 
 Use this checkout-level Web/worker service for a signed-in human to supply a
 single-line password to the exact entered program currently waiting for it.
-It extends the [worker 0.2.0](console-agent.md); ordinary record/form schemas stay
+It extends the [worker 0.3.0](console-agent.md); ordinary record/form schemas stay
 at 0.2.0. No recipe service, saved credential store, SSH credential editor or
 secret-manager adapter is introduced. Loopback Web and matching SSHScript 7.0.1
 are required. Use one Web process: requests live only in that process's memory.
@@ -80,4 +80,4 @@ handler tests verify password masking, immediate clearing, no retry and page cle
 These tests are synthetic/local evidence; real database authentication requires
 an explicitly authorized host and the human's actual password.
 
-*Last modified: 2026-11-04 12:03:41*
+*Last modified: 2026-11-04 17:05:04*

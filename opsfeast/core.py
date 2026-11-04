@@ -723,7 +723,7 @@ class Sessions:
                 'hostname':plan[-1]['hostname'],'username':plan[-1]['username'],'hops':len(plan)}
 
     @contextmanager
-    def console(self, host_id, *, timeout=30, expected_fingerprint=None, sudo_root=False,
+    def console(self, host_id, *, timeout=30, expected_fingerprint=None, switch_authorizer=None,
                 stdout=None, stderr=None, password_func=None):
         """Borrow a headless SSHScript Console over this profile's owned connection.
 
@@ -731,22 +731,34 @@ class Sessions:
         sandbox; callers own input authorization and output confidentiality.
         """
         from sshscript import Console, SwitchCredentials
-        if type(sudo_root) is not bool:
-            raise ConfigError('sudo_root must be Boolean')
-        config = copy.deepcopy(self.profile.hosts._config) if sudo_root else None
+        if switch_authorizer is not None and not callable(switch_authorizer):
+            raise ConfigError('switch_authorizer must be callable')
+        config = copy.deepcopy(self.profile.hosts._config) if switch_authorizer else None
         if expected_fingerprint is not None and self.console_target(host_id)['fingerprint'] != expected_fingerprint:
             raise CoreError('console_target_changed')
         def resolve_switch(request):
             env = request.environment
-            if (not sudo_root or request.kind != 'sudo' or request.username != 'root'
-                    or not env.identity_verified or env.effective_user != env.connection_user
-                    or env.kind != 'ssh' or request.credential_supplied):
+            if (request.kind not in ('sudo', 'su') or request.credential_supplied
+                    or not env.identity_verified or env.kind not in ('ssh', 'sudo', 'su')
+                    or not isinstance(request.username, str) or not request.username
+                    or request.username == env.effective_user
+                    or switch_authorizer is None or switch_authorizer(request) is not True):
                 raise CoreError('console_privilege_switch_unsupported')
             from host_runtime import privilege_password
-            password, source = privilege_password(config, host_id, env.effective_user,
-                                                  'sudo', env.connection_user)
+            actor = env.effective_user
+            if request.kind == 'su' and actor == 'root':
+                password, source = None, 'root_su'
+            else:
+                user = actor if request.kind == 'sudo' else request.username
+                password, source = privilege_password(config, host_id, user, request.kind, env.connection_user)
             if source == 'sudo_disabled':
                 raise CoreError('sudo_disabled')
+            if request.kind == 'su' and source == 'none':
+                if password_func is None:
+                    raise CoreError('su_password_required')
+                password = password_func('su password for ' + request.username)
+                if not isinstance(password, str):
+                    raise CoreError('invalid_su_password')
             return SwitchCredentials(password=password)
         with self.connect(host_id, timeout=timeout) as connection:
             with Console(connection._actor, terminal=False, get_pty=True,

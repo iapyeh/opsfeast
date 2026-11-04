@@ -341,8 +341,10 @@ HTTP client only, not an arbitrary chat/model. No platform-specific wakeup is pr
 The river renders Console blocks as terminal-like text with small gaps between blocks. Identity blocks remain stored and accessible on their dedicated page but are excluded from river content; the toolbar shows a readable identity summary instead of raw JSON. Per-block time,
 title, byte/newline counts and revision are hidden there; the dedicated content
 page shows this metadata. Small Unicode arrows expand/collapse, page or open
-content separately; short output has no redundant expand control. Analysis and
-form blocks retain their meaningful titles. This changes presentation only, not
+content separately; short output has no redundant expand control. Analysis
+blocks show their content without a title or separate-window link in both live
+and historical rivers; long analysis still supports inline expansion and paging.
+Form blocks retain their meaningful titles. This changes presentation only, not
 stored text, stream ordering or authorization.
 
 Reader preserves form drafts across summary updates, follows new content unless
@@ -383,4 +385,4 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-04 12:03:41*
+*Last modified: 2026-11-04 17:30:11*

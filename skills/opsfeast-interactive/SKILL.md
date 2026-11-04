@@ -12,7 +12,7 @@ different record mode or permission grant.
 
 ## Enter a text program and request its password safely
 
-Read [worker 0.2.0](../../docs/console-agent.md#entered-programs-and-private-input-worker-020)
+Read [worker 0.3.0](../../docs/console-agent.md#entered-programs-and-private-input-worker-030)
 and [ephemeral secret delivery](../../docs/console-secrets.md) before this workflow.
 Use enter → observe waiting_secret → secret → observe waiting_input → input → leave
 on the same worker. Exact field names, literal prompts, timeout/exit behavior and
@@ -27,18 +27,31 @@ Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
 
 
+## Switch accounts when the task requires it
+
+Use [runtime account switching](../../docs/console-agent.md#runtime-account-switching-worker-030).
+Start normally without a privilege flag. After explicit human authorization, send
+sudo/su with exact username and a truthful nonsecret authorization description on
+the same worker. No new river or SSH connection is needed. Su uses target-account
+credentials (or the private human input field); sudo uses the current actor's
+policy/credentials. Leave an application before switching and use leave to return
+one identity layer. Check the actual returned identity and cleanup; never retry
+credentials automatically. Local mode rejects managed switches. Old startup
+--sudo-root and Core sudo_root are removed, without a compatibility path.
+Supply a short purpose for each command/group so the river explains why it runs.
+
 ## Choose the interaction mode
 
 Switching to root requires the human's **explicit permission** for the relevant
 host and task. A request to connect, inspect or diagnose alone does not grant
-root entry; neither configured sudo access nor `--sudo-root` is permission.
-Ask once when the grant is missing, before enabling/entering root. Reuse an
+root entry; configured sudo/su access is not permission.
+Ask once when the grant is missing, before entering root or another account. Reuse an
 existing explicit grant within its scope without asking again. Root permission
 does not expand an inspection-only task into changes, restarts or termination.
 
 For “connect to a host; I want to interact,” use the shipped chat-owned worker,
 not the exact-plan executor below. For this worker, omit `--profile` unless the human selects a specific profile: the checkout's `.opsfeast.yaml` `default_profile` is authoritative. Never copy `main` from an example; check returned `profile` and `hosts_file` before connecting. Read [the chat-shell procedure](references/chat-shell.md)
-and [worker protocol 0.2.0](../../docs/console-agent.md). Default to execution plus a brief acknowledgement; do not proactively analyze or repeat visible output. Analyze only when the human explicitly requests it. The human can supply details
+and [worker protocol 0.3.0](../../docs/console-agent.md). Default to execution plus a brief acknowledgement; do not proactively analyze or repeat visible output. Analyze only when the human explicitly requests it. The human can supply details
 one step at a time; do not demand a complete plan or repeat approval for already
 explicitly authorized connection, sudo or read-only commands.
 
@@ -155,4 +168,4 @@ merely to validate a prose correction. Preserve unrelated work and report the
 updated source; do not claim installed or cached copies were refreshed unless
 that separate action was actually authorized and completed.
 
-*Last modified: 2026-11-04 12:03:41*
+*Last modified: 2026-11-04 17:05:04*

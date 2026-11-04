@@ -1,4 +1,4 @@
-"""Persistent chat-owned Console worker, JSON-lines control protocol 0.1.0.
+"""Persistent chat-owned Console worker, JSON-lines control protocol 0.3.0.
 
 Creates the durable reader before connecting. No remote connection until an
 explicit connect request; no arbitrary Python input or automatic retries.
@@ -17,7 +17,7 @@ from urllib.parse import urlparse, urlencode
 from urllib.request import Request, urlopen
 import uuid
 
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 
 
 class ControlError(ValueError):
@@ -208,6 +208,13 @@ class Worker:
         self.program = None
         self.program_state = None
         self.control = None
+        self.pending_switch = None
+
+    def authorize_switch(self, request):
+        """Consume one exact runtime intent, not proof of human authorization."""
+        expected, self.pending_switch = self.pending_switch, None
+        env = request.environment
+        return expected == (request.kind, request.username, env.host, env.effective_user)
 
     def password(self, _prompt):
         """Private callback: never return its result through the agent protocol."""
@@ -349,14 +356,18 @@ class Worker:
         self.seen.add(rid)
         op = body.get('op')
         allowed = {'connect': set(), 'run': {'command', 'timeout'},
-                   'sudo': {'timeout'}, 'close': set(), 'activity': {'state'},
+                   'sudo': {'timeout','username','authorization'}, 'su': {'timeout','username','authorization'},
+                   'close': set(), 'activity': {'state'},
                    'enter': {'command','prompt','exit','secret_prompt','timeout'},
                    'input': {'text','timeout'}, 'secret': {'label','timeout'},
                    'poll': {'timeout'}, 'leave': {'timeout'}}
-        if not isinstance(op, str) or op not in allowed or set(body) - {'op', 'request_id'} - allowed[op]:
+        if not isinstance(op, str) or op not in allowed or set(body) - {'op', 'request_id', 'purpose'} - allowed[op]:
             raise ControlError('unsupported_operation_or_fields')
         if self.closed:
             raise ControlError('worker_closed')
+        if body.get('purpose') is not None:
+            self._line(body['purpose'], 'purpose', 1000)
+            self.publisher.block('analysis', body['purpose'], title='執行目的', complete=True)
         if op == 'close':
             return {'state': 'closed', 'cleanup': self.close()}
         if op == 'activity':
@@ -384,7 +395,7 @@ class Worker:
             return {'state': 'ready', 'identity': identity}
         if self.console is None:
             raise ControlError('connect_required')
-        if op in ('enter','input','secret','poll','leave'):
+        if op in ('enter','input','secret','poll') or (op == 'leave' and self.program):
             try:
                 return self._program_request(op, body, control)
             except ControlError:
@@ -402,13 +413,27 @@ class Worker:
                     or any(c in command for c in '\x00\r\n')):
                 raise ControlError('single_command_line_required')
             source = '$(' + repr(command) + ')'
+        elif op in ('sudo', 'su'):
+            target = self._line(body.get('username', 'root') if op == 'sudo' else body.get('username'), 'username', 200)
+            authorization = self._line(body.get('authorization'), 'authorization', 1000)
+            self.publisher.block('authorization', authorization, title='本次帳號切換授權依據', complete=True)
+            env = self.console.environments[-1]
+            self.pending_switch = (op, target, env.host, env.effective_user)
+            self.secret_options = 300, op + '：切換至 ' + target + ' 的密碼'
+            self.control = control
+            source = '$.' + op + '(username=' + repr(target) + ', enter_timeout=' + str(seconds) + ')'
         else:
-            source = '$.sudo(username="root", enter_timeout=' + str(seconds) + ')'
+            if self.console.environments[-1].kind not in ('sudo', 'su'):
+                raise ControlError('identity_layer_required')
+            source = '$.exit()'
         bid = self.publisher.block('command', self.console.prompt.rstrip() + ' ' + source)
         self.active_command = bid
         self.emit({'type': 'started', 'request_id': rid, 'command_block': bid})
-        update = (self.console.start_command(command, timeout=seconds) if op == 'run'
-                  else self.console.submit(source))
+        try:
+            update = (self.console.start_command(command, timeout=seconds) if op == 'run'
+                      else self.console.submit(source))
+        finally:
+            self.pending_switch = None
         closing = False
         while update.state == 'running':
             # Only an interrupt/close control may overtake an active command.
@@ -434,7 +459,7 @@ class Worker:
         out, err = self.stdout.finish(status), self.stderr.finish(status)
         result = {'state': update.state, 'exitcode': update.result.exitcode if update.result else None,
                   'error_type': update.error_type, 'stdout_block': out, 'stderr_block': err}
-        if op == 'sudo':
+        if op in ('sudo','su','leave'):
             result['identity'] = self._identity()
         # A normally terminated nonzero command is not a broken connection.
         recoverable = (op == 'run' and update.state == 'failed' and update.error_type is None
@@ -487,13 +512,10 @@ def main(argv=None):
     target.add_argument('--local', action='store_true', help='credential-free local Console; explicit opt-in')
     parser.add_argument('--profile', help='registered profile; default: .opsfeast.yaml default_profile')
     parser.add_argument('--title', default='互動 Console')
-    parser.add_argument('--sudo-root', action='store_true', help='allow configured login-account sudo to root; not an authorization grant')
     parser.add_argument('--idle-timeout', type=int, default=900)
     args = parser.parse_args(argv)
     if not 1 <= args.idle_timeout <= 3600:
         parser.error('--idle-timeout must be 1–3600')
-    if args.local and args.sudo_root:
-        parser.error('--sudo-root requires a configured SSH host')
     output = sys.stdout
     def emit(value):
         output.write(json.dumps(value, ensure_ascii=False) + '\n')
@@ -526,11 +548,11 @@ def main(argv=None):
             else:
                 target = profile.sessions.console_target(args.host)
                 with profile.sessions.console(args.host, expected_fingerprint=target['fingerprint'],
-                                              sudo_root=args.sudo_root, stdout=stdout, stderr=stderr,
+                                              switch_authorizer=worker.authorize_switch, stdout=stdout, stderr=stderr,
                                               password_func=lambda prompt: worker.password(prompt)) as console:
                     yield console
         source = ('Console(session, terminal=False, get_pty=True)' if args.local else
-                  f'profile.sessions.console({args.host!r}, sudo_root={args.sudo_root!r})')
+                  f'profile.sessions.console({args.host!r}, switch_authorizer=worker.authorize_switch)')
         worker = Worker(publisher, opener, emit, connect_source=source)
         # Prepare PTY input before announcing readiness: canonical mode can
         # discard long JSON lines before Python ever receives them.

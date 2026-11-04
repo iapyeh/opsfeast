@@ -1,4 +1,4 @@
-# Chat-owned Console worker 0.2.0
+# Chat-owned Console worker 0.3.0
 
 Use the shipped `python -B -u -m opsfeast.console_agent` worker for incremental
 human/agent Console work. Do not generate a temporary bridge. The worker owns one
@@ -22,12 +22,16 @@ program or Web restart is required for the worker. Use the launcher's reported
 writer-token path, never credentials from documentation. The administrator must
 sign in to read the river; reading does not require the settings unlock.
 
-A writer token permits records, not host execution. Obtain the user's target,
-profile and operation scope first. `--sudo-root` allows configured login-account
-sudo to root only and does not itself grant human authorization. It is disabled
-by default. No credential arguments, automatic retries, alternate accounts or
-fallback connections exist. Shell commands are trusted and can have arbitrary
-effects; this is not a shell sandbox or an enforced read-only permission system.
+A writer token permits records, not host execution. Obtain the human's host and
+operation scope first. Ordinary login needs no advance privilege choice. After
+explicit authorization, submit sudo/su with the exact target and a nonsecret
+`authorization` description of the human's grant. The worker arms only that switch,
+bound to its current host and effective actor, and clears it after the attempt.
+This text is an agent report, not machine-verifiable proof of human consent.
+Reuse an existing applicable grant; never create a redundant approval click.
+Configured credentials do not grant permission, and account switching does not
+expand an inspection into changes. Shell commands remain trusted code, not a sandbox.
+No alternate account or credential is tried automatically.
 Do not run commands producing unknown secrets. Values delivered through the private input channel are redacted from subsequent output, including split chunks; this is not general output-secret detection.
 
 ## Start, show, then connect
@@ -41,17 +45,17 @@ python -B -u -m opsfeast.console_agent \
 For configured hosts, omitting `--profile` selects `default_profile` from the checkout's `.opsfeast.yaml`, using the same Core selection as other commands. An explicit `--profile NAME` overrides it for this worker only; it never changes the saved default. Do not assume `main` or copy an example profile. Read-only configuration loading happens before reader creation; invalid/missing selection fails without a reader or connection, with no fallback. The selected profile/configuration snapshot is held for this worker; start a new authorized worker to select another profile.
 
 Optional flags: `--url http://127.0.0.1:8740`, `--idle-timeout 900` (1–3600
-seconds), `--sudo-root`. `--local` replaces `--host` for credential-free local
-verification; it cannot use `--sudo-root` and also requires execution permission.
+seconds). `--local` replaces `--host` for credential-free local verification;
+managed account switches remain denied in local mode.
 
 Keep this process's stdin open in the agent's execution tool. For PTY stdin, the worker disables canonical input and echo before reporting created, preserving signal handling and restoring the original terminal settings on exit. This avoids OS canonical-line truncation of JSON controls; the documented worker byte limits still apply. Its first stdout
 JSON line is:
 
 ```json
-{"type":"created","protocol_version":"0.2.0","session_id":"UUID","reader_url":"http://127.0.0.1:8740/console/UUID","profile":"selected-profile","hosts_file":"/srv/feast/hosts.yaml","state":"awaiting_connect"}
+{"type":"created","protocol_version":"0.3.0","session_id":"UUID","reader_url":"http://127.0.0.1:8740/console/UUID","profile":"selected-profile","hosts_file":"/srv/feast/hosts.yaml","state":"awaiting_connect"}
 ```
 
-`profile` and `hosts_file` identify the actual selection before connection; both are null for `--local`. Check these against the authorized scope. A mismatch requires stopping before `connect`, not switching targets automatically. These fields are additive protocol 0.2.0 metadata.
+`profile` and `hosts_file` identify the actual selection before connection; both are null for `--local`. Check these against the authorized scope. A mismatch requires stopping before `connect`, not switching targets automatically. These fields were added in protocol 0.2.0 and remain present in 0.3.0.
 
 **Immediately open this returned URL in the user's visible browser and preserve
 that tab.** Do not wait for connection success or run a browser QA sequence first.
@@ -60,26 +64,73 @@ Then send one JSON object per line on this same process's stdin:
 ```json
 {"op":"connect","request_id":"connect-1"}
 {"op":"run","request_id":"inspect-1","command":"hostname; id -un","timeout":30}
-{"op":"sudo","request_id":"sudo-1","timeout":15}
+{"op":"sudo","request_id":"sudo-1","username":"root","authorization":"Human authorized root inspection on this host","purpose":"Inspect protected files","timeout":15}
 {"op":"run","request_id":"inspect-2","command":"id -u","timeout":30}
 {"op":"close","request_id":"close-1"}
 ```
 
 These are examples, not an automatically approved plan. Send each operation only
-when authorized and after its predecessor returns. Sudo requires startup opt-in,
-uses the configured account's credential selection once, and records actual
-Console environment metadata after the attempt. `connect` uses Core's host/jump
+when authorized and after its predecessor returns. Sudo/su require runtime authorization and use one selected credential source;
+identity metadata reports the actual result. No reconnect is needed for a switch. `connect` uses Core's host/jump
 enabled policy, connection plan, target fingerprint check and cleanup ownership.
 It does not run host-init, inspect cron, retry or switch profiles automatically.
 
-Supported normal operations are connect, run, sudo, activity and close. Every
+Supported operations are connect, run, sudo, su, leave, enter, input, secret, poll, activity and close. Every
 request requires a unique nonempty `request_id` (max 100 characters). Duplicate
 IDs are rejected, never executed again; IDs are tracked only for this worker's
 lifetime. Unknown fields/operations and invalid single-line command/deadline input
 are rejected. Run command max 16 KiB UTF-8; timeout is integer 1–300 seconds.
-Raw Python/dollar evaluation, arbitrary privilege targets and full terminal emulation are not exposed. Entered programs and private input use the bounded operations below.
+Raw Python/dollar evaluation and full terminal emulation are not exposed.
+Privilege targets use the explicit runtime switch controls below. Entered programs and private input use the bounded operations below.
 
-## Entered programs and private input (worker 0.2.0)
+## Runtime account switching (worker 0.3.0)
+
+Start with the normal host command and connect as its configured login account.
+Only when the human authorizes the needed identity, send one of:
+
+```json
+{"op":"sudo","request_id":"root-1","username":"root","authorization":"Human authorized root inspection on this host","purpose":"Read protected diagnostic files","timeout":15}
+{"op":"leave","request_id":"back-1","purpose":"Return to the previous account","timeout":15}
+{"op":"su","request_id":"app-1","username":"appuser","authorization":"Human selected appuser for this task","purpose":"Inspect the application account environment","timeout":15}
+```
+
+`sudo` defaults username to root; `su` requires a username. Both require nonblank,
+single-line `authorization` (maximum 1000 UTF-8 bytes); it must accurately describe
+an existing human grant. The agent must not invent one or infer it from a hostname,
+a configured account or a credential. Each worker request has a fresh ID. Grants
+for one host/task do not authorize another host or broader effects.
+
+The normal configured-login and later authorized switch stay in one SSH connection
+and river. Nested sudo/su layers are supported from verified SSH/sudo/su identities;
+each switch needs applicable authorization. `leave` removes one identity layer and
+reports the parent effective account. It cannot leave the base SSH layer: use close
+to disconnect. Leave an entered application before switching accounts. Never send
+raw su/sudo commands through run or disguise a rejected command.
+
+Sudo selects credentials/policy for the **current actor**, including an account
+reached through su; another actor cannot inherit login-scoped legacy credentials.
+An actor with sudo disabled remains blocked. Su selects the **target account**
+password; missing credentials use the existing private-input channel if available.
+An explicit target need not be pre-registered in hosts.yaml: a missing su password
+is supplied by the human, not guessed. Root-to-user su needs no target password.
+Secrets never appear in control JSON or authorization/purpose text. There is no
+credential retry, different-account fallback or automatic permission repair.
+Inspect returned identity; command failure or cleanup uncertainty is not a switch.
+
+All normal operations accept optional single-line `purpose` (1–1000 UTF-8 bytes).
+It creates a completed analysis block **before** the command block and remote
+submission. The stored title is metadata; the river shows the explanation
+directly, without a title or separate-window arrow. State the concrete question/action, not a duplicate command.
+This explains work; it does not require another approval. Do not put private input
+in purpose text. The worker reports authorization separately from actual identity.
+
+This replaces --sudo-root and Core sudo_root=True; neither old interface is
+supported. New callers use runtime sudo/su controls and Core switch_authorizer.
+Existing worker processes retain their startup implementation; start an updated
+worker once when adopting this version. Subsequent grants need no new worker,
+river, Web restart, profile switch or SSH connection.
+
+## Entered programs and private input (worker 0.3.0)
 
 The worker now keeps an explicitly entered text program in the same Console.
 This is separate from finite shell `run`: never launch a password-prompting
@@ -227,4 +278,4 @@ shell state, active close, control validation, duplicate refusal and no retry.
 Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-04 16:29:57*
+*Last modified: 2026-11-04 17:35:31*

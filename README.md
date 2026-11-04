@@ -1,6 +1,6 @@
 # OpsFeast
 
-For incremental human/agent operations, use the shipped [Console worker 0.2.0](docs/console-agent.md): it creates the river before connecting and automatically forwards Console output. No temporary bridge is needed.
+For incremental human/agent operations, use the shipped [Console worker 0.3.0](docs/console-agent.md): it creates the river before connecting and automatically forwards Console output. No temporary bridge is needed.
 
 
 For the local Web preview and saved site identity/images, see [Web](web/README.md)
@@ -342,4 +342,4 @@ settings. See [the reference-IP guide](docs/host-reference-ips.md).
 
 For SSHScript version mismatches or duplicate installation metadata, use [runtime diagnosis and repair](docs/runtime-troubleshooting.md). Run the failing interpreter with `-B tools/check_environment.py --json` before retrying host operations.
 
-*Last modified: 2026-11-04 12:05:52*
+*Last modified: 2026-11-04 17:05:04*

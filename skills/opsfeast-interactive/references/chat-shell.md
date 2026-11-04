@@ -9,7 +9,7 @@ fields, states, credentials, supported operations and limitations.
 
 ## Enter a text program and request its password safely
 
-Read [worker 0.2.0](../../../docs/console-agent.md#entered-programs-and-private-input-worker-020)
+Read [worker 0.3.0](../../../docs/console-agent.md#entered-programs-and-private-input-worker-030)
 and [ephemeral secret delivery](../../../docs/console-secrets.md) before this workflow.
 Use enter → observe waiting_secret → secret → observe waiting_input → input → leave
 on the same worker. Exact field names, literal prompts, timeout/exit behavior and
@@ -27,11 +27,9 @@ active work before doing so. No automatic reconnect or program replay exists.
 ## Start quickly, then keep the same shell
 
 - Use the shipped `python -B -u -m opsfeast.console_agent --token-file FILE
-  --host HOST`. Add `--sudo-root` only after the user explicitly permits root
-  for this host/task. Connecting or diagnosing, available sudo credentials and
-  the flag itself do not supply that permission. Ask only if an explicit grant
-  is missing; reuse an applicable grant rather than asking again. An inspection
-  remains read-only after root entry. No temporary bridge program is needed.
+  --host HOST`. Start as the configured login account. Obtain an explicit grant
+  only when a sudo/su switch is needed; send the runtime operation on this same
+  worker with username and authorization. See the [switch contract](../../../docs/console-agent.md#runtime-account-switching-worker-030).
 - When the human has not selected a profile, omit `--profile` to use `.opsfeast.yaml` `default_profile`. Never substitute `main` from an example. Use `--profile NAME` only for an explicitly selected scope. Inspect the returned `profile` and `hosts_file` before connect; stop on a mismatch. Invalid/missing configuration is an error, not permission to choose another profile.
 - Preserve worker stdin across turns. For an execution tool that closes piped stdin
   immediately, choose its persistent interactive mode (for example `tty=true` in
@@ -40,7 +38,7 @@ active work before doing so. No automatic reconnect or program replay exists.
   preserve the tab. Verify that its visible heading/profile/host match the new session; posting a link alone does not show the river. Reuse a tab only when its exact session UUID matches this worker. For a new session, open a separate tab; never navigate the selected tab away from another session or from a historical view. Do this before connecting, not after login finishes. Do not
   spend time on screenshots, browser QA or extra discovery before showing it.
 - Send `{"op":"connect","request_id":"connect-1"}` to that same worker.
-  When authorized, follow with `{"op":"sudo","request_id":"root-1","timeout":15}`.
+  When authorized, follow with `{"op":"sudo","request_id":"root-1","username":"root","authorization":"Human authorized root inspection","timeout":15}`.
   Report the actual ready/identity result promptly. Do not routinely take or attach
   a login screenshot: the human is already watching the reader. Additional checks
   must resolve a concrete uncertainty, not delay an already established result.
@@ -121,13 +119,11 @@ blocks and cleanup result before explaining the cause; preserve uncertainty when
 the safe error type is insufficient. Check the matching public SSHScript source
 or bundled contract when necessary; do not guess from an exception class alone.
 
-- **Enter privileges before running commands.** Start with `--sudo-root` only
-  within authorization, then send `{"op":"sudo","request_id":"root-1","timeout":15}`
-  and verify the returned effective identity before `run`. SSHScript 7.0.1's
-  foreground job validation rejects raw `su`/`sudo` command heads, including
-  `sudo -n du ...`, with `ValueError`. This is an adapter usage error, not evidence
-  of bad credentials or an unstable SSH connection. Do not wrap or disguise the
-  rejected command to bypass validation.
+- **Enter privileges when authorized and needed.** Use managed sudo/su on the
+  existing worker, with the grant description and exact target. Use leave to
+  return one identity layer; do not reconnect merely to change accounts. Confirm
+  the effective identity before protected commands. Raw su/sudo command heads
+  are rejected by foreground job validation; never wrap or disguise them.
 - **Budget each costly inspection separately.** The chat worker accepts integer
   timeouts of 1–300 seconds; the separate exact-plan executor has a 1–60 second
   contract. These are distinct from the execution tool's yield/poll wait. A
@@ -210,4 +206,4 @@ in OpsFeast rather than requiring a new connection/record bridge each time.
 
 After each concluded interaction (including agent-led Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
 
-*Last modified: 2026-11-04 12:03:41*
+*Last modified: 2026-11-04 17:05:04*

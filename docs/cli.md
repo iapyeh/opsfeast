@@ -1002,6 +1002,6 @@ Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show
 
 ## Interactive Console programs and private input
 
-Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.2.0 control reference](console-agent.md#entered-programs-and-private-input-worker-020) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
+Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.3.0 control reference](console-agent.md#entered-programs-and-private-input-worker-030) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
 
-*Last modified: 2026-11-04 12:05:52*
+*Last modified: 2026-11-04 17:05:04*

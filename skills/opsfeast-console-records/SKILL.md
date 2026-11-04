@@ -8,7 +8,7 @@ description: Publish durable Console blocks, stream bounded previews and read au
 For human-directed shell work, follow the [interactive chat-shell procedure](../opsfeast-interactive/references/chat-shell.md), including immediate reader display, no routine login screenshots and the agreed prompt/input presentation.
 
 Read the complete [0.2.0 contract](../../docs/console-records.md) before use.
-For chat-owned SSH Console execution, first use the shipped [worker 0.2.0](../../docs/console-agent.md), not an ad hoc bridge. Announce that this skill is being used. Start `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST`, immediately show its returned reader_url, then send JSON-lines controls to that process. Omit `--profile` to use `.opsfeast.yaml` default_profile; override only for an explicitly selected scope and inspect returned profile/hosts_file before connecting. Prompt/input share one command block using valid escaped `$(...)` Console syntax for shell commands, with initial text in its creation write before execution. HTTP commits wake SSE readers immediately; do not wait for completion to publish output. The reader shows processing for streaming command/analysis/status blocks; finish them when the reported work ends. This is not a heartbeat. The worker owns execution; this service stores its records. A received human response should be acknowledged in chat immediately, before optional UI checks.
+For chat-owned SSH Console execution, first use the shipped [worker 0.3.0](../../docs/console-agent.md), not an ad hoc bridge. Announce that this skill is being used. Start `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST`, immediately show its returned reader_url, then send JSON-lines controls to that process. Omit `--profile` to use `.opsfeast.yaml` default_profile; override only for an explicitly selected scope and inspect returned profile/hosts_file before connecting. Prompt/input share one command block using valid escaped `$(...)` Console syntax for shell commands, with initial text in its creation write before execution. HTTP commits wake SSE readers immediately; do not wait for completion to publish output. The reader shows processing for streaming command/analysis/status blocks; finish them when the reported work ends. This is not a heartbeat. The worker owns execution; this service stores its records. A received human response should be acknowledged in chat immediately, before optional UI checks.
 
 This is a checkout-level record/response service, not a command executor, recipe
 retention/logger, SSH adapter, stop controller or model wakeup mechanism.
@@ -45,6 +45,10 @@ installation record store, without borrowing administrator cookies or writing a
 parallel SQL/index reader. Follow `next_cursor` for older records; counts and
 unfinished blocks do not certify liveness or outcomes. Unscoped producers remain
 accessible by reader URL; do not silently relabel or migrate their evidence.
+
+Analysis titles remain stored metadata but are hidden in live/historical rivers,
+which show the explanation directly without a separate-window arrow. Use clear
+body text; long explanations retain inline expansion.
 
 1. Establish target, scope and source execution authorization separately. Writer
    credentials and a work/session ID do not authorize operations. The separate
@@ -91,7 +95,7 @@ per-host permission system. See contract for limits, errors and test evidence.
 
 ## Enter a text program and request its password safely
 
-Read [worker 0.2.0](../../docs/console-agent.md#entered-programs-and-private-input-worker-020)
+Read [worker 0.3.0](../../docs/console-agent.md#entered-programs-and-private-input-worker-030)
 and [ephemeral secret delivery](../../docs/console-secrets.md) before this workflow.
 Use enter → observe waiting_secret → secret → observe waiting_input → input → leave
 on the same worker. Exact field names, literal prompts, timeout/exit behavior and
@@ -105,4 +109,4 @@ Historical readers provide no secret field. Old workers must be replaced and the
 Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
 
-*Last modified: 2026-11-04 12:08:31*
+*Last modified: 2026-11-04 17:30:11*

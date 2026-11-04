@@ -5,7 +5,7 @@ description: Help OpsFeast users discover, run, author and share operation/repor
 
 ## Human-directed interactive programs
 
-For an authorized database-client session that needs a human password, route to [the interactive skill](../opsfeast-interactive/SKILL.md) and [private input service 0.1.0](../../docs/console-secrets.md). Worker 0.2.0 requires a running authenticated loopback Web service and SSHScript 7.0.1; it supports enter/input/secret/poll/leave but is not a recipe credential store or automatic database recipe backend. Recipes must use their reviewed runtime credential binding; do not put passwords in vars, reports, command text or durable forms. The private channel expires/cancels without retries and has no plug-in provider API.
+For an authorized database-client session that needs a human password, route to [the interactive skill](../opsfeast-interactive/SKILL.md) and [private input service 0.1.0](../../docs/console-secrets.md). Worker 0.3.0 requires a running authenticated loopback Web service and SSHScript 7.0.1; it supports runtime sudo/su/leave with explicit authorization and enter/input/secret/poll/leave but is not a recipe credential store or automatic database recipe backend. Recipes must use their reviewed runtime credential binding; do not put passwords in vars, reports, command text or durable forms. The private channel expires/cancels without retries and has no plug-in provider API.
 
 ## Human trust during exploration and recipe execution
 
@@ -598,4 +598,4 @@ This read-only view neither executes recipes nor proves current host health.
 
 Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
 
-*Last modified: 2026-11-04 12:03:41*
+*Last modified: 2026-11-04 17:32:38*

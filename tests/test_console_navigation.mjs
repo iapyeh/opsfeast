@@ -37,6 +37,7 @@ function setup(history){
   const base={title:'same task title',created_at:'2026-01-01T00:00:00Z',head:'output',tail:'tail',lines:1,revision:1};
   const snapshot={session:{session_id:'fixture',host_id:'lab / web-01',title:'inspection',activity:{state:'thinking',expires_at:'2999-01-01T00:00:00Z'}},seq:5,blocks:[
     {...base,id:'command',position:1,kind:'command',status:'streaming',size:6},
+    {...base,id:'analysis',position:4,kind:'analysis',status:'completed',size:6},
     {...base,id:'output',position:2,kind:'stdout',status:'streaming',size:30000},
     {...base,id:'form',position:3,kind:'form',status:'waiting',size:6,form:{fields:[],choices:[{id:'yes',label:'approve'}]},response:null},
   ]};
@@ -62,6 +63,10 @@ test('history page never streams, animates or submits forms; expansion stops at 
   const all=elements(ids.get('transcript'));
   assert.equal(all.filter(el=>el.tagName==='FORM').length,0);
   assert.equal(all.some(el=>el.classes.has('processing')),false);
+  const analysis=all.find(el=>el.dataset.blockId==='analysis');
+  assert.equal(elements(analysis).find(el=>el.tagName==='H2').hidden,true);
+  assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,true);
+  assert.equal(elements(analysis).find(el=>el.tagName==='PRE').textContent,'output\n⋯\ntail');
   const output=all.find(el=>el.dataset.blockId==='output');
   const buttons=elements(output).filter(el=>el.tagName==='BUTTON');
   await buttons[0].onclick();await buttons[1].onclick();
@@ -81,6 +86,9 @@ test('live page streams only its own session and keeps live form replies explici
     assert.equal(calls.at(-1).url,'/api/v1/console-sessions/fixture/stream?after=5');
     assert.match(document.title,/互動河道/);
     assert.equal(ids.get('transcript').childNodes.at(-1),ids.get('activity'));
+    const analysis=elements(ids.get('transcript')).find(el=>el.dataset.blockId==='analysis');
+    assert.equal(elements(analysis).find(el=>el.tagName==='H2').hidden,true);
+    assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,true);
     const form=elements(ids.get('transcript')).find(el=>el.tagName==='FORM');
     assert.ok(form);
     globalThis.crypto??=(await import('node:crypto')).webcrypto;

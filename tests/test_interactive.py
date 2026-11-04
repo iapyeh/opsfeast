@@ -156,7 +156,7 @@ class InteractiveTests(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_CONSOLE,'SSHScript required')
 class CoreConsoleTests(unittest.TestCase):
-    def test_sudo_root_is_explicit_scoped_and_uses_configured_credentials(self):
+    def test_runtime_switches_require_current_authorization_and_actor_credentials(self):
         from opsfeast.core import Sessions,CoreError
         from opsfeast import ConfigError
         from types import SimpleNamespace
@@ -175,15 +175,17 @@ class CoreConsoleTests(unittest.TestCase):
             with manager.console('target') as console:
                 with self.assertRaisesRegex(CoreError,'unsupported'):console.resolve(request)
             password.assert_not_called()
-            with manager.console('target',sudo_root=True) as console:
+            allowed = [('sudo','root')]
+            def authorize(req):return (req.kind,req.username) in allowed
+            with manager.console('target',switch_authorizer=authorize) as console:
                 self.assertEqual(console.resolve(request).password,'fixture-only-secret')
                 password.assert_called_once()
-                for change in ({'username':'other'},{'kind':'su'},{'credential_supplied':True},{'environment':SimpleNamespace(**{**vars(env),'effective_user':'other'})},{'environment':SimpleNamespace(**{**vars(env),'identity_verified':False})}):
+                for change in ({'username':'other'},{'kind':'su'},{'credential_supplied':True},{'environment':SimpleNamespace(**{**vars(env),'identity_verified':False})}):
                     with self.assertRaisesRegex(CoreError,'unsupported'):console.resolve(SimpleNamespace(**{**vars(request),**change}))
                 password.return_value=(None,'sudo_disabled')
                 with self.assertRaisesRegex(CoreError,'sudo_disabled'):console.resolve(request)
             with self.assertRaises(ConfigError):
-                with manager.console('target',sudo_root='yes'):pass
+                with manager.console('target',switch_authorizer='yes'):pass
 
     def test_borrowed_adapter_and_expected_target(self):
         from opsfeast.core import Sessions,CoreError
