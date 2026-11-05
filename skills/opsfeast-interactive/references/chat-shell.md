@@ -39,7 +39,10 @@ active work before doing so. No automatic reconnect or program replay exists.
   immediately, choose its persistent interactive mode (for example `tty=true` in
   exec_command). Retain both its process handle and OpsFeast session ID.
 - As soon as `created` returns, open its reader_url in the visible browser and
-  preserve the tab. Verify that its visible heading/profile/host match the new session; posting a link alone does not show the river. Reuse a tab only when its exact session UUID matches this worker. For a new session, open a separate tab; never navigate the selected tab away from another session or from a historical view. Do this before connecting, not after login finishes. Do not
+  preserve the tab. Verify that its visible heading/profile/host match the new session; posting a link alone does not show the river. Reuse a tab only when its exact session UUID matches this worker. For a new session, open a separate tab; never navigate the selected tab away from another session or from a historical view. Do this before connecting, not after login finishes. A login page with the exact river in `next` is a valid
+  handoff: continue already-authorized work without waiting for a chat acknowledgement.
+  Use [reader readiness events](../../../docs/browser-events.md) on controller stdout
+  to observe arrival; they are not host authorization or automatic model wakeup. Do not
   spend time on screenshots, browser QA or extra discovery before showing it.
 - Send `{"op":"connect","request_id":"connect-1"}` to that same worker.
   When authorized, follow with `{"op":"sudo","request_id":"root-1","username":"root","authorization":"Human authorized root inspection","timeout":15}`.
@@ -210,4 +213,4 @@ in OpsFeast rather than requiring a new connection/record bridge each time.
 
 After each concluded interaction (including agent-led Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
 
-*Last modified: 2026-11-04 23:35:05*
+*Last modified: 2026-11-05 14:16:33*

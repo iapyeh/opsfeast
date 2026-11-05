@@ -16,6 +16,11 @@ test('login returns to Profiles and rejects unsupported or external destinations
   }
   const sid='11af0ac8-f21c-49ec-a5de-8f99d8116aac';
   for(const next of ['/console/'+sid,'/console/'+sid+'/blocks/'+sid,'/interactive?work='+sid])assert.equal(loginDestination('?next='+encodeURIComponent(next)),next);
+  for(const suffix of ['', '/history', '/blocks/'+sid, '/history/blocks/'+sid]){
+    const scoped='/console/'+sid+suffix+'?profile=vault-test&host_id=guest';
+    assert.equal(loginDestination('?next='+encodeURIComponent(scoped)),scoped);
+  }
+  for(const tail of ['?profile=a&profile=b','?next=//bad','#https://bad','/bogus','/../hosts'])assert.equal(loginDestination('?next='+encodeURIComponent('/console/'+sid+tail)),'/workspace');
   for(const next of ['/console/'+sid+'?redirect=//bad','/console/../hosts','/interactive?work='+sid+'&next=//bad'])assert.equal(loginDestination('?next='+encodeURIComponent(next)),'/workspace');
 });
 test('unauthenticated Profiles retains its page and offers login or account setup without requesting data',async()=>{

@@ -1,3 +1,7 @@
+For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+
 For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
 
 # Documentation
@@ -98,4 +102,4 @@ For the independent agent-written Console transcript reader, see [console record
 
 [Host notes](host-notes.md): review/edit private host knowledge on the Web, share CLI/Python/API operations, resolve conflicts and confirm experience extraction.
 
-*Last modified: 2026-11-05 09:54:58*
+*Last modified: 2026-11-05 14:16:33*

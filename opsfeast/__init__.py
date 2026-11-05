@@ -129,7 +129,10 @@ def load_profiles(installation=None):
                 'profiles': {'default': {'root': location}}}
     if version != 2:
         raise ConfigError(f'{pointer}: unsupported locator version')
-    mapping(data, str(pointer), ('schema_version', 'default_profile', 'profiles'))
+    mapping(data, str(pointer), ('schema_version', 'default_profile', 'profiles', 'web'))
+    if 'web' in data:
+        from .web_settings import validate
+        validate(data['web'])
     if 'default_profile' not in data:
         raise ConfigError('profile registry must contain default_profile')
     profiles = mapping(data.get('profiles'), f'{pointer}: profiles')

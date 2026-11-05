@@ -3,6 +3,8 @@ name: opsfeast-core
 description: Use the bundled OpsFeast Python API for installation identity, profiles, runtime hosts loading, scoped sessions and Recipe root/su/sudo, or read-only instance inspection. Use for standalone agent programs and python-recipe authoring; notification/todo services are shared by profiles and Recipes; general logging remains unavailable.
 ---
 
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](../../docs/web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
@@ -285,4 +287,4 @@ before interpreting values; these are not SSH endpoints or current-health claims
 
 Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvironmentError` is a `ConfigError` subclass with a controlled diagnostic report; exact type strings have changed for these failures. Reuse the failing interpreter with `-B tools/check_environment.py --json` and follow [runtime diagnosis and authorized repair](../../docs/runtime-troubleshooting.md) for version/source failures or duplicate metadata. Do not implement a second scanner, retry sessions to diagnose packages, or modify environments without scope.
 
-*Last modified: 2026-11-04 23:35:05*
+*Last modified: 2026-11-05 13:49:41*

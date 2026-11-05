@@ -1,3 +1,5 @@
+For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
 # Console blocks 0.2.0
 
 For a multi-host investigation in one river, read [shared task river 0.1.0](shared-console.md): declared participants, per-block source IDs, exact host-history membership and independent host batch toggles and individual block toggles. Closed blocks keep one time/source/content row with a far-right ↓/↑ open/close toggle in both states; only open blocks show ↗ immediately to its left; waiting live forms remain open. Folding never changes execution or authorization.
@@ -18,7 +20,7 @@ interaction style, not a separate unrecorded Console mode.
 ## Availability, access and storage
 
 Run `python -B -m opsfeast.web` in the approved environment with requirements-web.txt.
-It binds to loopback port 8740. Browser pages require administrator login, load
+It binds to the [saved installation port](web-server.md); use the launcher URL. Browser pages require administrator login, load
 immediately and need no reader token or extra unlock. Redirects preserve the reader
 URL through login. Configuration retains its existing authorization requirements.
 
@@ -390,4 +392,4 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-05 12:01:34*
+*Last modified: 2026-11-05 14:16:33*

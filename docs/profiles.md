@@ -87,6 +87,10 @@ Bare `python -B tools/opsfeast.py` includes a Profiles table with the same avail
 
 ## Registry and boundaries
 
+The optional top-level `web: {port: 18741}` stores this checkout’s persistent Web
+endpoint. See [Web endpoint 0.1.0](web-server.md) for validation, first allocation,
+launch precedence and conflict handling. Profile mutations preserve this setting.
+
 New checkouts use .opsfeast.yaml:
 
 ```yaml
@@ -107,4 +111,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-_Last modified: 2026-11-01 13:20:29_
+*Last modified: 2026-11-05 13:49:41*

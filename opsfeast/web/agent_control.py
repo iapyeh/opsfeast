@@ -144,7 +144,7 @@ class Controller:
         return states
 
 
-def run(app, token, *, port):
+def run(app, token, *, port, listener=None):
     import uvicorn
     lock=threading.Lock()
     def emit(value):
@@ -152,15 +152,25 @@ def run(app, token, *, port):
         text=json.dumps(value,ensure_ascii=False).replace(token,'[agent capability hidden]')
         with lock:sys.stdout.write(text+'\n');sys.stdout.flush()
     server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,access_log=False,log_level='error',timeout_graceful_shutdown=5))
-    thread=threading.Thread(target=server.run,daemon=True);thread.start()
+    thread=threading.Thread(target=lambda:server.run(sockets=[listener] if listener else None),daemon=True);thread.start()
     controller=Controller('http://127.0.0.1:'+str(port),token,emit)
     controls=Controls(sys.stdin.fileno())
+    stop_browser_events=threading.Event()
+    def browser_events():
+        cursor=0
+        while not stop_browser_events.is_set():
+            batch=app.state.browser_events.read(cursor,1)
+            if batch['gap']:emit({'type':'browser_event_gap','after':cursor,'next_seq':batch['next_seq']})
+            for event in batch['events']:emit({'type':'browser_event','event':event})
+            cursor=batch['next_seq']
+    browser_thread=threading.Thread(target=browser_events,daemon=True)
     try:
         deadline=time.monotonic()+10
         while not server.started:
             if not thread.is_alive() or time.monotonic()>deadline:raise RuntimeError('server_start_failed')
             thread.join(.02)
         emit({'type':'ready','protocol_version':'0.1.0','url':controller.origin,'capability':'memory_only'})
+        browser_thread.start()
         while True:
             body=controls.read(1)
             if body is None:
@@ -175,6 +185,8 @@ def run(app, token, *, port):
                 emit({'type':'rejected','request_id':body.get('request_id') if isinstance(body,dict) else None,
                       'error_type':type(error).__name__})
     finally:
+        stop_browser_events.set()
+        if browser_thread.is_alive():browser_thread.join(2)
         states=controller.close()
         server.should_exit=True;thread.join(10)
         controls.close()

@@ -3,7 +3,11 @@ name: opsfeast-interactive
 description: Operate a persistent SSHScript shell with a human through chat and a visible Web river; use the shipped Console worker for incremental instructions or the separate exact-plan executor when that approval mode is selected.
 ---
 
-For an investigation involving several hosts in one visible river, follow [shared task river 0.1.0](../../docs/shared-console.md). Predeclare exact profile/host/icon participants, attach each independent worker with controller `session` or worker `--session UUID`, and reuse the one reader for that session. Host buttons independently toggle their own blocks open/closed, and 全部 opens all; individual block toggles preserve chronological slots. Time leads every source row; a far-right ↓/↑ toggle opens/closes each block; only open blocks show ↗ immediately to its left. Waiting live forms and private-input controls remain open. Keep command routing, accounts, authorization, activity and cleanup scoped to each worker; serialize private input requests across the river.
+For login-to-river handoff, use [browser readiness 0.1.0](../../docs/browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](../../docs/web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+
+For an investigation involving several hosts in one visible river, follow [shared task river 0.1.0](../../docs/shared-console.md). Predeclare exact profile/host/icon participants, attach each independent worker with controller `session` or worker `--session UUID`, and reuse the one reader for that session. Host buttons independently toggle their own blocks open/closed, and 全部 opens all; dark always means all applicable blocks are open, while light means some or all are closed; individual block toggles preserve chronological slots. Time leads every source row; a far-right ↓/↑ toggle opens/closes each block; only open blocks show ↗ immediately to its left. Waiting live forms and private-input controls remain open. Keep command routing, accounts, authorization, activity and cleanup scoped to each worker; serialize private input requests across the river.
 
 
 For website access and administrator/password management, prefer the shipped
@@ -12,6 +16,13 @@ capability, distinct from human login, no token files, no borrowed browser cooki
 Use worker.start/worker.send for Console work and request for API operations;
 admin.password accepts a human-provided password or explicitly requested generation.
 Follow the human's task/consent; capability possession never supplies authorization.
+
+For service continuity during development and Git work, follow
+[controller lifetime](../../docs/agent-owner.md#launch-and-lifetime): keep the
+user-facing Web server running. Restore any necessarily paused task-owned server
+with its original installation/port and verify HTTP availability before handoff,
+unless the human explicitly requests otherwise. Reconcile workers before restart;
+never automatically replay host commands.
 
 # Use the interactive Console service
 
@@ -180,4 +191,4 @@ merely to validate a prose correction. Preserve unrelated work and report the
 updated source; do not claim installed or cached copies were refreshed unless
 that separate action was actually authorized and completed.
 
-*Last modified: 2026-11-05 12:01:34*
+*Last modified: 2026-11-05 14:35:41*

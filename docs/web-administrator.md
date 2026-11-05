@@ -1,3 +1,5 @@
+For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
 # Local administrator and profile settings
 
 The Web installation has one administrator account. `/settings/site` is named
@@ -196,4 +198,4 @@ public-network readiness.
 Implementation references: [Python hashlib](https://docs.python.org/3/library/hashlib.html#hashlib.scrypt)
 and [Starlette response cookies](https://starlette.dev/responses/#set-cookie).
 
-*Last modified: 2026-11-04 23:35:05*
+*Last modified: 2026-11-05 14:16:33*

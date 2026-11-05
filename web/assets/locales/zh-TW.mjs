@@ -12,7 +12,7 @@ export default {
     hosts: "主機與群組", recipes: "Recipes", retention: "資料與成果", apps: "應用與呈現",
     learn: "教材與案例", docs: "文件與契約", preview: "設計預覽", previewTag: "預覽",
     user: "登入後畫面示意", guest: "尚未登入", local: "本機介面原型",
-    server: "FastAPI + Uvicorn · 預設連接埠 8740", language: "介面語言",
+    server: "FastAPI + Uvicorn · 每套安裝獨立連接埠", language: "介面語言",
     languageHint: "目前僅有繁體中文；英文版將於內容確認後翻譯。",
     notice: "站台、Profiles 與主機設定已接入實際資料；其他管理版面仍有規劃預覽。",
     previewNumber: "原型 02", back: "回到總覽", planned: "設計方向 · 尚未接入",

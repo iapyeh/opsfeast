@@ -5,18 +5,31 @@ import {mountSecretInput} from './console-secret-input.mjs';
 const $=id=>document.getElementById(id),{sid,bid,history}=readerLocation(location.pathname),api='/api/v1/console-sessions/'+encodeURIComponent(sid);
 const labels={command:'輸入',stdout:'輸出',stderr:'錯誤輸出',identity:'身分回報',analysis:'分析',authorization:'授權回報',error:'錯誤',status:'狀態回報',form:'等待你的回覆'};
 const statuses={streaming:'接收中',completed:'完成',failed:'失敗',interrupted:'中斷',cancelled:'已取消',waiting:'等待回覆',answered:'已回覆'};
-let snapshot=null,controller=null,follow=!bid,closedHosts=new Set();
+let snapshot=null,controller=null,follow=!bid,closedHosts=new Set(),readerAnnounced=false;
 const cards=new Map(),drafts=new Map(),blockClosed=new Map();
 const tabsRoot=document.createElement('nav');tabsRoot.id='host-tabs';$('toolbar').append(tabsRoot);
 const hostTabs=mountHostTabs(tabsRoot,target=>{
-  if(target===null){closedHosts.clear();blockClosed.clear();}else{const closing=!closedHosts.has(target);if(closing)closedHosts.add(target);else closedHosts.delete(target);for(const b of snapshot.blocks)if(b.target_id===target)blockClosed.delete(b.id);}const top=$('transcript').scrollTop;
+  if(target===null){closedHosts.clear();blockClosed.clear();}else{const closing=tabStates().get(target);if(closing)closedHosts.add(target);else closedHosts.delete(target);for(const b of snapshot.blocks)if(b.target_id===target)blockClosed.delete(b.id);}const top=$('transcript').scrollTop;
   for(const block of snapshot.blocks)update(block);
   meta();$('transcript').scrollTop=top;
 });
+function isClosed(block){
+  const waiting=!history&&block.kind==='form'&&block.status==='waiting'&&!block.response&&!block.expired;
+  return !bid&&!waiting&&(blockClosed.get(block.id)??closedHosts.has(block.target_id));
+}
+function tabStates(){
+  const blocks=snapshot.blocks.filter(visibleInRiver),states=new Map();
+  for(const host of hostList(snapshot.session)){
+    const own=blocks.filter(block=>block.target_id===host.id);
+    states.set(host.id,own.length?own.every(block=>!isClosed(block)):!closedHosts.has(host.id));
+  }
+  states.set(null,blocks.every(block=>!isClosed(block))&&[...states.values()].every(Boolean));
+  return states;
+}
 function sourceView(card,block){
   const p=hostPresentation(snapshot.session,block,closedHosts);
   const waiting=!history&&block.kind==='form'&&block.status==='waiting'&&!block.response&&!block.expired;
-  const closed=!bid&&!waiting&&(blockClosed.get(block.id)??p.muted);
+  const closed=isClosed(block);
   card.source.hidden=!!bid&&!hostList(snapshot.session).length;
   card.sourceLabel.textContent=p.host?p.label:(hostList(snapshot.session).length?p.label:snapshot.session.host_id);
   card.sourceSuffix.textContent=displayText(block.head??'').split(/\r?\n/).find(line=>line.trim())??block.title;
@@ -28,7 +41,7 @@ function sourceView(card,block){
   if(p.tone!==null)card.el.dataset.hostTone=String(p.tone);else delete card.el.dataset.hostTone;
   card.link.hidden=!!bid||closed;card.blockToggle.hidden=!!bid;card.blockToggle.disabled=waiting;card.blockToggle.textContent=closed?'↓':'↑';card.blockToggle.title=closed?'展開此區塊':'閉合此區塊';card.blockToggle.setAttribute('aria-label',card.blockToggle.title);card.blockToggle.setAttribute('aria-expanded',String(!closed));
   card.link.setAttribute('aria-label',p.host?`${p.host.host_id}：另開完整內容`:'另開完整內容');
-  card.toggle=()=>{if(bid||waiting)return;blockClosed.set(block.id,!closed);sourceView(card,block);};
+  card.toggle=()=>{if(bid||waiting)return;blockClosed.set(block.id,!closed);sourceView(card,block);hostTabs.render(snapshot.session,closedHosts,tabStates());};
 }
 
 function add(parent,tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;parent.append(el);return el;}
@@ -47,7 +60,7 @@ function navigation(){
   $('history-view').hidden=history;$('history-view').href=readerLink(sid,{history:true,scope});
 }
 function bottom(){const secret=$('secret-input');if(follow&&!secret?.contains(document.activeElement))$('transcript').scrollTop=$('transcript').scrollHeight;}
-function meta(){const s=snapshot.session;navigation();$('title').textContent=s.title;$('target').textContent=s.host_id+' · '+s.session_id;$('cursor').textContent=`${snapshot.blocks.length} 個區塊 · 更新 #${snapshot.seq}`;hostTabs.render(s,closedHosts);if(bid)tabsRoot.hidden=true;const identity=focusedIdentity(snapshot.blocks,null);const identities=hostList(s).length?hostList(s).map(t=>t.profile+' / '+t.host_id+'：'+identityLabel(focusedIdentity(snapshot.blocks,t.id))).join(' ｜ '):identityLabel(identity);$('identity').textContent=history?'歷史身分回報：'+identities.replaceAll(' · 目前 ',' · 當時 '):identities;updateActivity();const state=snapshot.blocks.filter(b=>b.kind==='status').at(-1);$('state').textContent=state?'來源最後回報：'+state.head:'紀錄服務已就緒';$('toolbar').hidden=false;}
+function meta(){const s=snapshot.session;navigation();$('title').textContent=s.title;$('target').textContent=s.host_id+' · '+s.session_id;$('cursor').textContent=`${snapshot.blocks.length} 個區塊 · 更新 #${snapshot.seq}`;hostTabs.render(s,closedHosts,tabStates());if(bid)tabsRoot.hidden=true;const identity=focusedIdentity(snapshot.blocks,null);const identities=hostList(s).length?hostList(s).map(t=>t.profile+' / '+t.host_id+'：'+identityLabel(focusedIdentity(snapshot.blocks,t.id))).join(' ｜ '):identityLabel(identity);$('identity').textContent=history?'歷史身分回報：'+identities.replaceAll(' · 目前 ',' · 當時 '):identities;updateActivity();const state=snapshot.blocks.filter(b=>b.kind==='status').at(-1);$('state').textContent=state?'來源最後回報：'+state.head:'紀錄服務已就緒';$('toolbar').hidden=false;}
 function updateActivity(){if(!snapshot)return;if(history){$('activity').hidden=true;return;}const state=activityState(snapshot);if($('activity').textContent!==state.label)$('activity').textContent=state.label;$('activity').classList.toggle('processing',state.busy);$('activity').classList.toggle('thinking',state.thinking);$('activity').hidden=!state.label;}
 function responseUI(card,block){
   if(block.kind!=='form')return;
@@ -73,7 +86,14 @@ function update(block){
   card.head.textContent=`#${block.position} · ${labels[block.kind]||block.kind} · ${new Date(block.created_at).toLocaleString('zh-TW',{hour12:false})}`;card.title.textContent=block.title;card.stats.textContent=`${statuses[block.status]||block.status} · ${block.size.toLocaleString()} bytes · ${block.lines} 個換行 · v${block.revision}${block.expired?' · 已逾期':''}`;const shown=preview(block,!bid);card.truncated=!!block.tail||shown!==block.head;card.pre.textContent=displayText(shown);if(!bid&&!card.loaded)card.expand.hidden=!card.truncated;if(card.loaded)card.more.hidden=card.offset>=block.size;const processing=!history&&['command','analysis','status'].includes(block.kind)&&block.status==='streaming';card.progress.hidden=!processing;card.progress.textContent=processing?'處理中…':'';card.progress.classList.toggle('processing',processing);card.el.setAttribute('aria-busy',String(processing));responseUI(card,block);sourceView(card,block);
 }
 async function refresh(){const data=await request();snapshot=data;meta();if(bid&&!snapshot.blocks.some(b=>b.id===bid))throw Error('找不到此區塊');for(const b of snapshot.blocks)update(b);if(bid){const card=cards.get(bid);if(!card.loaded)await card.load();}bottom();}
-async function restore(){controller?.abort();const c=new AbortController();controller=c;try{await refresh();if(c.signal.aborted)return;$('connection').textContent=history?`唯讀紀錄已載入 · 保存進度 #${snapshot.seq}；不自動更新。`:'已載入此 session；持續接收區塊更新。';if(!history)await listen(c);}catch(error){if(!c.signal.aborted)$('connection').textContent=error.message;}}
+function announceReader(){
+  if(readerAnnounced)return;readerAnnounced=true;
+  // A readiness notice is ephemeral metadata, not a durable form or host action.
+  void fetch(api+'/reader-events',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({view:history?(bid?'history_block':'history'):(bid?'block':'live'),block_id:bid||null,seen_seq:snapshot.seq})})
+    .catch(()=>{});
+}
+async function restore(){controller?.abort();const c=new AbortController();controller=c;try{await refresh();if(c.signal.aborted)return;announceReader();$('connection').textContent=history?`唯讀紀錄已載入 · 保存進度 #${snapshot.seq}；不自動更新。`:'已載入此 session；持續接收區塊更新。';if(!history)await listen(c);}catch(error){if(!c.signal.aborted)$('connection').textContent=error.message;}}
 async function listen(c){try{const response=await fetch(api+'/stream?after='+snapshot.seq,{signal:c.signal});if(response.status===401){location.assign('/login?next='+encodeURIComponent(location.pathname+location.search));return;}if(!response.ok)throw Error('stream_failed');const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';while(true){const {value,done}=await reader.read();if(done)throw Error('stream_closed');buffer+=decoder.decode(value,{stream:true});let end;while((end=buffer.indexOf('\n\n'))>=0){const raw=buffer.slice(0,end);buffer=buffer.slice(end+2);const line=raw.split('\n').find(l=>l.startsWith('data: '));if(!line)continue;const event=JSON.parse(line.slice(6)),next=consume(snapshot,event);if(next!==snapshot){snapshot=next;if(event.block)update(event.block);meta();bottom();}}}}catch(error){if(c.signal.aborted)return;$('connection').textContent='更新中斷，正在補回保存的狀態…';setTimeout(()=>{if(controller===c&&!c.signal.aborted)restore();},1500);}}
 $('transcript').addEventListener('scroll',()=>{const el=$('transcript');follow=el.scrollHeight-el.scrollTop-el.clientHeight<45;$('follow').textContent=follow?'跟隨最新內容':'已暫停自動捲動';});
 $('latest').onclick=()=>{follow=true;bottom();$('follow').textContent='跟隨最新內容';};

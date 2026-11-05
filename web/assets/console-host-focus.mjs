@@ -11,7 +11,7 @@ export function focusedIdentity(blocks,selected){
 export function mountHostTabs(root,onSelect){
   let key='';
   root.setAttribute('role','group');root.setAttribute('aria-label','開啟或閉合主機區塊');
-  function render(session,closed=new Set()){
+  function render(session,closed=new Set(),states=null){
     const hosts=hostList(session);root.hidden=hosts.length===0;
     const next=JSON.stringify(hosts);
     if(next!==key){
@@ -30,7 +30,7 @@ export function mountHostTabs(root,onSelect){
         root.append(button);
       }
     }
-    for(const button of root.children){const active=button.dataset.targetId?closed.has(button.dataset.targetId):closed.size===0;button.setAttribute('aria-pressed',String(active));button.tabIndex=0;}
+    for(const button of root.children){const id=button.dataset.targetId||null,active=states?.get(id)??(id?!closed.has(id):closed.size===0);button.setAttribute('aria-pressed',String(active));button.tabIndex=0;}
   }
   return {render};
 }

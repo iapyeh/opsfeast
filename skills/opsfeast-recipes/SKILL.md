@@ -3,6 +3,10 @@ name: opsfeast-recipes
 description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for turning interactive discovery into repeatable recipe/config/retention/consumer workflows, recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
 ---
 
+For login-to-river handoff, use [browser readiness 0.1.0](../../docs/browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](../../docs/web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+
 For reviewed recipe/Core output participating in a multi-host Console task, use [shared task river 0.1.0](../../docs/shared-console.md) and the [record-service skill](../opsfeast-console-records/SKILL.md): declare task targets and tag host-specific blocks with target_id. This is an optional record presentation service, not automatic recipe logging or multi-host execution. Preserve the recipe's own scope/results and the task's per-host authorization; the reader's host TAB never selects execution targets.
 
 
@@ -608,4 +612,4 @@ This read-only view neither executes recipes nor proves current host health.
 
 Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
 
-*Last modified: 2026-11-05 09:54:58*
+*Last modified: 2026-11-05 14:16:33*

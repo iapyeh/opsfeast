@@ -7,10 +7,15 @@ import time
 
 from opsfeast import admin
 
-COOKIE = 'opsfeast_session'
 LIFETIME = 8 * 60 * 60
-EDIT_COOKIE = 'opsfeast_site_edit'
 EDIT_LIFETIME = 30 * 60
+
+
+def cookie_names(data_root):
+    """Stable across ports/checkouts sharing site data; distinct for separate roots."""
+    from pathlib import Path
+    suffix=hashlib.sha256(str(Path(data_root).resolve(strict=True)).encode()).hexdigest()[:24]
+    return 'opsfeast_session_'+suffix,'opsfeast_site_edit_'+suffix
 
 
 class AgentCapability:

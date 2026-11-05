@@ -1,3 +1,7 @@
+For login-to-river handoff, use [browser readiness 0.1.0](../docs/browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](../docs/web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+
 For agent website operations, use the [memory-only owner controller](../docs/agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
 
 For entered programs and safe human password input, use [interactive worker 0.3.0](../docs/console-agent.md#entered-programs-and-private-input-worker-030) and [ephemeral secret delivery](../docs/console-secrets.md), routed through the interactive/Console-record skills. Passwords never belong in ordinary river forms.
@@ -186,4 +190,4 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-05 11:50:48*
+*Last modified: 2026-11-05 14:16:33*

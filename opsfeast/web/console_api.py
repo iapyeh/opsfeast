@@ -111,6 +111,24 @@ def install(app, *, root, product, web_root, options, check_origin, authenticate
     @app.get('/api/v1/console-sessions/{session_id}')
     async def snapshot(session_id:str,request:Request):
         authorize(request);return await run_in_threadpool(records.snapshot,session_id)
+    @app.post('/api/v1/console-sessions/{session_id}/reader-events')
+    async def reader_opened(session_id:str,request:Request):
+        require_admin(request)
+        if agent_authorized(request):raise HTTPException(403,'human_reader_required')
+        body=await json_body(request,2048)
+        if (set(body)!={'view','block_id','seen_seq'} or body['view'] not in ('live','history','block','history_block')
+                or type(body['seen_seq']) is not int or body['seen_seq']<0):
+            raise HTTPException(422,'invalid_reader_event')
+        snap=await run_in_threadpool(records.snapshot,session_id)
+        if body['seen_seq']>snap['seq']:raise HTTPException(422,'future_record_cursor')
+        is_block=body['view'] in ('block','history_block')
+        if is_block:
+            if not isinstance(body['block_id'],str) or not any(b['id']==body['block_id'] for b in snap['blocks']):
+                raise HTTPException(404,'unknown_block')
+        elif body['block_id'] is not None:raise HTTPException(422,'invalid_reader_event')
+        event=app.state.browser_events.publish(session_id=session_id,**body)
+        return {'accepted':True,'event':event}
+
     @app.post('/api/v1/console-sessions/{session_id}/blocks')
     async def add(session_id:str,request:Request):
         authorize(request,True);return await mutate(records.add_block,session_id,await json_body(request,65536))

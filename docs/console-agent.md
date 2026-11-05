@@ -1,3 +1,5 @@
+For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
 # Chat-owned Console worker 0.3.0
 
 For several independent host workers in one river, use [shared task river 0.1.0](shared-console.md). Predeclare the participants, then pass the same `session` to each owner-controller worker.start (or `--session UUID` to the worker). Blocks and activity are host-scoped; show one reader per shared session and keep each worker handle/target separate. Host TAB focus changes presentation only.
@@ -293,4 +295,4 @@ shell state, active close, control validation, duplicate refusal and no retry.
 Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-05 09:54:58*
+*Last modified: 2026-11-05 14:16:33*

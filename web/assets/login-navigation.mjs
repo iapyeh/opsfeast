@@ -3,7 +3,10 @@ export function loginDestination(search) {
   const next=new URLSearchParams(search).get('next');
   if(['/settings/profiles','/settings/site','/setup','/hosts'].includes(next))return next;
   const uuid='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-  if(typeof next==='string'&&new RegExp('^/console/'+uuid+'(?:/blocks/'+uuid+')?$').test(next))return next;
+  if(typeof next==='string'&&new RegExp('^/console/'+uuid+'(?:/history)?(?:/blocks/'+uuid+')?(?:\\?[^#]*)?$').test(next)){
+    const target=new URL(next,'http://local.invalid'),keys=[...target.searchParams.keys()];
+    if(keys.every(key=>['profile','host_id'].includes(key))&&new Set(keys).size===keys.length)return next;
+  }
   if(next==='/interactive'||(typeof next==='string'&&new RegExp('^/interactive\\?work='+uuid+'$').test(next)))return next;
   if(typeof next==='string'&&next.startsWith('/hosts?')){
     const target=new URL(next,'http://local.invalid');

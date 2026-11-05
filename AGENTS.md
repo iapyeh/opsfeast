@@ -131,6 +131,27 @@ Write new repository documentation and skills in English at this stage; existing
 
 Make all new or revised documentation and skills AI-friendly while keeping them readable for humans. Follow the [documentation principles](docs/vision.md#write-ai-friendly-documentation-for-humans-and-agents): provide discoverable entrypoints and task routing, accurate interfaces and result interpretation, complete skill sources and update procedures where relevant, and explicit implementation and verification limits. Link to canonical details rather than duplicating them; a fresh agent must not need earlier conversations or automatic skill discovery to follow the workflow.
 
+### Do not block authorized work on browser login
+
+When opening a Console river, present its exact URL in the visible browser; login
+must retain the scoped next destination. Continue already-authorized operations
+and record output without requiring a "logged in" reply. Observe reader readiness
+through [browser events](docs/browser-events.md) on controller stdout. A reader
+notification is not authorization, proof of attention or automatic model wakeup.
+Wait only for actual missing authorization, credentials or task information.
+
+### Preserve the running Web workspace
+
+Keep an existing user-facing Web server running during development and after
+commit/push work. Git operations alone do not require stopping it. If maintenance
+requires temporarily stopping a server owned by this task, record its checkout,
+interpreter, port, installation data and launch options, reconcile active Console
+work, and restore that service before handing back. Verify HTTP availability;
+report a blocker rather than silently leaving it stopped. The user's explicit
+instruction to stop, keep stopped or use another lifecycle takes precedence.
+Do not terminate an unrelated listener or automatically replay host commands.
+See [Web controller lifetime](docs/agent-owner.md#launch-and-lifetime).
+
 ### Before every commit
 
 This completion gate applies to every task in this repository. Before committing, review the complete pending change and confirm that all applicable delivery work is finished:
@@ -167,4 +188,4 @@ For dated backup presence, expiry and unexpected-entry lists, use [the shipped b
 
 For sharing/import/archival, read [portability](docs/portability.md), [portable retention authoring](docs/portable-contracts.md) and the recipe/result-data skills. Recipe, observation and retention are independent units. Use transfer plans and expected digests, origin-preserving merge/replace and explicit recipe path-conflict resolution; do not build parallel copy/delete/SQL tools. Archive-plan freezes source-time selection, and apply verifies an external package before source deletion/compaction. Preserve protected operations, shared attachments, recovery receipts, service lifecycle and human notes. No candidate code/consumer/provider runs during data import. Bundle 0.2.0 rejects the old format; no migration or compatibility layer is required.
 
-*Last modified: 2026-11-05 08:46:39*
+*Last modified: 2026-11-05 14:16:33*

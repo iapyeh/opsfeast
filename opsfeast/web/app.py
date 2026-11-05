@@ -12,7 +12,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from opsfeast import ConfigError
 from opsfeast.identity import read_identity
 from opsfeast import site, admin
-from .security import Sessions, COOKIE, LIFETIME, EditingSessions, EDIT_COOKIE, EDIT_LIFETIME, AgentCapability
+from .security import Sessions, LIFETIME, EditingSessions, EDIT_LIFETIME, AgentCapability, cookie_names
 
 WEB_ROOT = Path(__file__).resolve().parents[2] / 'web'
 PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
@@ -23,11 +23,14 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     from opsfeast.storage import resolve_data_root
     root = resolve_data_root(WEB_ROOT.parent if installation is None else installation, data_root=data_root, required=True)
     product = WEB_ROOT.parent if installation is None else Path(installation).resolve(strict=True)
+    COOKIE,EDIT_COOKIE=cookie_names(root)
     sessions = Sessions()
     editing_sessions = EditingSessions()
     agent_capability = AgentCapability(agent_token)
     del agent_token
     app = FastAPI(title='OpsFeast Web preview', docs_url=None, redoc_url=None, openapi_url=None)
+    from .browser_events import BrowserEvents
+    app.state.browser_events=BrowserEvents()
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', '[::1]'])
 
     @app.middleware('http')
@@ -143,6 +146,14 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
 
     from .host_notes_api import install as install_host_notes
     install_host_notes(app,product=product,require_admin=require_admin,json_body=json_body,agent_authorized=agent_authorized)
+
+    @app.get('/api/v1/agent/browser-events')
+    async def browser_events(request: Request, after: int=0, wait: int=0):
+        check_origin(request)
+        if not agent_authorized(request):raise HTTPException(401,'agent_capability_required')
+        from starlette.concurrency import run_in_threadpool
+        try:return await run_in_threadpool(app.state.browser_events.read,after,wait)
+        except ValueError:raise HTTPException(422,'invalid_event_cursor') from None
 
     @app.get('/api/v1/auth/status')
     def auth_status(request: Request):

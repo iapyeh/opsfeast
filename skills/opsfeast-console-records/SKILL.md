@@ -3,6 +3,8 @@ name: opsfeast-console-records
 description: Publish durable Console blocks, stream bounded previews and read authenticated human form responses through the local OpsFeast service.
 ---
 
+For login-to-river handoff, use [browser readiness 0.1.0](../../docs/browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
 For several hosts in one task river, read [shared task river 0.1.0](../../docs/shared-console.md). Session targets declare exact profile/host/icon sources; every host block must supply its declared target_id, while joint analysis can remain unscoped. The reader independently toggles each host’s blocks or individual blocks open/closed in place: time leads each row, a far-right ↓/↑ toggle opens/closes blocks, and open blocks show ↗ immediately to its left for a separate window; 全部 opens all, while waiting live forms remain open. Per-host history discovers the same shared UUID; focus never authorizes or routes execution. Use per-target activity leases and serialize secret requests.
 
 
@@ -115,4 +117,4 @@ Historical readers provide no secret field. Old workers must be replaced and the
 Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
 
-*Last modified: 2026-11-05 12:01:34*
+*Last modified: 2026-11-05 14:16:33*

@@ -11,7 +11,10 @@ operation lock or an automatic multi-host executor.
 The reader starts with every block open. Each host button toggles that host's
 blocks closed or open independently; **全部** opens all blocks and clears individual
 overrides. Buttons show the host icon and host ID, without profile names or added state text. Their
-pressed state is exposed visually and through `aria-pressed`. These are toggle
+pressed state is exposed visually and through `aria-pressed`: dark/pressed means
+all applicable blocks are open, consistently for host buttons and **全部**. Light
+means some or all blocks are closed. Individual toggles update these indicators;
+clicking a partially closed host opens all its blocks. Waiting live forms remain open. These are toggle
 buttons, not a filter or execution selector; arrow keys move focus without toggling.
 
 Click a block's source row or ordinary preview area to toggle just that block.
@@ -156,4 +159,4 @@ expanded-content preservation, waiting-form visibility and form drafts.
 Real multi-host SSH, simultaneous privilege switching and real private input
 across hosts are not established by these synthetic/local tests.
 
-*Last modified: 2026-11-05 12:05:06*
+*Last modified: 2026-11-05 14:35:41*

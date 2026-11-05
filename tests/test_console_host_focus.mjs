@@ -28,10 +28,11 @@ test('tabs support clicks and keyboard navigation without parsing host text as H
  globalThis.document={createElement:element};t.after(()=>globalThis.document=previous);
  const root=element();let selected=null;const closed=new Set();const tabs=mountHostTabs(root,id=>{selected=id;if(id===null)closed.clear();else if(closed.has(id))closed.delete(id);else closed.add(id);tabs.render(session,closed);});tabs.render(session);
  assert.equal(root.children.length,3);assert.equal(root.children[1].textContent,'🦉 guest');assert.equal(root.children[2].textContent,'🖥 host');assert.equal(root.children[0].attrs['aria-pressed'],'true');
- root.children[1].click();assert.equal(selected,targets[0].id);assert.equal(root.children[1].tabIndex,0);
+ assert.deepEqual(root.children.map(b=>b.attrs['aria-pressed']),['true','true','true']);
+ root.children[1].click();assert.deepEqual(root.children.map(b=>b.attrs['aria-pressed']),['false','false','true']);assert.equal(selected,targets[0].id);assert.equal(root.children[1].tabIndex,0);
  let prevented=false;root.children[1].events.keydown({key:'ArrowRight',preventDefault(){prevented=true;}});
- assert.equal(prevented,true);assert.equal(selected,targets[0].id);assert.equal(root.children[2].focused,true);root.children[2].click();assert.equal(closed.size,2);root.children[1].click();assert.equal(closed.has(targets[0].id),false);assert.equal(closed.has(targets[1].id),true);
- root.children[2].events.keydown({key:'Home',preventDefault(){}});root.children[0].click();assert.equal(selected,null);assert.equal(closed.size,0);
+ assert.equal(prevented,true);assert.equal(selected,targets[0].id);assert.equal(root.children[2].focused,true);root.children[2].click();assert.deepEqual(root.children.map(b=>b.attrs['aria-pressed']),['false','false','false']);assert.equal(closed.size,2);root.children[1].click();assert.equal(closed.has(targets[0].id),false);assert.equal(closed.has(targets[1].id),true);
+ root.children[2].events.keydown({key:'Home',preventDefault(){}});root.children[0].click();assert.equal(selected,null);assert.equal(closed.size,0);assert.deepEqual(root.children.map(b=>b.attrs['aria-pressed']),['true','true','true']);
  tabs.render({targets:[{...targets[0],host_id:'<img src=x onerror=alert(1)>'}]});
  assert.match(root.children[1].textContent,/<img/);assert.equal(root.children[1].children.length,0);
  tabs.render({});assert.equal(root.hidden,true);

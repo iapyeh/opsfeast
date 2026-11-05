@@ -65,7 +65,7 @@ test('history page never streams, animates or submits forms; expansion stops at 
   const {ids,calls,cleanup}=setup(true);
   await import('../web/assets/console-reader.mjs?history-fixture');
   await new Promise(resolve=>setImmediate(resolve));
-  assert.equal(calls.length,1);assert.equal(calls[0].url,'/api/v1/console-sessions/fixture');
+  assert.equal(calls.length,2);assert.equal(calls[0].url,'/api/v1/console-sessions/fixture');
   assert.match(document.title,/Console 紀錄（唯讀）.*fixture/);
   assert.equal(ids.get('activity').hidden,true);
   const all=elements(ids.get('transcript'));
@@ -81,7 +81,8 @@ test('history page never streams, animates or submits forms; expansion stops at 
   assert.equal(new URL(calls.at(-1).url,'http://localhost').searchParams.get('limit'),'13616');
   assert.equal(buttons[1].hidden,true);
   assert.equal(elements(output).find(el=>el.className==='full-content').textContent.length,30000);
-  assert.ok(calls.every(call=>call.options.method==='GET'));
+  assert.ok(calls.every(call=>call.options.method==='GET'||call.url.endsWith('/reader-events')));
+  const notice=calls.filter(call=>call.url.endsWith('/reader-events'));assert.equal(notice.length,1);assert.deepEqual(JSON.parse(notice[0].options.body),{view:'history',block_id:null,seen_seq:5});
   assert.ok(elements(output).some(el=>el.href==='/console/fixture/history/blocks/output?profile=lab&host_id=web-01'));
   assert.match(ids.get('connection').textContent,/唯讀紀錄/);
   cleanup.forEach(fn=>fn());
@@ -92,6 +93,7 @@ test('live page streams only its own session and keeps live form replies explici
     await import('../web/assets/console-reader.mjs?live-fixture');
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls.at(-1).url,'/api/v1/console-sessions/fixture/stream?after=5');
+    const notice=calls.filter(call=>call.url.endsWith('/reader-events'));assert.equal(notice.length,1);assert.deepEqual(JSON.parse(notice[0].options.body),{view:'live',block_id:null,seen_seq:5});
     assert.match(document.title,/互動河道/);
     assert.equal(ids.get('transcript').childNodes.at(-1),ids.get('activity'));
     const analysis=elements(ids.get('transcript')).find(el=>el.dataset.blockId==='analysis');
@@ -115,7 +117,7 @@ test('host and block toggles preserve chronology, loaded content, drafts and new
  snapshot.blocks[3].form.fields=[{name:'note',label:'Note',type:'text',required:false}];
  try{
   await import('../web/assets/console-reader.mjs?shared-fixture');await new Promise(resolve=>setImmediate(resolve));
-  const tabs=ids.get('toolbar').children.find(el=>el.id==='host-tabs');assert.equal(tabs.children.length,3);
+  const tabs=ids.get('toolbar').children.find(el=>el.id==='host-tabs');assert.equal(tabs.children.length,3);assert.deepEqual(tabs.children.map(b=>b['aria-pressed']),['true','true','true']);
   const articles=()=>ids.get('transcript').children.filter(el=>el.dataset.blockId);
   const order=articles().map(el=>el.dataset.blockId);
   const output=articles().find(el=>el.dataset.blockId==='output'),analysis=articles().find(el=>el.dataset.blockId==='analysis');
@@ -123,13 +125,13 @@ test('host and block toggles preserve chronology, loaded content, drafts and new
   const full=elements(output).find(el=>el.className==='full-content'),text=full.textContent;
   const form=elements(ids.get('transcript')).find(el=>el.tagName==='FORM'),input=elements(form).find(el=>el.tagName==='INPUT');
   input.value='keep draft';input.events.input();
-  tabs.children[1].click();
+  tabs.children[1].click();assert.deepEqual(tabs.children.map(b=>b['aria-pressed']),['false','false','true']);
   assert.equal(output.classes.has('block-closed'),false);assert.equal(analysis.classes.has('block-closed'),true);tabs.children[2].click();assert.equal(output.classes.has('block-closed'),true);assert.equal(articles().find(el=>el.dataset.blockId==='form').classes.has('block-closed'),false);
   assert.deepEqual(articles().map(el=>el.dataset.blockId),order);
   const arrow=elements(output).find(el=>el.tagName==='A');assert.equal(arrow.hidden,true);assert.equal(arrow.target,'_blank');assert.equal(arrow.rel,'noopener');assert.match(arrow.href,/blocks\/output/);
   assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,true);
   const time=elements(output).find(el=>el.className==='source-time'),row=elements(output).find(el=>el.className==='source-line');assert.equal(row.children[0],time);assert.equal(time.hidden,false);assert.ok(time.textContent);
-  const toggle=elements(output).find(el=>el.className==='text-control block-toggle');assert.equal(toggle.hidden,false);assert.equal(toggle.textContent,'↓');toggle.onclick();assert.equal(output.classes.has('block-closed'),false);assert.equal(arrow.hidden,false);assert.equal(toggle.hidden,false);assert.equal(toggle.textContent,'↑');assert.equal(toggle.parentNode.children.at(-1),toggle);toggle.onclick();assert.equal(output.classes.has('block-closed'),true);assert.equal(arrow.hidden,true);assert.equal(toggle.textContent,'↓');assert.equal(time.hidden,false);
+  const toggle=elements(output).find(el=>el.className==='text-control block-toggle');assert.equal(toggle.hidden,false);assert.equal(toggle.textContent,'↓');toggle.onclick();assert.equal(output.classes.has('block-closed'),false);assert.equal(arrow.hidden,false);assert.equal(toggle.hidden,false);assert.equal(toggle.textContent,'↑');assert.equal(toggle.parentNode.children.at(-1),toggle);toggle.onclick();assert.equal(output.classes.has('block-closed'),true);assert.equal(arrow.hidden,true);assert.equal(toggle.textContent,'↓');assert.equal(time.hidden,false);assert.equal(tabs.children[0]['aria-pressed'],'false');assert.equal(tabs.children[2]['aria-pressed'],'false');
   streams.shift()({done:false,value:new TextEncoder().encode('data: '+JSON.stringify({session_id:'fixture',seq:6,type:'block.appended',block:{...snapshot.blocks[2],revision:2,head:'new host output'}})+'\n\n')});
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(output.classes.has('block-closed'),true);assert.deepEqual(articles().map(el=>el.dataset.blockId),order);
@@ -138,9 +140,9 @@ test('host and block toggles preserve chronology, loaded content, drafts and new
   const waiting=articles().find(el=>el.dataset.blockId==='form');elements(waiting).find(el=>el.className==='source-line').events.keydown({key:'Enter',preventDefault(){}});assert.equal(waiting.classes.has('block-closed'),false);
   streams.shift()({done:false,value:new TextEncoder().encode('data: '+JSON.stringify({session_id:'fixture',seq:7,type:'block.created',block:{...snapshot.blocks[0],id:'new-guest',position:6,head:'first line\nsecond line'}})+'\n\n')});
   await new Promise(resolve=>setImmediate(resolve));
-  const incoming=articles().find(el=>el.dataset.blockId==='new-guest');assert.equal(incoming.classes.has('block-closed'),true);assert.equal(elements(incoming).find(el=>el.className==='source-suffix').textContent,'first line');
-  tabs.children[0].click();assert.equal(articles().some(el=>el.classes.has('block-closed')),false);
-  assert.equal(calls.filter(c=>c.url.includes('/content?')).length,1);
+  const incoming=articles().find(el=>el.dataset.blockId==='new-guest');assert.equal(incoming.classes.has('block-closed'),true);assert.equal(tabs.children[1]['aria-pressed'],'false');assert.equal(elements(incoming).find(el=>el.className==='source-suffix').textContent,'first line');
+  tabs.children[0].click();assert.equal(articles().some(el=>el.classes.has('block-closed')),false);assert.deepEqual(tabs.children.map(b=>b['aria-pressed']),['true','true','true']);
+  assert.equal(calls.filter(c=>c.url.includes('/content?')).length,1);assert.equal(calls.filter(c=>c.url.endsWith('/reader-events')).length,1);
  }finally{cleanup.forEach(fn=>fn());}
 });
 

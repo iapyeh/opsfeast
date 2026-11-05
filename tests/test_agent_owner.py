@@ -125,16 +125,32 @@ class ControllerBoundaryTests(unittest.TestCase):
 class MemoryLaunchTests(unittest.TestCase):
     def test_controller_keeps_capability_out_of_output_and_files_and_eof_stops_server(self):
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory)
+            root=Path(directory)/'data';root.mkdir()
+            product=Path(directory)/'checkout';(product/'web/assets').mkdir(parents=True)
             (root/'.opsfeast-data.json').write_text('{"schema_version":"0.1.0","kind":"opsfeast-installation-data"}')
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
-            process=subprocess.Popen([sys.executable,'-B','-u','-m','opsfeast.web','--agent-control','--data-root',directory,'--port',str(port)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            wrapper='import sys;from pathlib import Path;import opsfeast.web.app as app;app.WEB_ROOT=Path(sys.argv.pop(1))/"web";from opsfeast.web.__main__ import main;main()'
+            process=subprocess.Popen([sys.executable,'-B','-u','-c',wrapper,str(product),'--agent-control','--data-root',str(root),'--port',str(port)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
             try:
                 ready=json.loads(process.stdout.readline());self.assertEqual(ready['type'],'ready')
+                from opsfeast.web_settings import read_port
+                self.assertEqual(read_port(product),port)
                 process.stdin.write(json.dumps(dict(op='admin.password',request_id='set-1',username='synthetic',password='1',authorization='Synthetic owner requested reset'))+'\n');process.stdin.flush()
                 result=json.loads(process.stdout.readline());self.assertEqual(result['status'],200,result)
                 self.assertNotIn('password',result['body']);self.assertTrue(admin.verify(root,'synthetic','1'))
+                # A real browser-style human POST reaches stdout without a new control input.
+                sid=str(uuid.uuid4())
+                process.stdin.write(json.dumps(dict(op='request',request_id='river-create',method='POST',path='/api/v1/console-sessions',authorization='Synthetic reader test',body=dict(session_id=sid,title='Synthetic',host_id='lab / guest',work_id=None)))+'\n');process.stdin.flush()
+                self.assertEqual(json.loads(process.stdout.readline())['status'],200)
+                from urllib.request import Request,build_opener,ProxyHandler
+                http=build_opener(ProxyHandler({}))
+                with http.open(Request(ready['url']+'/api/v1/auth/login',data=b'{"username":"synthetic","password":"1"}',headers={'Content-Type':'application/json'}),timeout=5) as response:
+                    cookie=response.headers['Set-Cookie'].split(';')[0]
+                with http.open(Request(ready['url']+'/api/v1/console-sessions/'+sid+'/reader-events',data=b'{"view":"live","block_id":null,"seen_seq":0}',headers={'Content-Type':'application/json','Cookie':cookie}),timeout=5) as response:
+                    self.assertEqual(response.status,200)
+                opened=json.loads(process.stdout.readline())
+                self.assertEqual(opened['type'],'browser_event');self.assertEqual(opened['event']['type'],'reader.opened');self.assertEqual(opened['event']['session_id'],sid)
                 process.stdin.write(json.dumps(dict(op='admin.password',request_id='generate-2',generate=True,authorization='Synthetic owner requested generation'))+'\n');process.stdin.flush()
                 generated=json.loads(process.stdout.readline());self.assertEqual(generated['status'],200)
                 self.assertTrue(admin.verify(root,'synthetic',generated['generated_password']))

@@ -1,3 +1,5 @@
+For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
 # Agent-owned Web control 0.1.0
 
 For two or more host workers sharing one timeline, follow [shared task river 0.1.0](shared-console.md). `worker.start` accepts optional `session` (an existing shared task UUID). The worker validates its exact profile/host membership before returning created; a starting acknowledgement is not attachment success. Display that session once, then route commands by worker_id independently of the selected host TAB.
@@ -11,10 +13,14 @@ applicable consent; do not invent approval or broaden authorized effects.
 
 ## Launch and lifetime
 
+Follow [per-installation Web endpoints](web-server.md): use saved `web.port` in
+`.opsfeast.yaml`, or let the first launch allocate and persist one. `--port N`
+persists an explicit choice; `ready.url` is authoritative, never a hard-coded port.
+
 Use the approved checkout/interpreter with requirements-web.txt installed:
 
 ```sh
-.venv/bin/python -B -u -m opsfeast.web --agent-control --port 8740
+.venv/bin/python -B -u -m opsfeast.web --agent-control
 ```
 
 Use `--data-root /existing/installation-data` only for an explicitly selected
@@ -35,6 +41,16 @@ asynchronously. EOF or shutdown closes owned workers, then stops the server.
 Worker `cleanup_unknown` is reported rather than asserting remote termination.
 A disconnected agent cannot rediscover a token from disk: reconcile active work
 and restart under existing authority. Do not kill an unrelated listener.
+
+Keep the user-facing server running across development, commit and push work;
+Git operations alone require no shutdown. If a necessary maintenance step stops
+this task's server, preserve the original checkout/interpreter, port, data-root
+binding and launch options, reconcile active workers/private input, then restart
+and verify an HTTP response before handing back. Keep the new controller handle
+available. Do not replay host commands or claim old workers survived a restart.
+An explicit human instruction to stop or keep the server stopped takes precedence.
+Report restoration failures and their concrete cause; do not silently switch
+ports, installation data or terminate another process to make startup succeed.
 
 Without `--agent-control`, the launcher runs a browser-only foreground service for
 an existing administrator, with no capability delivery channel. Initial setup and
@@ -123,4 +139,4 @@ synthetic evidence, not protection against a hostile process controlling this OS
 account, process memory or server code. No email recovery, external identity system
 or multi-administrator management is implemented.
 
-*Last modified: 2026-11-05 09:54:58*
+*Last modified: 2026-11-05 14:16:33*

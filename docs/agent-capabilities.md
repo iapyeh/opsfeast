@@ -1,8 +1,12 @@
+For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
+
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+
 For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
 
 # Reuse OpsFeast tools and Python modules
 
-For one task involving multiple hosts, use [shared task river 0.1.0](shared-console.md): create declared targets through the existing record API, attach separate workers with `session` / `--session`, and preserve each block's target_id. The reader offers 全部/host TABs, independently toggles each host’s blocks open/closed without reordering, and places time first in both states. A far-right ↓/↑ toggle opens/closes each block; open blocks show ↗ full-content links immediately to its left. Per-target activity and exact host-history membership are implemented; source metadata grants no execution permission.
+For one task involving multiple hosts, use [shared task river 0.1.0](shared-console.md): create declared targets through the existing record API, attach separate workers with `session` / `--session`, and preserve each block's target_id. The reader offers 全部/host TABs, independently toggles each host’s blocks open/closed without reordering (dark consistently means all applicable blocks are open, including 全部), and places time first in both states. A far-right ↓/↑ toggle opens/closes each block; open blocks show ↗ full-content links immediately to its left. Per-target activity and exact host-history membership are implemented; source metadata grants no execution permission.
 
 The [first-use Web guide](web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
 
@@ -554,4 +558,4 @@ For host-specific advice or diagnosis, use the [accumulated-evidence workflow](h
 
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-05 12:01:34*
+*Last modified: 2026-11-05 14:35:41*

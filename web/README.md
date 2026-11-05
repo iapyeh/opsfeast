@@ -111,8 +111,10 @@ operator's authorized environment:
 .venv/bin/python -B -u -m opsfeast.web --agent-control
 ```
 
-Open <http://127.0.0.1:8740/>. The launcher binds only to IPv4 loopback; override
-the port with `--port 8741`. An occupied port fails without automatic replacement.
+Open the URL returned at startup. The launcher binds only to IPv4 loopback and
+uses [this checkout’s saved port](../docs/web-server.md); first launch allocates
+and saves one in `.opsfeast.yaml`. `--port N` persists an explicit choice. An
+occupied port fails without automatic replacement or process termination.
 The [agent owner controller](../docs/agent-owner.md) keeps its highest Web capability
 only in memory and accepts JSON-lines API/password/worker controls. It creates no
 token files. Preserve its private stdin; EOF or shutdown closes workers then stops
@@ -265,4 +267,4 @@ stop channel, model wakeup or arbitrary HTML/media renderer is provided. The old
 `/interactive` also loads directly with administrator login; its execution gates
 remain separate. Read [the agent skill](../skills/opsfeast-console-records/SKILL.md).
 
-*Last modified: 2026-11-04 23:35:05*
+*Last modified: 2026-11-05 13:49:41*

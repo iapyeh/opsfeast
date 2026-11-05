@@ -21,7 +21,7 @@ Omit `--profile` to use `.opsfeast.yaml` `default_profile`; use an explicit name
 
 The optional Web launcher uses separate Python-module entrypoints:
 `python -B -m opsfeast.storage init|attach|show` selects persistent installation
-identity/site storage; `python -B -m opsfeast.web [--data-root PATH] [--port 8740]`
+identity/site storage; `python -B -m opsfeast.web [--data-root PATH] [--port PORT]`
 starts the foreground loopback server. See [storage](installation-storage.md)
 for exact setup, selection, preservation and failure rules, and
 [Web](../web/README.md) for dependencies/routes. These are not
@@ -1008,4 +1008,4 @@ Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show
 
 Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.3.0 control reference](console-agent.md#entered-programs-and-private-input-worker-030) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
 
-*Last modified: 2026-11-05 09:54:58*
+*Last modified: 2026-11-05 13:49:41*
