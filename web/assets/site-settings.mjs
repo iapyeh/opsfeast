@@ -3,10 +3,10 @@ import {siteAssetUrl} from "./site-assets.mjs";
 // Local presentation settings only. The capability is never persisted in the browser.
 export function mountSiteSettings(container, {m, e, site, siteName, authState,appearanceOnly=false,onSaved}) {
   const l = m.site;
-  let token = "", current = site, unlocked = false, busy = false;
+  let current = site, unlocked = false, busy = false;
   const pending = {logo:undefined, avatar:undefined};
   const objectUrls = new Map();
-  container.innerHTML = `<div class="page-heading"><div><p class="eyebrow">${e(l.kicker)}</p><h1>${e(l.title)}</h1><p class="intro">${e(l.intro)}</p></div></div><div class="detail-note">${e(l.publicWarning)}</div><section class="settings-unlock panel"><h2>${e(l.unlockTitle)}</h2><p>${e(l.settingsNote)}</p><label for="edit-token">${e(l.token)}</label><div class="unlock-row"><input id="edit-token" type="password" autocomplete="off" placeholder="${e(l.tokenPlaceholder)}"><button id="unlock-site" class="button primary" type="button">${e(l.unlock)}</button><button id="lock-site" class="button" type="button" hidden>${e(l.lock)}</button></div><p class="field-hint">${e(l.tokenHint)}</p></section><p id="settings-status" role="status" class="settings-status"></p><section id="identity-panel" class="identity-panel" hidden><h2>${e(l.identity)}</h2><dl id="identity-values"></dl><p>${e(l.namespaceHint)}</p></section><section class="site-appearance" aria-label="${e(l.appearance)}"><div class="settings-grid"><section class="panel site-fields"><label for="site-name">${e(l.name)}</label><input id="site-name" maxlength="80" placeholder="${e(siteName)}" disabled><p class="field-hint">${e(l.inheritName)}</p><label for="site-slogan">${e(l.slogan)}</label><input id="site-slogan" maxlength="160" disabled><p class="field-hint">${e(l.sloganHint)}</p><p class="field-hint">${e(l.identityHint)}</p></section><section class="panel image-fields">${["logo", "avatar"].map(kind => `<div class="image-setting"><h2>${e(l[kind])}</h2><p class="field-hint">${e(l[kind+"Hint"])}</p><div class="image-preview" id="${kind}-preview"></div><label class="image-file-label" for="${kind}-file">${e(l.chooseImage)}</label><input id="${kind}-file" type="file" accept="image/png,image/jpeg" disabled><button id="${kind}-remove" class="image-remove" type="button" disabled>${e(l.removeImage)}</button><p id="${kind}-status" class="field-hint"></p></div>`).join("")}<p class="field-hint">${e(l.imageRules)}</p></section></div><div class="panel settings-save-row site-save-bar"><div><strong>${e(l.saveScope)}</strong><p class="field-hint">${e(l.saveHint)}</p></div><button id="save-site" type="button" class="button primary" disabled>${e(l.save)}</button></div></section><p class="field-hint">${e(l.remaining)}</p><div id="admin-settings"></div>`;
+  container.innerHTML = `<div class="page-heading"><div><p class="eyebrow">${e(l.kicker)}</p><h1>${e(l.title)}</h1><p class="intro">${e(l.intro)}</p></div></div><div class="detail-note">${e(l.publicWarning)}</div><section class="settings-unlock panel"><h2>${e(l.unlockTitle)}</h2><p>${e(l.settingsNote)}</p><div class="unlock-row"><button id="unlock-site" class="button primary" type="button">${e(l.unlock)}</button><button id="lock-site" class="button" type="button" hidden>${e(l.lock)}</button></div><p class="field-hint">${e(l.tokenHint)}</p></section><p id="settings-status" role="status" class="settings-status"></p><section id="identity-panel" class="identity-panel" hidden><h2>${e(l.identity)}</h2><dl id="identity-values"></dl><p>${e(l.namespaceHint)}</p></section><section class="site-appearance" aria-label="${e(l.appearance)}"><div class="settings-grid"><section class="panel site-fields"><label for="site-name">${e(l.name)}</label><input id="site-name" maxlength="80" placeholder="${e(siteName)}" disabled><p class="field-hint">${e(l.inheritName)}</p><label for="site-slogan">${e(l.slogan)}</label><input id="site-slogan" maxlength="160" disabled><p class="field-hint">${e(l.sloganHint)}</p><p class="field-hint">${e(l.identityHint)}</p></section><section class="panel image-fields">${["logo", "avatar"].map(kind => `<div class="image-setting"><h2>${e(l[kind])}</h2><p class="field-hint">${e(l[kind+"Hint"])}</p><div class="image-preview" id="${kind}-preview"></div><label class="image-file-label" for="${kind}-file">${e(l.chooseImage)}</label><input id="${kind}-file" type="file" accept="image/png,image/jpeg" disabled><button id="${kind}-remove" class="image-remove" type="button" disabled>${e(l.removeImage)}</button><p id="${kind}-status" class="field-hint"></p></div>`).join("")}<p class="field-hint">${e(l.imageRules)}</p></section></div><div class="panel settings-save-row site-save-bar"><div><strong>${e(l.saveScope)}</strong><p class="field-hint">${e(l.saveHint)}</p></div><button id="save-site" type="button" class="button primary" disabled>${e(l.save)}</button></div></section><p class="field-hint">${e(l.remaining)}</p><div id="admin-settings"></div>`;
   const $ = id => container.querySelector(`#${id}`);
   if(appearanceOnly){
     container.querySelector('.page-heading').hidden=true;
@@ -16,7 +16,7 @@ export function mountSiteSettings(container, {m, e, site, siteName, authState,ap
   const setStatus = value => { $("settings-status").textContent = value; };
   const errorText = error => ({401:l.unauthorized,403:l.unauthorized,409:l.conflict,413:l.uploadLimit,415:l.invalid,422:l.invalid}[error.status] || l.network);
   async function request(path, options = {}) {
-    const response = await fetch(path, {...options, headers:{...options.headers, Authorization:`Bearer ${token}`}});
+    const response = await fetch(path, {...options, headers:{...options.headers}});
     if (!response.ok) { const error = new Error("site_request_failed"); error.status = response.status; throw error; }
     return response.json();
   }
@@ -51,12 +51,10 @@ export function mountSiteSettings(container, {m, e, site, siteName, authState,ap
   $("unlock-site").addEventListener("click", async () => {
     if(busy)return;
     busy=true;enableEditing();
-    token=$("edit-token").value.trim();$("edit-token").value="";
     try {
       await request('/api/v1/site/unlock',{method:'POST'});
-      token=""; // Subsequent requests use the HttpOnly editing cookie, never stored token text.
       await loadEditor(true);
-    } catch(error){token="";unlocked=false;setStatus(errorText(error));}
+    } catch(error){unlocked=false;setStatus(errorText(error));}
     busy=false;enableEditing();
   });
   $("lock-site").addEventListener("click", async () => {
@@ -64,7 +62,7 @@ export function mountSiteSettings(container, {m, e, site, siteName, authState,ap
     busy=true;enableEditing();
     try{
       await request('/api/v1/site/lock',{method:'POST'});
-      token="";unlocked=false;$("identity-panel").hidden=true;
+      unlocked=false;$("identity-panel").hidden=true;
       $("admin-settings").innerHTML=`<section class="panel admin-panel"><h2>${e(m.admin.title)}</h2><p>${e(l.locked)}</p><p>${e(m.admin.locked)}</p></section>`;
       setStatus(l.locked);
     }catch(error){setStatus(errorText(error));}
@@ -116,7 +114,7 @@ export function mountSiteSettings(container, {m, e, site, siteName, authState,ap
     if(saved&&onSaved)onSaved(current);
   });
   window.addEventListener("pagehide", () => {
-    token = ""; unlocked = false; enableEditing(); setStatus(l.locked);
+    unlocked = false; enableEditing(); setStatus(l.locked);
     $("identity-panel").hidden = true;
     for (const url of objectUrls.values()) URL.revokeObjectURL(url);
   });

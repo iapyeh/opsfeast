@@ -101,6 +101,10 @@ Use version-matched SSHScript documentation rather than guessing APIs. The publi
 
 For authorized root-only Python-recipe work, prefer `with recipe.root() as root:` and `root("id -u", check=True)` over recreating account selection or su/sudo loops. Read [the Core root-console API](docs/core-api.md#automatic-root-console) for the shared two-candidate policy, typed safe acquisition failure, console interface and scope/cleanup limits. Generic recipes default to login; explicit operator-selected [recipe execution policy](docs/recipe-results-and-accounts.md) can select su/sudo before their body.
 
+## Host questions and accumulated evidence
+
+When a user asks about a named host's condition, performance, prior incident or remedy, read relevant host notes, saved observation results and inventory/retention history before forming host-specific conclusions, including for advice-only questions. Follow [the accumulated-evidence workflow](docs/host-notes.md#answer-host-questions-from-accumulated-evidence), routed through the hosts and result-data skills. Report which sources were actually read, evidence age, contradictions and gaps. Chat memory is a discovery aid, not proof that OpsFeast records were queried. Local history reads do not authorize connections, privilege changes or remediation. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
+
 ## Host initialization and diagnostics
 
 Read the [hosts skill](skills/opsfeast-hosts/SKILL.md) and [diagnostic guide](docs/host-diagnostics.md) when asked to initialize platform facts or test account capabilities.
@@ -163,4 +167,4 @@ For dated backup presence, expiry and unexpected-entry lists, use [the shipped b
 
 For sharing/import/archival, read [portability](docs/portability.md), [portable retention authoring](docs/portable-contracts.md) and the recipe/result-data skills. Recipe, observation and retention are independent units. Use transfer plans and expected digests, origin-preserving merge/replace and explicit recipe path-conflict resolution; do not build parallel copy/delete/SQL tools. Archive-plan freezes source-time selection, and apply verifies an external package before source deletion/compaction. Preserve protected operations, shared attachments, recovery receipts, service lifecycle and human notes. No candidate code/consumer/provider runs during data import. Bundle 0.2.0 rejects the old format; no migration or compatibility layer is required.
 
-*Last modified: 2026-11-01 12:47:51*
+*Last modified: 2026-11-05 08:46:39*

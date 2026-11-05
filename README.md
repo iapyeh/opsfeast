@@ -1,3 +1,5 @@
+For agent website operations, use the [memory-only owner controller](docs/agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
+
 # OpsFeast
 
 For incremental human/agent operations, use the shipped [Console worker 0.3.0](docs/console-agent.md): it creates the river before connecting and automatically forwards Console output. No temporary bridge is needed.
@@ -342,4 +344,4 @@ settings. See [the reference-IP guide](docs/host-reference-ips.md).
 
 For SSHScript version mismatches or duplicate installation metadata, use [runtime diagnosis and repair](docs/runtime-troubleshooting.md). Run the failing interpreter with `-B tools/check_environment.py --json` before retrying host operations.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-04 23:35:05*

@@ -13,6 +13,22 @@ EDIT_COOKIE = 'opsfeast_site_edit'
 EDIT_LIFETIME = 30 * 60
 
 
+class AgentCapability:
+    """Verify a per-launch owner capability; retain only its digest."""
+    def __init__(self, token=None):
+        if token is not None and (not isinstance(token, str) or not 32 <= len(token) <= 256):
+            raise ValueError('invalid_agent_capability')
+        self.digest = hashlib.sha256(token.encode()).digest() if token else None
+
+    def valid(self, authorization):
+        import hmac
+        if self.digest is None or not authorization.startswith('Bearer '):
+            return False
+        value = authorization[7:]
+        return len(value) <= 256 and hmac.compare_digest(
+            hashlib.sha256(value.encode()).digest(), self.digest)
+
+
 class EditingSessions:
     """Short-lived site-edit capability, independent of administrator login."""
     def __init__(self):

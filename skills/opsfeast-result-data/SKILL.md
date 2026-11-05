@@ -1,7 +1,9 @@
 ---
 name: opsfeast-result-data
-description: Interpret and recover OpsFeast retained observations, prepare selected JSON exchanges, validate or combine shared data, reuse existing data/result tools and Python modules, and guide recipient-selected analysis without exposing raw execution details.
+description: Answer host-specific questions using saved observations, inventory and host notes; interpret and recover OpsFeast retained observations, prepare selected JSON exchanges, validate or combine shared data, reuse existing data/result tools and Python modules, and guide recipient-selected analysis without exposing raw execution details.
 ---
+
+For questions about a named host's condition, performance, incidents or remedies, first follow [answer host questions from accumulated evidence](../../docs/host-notes.md#answer-host-questions-from-accumulated-evidence): read host notes, saved observation results and relevant inventory/retention history before giving host-specific conclusions. Distinguish historical evidence, current facts and hypotheses; report missing or inaccessible records. Chat memory alone is not a query of OpsFeast records. Local reads do not authorize fresh collection or repairs. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
 
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
@@ -258,4 +260,4 @@ from latest-attempt inventory gaps. For historical/quality analysis use retentio
 query/show; replay/import/deletion/Vault rebuild do not update reference metadata.
 See [contract, source/namespace scope and verification limits](../../docs/host-reference-ips.md).
 
-*Last modified: 2026-10-30 16:02:12*
+*Last modified: 2026-11-05 08:46:39*

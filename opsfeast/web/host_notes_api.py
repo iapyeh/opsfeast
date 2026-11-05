@@ -5,7 +5,7 @@ from starlette.concurrency import run_in_threadpool
 from opsfeast.host_notes import HostNotesError, inspect, mutate
 
 
-def install(app, *, product, require_admin, json_body):
+def install(app, *, product, require_admin, json_body, agent_authorized):
     @app.exception_handler(HostNotesError)
     async def error(request, exc):
         status = 409 if exc.code == 'note_revision_conflict' else 404 if exc.code in ('host_not_found', 'note_not_found') else 422
@@ -33,11 +33,11 @@ def install(app, *, product, require_admin, json_body):
             expected.add('remove')
         if set(body) != expected:
             raise HTTPException(422, 'invalid_note_request')
-        # Web edits always originate from a user, irrespective of submitted source.
+        # Derive provenance from authentication, never from submitted source.
         if action != 'delete':
             if not isinstance(body['changes'], dict):
                 raise HTTPException(422, 'invalid_note_input')
-            body['changes'] = dict(body['changes'], source='user')
+            body['changes'] = dict(body['changes'], source='agent' if agent_authorized(request) else 'user')
         try:
             return await run_in_threadpool(mutate, product, action=action, **body)
         except OSError:

@@ -88,7 +88,7 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         status,_,body=await self.request('/api/v1/setup',app=app)
         self.assertEqual(status,200)
         self.assertEqual(json.loads(body),{'schema_version':'0.1.0','admin_configured':False,
-            'authenticated':False,'edit_unlocked':False,'local_unlock_available':True})
+            'authenticated':False,'edit_unlocked':False,'local_unlock_available':True,'agent_control_available':False})
         self.assertNotIn(b'synthetic-setup-capability',body)
         self.assertEqual((await self.request('/api/v1/setup',headers=[(b'origin',b'https://untrusted.example')],app=app))[0],403)
 
@@ -350,6 +350,31 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         for asset in ('interactive.mjs','interactive-state.mjs','interactive.css'):
             self.assertEqual((await self.request('/assets/'+asset,app=app))[0],200)
         self.assertEqual((await call('/'+work+'/feedback',{'request_id':'feedback-test','text':'comment'},'agent'))[0],200)
+
+    async def test_shared_console_sources_and_view_assets(self):
+        import uuid
+        from opsfeast.web.app import create_app
+        app=create_app(self.root,console_options={'writer_token':'w','reader_token':'r'})
+        sid=str(uuid.uuid4())
+        async def call(path='',body=None,token='w'):
+            return await self.request('/api/v1/console-sessions'+path,'POST' if body is not None else 'GET',
+                body=json.dumps(body).encode() if body is not None else b'',
+                headers=[(b'authorization',('Bearer '+token).encode()),(b'content-type',b'application/json')],app=app)
+        body=dict(session_id=sid,title='Synthetic shared investigation',host_id='Shared task',work_id=None,
+            targets=[dict(profile='lab',host_id=host,icon='🖥') for host in ('guest','hypervisor')])
+        self.assertEqual((await call(body=body,token='r'))[0],401)
+        created=json.loads((await call(body=body))[2])
+        self.assertEqual([t['id'] for t in created['session']['targets']],['lab / guest','lab / hypervisor'])
+        for host in ('guest','hypervisor'):
+            block=dict(event_id=str(uuid.uuid4()),block_id=str(uuid.uuid4()),kind='stdout',title='Synthetic',text=host,form=None,target_id='lab / '+host)
+            self.assertEqual((await call('/'+sid+'/blocks',block))[0],200)
+        snap=json.loads((await call('/'+sid,token='r'))[2])
+        self.assertEqual([b['target_id'] for b in snap['blocks']],['lab / guest','lab / hypervisor'])
+        before=snap['seq']
+        block.update(event_id=str(uuid.uuid4()),block_id=str(uuid.uuid4()),target_id='wrong / guest')
+        self.assertEqual((await call('/'+sid+'/blocks',block))[0],409)
+        self.assertEqual(json.loads((await call('/'+sid,token='r'))[2])['seq'],before)
+        self.assertEqual((await self.request('/assets/console-host-focus.mjs',app=app))[0],200)
 
     async def test_console_blocks_login_range_form_and_agent_responses(self):
         import uuid

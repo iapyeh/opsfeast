@@ -11,87 +11,47 @@ does not expose profile data or mutation forms before login. Its login link
 returns to Profiles after authentication; unsupported return destinations use
 the workspace. Server restart invalidates the in-memory administrator session.
 
-This is a loopback-only local administration foundation, not multi-user RBAC,
-per-agent credentials, public hosting, SSO or an operational approval service.
-There are no default credentials. The human owner must enter a username/password
-in the page or their own private terminal; agents must not invent or provision a
-real default password, expose credentials in chat, or pass passwords on argv.
+This is loopback-only single-administrator login plus an independent
+[agent owner capability](agent-owner.md), not multi-user RBAC or public hosting.
+The human administrator owns decisions; the agent can perform all Web operations
+with its memory-only capability only within the human's instructions and consent.
+There are no default credentials. The human may provide a password in the agent
+conversation or ask for generation; do not invent a change or save secrets in argv,
+river records, scripts or repository files.
 
 ## First-use Web guide
 
-When no administrator is configured, `/` and `/login` present the first-use guide
-directly; `/setup` is its stable route. No settings-menu navigation or manual lookup
-is needed. The three stages are local authorization, administrator creation, and
-optional owner appearance. The page explains what to do next, includes a copyable
-agent-assistance prompt, and offers inline instructions for manually locating the
-per-launch token in the launcher's Installation data directory. The token filename
-uses the current port; actual token text and private data-root paths are not exposed
-by public endpoints or included in the prompt.
+When no administrator exists, `/` and `/login` show the first-use guide; `/setup`
+is its stable route. It explains how to ask the launching agent to create the
+administrator, provides a copyable prompt with the website origin, and offers a
+progress recheck button. It never asks for a token file or displays the owner token.
+After the agent confirms the saved account, the human logs in, then optionally sets
+appearance. Reload derives progress from `GET /api/v1/setup` and its
+[Boolean schema](../schemas/setup-status.schema.json), including
+agent_control_available. Unknown progress never counts as success. No recipe,
+managed-host connection or profile is created by this guide.
 
-`GET /api/v1/setup` returns only versioned Boolean progress/availability flags;
-see [schema](../schemas/setup-status.schema.json). The guide uses this server evidence
-to resume after reload. A failed/unknown status never counts as account completion.
-After token verification, the existing 30-minute edit cookie authorizes the
-account form. The human enters and submits their own credentials. Only the real
-saved account response advances to appearance; it does not automatically log in.
+## Account lifecycle and recovery
 
-Appearance reuses the existing site editor and image contract; Save appearance
-and finish commits all selected appearance fields. Skip performs no write and
-preserves any existing appearance. The completion page offers login (or workspace
-for an already logged-in administrator). An existing account with no edit/login
-session is directed to login before resuming `/setup`. Once an account exists,
-the ordinary welcome/login pages return; the guide remains accessible at `/setup`.
-No new onboarding database, default account/password, profile, host connection,
-recipe execution or installation identity is created by the guide.
+1. Start the existing installation with `python -B -u -m opsfeast.web --agent-control`.
+   Keep its private stdin/controller alive; see [controls](agent-owner.md).
+2. The human asks the agent to set the administrator username/password, supplying
+   the password or requesting generation. The agent uses admin.password; no old
+   password is needed by its independently authenticated owner identity.
+3. Passwords accept exact nonempty Unicode strings, with no character-count or
+   composition requirement; normal request-size bounds still apply. Username stays
+   3–64 ASCII letters/digits/dot/hyphen/underscore. Password hashing is unchanged.
+4. The human logs in at `/login`. Account settings on `/settings/site` still allow
+   human changes with the current password and current revision.
+5. For a forgotten password, ask the launching agent to set a new one. The owner
+   capability can replace an existing password without the old password. Successful
+   changes invalidate all login sessions; log in again. Public/browser-only callers
+   cannot invoke the agent-only reset endpoint.
 
-Agents must keep the human at the credential-entry step: help obtain local edit
-capability within authorized scope, never invent a password or self-submit real
-credentials. Real Chinese IME behavior remains subject to the input-method limits
-below. The guide is currently authored only in Traditional Chinese.
-
-## Account lifecycle and storage
-
-1. Start the local server using the selected persistent installation data root.
-2. On `/settings/site`, unlock local editing using the per-launch token from that
-   data directory. It can edit site presentation and bootstrap the first admin.
-   Unlock exchanges the token for a 30-minute HttpOnly site-edit session, so page
-   navigation/reload restores the form without pasting the token again. Ending
-   editing, logout, expiry or server restart ends this local capability. This is
-   independent of administrator login and cannot change an existing account.
-3. The owner enters a username, new password and confirmation. Username allows
-   3–64 ASCII letters/digits/dot/hyphen/underscore; passwords require 12–256 Unicode
-   code points (not UTF-8 bytes or UTF-16 units). Chinese and emoji are accepted.
-   Click **Create administrator**, separately from **Save site appearance**. Only
-   a confirmed saved response advances the badge to configured and offers login.
-   Username/length/mismatch failures are explicit, focused error messages. The
-   signed-out settings panel distinguishes absent accounts from existing accounts
-   that require login; saving public site settings never creates an account.
-4. Log in at `/login`. The page uses actual authentication when configured;
-   before setup it directs the owner to site settings and disables login fields.
-5. Account changes require an authenticated administrator, the current password,
-   new username/password and the current administrator revision. Changes invalidate
-   all existing sessions, including sessions from another running Web process when
-   they next check the stored revision. Log in again afterward.
-
-The token cannot change an existing account or inspect/manage profiles. It is not
-an account-recovery backdoor. A logged-in admin can also unlock site presentation
-editing without a token. No account deletion, password reset/recovery, delegated
-agent credential or multiple-admin management is implemented.
-
-To change credentials, sign in and open `/settings/site`, then the administrator
-section. Supply the current password, desired username, new password and its
-confirmation, and save that section. The account-change login link returns here
-after authentication. Account changes invalidate all sessions; login is required
-again. Merely unlocking public site editing cannot change an existing account.
-
-For a forgotten username, a local owner can inspect nonsecret account status with
-`python -B -m opsfeast.settings admin show` using the same installation/data root.
-For a forgotten password, this release has no recovery/reset command or Web flow.
-Do not delete or edit administrator metadata, suggest a default password, or use
-the presentation token as a bypass. Preserve the data and establish an explicitly
-authorized local recovery design before implementing any reset. Password hashes
-cannot recover the original password. The login page exposes these limits in its
-account-help disclosure.
+Starting/upgrading the service alone never resets the existing administrator or
+other saved data. Existing password hashes remain valid. The startup token files
+are no longer created; new launches use a private memory-only controller. Scoped
+edit-token integration remains distinct and cannot reset an existing account.
 
 `<installation-data>/.opsfeast-admin.json` stores schema 0.1.0, account revision,
 username, fixed scrypt algorithm identifier, random salt and derived digest.
@@ -215,10 +175,12 @@ public examples. A missing flag in a nonterminal fails without waiting for input
 Outputs contain only nonsecret account status. Existing account updates still
 require the current password and correct revision.
 
-Checkout APIs are `opsfeast.admin.status/verify/configure` and
+Checkout APIs are `opsfeast.admin.status/verify/configure/set_by_agent` and
 `opsfeast.profile_settings.inspect/create/use/attach`. These are local trusted-code
 interfaces, not an authorization sandbox. `configure` has required username,
-password and expected_revision, with current_password for updates. Profile APIs
+password and expected_revision, with current_password for human updates.
+`set_by_agent` is a trusted local function, not an independently authenticated API;
+Web callers must use the owner-only endpoint. Profile APIs
 require the registry digest for writes. See existing CLI/Core guides for operational
 scope; only owner-authorized configuration changes are appropriate here.
 
@@ -234,4 +196,4 @@ public-network readiness.
 Implementation references: [Python hashlib](https://docs.python.org/3/library/hashlib.html#hashlib.scrypt)
 and [Starlette response cookies](https://starlette.dev/responses/#set-cookie).
 
-*Last modified: 2026-11-01 23:38:13*
+*Last modified: 2026-11-04 23:35:05*

@@ -3,6 +3,16 @@ name: opsfeast-interactive
 description: Operate a persistent SSHScript shell with a human through chat and a visible Web river; use the shipped Console worker for incremental instructions or the separate exact-plan executor when that approval mode is selected.
 ---
 
+For an investigation involving several hosts in one visible river, follow [shared task river 0.1.0](../../docs/shared-console.md). Predeclare exact profile/host/icon participants, attach each independent worker with controller `session` or worker `--session UUID`, and reuse the one reader for that session. Host buttons independently toggle their own blocks open/closed, and 全部 opens all; individual block toggles preserve chronological slots. Time leads every source row; a far-right ↓/↑ toggle opens/closes each block; only open blocks show ↗ immediately to its left. Waiting live forms and private-input controls remain open. Keep command routing, accounts, authorization, activity and cleanup scoped to each worker; serialize private input requests across the river.
+
+
+For website access and administrator/password management, prefer the shipped
+[memory-only agent owner controller](../../docs/agent-owner.md): highest Web API
+capability, distinct from human login, no token files, no borrowed browser cookies.
+Use worker.start/worker.send for Console work and request for API operations;
+admin.password accepts a human-provided password or explicitly requested generation.
+Follow the human's task/consent; capability possession never supplies authorization.
+
 # Use the interactive Console service
 
 Every Console session is interactive. Agent-led operation means the human can
@@ -22,6 +32,8 @@ input operations, command arguments or ordinary durable forms. The secret operat
 opens an authenticated, short-lived password field; the worker consumes its value
 without returning it to the agent. Keep the worker alive and report expiry,
 cancellation, uncertain delivery and authentication failures without retrying.
+Keep the reader open while the human types: polling and new output preserve
+private-input focus and unsent text; refreshing the page clears unsent input.
 Historical readers provide no secret field. Old workers must be replaced and the
 Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
@@ -168,4 +180,4 @@ merely to validate a prose correction. Preserve unrelated work and report the
 updated source; do not claim installed or cached copies were refreshed unless
 that separate action was actually authorized and completed.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-05 12:01:34*

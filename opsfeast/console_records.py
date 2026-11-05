@@ -38,6 +38,20 @@ def string(value, limit, empty=False):
 def exact(body, keys):
     if not isinstance(body,dict) or set(body)!=set(keys.split()): raise RecordError('invalid_fields')
 
+def targets(value):
+    """Immutable, explicitly declared participants in a shared task river."""
+    if not isinstance(value,list) or not 1<=len(value)<=16:raise RecordError('invalid_targets')
+    result=[];seen=set()
+    for item in value:
+        exact(item,'profile host_id icon')
+        profile=string(item['profile'],100);host=string(item['host_id'],100)
+        if '/' in profile:raise RecordError('invalid_targets')
+        icon=string(item['icon'],32)
+        key=string(profile+' / '+host,200)
+        if key in seen:raise RecordError('duplicate_target')
+        seen.add(key);result.append({**item,'id':key})
+    return result
+
 def time_value(value):
     try:
         dt=datetime.fromisoformat(value)
@@ -83,6 +97,9 @@ class Records:
             CREATE TABLE IF NOT EXISTS block(session TEXT, id TEXT, position INTEGER, kind TEXT,title TEXT,status TEXT,revision INTEGER,content BLOB,lines INTEGER,form TEXT,response TEXT,created_at TEXT, PRIMARY KEY(session,id));
             CREATE TABLE IF NOT EXISTS event(session TEXT,seq INTEGER,stored TEXT,PRIMARY KEY(session,seq));
             CREATE TABLE IF NOT EXISTS request(session TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(session,id));
+            CREATE TABLE IF NOT EXISTS session_target(session TEXT,target_id TEXT,PRIMARY KEY(session,target_id));
+            CREATE INDEX IF NOT EXISTS session_target_host ON session_target(target_id,session);
+            CREATE TABLE IF NOT EXISTS block_target(session TEXT,block TEXT,target_id TEXT,PRIMARY KEY(session,block));
             ''')
         os.chmod(self.path,0o600)
     @contextmanager
@@ -108,19 +125,26 @@ class Records:
         if not row: raise RecordError('unknown_block')
         result={key:row[key] for key in ('id','position','kind','title','status','revision','size','lines','created_at')}
         result.update(head=bytes(row['head'] or b'').decode(errors='ignore'),tail=bytes(row['tail'] or b'').decode(errors='ignore') if row['size']>PREVIEW else '',form=json.loads(row['form']) if row['form'] else None,response=json.loads(row['response']) if row['response'] else None)
+        source=db.execute('SELECT target_id FROM block_target WHERE session=? AND block=?',(sid,bid)).fetchone()
+        if source:result['target_id']=source['target_id']
         if result['form'] and result['form']['expires_at']:
             result['expired']=time_value(result['form']['expires_at'])<=datetime.now(timezone.utc)
         return result
     def create(self,body):
-        exact(body,'session_id title host_id work_id')
+        shared=isinstance(body,dict) and 'targets' in body
+        exact(body,'session_id title host_id work_id'+(' targets' if shared else ''))
+        if shared:body={**body,'targets':targets(body['targets'])}
         sid=identifier(body['session_id']);string(body['title'],500);string(body['host_id'],200)
         if body['work_id'] is not None:identifier(body['work_id'])
         with self.db() as db:
             db.execute('BEGIN IMMEDIATE')
             prior=db.execute('SELECT metadata FROM session WHERE id=?',(sid,)).fetchone()
             if prior:
-                if any(json.loads(prior[0])[k]!=v for k,v in body.items()): raise RecordError('session_conflict')
+                metadata=json.loads(prior[0])
+                if ('targets' in metadata)!=shared or any(metadata.get(k)!=v for k,v in body.items()): raise RecordError('session_conflict')
             else:db.execute('INSERT INTO session VALUES(?,?,0,0)',(sid,json.dumps({**body,'created_at':now(),'evidence_source':'agent_reported'})))
+            if shared:
+                db.executemany('INSERT OR IGNORE INTO session_target VALUES(?,?)',[(sid,t['id']) for t in body['targets']])
         return self.snapshot(sid)
     def snapshot(self,sid):
         with self.db() as db:
@@ -138,11 +162,11 @@ class Records:
         if type(limit) is not int or not 1<=limit<=100:raise RecordError('invalid_limit')
         with self.db() as db:
             db.execute('BEGIN')
-            where="json_extract(metadata,'$.host_id')=?";args=[host_id]
+            where="(json_extract(metadata,'$.host_id')=? OR EXISTS (SELECT 1 FROM session_target t WHERE t.session=session.id AND t.target_id=?))";args=[host_id,host_id]
             if before is not None:
                 cursor=self._session(db,before)
                 metadata=json.loads(cursor['metadata'])
-                if metadata['host_id']!=host_id:raise RecordError('invalid_cursor')
+                if metadata['host_id']!=host_id and not db.execute('SELECT 1 FROM session_target WHERE session=? AND target_id=?',(before,host_id)).fetchone():raise RecordError('invalid_cursor')
                 where+=" AND (json_extract(metadata,'$.created_at'),id)<(?,?)"
                 args.extend([metadata['created_at'],before])
             rows=db.execute("SELECT * FROM session WHERE "+where+" ORDER BY json_extract(metadata,'$.created_at') DESC,id DESC LIMIT ?",[*args,limit+1]).fetchall()
@@ -168,25 +192,35 @@ class Records:
         seq=self._session(db,sid)['seq']+1
         activity=json.loads(self._session(db,sid)['metadata']).get('activity')
         event={'seq':seq,'session_id':sid,'type':kind,'received_at':now(),'activity':activity,**(extra or {})}
+        metadata=json.loads(self._session(db,sid)['metadata'])
+        if 'target_activities' in metadata:event['target_activities']=metadata['target_activities']
         if bid is not None:event['block']=self._summary(db,sid,bid)
         db.execute('UPDATE session SET seq=? WHERE id=?',(seq,sid))
         db.execute('INSERT INTO event VALUES(?,?,?)',(sid,seq,json.dumps(event,ensure_ascii=False)))
-        return {'accepted':True,'seq':seq,**({'block':event['block']} if bid is not None else {'activity':activity})}
-    def _set_activity(self,db,sid,state,lease_seconds):
+        return {'accepted':True,'seq':seq,**({'block':event['block']} if bid is not None else {'activity':activity}),**({'target_activities':metadata['target_activities']} if 'target_activities' in metadata else {})}
+    def _target(self,db,sid,target_id):
+        if target_id is not None:
+            string(target_id,200)
+            if not db.execute('SELECT 1 FROM session_target WHERE session=? AND target_id=?',(sid,target_id)).fetchone():raise RecordError('unknown_target')
+    def _set_activity(self,db,sid,state,lease_seconds,target_id=None):
         metadata=json.loads(self._session(db,sid)['metadata']);timestamp=now()
-        metadata['activity']={'state':state,'updated_at':timestamp,
+        value={'state':state,'updated_at':timestamp,
                               'expires_at':(time_value(timestamp)+timedelta(seconds=lease_seconds)).isoformat(timespec='milliseconds') if state=='thinking' else None}
+        if target_id is None:metadata['activity']=value
+        else:metadata.setdefault('target_activities',{})[target_id]=value
         db.execute('UPDATE session SET metadata=? WHERE id=?',(json.dumps(metadata),sid))
     def activity(self,sid,body):
         """Report a bounded agent activity lease; never execute or wake a model."""
-        exact(body,'event_id state lease_seconds')
+        scoped=isinstance(body,dict) and 'target_id' in body
+        exact(body,'event_id state lease_seconds'+(' target_id' if scoped else ''))
         if not isinstance(body['state'],str) or body['state'] not in ('thinking','idle'):raise RecordError('invalid_activity')
         seconds=body['lease_seconds']
         if type(seconds) is not int:raise RecordError('invalid_activity')
         if body['state']=='thinking' and not 1<=seconds<=300:raise RecordError('invalid_activity')
         if body['state']=='idle' and seconds!=0:raise RecordError('invalid_activity')
         def apply(db):
-            self._set_activity(db,sid,body['state'],seconds)
+            self._target(db,sid,body.get('target_id'))
+            self._set_activity(db,sid,body['state'],seconds,body.get('target_id'))
             return self._emit(db,sid,'activity.updated',None)
         return self._action(sid,body['event_id'],'activity',body,apply)
     def _action(self,sid,request_id,action,body,callback,actor='writer'):
@@ -204,7 +238,8 @@ class Records:
             db.execute('INSERT INTO request VALUES(?,?,?,?)',(sid,request_id,digest,json.dumps(result)))
             return result
     def add_block(self,sid,body):
-        exact(body,'event_id block_id kind title text form')
+        scoped=isinstance(body,dict) and 'target_id' in body
+        exact(body,'event_id block_id kind title text form'+(' target_id' if scoped else ''))
         bid=identifier(body['block_id']);kind=body['kind'];string(body['title'],500);string(body['text'],32768,True)
         if not isinstance(kind,str) or kind not in KINDS:raise RecordError('invalid_kind')
         form=body['form']
@@ -212,14 +247,17 @@ class Records:
         elif form is not None:raise RecordError('unexpected_form')
         raw=body['text'].encode()
         def apply(db):
+            self._target(db,sid,body.get('target_id'))
             if db.execute('SELECT 1 FROM block WHERE session=? AND id=?',(sid,bid)).fetchone():raise RecordError('block_exists')
             count=db.execute('SELECT count(*) FROM block WHERE session=?',(sid,)).fetchone()[0]
             if count>=2000:raise RecordError('block_count_limit')
             if self._session(db,sid)['bytes']+len(raw)>SESSION_LIMIT:raise RecordError('session_limit_reached')
             if kind in ('command','analysis','status','authorization','error','form'):
                 activity=json.loads(self._session(db,sid)['metadata']).get('activity')
-                if activity and activity['state']=='thinking':self._set_activity(db,sid,'idle',0)
+                if body.get('target_id') is not None:self._set_activity(db,sid,'idle',0,body['target_id'])
+                elif activity and activity['state']=='thinking':self._set_activity(db,sid,'idle',0)
             db.execute('INSERT INTO block VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',(sid,bid,count+1,kind,body['title'],'waiting' if form else 'streaming',1,raw,raw.count(b'\n'),json.dumps(form) if form else None,None,now()))
+            if body.get('target_id') is not None:db.execute('INSERT INTO block_target VALUES(?,?,?)',(sid,bid,body['target_id']))
             db.execute('UPDATE session SET bytes=bytes+? WHERE id=?',(len(raw),sid))
             return self._emit(db,sid,'block.created',bid)
         return self._action(sid,body['event_id'],'create_block',body,apply)
@@ -259,7 +297,8 @@ class Records:
             if raw and raw[0]&0xc0==0x80:raise RecordError('invalid_utf8_offset')
             text=raw.decode(errors='ignore');next_offset=offset+len(text.encode())
             return {'text':text,'offset':offset,'next_offset':next_offset,'total_bytes':row['size'],'revision':row['revision'],'status':row['status']}
-    def respond(self,sid,bid,body,actor):
+    def respond(self,sid,bid,body,actor,*,authority='administrator_cookie'):
+        if authority not in ('administrator_cookie','agent_capability'):raise RecordError('invalid_authority')
         exact(body,'event_id revision choice values');string(actor,100)
         if type(body['revision']) is not int or not isinstance(body['values'],dict):raise RecordError('invalid_response')
         def apply(db):
@@ -278,7 +317,7 @@ class Records:
                 else:
                     string(v,2000,not field['required'])
                     if field['type']=='select' and v not in field['options']:raise RecordError('invalid_field_value')
-            response={'response_id':body['event_id'],'choice':body['choice'],'values':values,'actor':actor,'authority':'administrator_cookie','received_at':now(),'request_revision':body['revision']}
+            response={'response_id':body['event_id'],'choice':body['choice'],'values':values,'actor':actor,'authority':authority,'received_at':now(),'request_revision':body['revision']}
             db.execute('UPDATE block SET response=?,status=?,revision=revision+1 WHERE session=? AND id=?',(json.dumps(response),'answered',sid,bid))
             return self._emit(db,sid,'response.created',bid,{'response':response})
-        return self._action(sid,body['event_id'],'respond:'+bid,body,apply,actor='human:'+actor)
+        return self._action(sid,body['event_id'],'respond:'+bid,body,apply,actor=('human:' if authority=='administrator_cookie' else 'agent:')+actor)

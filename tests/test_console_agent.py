@@ -285,9 +285,10 @@ class WorkerTests(unittest.TestCase):
 
     def test_unknown_transport_is_not_retried(self):
         from unittest.mock import patch
-        with patch('opsfeast.console_agent.urlopen', side_effect=OSError('private-data')) as send:
+        transport = Transport('http://localhost:8740', 'fixture')
+        with patch.object(transport.http, 'open', side_effect=OSError('private-data')) as send:
             with self.assertRaises(OSError):
-                Transport('http://localhost:8740', 'fixture').post('', {})
+                transport.post('', {})
             send.assert_called_once()
         for url in ('https://localhost', 'http://example.invalid', 'http://localhost/path', 'http://user@localhost'):
             with self.assertRaises(ControlError):

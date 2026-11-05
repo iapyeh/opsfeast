@@ -3,6 +3,9 @@ name: opsfeast-recipes
 description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for turning interactive discovery into repeatable recipe/config/retention/consumer workflows, recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
 ---
 
+For reviewed recipe/Core output participating in a multi-host Console task, use [shared task river 0.1.0](../../docs/shared-console.md) and the [record-service skill](../opsfeast-console-records/SKILL.md): declare task targets and tag host-specific blocks with target_id. This is an optional record presentation service, not automatic recipe logging or multi-host execution. Preserve the recipe's own scope/results and the task's per-host authorization; the reader's host TAB never selects execution targets.
+
+
 ## Human-directed interactive programs
 
 For an authorized database-client session that needs a human password, route to [the interactive skill](../opsfeast-interactive/SKILL.md) and [private input service 0.1.0](../../docs/console-secrets.md). Worker 0.3.0 requires a running authenticated loopback Web service and SSHScript 7.0.1; it supports runtime sudo/su/leave with explicit authorization and enter/input/secret/poll/leave but is not a recipe credential store or automatic database recipe backend. Recipes must use their reviewed runtime credential binding; do not put passwords in vars, reports, command text or durable forms. The private channel expires/cancels without retries and has no plug-in provider API.
@@ -75,6 +78,13 @@ Vault observation pages start with only the host; historical reports end with on
 For readable Vault observations, reuse the bundled vault_content.render_observation / vault rebuild workflow described in [Vault content](../../docs/host-vault.md#recipe-retention-and-markdown). Inventory is presented in domain tables; source IDs and full record provenance are in a final disclosure section, while identity/partial warnings and collection coverage remain visible. Human-friendly capacities retain exact base units. Null, zero, false and empty collections remain distinct. Authorized rebuild replaces owned historical/latest Markdown without collection or retention changes and preserves unmanaged notes. Read structured data through retention APIs, not Markdown scraping.
 
 For automatic retention handlers/converters, read [consumer contract 0.1.0](../../docs/retention-consumers.md) and the [bundled Vault consumer](../../consumers/vault/README.md). First discover existing programs with `consumers list --recipe system/inventory/overview --profile NAME --json` or `recipes show`. Sources are checkout consumers/NAME and Feast-local consumers/NAME; candidate discovery never activates code. Before enabling a reviewed program, verify its Python/dependencies, supported retention contracts, input sources, output ownership and authorized side effects. Register source/enabled explicitly in feast.yaml; default builtin:vault is already enabled. Author `execute(context)` with context.retention.query/show and metadata event hints, preserving partial/unknown/identity context. Outputs must tolerate at-least-once delivery, deletion and stale creation hints. Reuse the documented dispatcher rather than modifying runner, scanning raw files or writing SQL acknowledgement code. Inspect per-consumer status/attempts in content_update.consumers or `consumers inspect`; retry with `consumers dispatch [ID]`. Disabled backlog is processed after activation, while eventless historical data needs explicit application rebuild. In-process Python is not sandboxed or time-limited; no network delivery, installer or scheduler is implied.
+
+For website access and administrator/password management, prefer the shipped
+[memory-only agent owner controller](../../docs/agent-owner.md): highest Web API
+capability, distinct from human login, no token files, no borrowed browser cookies.
+Use worker.start/worker.send for Console work and request for API operations;
+admin.password accepts a human-provided password or explicitly requested generation.
+Follow the human's task/consent; capability possession never supplies authorization.
 
 # OpsFeast recipes
 
@@ -598,4 +608,4 @@ This read-only view neither executes recipes nor proves current host health.
 
 Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
 
-*Last modified: 2026-11-04 17:32:38*
+*Last modified: 2026-11-05 09:54:58*

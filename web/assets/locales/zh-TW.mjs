@@ -52,7 +52,7 @@ export default {
     formNote: "驗證服務尚未接入，帳密欄位停用，不會收集或傳送憑證。",
     previewAction: "預覽登入後工作台", previewHint: "僅切換到工作台版面，不會建立登入狀態或授予權限。",
     back: "回到入口", help: "需要使用說明？", docsAction: "查看文件",
-    accountNote: "管理帳號已提供本機登入；多使用者與個別 agent 憑證仍待實作。"
+    accountNote: "你以管理帳號登入；agent 使用獨立的網站最高權限，依你的指示操作。"
   },
   demo: {
     start: "播放流程示意", stop: "停止示意", label: "純前端模擬 · 合成內容",
@@ -86,12 +86,12 @@ export default {
   admin: {
     title: "管理帳號", configured: "已設定", unconfigured: "尚未設定", username: "管理員 username",
     usernameHint: "3–64 個英文字母、數字、點、連字號或底線。", currentPassword: "目前的密碼",
-    newPassword: "新的密碼", confirm: "再次輸入新的密碼", passwordHint: "密碼須為 12–256 個 Unicode 字元，可含中文與 emoji；不會以明文保存。",
-    bootstrapHint: "請自行設定管理帳號。首次設定使用本機編輯憑證，沒有預設帳號或密碼。",
+    newPassword: "新的密碼", confirm: "再次輸入新的密碼", passwordHint: "密碼不可為空字串，可使用任意非空字串，沒有長度下限或大小寫、數字與符號組合要求；不會以明文保存。",
+    bootstrapHint: "請在對話中請 agent 設定管理帳號與密碼，沒有預設帳號或密碼。",
     changeHint: "變更 username 與密碼需要目前密碼；儲存後所有登入工作階段都會失效。",
-    setupRequired: "管理帳號尚未保存。請先解鎖本機編輯，在此填寫帳密，再按「建立管理帳號」。儲存站台外觀不會建立帳號。", changeLoginHint: "管理帳號已建立。登入後，可在這裡輸入目前密碼，修改 username 與密碼。", recoveryTitle: "如何修改帳密／忘記時怎麼辦？", recoveryHint: "修改帳密：登入後到「站台設定 → 管理帳號」，輸入目前密碼與新帳密。忘記 username 可由本機帳號狀態查詢；忘記密碼目前尚未提供重設功能。本機外觀編輯憑證不能重設既有帳號，請保留原有資料。",
+    setupRequired: "管理帳號尚未保存。請在對話中請你的 agent 建立帳號與密碼，完成後再登入。", changeLoginHint: "管理帳號已建立。登入後，可在這裡輸入目前密碼，修改 username 與密碼。", recoveryTitle: "如何修改帳密／忘記時怎麼辦？", recoveryHint: "修改帳密：登入後到「站台設定 → 管理帳號」，輸入目前密碼與新帳密。忘記 username 可由本機帳號狀態查詢；忘記密碼時，可在對話中請你的 agent 設定新密碼，也可以請 agent 產生。Agent 使用獨立的網站最高權限，不需要你的舊密碼。",
     setup: "建立管理帳號", change: "更新管理帳號", login: "前往登入", logout: "登出",
-    locked: "管理帳號設定需要管理員登入；尚未建立帳號時，請先解鎖本機編輯。",
+    locked: "管理帳號設定需要管理員登入；尚未建立帳號或忘記密碼時，請在對話中請 agent 設定。",
     mismatch: "兩次輸入的新密碼不同。", saved: "管理帳號已保存，請重新登入。",
     invalid: "目前密碼不正確或登入已過期。", conflict: "帳號已被其他人更新，請重新載入。", failed: "帳號設定失敗，請檢查格式與登入狀態。",
     notReady: "尚未建立管理帳號，請先到站台設定完成首次設定。", signIn: "登入工作台", loginFailed: "帳號或密碼不正確。",
@@ -126,15 +126,15 @@ export default {
     imagePending: "目前僅預覽，尚未上傳。請按「儲存站台外觀」套用。", imageRemoved: "尚未儲存。按「儲存站台外觀」後使用預設圖案；保留原有圖片檔案。",
     identity: "Installation 識別（唯讀）", identityHint: "這些設定不會修改 UUID、既有 name 或各 profile 的 namespace。",
     namespaceHint: "Namespace 屬於各 profile，這裡不修改。", inherited: "既有名稱", unknownIdentity: "尚未初始化識別",
-    unlockTitle: "本機編輯權限（30 分鐘）", token: "本機編輯憑證", tokenPlaceholder: "貼上本次 server 的編輯憑證",
-    tokenHint: "在 installation 持久資料目錄讀取 .opsfeast-web-edit-8740.token（使用其他 port 時依 port 命名）。解鎖後同一瀏覽器可維持編輯 30 分鐘，換頁與重新整理不需重貼憑證；結束編輯、逾時或 Server 重啟會失效。不授予 profile 管理權限。",
+    unlockTitle: "網站設定權限", token: "本機編輯憑證", tokenPlaceholder: "由 agent 協助，或先登入管理員帳號",
+    tokenHint: "請在對話中請 agent 協助設定網站，或登入管理員帳號。Agent 的最高權限憑證只留在執行環境記憶體，不提供給此頁貼上；服務重啟即失效。",
     unlock: "解鎖設定", lock: "結束編輯", unlocked: "本機編輯已解鎖；30 分鐘內換頁或重新整理可恢復。管理帳號表單位於下方。", locked: "本頁尚未解鎖，或先前編輯權限已逾時／因 Server 重啟失效。已保存的站台外觀不受影響。",
     appearance: "站台外觀", appearanceUnlocked: "本機權限已驗證，可以設定外觀。", saveScope: "名稱、標語、Logo 與代表圖案一起儲存", saveHint: "選擇圖片只會預覽；按下儲存後才會上傳並套用。管理帳號在下方另外儲存。", unsaved: "有尚未儲存的外觀變更，請按「儲存站台外觀」。",
     save: "儲存站台外觀", saving: "正在驗證圖片並儲存…", saved: "設定已儲存，頁面已套用。", failed: "儲存失敗，未完成的變更仍保留在表單。",
-    conflict: "設定已被其他人更新，請重新載入後再編輯。", unauthorized: "編輯憑證無效或 server 已重啟，請取得本次憑證。",
+    conflict: "設定已被其他人更新，請重新載入後再編輯。", unauthorized: "請先登入管理員帳號，或在對話中請 agent 協助設定。",
     invalid: "設定或圖片無效，請檢查字數、格式與尺寸。", uploadLimit: "圖片超過 2 MiB，請選擇較小的檔案。",
     network: "無法連線到本機 server，請確認服務仍在執行。", preview: "目前設定", remaining: "站台外觀與管理帳號分開保存；這些設定不會授權主機操作。",
-    settingsNote: "可使用管理員登入身分編輯；首次設定也可使用本機編輯憑證。"
+    settingsNote: "可登入管理員帳號編輯，或在對話中請 agent 協助設定。"
   },
   pages: {
   operations: {title: "操作工作台", kicker: "操作流程", intro: "把計畫、核准、即時輸出與停止，放在同一個情境。", cards: [["先看清楚，再開始", "每項操作呈現目標、版本、參數、權限與效果。既有授權範圍沿用。"], ["輸出直接到畫面", "執行程序直接傳送進度與輸出；人類與 agent 共用同一操作契約。"], ["停止也有可核對的結果", "停止受理、遠端終止、清理及操作成果分開呈現，保留未知。"]], note: "下面只演示畫面變化；按鈕只改變瀏覽器內的文字，不會建立連線或執行任何命令。"},

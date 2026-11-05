@@ -14,7 +14,7 @@ from collections import deque
 import sys
 import time
 from urllib.parse import urlparse, urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, ProxyHandler, HTTPRedirectHandler
 import uuid
 
 VERSION = '0.3.0'
@@ -77,6 +77,11 @@ class Controls:
                 return None
 
 
+class NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
 class Transport:
     def __init__(self, origin, token):
         parsed = urlparse(origin)
@@ -85,6 +90,7 @@ class Transport:
             raise ControlError('loopback_origin_required')
         self.origin = origin.rstrip('/')
         self.token = token
+        self.http = build_opener(ProxyHandler({}), NoRedirect)
 
     def post(self, path, body):
         request = Request(self.origin + '/api/v1/console-sessions' + path,
@@ -92,15 +98,30 @@ class Transport:
                           headers={'Authorization': 'Bearer ' + self.token,
                                    'Content-Type': 'application/json'})
         # No transport retry: the caller must not replay a command on uncertainty.
-        with urlopen(request, timeout=10) as response:
+        with self.http.open(request, timeout=10) as response:
+            return json.load(response)
+
+    def get(self, path):
+        request = Request(self.origin + '/api/v1/console-sessions' + path,
+                          headers={'Authorization': 'Bearer ' + self.token})
+        with self.http.open(request, timeout=10) as response:
             return json.load(response)
 
 
 class Publisher:
-    def __init__(self, transport, *, title, host_id):
+    def __init__(self, transport, *, title, host_id, session_id=None):
         self.transport = transport
-        self.sid = str(uuid.uuid4())
+        self.sid = session_id or str(uuid.uuid4())
+        self.target_id = None
         self.offsets = {}
+        if session_id is not None:
+            from .console_records import identifier
+            identifier(session_id)
+            snapshot=transport.get('/'+session_id)
+            matches=[t for t in snapshot['session'].get('targets',[]) if t['id']==host_id]
+            if len(matches)!=1:raise ControlError('shared_target_not_declared')
+            self.target_id=host_id
+            return
         transport.post('', {'session_id': self.sid, 'title': title,
                             'host_id': host_id, 'work_id': None})
 
@@ -108,7 +129,8 @@ class Publisher:
         bid = str(uuid.uuid4())
         self.transport.post('/' + self.sid + '/blocks', {
             'event_id': str(uuid.uuid4()), 'block_id': bid, 'kind': kind,
-            'title': title or kind, 'text': text[:4000], 'form': None})
+            'title': title or kind, 'text': text[:4000], 'form': None,
+            **({'target_id':self.target_id} if self.target_id is not None else {})})
         self.offsets[bid] = len(text[:4000].encode())
         self.append(bid, text[4000:])
         if complete:
@@ -130,9 +152,11 @@ class Publisher:
         self.block('status', text, complete=True)
 
     def activity(self, state, lease_seconds=120):
-        return self.transport.post('/' + self.sid + '/activity', {
+        result = self.transport.post('/' + self.sid + '/activity', {
             'event_id': str(uuid.uuid4()), 'state': state,
-            'lease_seconds': lease_seconds if state == 'thinking' else 0})['activity']
+            'lease_seconds': lease_seconds if state == 'thinking' else 0,
+            **({'target_id':self.target_id} if self.target_id is not None else {})})
+        return result['target_activities'][self.target_id] if self.target_id is not None else result['activity']
 
 
 class Output:
@@ -220,6 +244,8 @@ class Worker:
         """Private callback: never return its result through the agent protocol."""
         rid = str(uuid.uuid4())
         seconds, label = self.secret_options
+        if self.publisher.target_id is not None:
+            label=(self.publisher.target_id+' · '+label).encode()[:200].decode(errors='ignore')
         base = '/' + self.publisher.sid + '/secret-requests'
         transport = self.publisher.transport
         reply = transport.post(base, {'request_id': rid, 'label': label, 'timeout': seconds})
@@ -506,16 +532,20 @@ class Worker:
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url', default='http://127.0.0.1:8740')
-    parser.add_argument('--token-file', type=Path, required=True)
+    credentials = parser.add_mutually_exclusive_group(required=True)
+    credentials.add_argument('--token-file', type=Path, help='Scoped-token integrations only; agent-owned launch uses a pipe')
+    credentials.add_argument('--token-fd', type=int, help='Inherited anonymous pipe containing one capability line')
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument('--host')
     target.add_argument('--local', action='store_true', help='credential-free local Console; explicit opt-in')
     parser.add_argument('--profile', help='registered profile; default: .opsfeast.yaml default_profile')
     parser.add_argument('--title', default='互動 Console')
+    parser.add_argument('--session', help='Attach this host worker to an existing shared task UUID; no connection until connect')
     parser.add_argument('--idle-timeout', type=int, default=900)
     args = parser.parse_args(argv)
     if not 1 <= args.idle_timeout <= 3600:
         parser.error('--idle-timeout must be 1–3600')
+    if args.session and args.local:parser.error('--session requires a managed host')
     output = sys.stdout
     def emit(value):
         output.write(json.dumps(value, ensure_ascii=False) + '\n')
@@ -527,13 +557,21 @@ def main(argv=None):
         if (importlib.metadata.version('sshscript') != '7.0.1'
                 or sshscript.__version__ != '7.0.1'):
             raise ControlError('sshscript_7_0_1_required')
-        transport = Transport(args.url, args.token_file.read_text().strip())
+        if args.token_fd is not None:
+            with os.fdopen(args.token_fd, 'r') as secret:
+                token = secret.read(257).strip()
+            if not 32 <= len(token) <= 256:raise ControlError('invalid_token_pipe')
+        else:
+            token = args.token_file.read_text().strip()
+        transport = Transport(args.url, token)
+        del token
         profile = None
         if not args.local:
             from opsfeast import Instance
             profile = Instance.open().profile(args.profile)
         publisher = Publisher(transport, title=args.title,
-                              host_id='localhost' if args.local else profile.name + ' / ' + args.host)
+                              host_id='localhost' if args.local else profile.name + ' / ' + args.host,
+                              **({'session_id':args.session} if args.session else {}))
         @contextmanager
         def opener(stdout, stderr):
             if args.local:

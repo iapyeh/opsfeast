@@ -26,10 +26,14 @@ active work before doing so. No automatic reconnect or program replay exists.
 
 ## Start quickly, then keep the same shell
 
-- Use the shipped `python -B -u -m opsfeast.console_agent --token-file FILE
-  --host HOST`. Start as the configured login account. Obtain an explicit grant
-  only when a sudo/su switch is needed; send the runtime operation on this same
-  worker with username and authorization. See the [switch contract](../../../docs/console-agent.md#runtime-account-switching-worker-030).
+- Use the [memory-only owner controller](../../../docs/agent-owner.md): start
+  `python -B -u -m opsfeast.web --agent-control` in a persistent tool session,
+  send worker.start, then worker.send with the normal worker controls. No token
+  files, credential arguments or temporary bridge are needed. The owner capability
+  covers the website; every host operation still requires its actual human scope.
+  Start as the configured login account and use authorized runtime sudo/su only
+  when needed. Keep the controller handle across turns; do not restart a healthy
+  service merely to create another worker.
 - When the human has not selected a profile, omit `--profile` to use `.opsfeast.yaml` `default_profile`. Never substitute `main` from an example. Use `--profile NAME` only for an explicitly selected scope. Inspect the returned `profile` and `hosts_file` before connect; stop on a mismatch. Invalid/missing configuration is an error, not permission to choose another profile.
 - Preserve worker stdin across turns. For an execution tool that closes piped stdin
   immediately, choose its persistent interactive mode (for example `tty=true` in
@@ -206,4 +210,4 @@ in OpsFeast rather than requiring a new connection/record bridge each time.
 
 After each concluded interaction (including agent-led Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-04 23:35:05*

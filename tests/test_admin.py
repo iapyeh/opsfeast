@@ -43,16 +43,23 @@ class AdminTests(unittest.TestCase):
         replacement='🦉'*256
         admin.configure(self.root,username='synthetic',password=replacement,current_password=password,expected_revision=1)
         self.assertTrue(admin.verify(self.root,'synthetic',replacement))
-        with self.assertRaises(ConfigError):
-            admin.configure(self.root,username='synthetic',password='🦉'*257,current_password=replacement,expected_revision=2)
+        admin.configure(self.root,username='synthetic',password='🦉'*257,current_password=replacement,expected_revision=2)
+        self.assertTrue(admin.verify(self.root,'synthetic','🦉'*257))
 
     def test_conflict_and_current_password_preserve_existing_account(self):
         admin.configure(self.root,username='synthetic',password='Synthetic-test-password-001',expected_revision=0)
         for revision,error in [(0,SiteConflict),(1,admin.InvalidCredentials)]:
             with self.assertRaises(error):admin.configure(self.root,username='other',password='Synthetic-test-password-002',current_password='wrong',expected_revision=revision)
         self.assertEqual(admin.status(self.root)['username'],'synthetic')
-        for username,password in [('x','Synthetic-test-password-001'),('valid','short'),('valid','\ud800'*12)]:
+        for username,password in [('x','Synthetic-test-password-001'),('valid',''),('valid','\ud800'*12)]:
             with self.assertRaises(ConfigError):admin.configure(self.root,username=username,password=password,expected_revision=1)
+
+    def test_short_passwords_and_authorized_agent_reset(self):
+        admin.set_by_agent(self.root,username='synthetic',password='x',expected_revision=0)
+        self.assertTrue(admin.verify(self.root,'synthetic','x'))
+        admin.set_by_agent(self.root,username='synthetic',password='中',expected_revision=1)
+        self.assertTrue(admin.verify(self.root,'synthetic','中'))
+        self.assertFalse(admin.verify(self.root,'synthetic',''))
 
     def test_corrupt_metadata_is_not_treated_as_unconfigured(self):
         (self.root/admin.FILENAME).write_text('{}')

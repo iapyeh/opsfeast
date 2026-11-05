@@ -1,5 +1,7 @@
 # Chat-owned Console worker 0.3.0
 
+For several independent host workers in one river, use [shared task river 0.1.0](shared-console.md). Predeclare the participants, then pass the same `session` to each owner-controller worker.start (or `--session UUID` to the worker). Blocks and activity are host-scoped; show one reader per shared session and keep each worker handle/target separate. Host TAB focus changes presentation only.
+
 Use the shipped `python -B -u -m opsfeast.console_agent` worker for incremental
 human/agent Console work. Do not generate a temporary bridge. The worker owns one
 SSHScript Console and its configured connection; the Web server owns durable blocks,
@@ -16,13 +18,13 @@ New workers get separate tabs. See [live and historical readers](console-records
 ## Availability and authorization
 
 Run from the trusted OpsFeast checkout with its selected Python and SSHScript
-**7.0.1** (both import and distribution are checked). Start the existing local Web
-server normally; its Console writer token is required. No extra package, temporary
-program or Web restart is required for the worker. Use the launcher's reported
-writer-token path, never credentials from documentation. The administrator must
-sign in to read the river; reading does not require the settings unlock.
+**7.0.1** (both import and distribution are checked). Use the
+[memory-only owner controller](agent-owner.md) to launch the Web server and workers.
+It passes credentials through an anonymous pipe; no temporary bridge, token file,
+startup screenshot or browser cookie is needed. Humans log in to read the river.
 
-A writer token permits records, not host execution. Obtain the human's host and
+The owner capability can perform all Web operations, but does not itself grant
+permission to execute host commands. Obtain the human's host and
 operation scope first. Ordinary login needs no advance privilege choice. After
 explicit authorization, submit sudo/su with the exact target and a nonsecret
 `authorization` description of the human's grant. The worker arms only that switch,
@@ -36,11 +38,24 @@ Do not run commands producing unknown secrets. Values delivered through the priv
 
 ## Start, show, then connect
 
+Start and keep the controller process, then send the worker.start control:
+
 ```sh
-python -B -u -m opsfeast.console_agent \
-  --token-file /srv/opsfeast-data/.opsfeast-console-writer-8740.token \
-  --host web-01 --title 'web-01 interactive inspection'
+.venv/bin/python -B -u -m opsfeast.web --agent-control
 ```
+
+```json
+{"op":"worker.start","request_id":"start-1","worker_id":"inspection","host":"web-01","title":"web-01 authorized inspection"}
+```
+
+Worker events arrive as `{type:"worker_event",worker_id,event}`. Immediately show
+`event.reader_url` from the created event before sending connect. Send worker
+controls using `worker.send` with a fresh outer request_id, worker_id and the
+usual control object below. Wait for worker result, not only the controller's sent
+acknowledgement. Closing this worker leaves the website/controller running.
+Direct `console_agent --token-fd FD` is for an embedding launcher supplying a
+capability through an anonymous pipe. `--token-file FILE` remains available only
+for explicit scoped-token integrations; this website launcher never writes one.
 
 For configured hosts, omitting `--profile` selects `default_profile` from the checkout's `.opsfeast.yaml`, using the same Core selection as other commands. An explicit `--profile NAME` overrides it for this worker only; it never changes the saved default. Do not assume `main` or copy an example profile. Read-only configuration loading happens before reader creation; invalid/missing selection fails without a reader or connection, with no fallback. The selected profile/configuration snapshot is held for this worker; start a new authorized worker to select another profile.
 
@@ -278,4 +293,4 @@ shell state, active close, control validation, duplicate refusal and no retry.
 Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-04 17:35:31*
+*Last modified: 2026-11-05 09:54:58*

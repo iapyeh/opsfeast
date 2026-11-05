@@ -1,5 +1,7 @@
 # Console blocks 0.2.0
 
+For a multi-host investigation in one river, read [shared task river 0.1.0](shared-console.md): declared participants, per-block source IDs, exact host-history membership and independent host batch toggles and individual block toggles. Closed blocks keep one time/source/content row with a far-right ↓/↑ open/close toggle in both states; only open blocks show ↗ immediately to its left; waiting live forms remain open. Folding never changes execution or authorization.
+
 For automatic SSHScript execution/output forwarding from an agent, use the shipped [Console worker](console-agent.md). It uses this service's existing handlers; the record API itself does not execute commands.
 
 
@@ -20,16 +22,17 @@ It binds to loopback port 8740. Browser pages require administrator login, load
 immediately and need no reader token or extra unlock. Redirects preserve the reader
 URL through login. Configuration retains its existing authorization requirements.
 
-The launcher generates private per-launch `.opsfeast-console-writer-8740.token`
-and `.opsfeast-console-reader-8740.token` under installation data. Writer can create,
-append, finish and read; reader can only read. Both can consume responses but cannot
-submit a human response: that requires a valid administrator cookie. Site-edit and
-interactive credentials do not grant this service access. Administrator login can
-also perform writer operations. Same-origin checks apply to all requests. These
-installation-wide capabilities grant access to all its transcripts, not per-host ACLs.
-Same OS-user agents may read owner files; this is not OS-user isolation. Keep token
-values out of URLs, argv, logs and prompts. Never write passwords or private keys;
-no automatic output redaction is supplied. Do not collect secrets in form fields. For program passwords, use the separate [ephemeral secret channel](console-secrets.md), which bypasses this record/form store.
+The [agent-controlled launcher](agent-owner.md) keeps its owner capability in
+memory and exposes authenticated request/worker controls; no reader/writer token
+files are generated. It can publish/read records and feedback, and perform all
+website operations. Source authority never grants permission beyond the human's
+instructions. Browser users log in separately. Agent-submitted form responses
+record actor=agent and authority=agent_capability; human responses retain their
+administrator identity and administrator_cookie authority. Neither is independently
+verified proof of human consent. Scoped reader/writer tokens are still accepted by
+explicit embedded integrations; a scoped writer cannot submit a human response.
+Same-origin checks apply. Never collect passwords in durable form fields; use the
+[ephemeral secret channel](console-secrets.md).
 
 SQLite is `<installation-data>/console-records/console-blocks.sqlite3`, in a private
 directory with a 0600 database. 0.2.0 is intentionally incompatible with the earlier
@@ -311,8 +314,10 @@ to 2000 UTF-8 bytes per field; checkbox values are Boolean. Required fields and
 select membership are validated server-side. One authenticated response wins an
 atomic transaction; stale, answered, cancelled or expired forms cannot be answered.
 Exact retries remain valid after answering. Response records include response_id,
-choice, values, actor from current administrator username, authority
-`administrator_cookie`, received_at and request_revision. Actor is not client input.
+choice, values, actor from current administrator username and authority
+`administrator_cookie`, or actor=agent and authority=agent_capability for an owner
+request. They also include received_at and request_revision. Actor/authority are
+server-derived, not client input.
 The response binds that form and revision only; it is not a grant to execute other
 commands. If a submitted request is ambiguous, UI retries only the identical body,
 or reloads to reconcile. Form text/values are private operational data, not secrets.
@@ -385,4 +390,4 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-04 17:30:11*
+*Last modified: 2026-11-05 12:01:34*

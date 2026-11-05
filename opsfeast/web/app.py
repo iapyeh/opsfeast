@@ -12,19 +12,21 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from opsfeast import ConfigError
 from opsfeast.identity import read_identity
 from opsfeast import site, admin
-from .security import Sessions, COOKIE, LIFETIME, EditingSessions, EDIT_COOKIE, EDIT_LIFETIME
+from .security import Sessions, COOKIE, LIFETIME, EditingSessions, EDIT_COOKIE, EDIT_LIFETIME, AgentCapability
 
 WEB_ROOT = Path(__file__).resolve().parents[2] / 'web'
 PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
 
 
-def create_app(installation=None, *, data_root=None, edit_token=None, interactive_options=None, console_options=None) -> FastAPI:
+def create_app(installation=None, *, data_root=None, agent_token=None, edit_token=None, interactive_options=None, console_options=None) -> FastAPI:
     """Local Web app; token bootstrap, administrator config writes, opt-in Console."""
     from opsfeast.storage import resolve_data_root
     root = resolve_data_root(WEB_ROOT.parent if installation is None else installation, data_root=data_root, required=True)
     product = WEB_ROOT.parent if installation is None else Path(installation).resolve(strict=True)
     sessions = Sessions()
     editing_sessions = EditingSessions()
+    agent_capability = AgentCapability(agent_token)
+    del agent_token
     app = FastAPI(title='OpsFeast Web preview', docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', '[::1]'])
 
@@ -39,6 +41,7 @@ def create_app(installation=None, *, data_root=None, edit_token=None, interactiv
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Referrer-Policy'] = 'no-referrer'
         response.headers['Cache-Control'] = 'no-store'
+        response.headers['X-OpsFeast-Actor'] = 'agent' if agent_authorized(request) else ('administrator' if human_authenticated(request) else 'anonymous')
         return response
 
     @app.exception_handler(ConfigError)
@@ -58,11 +61,16 @@ def create_app(installation=None, *, data_root=None, edit_token=None, interactiv
 
     def local_capability(request):
         auth=request.headers.get('authorization','')
-        return bool(edit_token and (hmac.compare_digest(auth.encode(),('Bearer '+edit_token).encode())
-                                   or editing_sessions.valid(request.cookies.get(EDIT_COOKIE))))
+        return agent_authorized(request) or bool(edit_token and hmac.compare_digest(auth.encode(),('Bearer '+edit_token).encode())) or editing_sessions.valid(request.cookies.get(EDIT_COOKIE))
+
+    def agent_authorized(request):
+        return agent_capability.valid(request.headers.get('authorization',''))
+
+    def human_authenticated(request):
+        return sessions.authenticated(request.cookies.get(COOKIE),root)
 
     def authenticated(request):
-        return sessions.authenticated(request.cookies.get(COOKIE),root)
+        return agent_authorized(request) or human_authenticated(request)
 
     def require_admin(request):
         check_origin(request)
@@ -124,31 +132,43 @@ def create_app(installation=None, *, data_root=None, edit_token=None, interactiv
 
     from .interactive_api import install
     install(app,root=root,product=product,web_root=WEB_ROOT,options=interactive_options,
-            check_origin=check_origin,authenticated=authenticated,json_body=json_body)
+            check_origin=check_origin,authenticated=human_authenticated,agent_authorized=agent_authorized,json_body=json_body)
 
     from .console_api import install as install_console_records
     install_console_records(app,root=root,product=product,web_root=WEB_ROOT,options=console_options,
-                            check_origin=check_origin,authenticated=authenticated,require_admin=require_admin,json_body=json_body)
+                            check_origin=check_origin,authenticated=authenticated,agent_authorized=agent_authorized,require_admin=require_admin,json_body=json_body)
 
     from .host_api import install as install_hosts
     install_hosts(app,product=product,require_admin=require_admin,json_body=json_body)
 
     from .host_notes_api import install as install_host_notes
-    install_host_notes(app,product=product,require_admin=require_admin,json_body=json_body)
+    install_host_notes(app,product=product,require_admin=require_admin,json_body=json_body,agent_authorized=agent_authorized)
 
     @app.get('/api/v1/auth/status')
     def auth_status(request: Request):
         state=admin.status(root)
-        signed_in=authenticated(request)
+        signed_in=human_authenticated(request)
         return {'configured':state['configured'],'authenticated':signed_in,
-                'username':state['username'] if signed_in else None}
+                'username':state['username'] if signed_in else None,
+                'agent_authorized':agent_authorized(request)}
 
     @app.get('/api/v1/setup')
     def setup_status(request: Request):
         check_origin(request)
         return {'schema_version':'0.1.0','admin_configured':admin.status(root)['configured'],
-                'authenticated':authenticated(request),'edit_unlocked':local_capability(request),
-                'local_unlock_available':bool(edit_token)}
+                'authenticated':human_authenticated(request),'edit_unlocked':local_capability(request),
+                'local_unlock_available':bool(edit_token), 'agent_control_available':agent_capability.digest is not None}
+
+    @app.put('/api/v1/agent/administrator')
+    async def agent_administrator(request: Request):
+        check_origin(request)
+        if not agent_authorized(request):raise HTTPException(401,'agent_capability_required')
+        body=await json_body(request)
+        if set(body)!={'username','password','expected_revision'}:raise HTTPException(422,'invalid_admin_request')
+        from starlette.concurrency import run_in_threadpool
+        result=await run_in_threadpool(admin.set_by_agent,root,**body)
+        sessions.clear()
+        return {**result,'actor':'agent'}
 
     @app.post('/api/v1/auth/login')
     async def login(request: Request):

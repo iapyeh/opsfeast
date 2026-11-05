@@ -1,3 +1,5 @@
+For agent-owned launches, use the [memory-only owner controller](agent-owner.md). Its owner capability can perform all Web operations, including private-input transport; use the worker to consume secrets so values stay out of model output and durable records. Human login remains independent.
+
 # Ephemeral Console secret delivery 0.1.0
 
 Use this checkout-level Web/worker service for a signed-in human to supply a
@@ -17,6 +19,9 @@ The browser clears the field on submission/cancellation/page departure, never
 stores a draft, and never retries a password POST automatically. A network error
 requires checking the request's current state; do not assume failed transport
 means the input was not delivered. Refreshing the page clears the unsent field.
+While the field is focused, polling and streamed blocks preserve its DOM node,
+focus and unsent input; automatic following pauses until focus leaves the field.
+New blocks appear before the private-input controls without moving those controls.
 Historical readers do not enumerate requests or provide private-input controls.
 The agent's chat receives public progress only, never the password.
 
@@ -58,7 +63,8 @@ never executes a browser command.
 Reader/site tokens cannot create, submit, enumerate or consume requests. A writer
 cannot impersonate the authenticated human submission. A second worker/writer
 without the per-request random claim cannot take or cancel the value. The same
-OS user can read the writer token; this is not an OS isolation boundary.
+OS-user isolation is not provided. Owner-controlled launches keep capabilities in
+memory; scoped integration credentials follow their embedding owner's custody.
 No generic secret-take CLI is provided: the worker consumes the response internally.
 Never fetch this route through a model-visible tool or display its raw response.
 
@@ -77,7 +83,9 @@ invalid values, HTTP roles/origin/cache policy and absence from persistent files
 A real local getpass program exercises prompt detection, hidden delivery, split
 output redaction, subsequent ordinary input and leaving the program. Browser
 handler tests verify password masking, immediate clearing, no retry and page cleanup.
+Reader regression tests also cover focus and unsent input across request polling
+and new streamed blocks, including their position before the private-input controls.
 These tests are synthetic/local evidence; real database authentication requires
 an explicitly authorized host and the human's actual password.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-05 10:27:57*

@@ -2,7 +2,7 @@
 export function adminInputError(username,password,confirmation) {
   if(!/^[A-Za-z0-9_.-]{3,64}$/.test(username))return 'usernameHint';
   if(password!==confirmation)return 'mismatch';
-  if([...password].length<12||[...password].length>256)return 'passwordHint';
+  if(!password)return 'passwordHint';
   return null;
 }
 export async function mountAdminSettings(container, {m,e,request,onSaved}) {

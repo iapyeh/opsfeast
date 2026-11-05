@@ -1,3 +1,5 @@
+The [memory-only agent owner capability](agent-owner.md) can perform enabled exact-plan operations with role `agent_owner`, recorded distinctly from `operator` and scoped `agent`. It does not supply human consent or broaden enabled targets.
+
 # Interactive Console protocol 0.1.0
 
 For chat-driven incremental interaction, use the shipped [Console worker](console-agent.md). This page describes the separate exact-plan executor.
@@ -184,4 +186,4 @@ not SSH. Native-host validation must separately report profile/host, actual iden
 commands, milestones, streaming, stop and cleanup evidence. A local or synthetic
 success does not prove native SSH or privilege behavior.
 
-*Last modified: 2026-11-02 17:03:25*
+*Last modified: 2026-11-04 23:35:05*

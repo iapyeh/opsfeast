@@ -8,16 +8,17 @@ from starlette.concurrency import run_in_threadpool
 from opsfeast.interactive import InteractiveError, Service
 
 
-def install(app,*,root,product,web_root,options,check_origin,authenticated,json_body):
+def install(app,*,root,product,web_root,options,check_origin,authenticated,agent_authorized,json_body):
     service=Service(root/'interactive',product,targets=options['targets']) if options else None
     app.state.interactive=service
     def role(request):
         check_origin(request)
+        if agent_authorized(request):return 'agent_owner'
         supplied=request.headers.get('authorization','').encode()
         if authenticated(request):return 'operator'
         for name in ('operator','agent'):
-            expected=('Bearer '+options[name+'_token']).encode() if options else b''
-            if expected and hmac.compare_digest(supplied,expected):return name
+            expected=('Bearer '+options.get(name+'_token','')).encode() if options else b''
+            if options.get(name+'_token') and hmac.compare_digest(supplied,expected):return name
         raise HTTPException(401,'interactive_credential_required')
     def available():
         if not service:raise HTTPException(503,'interactive_not_enabled')
@@ -39,8 +40,8 @@ def install(app,*,root,product,web_root,options,check_origin,authenticated,json_
         available();actor=role(request)
         body=await json_body(request)
         if set(body)!={'profile','host_id','goal'}:raise HTTPException(422,'invalid_create_request')
-        if actor!='operator':raise HTTPException(403,'operator_required')
-        work_id=await run_in_threadpool(service.create,body['profile'],body['host_id'],body['goal'])
+        if actor not in ('operator','agent_owner'):raise HTTPException(403,'operator_required')
+        work_id=await run_in_threadpool(service.create,body['profile'],body['host_id'],body['goal'],role=actor)
         return service.store.snapshot(work_id)
     @app.get('/api/v1/interactive/{work_id}')
     def snapshot(work_id:str,request:Request):

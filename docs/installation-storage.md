@@ -20,7 +20,6 @@ installation-data/           independently preserved sibling or external directo
   .opsfeast-site-assets/     user-uploaded logo/avatar images
   .opsfeast-admin.json       private single-administrator credentials
   profiles/                 default location for newly Web-created profiles
-  .opsfeast-web-edit-PORT.token   temporary per-launch edit capability
 ```
 
 The data root must be outside the product directory and cannot contain the product
@@ -123,8 +122,9 @@ A product checkout can move or be replaced while attached data stays at the same
 location; its assigned UUID remains unchanged. Copying product code alone does not
 copy the ignored binding or create a new data root. Explicitly attaching several
 checkouts to one data root represents the **same installation**, not independent
-instances. Site writes retain revision/lock checks; a per-port token file prevents
-two launched servers from sharing that edit capability slot.
+instances. Site writes retain revision/lock checks. Each agent-controlled Web
+process owns an independent memory-only capability; normal socket binding prevents
+two servers from occupying the same address and port.
 
 Moving the persistent data root itself still needs the existing explicit identity
 relocation procedure, followed by updating/recreating the checkout binding. Copying
@@ -165,4 +165,8 @@ invalid/missing destinations, missing assets, broken bindings and moved data.
 presentation behavior. Synthetic replacement tests do not prove backup integrity,
 remote storage suitability or compatibility with future releases.
 
-*Last modified: 2026-11-01 13:20:29*
+
+Web startup credentials use the [memory-only owner controller](agent-owner.md);
+new launches create no token files. Saved administrator hashes remain persistent.
+
+*Last modified: 2026-11-04 23:35:05*

@@ -91,12 +91,12 @@ class Store:
         return event
     def emit(self,work_id,kind,actor,delta,payload=None):
         with self.lock,self.connect() as db:return self._emit(db,work_id,kind,actor,delta,payload)
-    def create(self,profile,host,goal,*,target=None):
+    def create(self,profile,host,goal,*,target=None,actor='operator'):
         work_id=str(uuid.uuid4())
         state={'work_id':work_id,'profile':profile,'host_id':host,'goal':goal,'created_at':timestamp(),'status':'draft','plan':None,'current':None,'history':[],'feedback':[],'analyses':[],'identity':None,'output_bytes':0,'cleanup':'not_started','last_error':None,'target':target or {}}
         with self.lock,self.connect() as db:
             db.execute('INSERT INTO work VALUES(?,?,?)',(work_id,0,'{}'))
-            self._emit(db,work_id,'work.created','operator',[set_value(key,value) for key,value in state.items()])
+            self._emit(db,work_id,'work.created',actor,[set_value(key,value) for key,value in state.items()])
         return work_id
 
 class Service:
@@ -125,10 +125,11 @@ class Service:
         from opsfeast import Instance
         expected=self.store.snapshot(self.work_id)['state']['target'].get('fingerprint')
         with Instance.open(self.installation).profile(profile).sessions.console(host,timeout=15,expected_fingerprint=expected) as console:yield console
-    def create(self,profile,host,goal):
+    def create(self,profile,host,goal,*,role='operator'):
+        if role not in ('operator','agent_owner'):raise InteractiveError('operator_required')
         text(profile,100);text(host,200)
         if (profile,host) not in self.targets:raise InteractiveError('target_not_enabled')
-        return self.store.create(profile,host,text(goal,2000),target=self.target(profile,host))
+        return self.store.create(profile,host,text(goal,2000),target=self.target(profile,host),actor=role)
     def target(self,profile,host):
         if self.custom_connector:return {'namespace':'synthetic','fingerprint':'synthetic'}
         from opsfeast import Instance
@@ -138,7 +139,7 @@ class Service:
         if not isinstance(body,dict):raise InteractiveError('object_required')
         request_id=body.get('request_id');text(request_id,100)
         if not re.fullmatch(r'[a-zA-Z0-9_.-]{8,100}',request_id):raise InteractiveError('invalid_request_id')
-        if role not in ('operator','agent'):raise InteractiveError('invalid_actor')
+        if role not in ('operator','agent','agent_owner'):raise InteractiveError('invalid_actor')
         try:digest=hashlib.sha256(json.dumps([action,body,role],sort_keys=True,allow_nan=False).encode()).hexdigest()
         except (ValueError,TypeError,UnicodeError):raise InteractiveError('invalid_json_value') from None
         with self.lock,self.store.lock,self.store.connect() as db:
@@ -148,7 +149,7 @@ class Service:
                 return json.loads(prior[1])
             snap=self.store.snapshot(work_id);state=snap['state'];status=state['status']
             if state['profile'] and (state['profile'],state['host_id']) not in self.targets:raise InteractiveError('target_not_enabled')
-            if action in ('approve','continue','reject','close') and role!='operator':raise InteractiveError('operator_required')
+            if action in ('approve','continue','reject','close') and role not in ('operator','agent_owner'):raise InteractiveError('operator_required')
             command=None
             if action=='plan':
                 if status not in ('draft','awaiting_plan','ready','paused','failed_step'):raise InteractiveError('work_busy')
@@ -177,7 +178,7 @@ class Service:
                 if status not in ('awaiting_plan','paused','awaiting_step'):raise InteractiveError('not_waiting_for_approval')
                 delta=[set_value('status','draft')]
             elif action=='stop':
-                if role not in ('operator','agent'):raise InteractiveError('operator_required')
+                if role not in ('operator','agent','agent_owner'):raise InteractiveError('operator_required')
                 if status not in ('running','queued','connecting'):raise InteractiveError('not_running')
                 delta=[set_value('status','stop_requested')];command='stop'
             elif action=='close':

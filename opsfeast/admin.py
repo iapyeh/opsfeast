@@ -52,7 +52,7 @@ def _digest(password,salt):
 
 def verify(data_root, username, password):
     value=_read(data_root)
-    if not isinstance(password,str) or not 1<=len(password)<=256 or not isinstance(username,str): return False
+    if not isinstance(password,str) or not password or not isinstance(username,str): return False
     try:
         password.encode('utf-8');username.encode('utf-8')
     except UnicodeError:return False
@@ -65,10 +65,23 @@ def verify(data_root, username, password):
 
 def configure(data_root, *, username, password, expected_revision, current_password=None):
     """Bootstrap once or change with the current password. Invalidates old sessions."""
+    return _configure(data_root, username=username, password=password,
+                      expected_revision=expected_revision, current_password=current_password,
+                      agent_reset=False)
+
+
+def set_by_agent(data_root, *, username, password, expected_revision):
+    """Trusted caller only: Web must verify the per-launch agent capability."""
+    return _configure(data_root, username=username, password=password,
+                      expected_revision=expected_revision, current_password=None,
+                      agent_reset=True)
+
+
+def _configure(data_root, *, username, password, expected_revision, current_password, agent_reset):
     if not isinstance(username,str) or not USERNAME.fullmatch(username):
         raise ConfigError('username requires 3-64 ASCII letters, digits, dot, hyphen or underscore')
-    if not isinstance(password,str) or not 12<=len(password)<=256:
-        raise ConfigError('password requires 12-256 characters')
+    if not isinstance(password,str) or not password:
+        raise ConfigError('password must not be empty')
     try:password.encode('utf-8')
     except UnicodeError:raise ConfigError('password must contain valid Unicode text') from None
     if type(expected_revision) is not int or expected_revision<0:
@@ -79,7 +92,7 @@ def configure(data_root, *, username, password, expected_revision, current_passw
         current=_read(root)
         revision=current['revision'] if current else 0
         if revision!=expected_revision: raise SiteConflict('administrator changed; reload before saving')
-        if current and not verify(root,current['username'],current_password):
+        if current and not agent_reset and not verify(root,current['username'],current_password):
             raise InvalidCredentials('current password is required')
         salt=secrets.token_hex(32)
         value={'schema_version':'0.1.0','revision':revision+1,'username':username,

@@ -2,7 +2,8 @@ export function consume(snapshot,event){
   if(event.session_id!==snapshot.session.session_id)throw Error('wrong_session');
   if(event.seq<=snapshot.seq)return snapshot;
   if(event.seq!==snapshot.seq+1)throw Error('event_gap');
-  const session=Object.hasOwn(event,'activity')?{...snapshot.session,activity:event.activity}:snapshot.session;
+  let session=Object.hasOwn(event,'activity')?{...snapshot.session,activity:event.activity}:snapshot.session;
+  if(Object.hasOwn(event,'target_activities'))session={...session,target_activities:event.target_activities};
   if(event.type==='activity.updated')return {...snapshot,session,seq:event.seq};
   const blocks=snapshot.blocks.slice(),index=blocks.findIndex(b=>b.id===event.block.id);
   if(index<0)blocks.push(event.block);else blocks[index]=event.block;
@@ -22,7 +23,8 @@ export function processingState(blocks){
   return {busy,label:busy?'處理中…':'目前沒有進行中的操作回報'};
 }
 export function activityState(snapshot,now=Date.now()){
-  const work=processingState(snapshot.blocks),activity=snapshot.session.activity;
+  const work=processingState(snapshot.blocks),activities=[snapshot.session.activity,...Object.values(snapshot.session.target_activities??{})];
+  const activity=activities.find(a=>a?.state==='thinking'&&Date.parse(a.expires_at)>now)??snapshot.session.activity;
   if(work.busy||activity?.state!=='thinking')return {...work,thinking:false};
   const expires=Date.parse(activity.expires_at);
   if(!Number.isFinite(expires)||expires<=now)return {busy:false,thinking:false,label:'Agent 狀態未更新'};

@@ -3,12 +3,15 @@ name: opsfeast-console-records
 description: Publish durable Console blocks, stream bounded previews and read authenticated human form responses through the local OpsFeast service.
 ---
 
+For several hosts in one task river, read [shared task river 0.1.0](../../docs/shared-console.md). Session targets declare exact profile/host/icon sources; every host block must supply its declared target_id, while joint analysis can remain unscoped. The reader independently toggles each host’s blocks or individual blocks open/closed in place: time leads each row, a far-right ↓/↑ toggle opens/closes blocks, and open blocks show ↗ immediately to its left for a separate window; 全部 opens all, while waiting live forms remain open. Per-host history discovers the same shared UUID; focus never authorizes or routes execution. Use per-target activity leases and serialize secret requests.
+
+
 # Publish Console blocks and await human responses
 
 For human-directed shell work, follow the [interactive chat-shell procedure](../opsfeast-interactive/references/chat-shell.md), including immediate reader display, no routine login screenshots and the agreed prompt/input presentation.
 
 Read the complete [0.2.0 contract](../../docs/console-records.md) before use.
-For chat-owned SSH Console execution, first use the shipped [worker 0.3.0](../../docs/console-agent.md), not an ad hoc bridge. Announce that this skill is being used. Start `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST`, immediately show its returned reader_url, then send JSON-lines controls to that process. Omit `--profile` to use `.opsfeast.yaml` default_profile; override only for an explicitly selected scope and inspect returned profile/hosts_file before connecting. Prompt/input share one command block using valid escaped `$(...)` Console syntax for shell commands, with initial text in its creation write before execution. HTTP commits wake SSE readers immediately; do not wait for completion to publish output. The reader shows processing for streaming command/analysis/status blocks; finish them when the reported work ends. This is not a heartbeat. The worker owns execution; this service stores its records. A received human response should be acknowledged in chat immediately, before optional UI checks.
+For chat-owned SSH Console execution, first use the shipped [worker 0.3.0](../../docs/console-agent.md), not an ad hoc bridge. Announce that this skill is being used. Use the [memory-only owner controller](../../docs/agent-owner.md): launch `python -B -u -m opsfeast.web --agent-control`, keep its handle, send worker.start, immediately show the created worker event reader_url, then send worker.send controls. No capability files or browser cookies are used. The agent owner token authorizes all Web operations, including password reset, but actions still require the human's actual task and applicable consent. Omit the worker profile field to use `.opsfeast.yaml` default_profile; override only for an explicitly selected scope and inspect returned profile/hosts_file before connecting. Prompt/input share one command block using valid escaped `$(...)` Console syntax for shell commands, with initial text in its creation write before execution. HTTP commits wake SSE readers immediately; do not wait for completion to publish output. The reader shows processing for streaming command/analysis/status blocks; finish them when the reported work ends. This is not a heartbeat. The worker owns execution; this service stores its records. A received human response should be acknowledged in chat immediately, before optional UI checks.
 
 This is a checkout-level record/response service, not a command executor, recipe
 retention/logger, SSH adapter, stop controller or model wakeup mechanism.
@@ -53,7 +56,9 @@ body text; long explanations retain inline expansion.
 1. Establish target, scope and source execution authorization separately. Writer
    credentials and a work/session ID do not authorize operations. The separate
    [interactive executor](../opsfeast-interactive/SKILL.md) keeps its own rules.
-2. Use `python -B -m opsfeast.console_client --token-file FILE create` with JSON stdin
+2. For agent-owned launch, send the following record HTTP operations through the
+   controller request control; see [owner control](../../docs/agent-owner.md).
+   For explicit scoped integrations only, use `python -B -m opsfeast.console_client --token-file FILE create` with JSON stdin
    {session_id,title,host_id,work_id}. Open returned reader_url. Browser readers
    sign in normally and load automatically; do not ask them for another unlock.
 3. Create a block through `block --session SID` with exact event_id, block_id, kind,
@@ -72,8 +77,9 @@ body text; long explanations retain inline expansion.
 7. When a human decision is needed, create kind=form with exact question, target,
    effect and schema from the contract (fields,choices,expires_at). No HTML/JS or
    arbitrary form actions are supported. Ask the human to review and respond in
-   the page; do not use their cookie/account to self-approve. Writer/reader tokens
-   cannot submit authenticated human replies. Ordinary authorized work should not
+   the page; do not use their cookie/account to self-approve. Scoped writer/reader tokens
+   cannot submit authenticated human replies. The owner capability can submit an
+   agent-attributed response, never proof of human consent. Ordinary authorized work should not
    acquire redundant approval requests solely because this service supports forms.
 8. Run `wait --session SID --after N --timeout 30` or `responses`/`stream` to read
    durable replies. Validate form ID, request_revision, choice, actor and exact
@@ -109,4 +115,4 @@ Historical readers provide no secret field. Old workers must be replaced and the
 Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
 
-*Last modified: 2026-11-04 17:30:11*
+*Last modified: 2026-11-05 12:01:34*

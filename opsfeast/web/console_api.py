@@ -13,7 +13,7 @@ from opsfeast.console_records import Records, RecordError
 
 STREAM_RECHECK_SECONDS=.25  # Cross-process writes remain discoverable without notifications.
 
-def install(app, *, root, product, web_root, options, check_origin, authenticated, require_admin, json_body):
+def install(app, *, root, product, web_root, options, check_origin, authenticated, agent_authorized, require_admin, json_body):
     records=Records(root/'console-records');app.state.console_records=records
     from opsfeast.console_secrets import SecretBroker
     broker = SecretBroker()
@@ -44,6 +44,7 @@ def install(app, *, root, product, web_root, options, check_origin, authenticate
         raise HTTPException(401,'console_writer_required' if write else 'administrator_login_required')
     def secret_writer(request):
         check_origin(request)
+        if agent_authorized(request):return
         expected = ('Bearer '+options['writer_token']).encode() if options else b''
         if not expected or not hmac.compare_digest(request.headers.get('authorization','').encode(), expected):
             raise HTTPException(401, 'console_writer_required')
@@ -69,7 +70,7 @@ def install(app, *, root, product, web_root, options, check_origin, authenticate
         return broker.take(session_id, request_id, await json_body(request, 2048))
     @app.post('/api/v1/console-sessions/{session_id}/secret-requests/{request_id}/cancel')
     async def secret_cancel(session_id:str, request_id:str, request:Request):
-        if authenticated(request):
+        if authenticated(request) and not agent_authorized(request):
             require_admin(request)
             body = await json_body(request, 2048)
             if body: raise HTTPException(422, 'invalid_fields')
@@ -94,7 +95,7 @@ def install(app, *, root, product, web_root, options, check_origin, authenticate
     @app.post('/api/v1/console-sessions')
     async def create(request:Request):
         authorize(request,True)
-        result=await run_in_threadpool(records.create,await json_body(request,4096))
+        result=await run_in_threadpool(records.create,await json_body(request,16384))
         return {**result,'reader_url':'/console/'+result['session']['session_id']}
     @app.get('/api/v1/console-sessions')
     def history(request:Request,profile:str,host_id:str,limit:int=Query(25,ge=1,le=100),before:str|None=None):
@@ -129,8 +130,10 @@ def install(app, *, root, product, web_root, options, check_origin, authenticate
     async def respond(session_id:str,block_id:str,request:Request):
         check_origin(request)
         if not authenticated(request):raise HTTPException(401,'administrator_login_required')
-        actor=admin.status(root)['username']
-        return await mutate(records.respond,session_id,block_id,await json_body(request,32768),actor)
+        actor='agent' if agent_authorized(request) else admin.status(root)['username']
+        from functools import partial
+        responder=partial(records.respond,authority='agent_capability' if agent_authorized(request) else 'administrator_cookie')
+        return await mutate(responder,session_id,block_id,await json_body(request,32768),actor)
     @app.get('/api/v1/console-sessions/{session_id}/responses')
     async def responses(session_id:str,request:Request,after:int=0,wait:int=0):
         authorize(request)

@@ -19,6 +19,9 @@
     },
     "local_unlock_available": {
       "type": "boolean"
+    },
+    "agent_control_available": {
+      "type": "boolean"
     }
   },
   "required": [
@@ -26,7 +29,8 @@
     "admin_configured",
     "authenticated",
     "edit_unlocked",
-    "local_unlock_available"
+    "local_unlock_available",
+    "agent_control_available"
   ],
-  "$comment": "Last modified: 2026-11-01 23:27:07"
+  "$comment": "Last modified: 2026-11-04 23:35:05"
 }

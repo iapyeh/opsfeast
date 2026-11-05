@@ -39,7 +39,7 @@ UTC (`2026-11-03T11:43:01+00:00`); the current Web reader presents Taipei time.
 `console` means distilled from interactive **or noninteractive** Console work;
 `user` means manually authored/edited by a user; `agent` means agent-directed
 organization or editing, including merging. Confirmation without changing content
-does not change source. Web mutations always assign `user`; the local CLI/Python
+does not change source. Human Web mutations assign `user`; owner-capability HTTP mutations assign `agent`; the local CLI/Python
 caller selects the appropriate source. Source describes provenance, not a verified
 identity or permission. Evidence and uncertainty belong in content, without secrets.
 
@@ -123,6 +123,102 @@ reload current state, compare and ask the human to resolve substantive differenc
 There is no automatic semantic merge. Do not assume a failed/ambiguous response
 means no write; read back before deciding what to do next.
 
+## Answer host questions from accumulated evidence
+
+Apply this workflow when a user asks about a named host's condition, performance,
+past incident, repair options or previous work, even if they ask only for advice
+and do not request a connection. Use the existing local records before forming
+host-specific conclusions. General conceptual questions without a host do not
+require a host-history search.
+
+1. Resolve the intended installation, profile and exact host ID from available
+   context and read-only host discovery. Do not silently use another profile or
+   merge similarly named hosts. Ask only if ambiguity affects the answer.
+2. Read that host's notes, starting with a host-scoped list and then relevant
+   title/content searches. A keyword miss is not proof that no relevant notes
+   exist. Notes capture previous decisions, constraints, failed approaches and
+   lessons that numeric observations may omit.
+3. Inspect relevant saved host results with observation result, the inventory
+   latest-attempt view, and retained history as needed for the question. Read the
+   selected records, not just a success label or newest timestamp. Narrow by host,
+   recipe, property and incident time; compare before/after evidence when useful.
+   Consult [result-data](../skills/opsfeast-result-data/SKILL.md),
+   [inventory jobs](inventory-jobs.md) and the
+   [CLI reference](cli.md#host-result-history-and-modes) for current contracts.
+4. Reconcile notes and measurements using source sample/probe times, actual
+   identity/scope, units, collection coverage and partial/failed/unknown states.
+   A latest inventory view combines properties sampled at different times; it is
+   not necessarily one simultaneous snapshot. A newer failed attempt must not
+   disappear behind an older successful value. A note's modification time is not
+   necessarily the event time. A reused host ID may refer to replaced hardware.
+   Show contradictions and missing evidence rather than silently resolving them.
+5. Use both direct and indirect information. Direct information is relevant
+   evidence in saved observations, inventory, notes or diagnostic records.
+   Indirect information is external knowledge found by using those facts as
+   search context: for example, an observation identifies FreeBSD, so search
+   official FreeBSD documentation for relevant disk-I/O behavior, tools and
+   remedies. Match the observed OS/product version when available; do not assume
+   an unknown version or substitute Linux commands. Cite the external sources and
+   explain how they relate to the observed facts. External documentation supports
+   interpretation and possible remedies; it does not measure this host's actual
+   condition.
+6. Explain what was found, what it establishes at the recorded time, what remains
+   a hypothesis, and what information is still needed. Reference useful
+   result/record IDs, note UUIDs and observation times without exposing secrets.
+   If neither direct nor indirect information is sufficient to answer, ask the
+   user a focused question for the missing facts, or propose opening an
+   interactive Console so the agent can inspect the host directly. State the
+   target, question to resolve and intended inspection scope. Do not stop at
+   generic advice or a list of commands for the user when a concrete question or
+   an offer to perform the inspection can advance the task. An exhaustive web
+   search is not required before asking about a material fact only the user or
+   live host can supply.
+7. Reuse already authorized inspection scope if fresh evidence is needed.
+   Local history reads do not authorize connections, new inventory collection,
+   privilege changes, repairs or scheduling. In particular, inventory latest reads
+   saved data, while inventory query connects even without --save. Follow the
+   relevant operational skill for authorized collection. For a Console proposal
+   accepted by the user, follow the [interactive skill](../skills/opsfeast-interactive/SKILL.md)
+   and its visible-reader procedure; show the Console before connecting and then
+   perform the agreed inspection. Reuse an existing grant within scope without
+   asking again. Root entry requires explicit authorization for that host/task;
+   inspection does not authorize repairs.
+
+Synthetic read-only examples, from the checkout with the selected interpreter:
+
+```sh
+python -B tools/opsfeast.py host-notes --profile lab --host web-01 list
+python -B tools/opsfeast.py host-notes --profile lab --host web-01 list --query disk
+python -B tools/opsfeast.py observation result --profile lab --host web-01 --json
+python -B tools/opsfeast.py observation result RESULT_ID --profile lab --detail --json
+python -B tools/opsfeast.py inventory latest --profile lab --host web-01 --json
+python -B tools/opsfeast.py retention list --profile lab --host web-01 --recipe system/inventory/overview --json
+python -B tools/opsfeast.py retention show RECORD_ID --profile lab --json
+```
+
+Host-notes commands already return JSON; do not add --json. Choose relevant reads
+rather than dumping all records. When saved results are insufficient, relevant
+[Console history](console-records.md#discover-saved-console-history-by-host) can
+supply original diagnostic context without reconnecting or replaying commands.
+
+Chat memory can locate an incident, but does not replace accessible OpsFeast
+records. Never claim to have queried notes, observations or inventory when only
+chat memory was read. Distinguish no matching records from inaccessible, malformed
+or unavailable stores; report the affected source and continue with available
+evidence. If no relevant history exists, state that limit and give conditional
+advice rather than inventing a host diagnosis. Continue with a focused question
+or a concrete Console inspection proposal if the answer still needs host facts.
+
+For example, historical cleanup of disk space and inodes does not establish that
+current disk latency or IOPS are healthy. Before recommending storage hardware,
+look for device/mount mapping, workload and latency evidence; identify any missing
+measurements explicitly. Keep this reusable guidance free of private host data.
+
+This is an agent procedure using existing read interfaces, not an automatic
+cross-store search service or a guarantee that every agent follows it. Save new
+lessons through the reviewed note workflow below; an advisory answer alone does
+not authorize writing notes.
+
 ## Human-agent workflow
 
 Before operating on a host, read its relevant notes and assess age, evidence and
@@ -159,4 +255,4 @@ escaped rendering, timestamp formatting and actual create/edit/delete event hand
 including draft preservation on conflicts. These synthetic tests do not connect to
 any host or prove arbitrary filesystem-writer isolation.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-05 08:46:39*

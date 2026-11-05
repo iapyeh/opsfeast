@@ -1,4 +1,8 @@
+For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
+
 # Reuse OpsFeast tools and Python modules
+
+For one task involving multiple hosts, use [shared task river 0.1.0](shared-console.md): create declared targets through the existing record API, attach separate workers with `session` / `--session`, and preserve each block's target_id. The reader offers 全部/host TABs, independently toggles each host’s blocks open/closed without reordering, and places time first in both states. A far-right ↓/↑ toggle opens/closes each block; open blocks show ↗ full-content links immediately to its left. Per-target activity and exact host-history membership are implemented; source metadata grants no execution permission.
 
 The [first-use Web guide](web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
 
@@ -504,6 +508,10 @@ TTL, automatic recollection or ESXi/old-Linux probe compatibility is added.
 
 ## Chat-owned Console worker 0.3.0
 
+The live reader preserves private-input focus and unsent text during polling and
+streamed updates, and pauses automatic following while those controls have focus.
+Refreshing clears unsent input; see [private-input behavior](console-secrets.md).
+
 For incremental human-directed shell work, follow the [interactive skill](../skills/opsfeast-interactive/SKILL.md) and [chat-shell procedure](../skills/opsfeast-interactive/references/chat-shell.md). These define river-first startup, same-shell continuity, timely acknowledgements, no routine login screenshots and Python-preferred substantive analysis; prompt/input share one command block with shell input rendered as a valid escaped `$(...)` Console expression, active source-reported work displays a processing indicator, and normally terminated nonzero commands retain the shell while waiting for the next instruction.
 
 Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST [--profile NAME]` for incremental human/agent interaction. [Canonical startup and JSON-lines controls](console-agent.md) cover create-before-connect, connect/run/sudo/interrupt/close, immediate output, runtime sudo/su/leave and cleanup. The worker publishes initial command/output text in the first write and the HTTP service notifies SSE readers on commit, before command completion. The worker records its connection API call, readable login result and actual SSHScript prompt; raw SSH banners/remote PS1 are not exposed. Identity JSON stays outside river content with a readable toolbar summary. PTY control input avoids canonical-line truncation and restores terminal settings at exit. The worker owns one same-thread Console and publishes to existing block/SSE handlers; no temporary bridge is required. Python/SSHScript 7.0.1 and a running authenticated loopback Web record service are required. Runtime account changes use scoped authorizations without startup flags, reconnects or new rivers; [switching](console-agent.md#runtime-account-switching-worker-030) covers current-actor sudo, target-account su, private missing-password input, nested identities and leave. Optional purpose records concise intent before commands. Entered text programs use enter/input/poll/leave, with explicit readiness states. Private input uses the authenticated ephemeral broker; see [worker operations](console-agent.md#entered-programs-and-private-input-worker-030) and [secret delivery 0.1.0](console-secrets.md). No browser command endpoint, automatic reconnect/replay, arbitrary Python, model wakeup or recipe retention is supplied.
@@ -542,6 +550,8 @@ navigation without selecting execution. Reuse [reader-mode contracts](console-re
 
 ## Host knowledge notes
 
+For host-specific advice or diagnosis, use the [accumulated-evidence workflow](host-notes.md#answer-host-questions-from-accumulated-evidence) before drawing conclusions: combine host notes, saved observation results, inventory latest and selected retention history through their existing read interfaces. Preserve sample times, failures, scope and conflicting claims. Report missing/inaccessible sources; memory alone does not establish that records were queried. This procedure adds no search service or collection authorization. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
+
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-05 12:01:34*

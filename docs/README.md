@@ -1,4 +1,8 @@
+For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
+
 # Documentation
+
+For shared multi-host investigations, see [shared task river 0.1.0](shared-console.md): independent connections, host-tagged blocks, per-host TAB focus and one chronological river.
 
 For chat-owned live SSHScript execution and streamed Console output, use [Console worker 0.3.0](console-agent.md).
 
@@ -94,4 +98,4 @@ For the independent agent-written Console transcript reader, see [console record
 
 [Host notes](host-notes.md): review/edit private host knowledge on the Web, share CLI/Python/API operations, resolve conflicts and confirm experience extraction.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-05 09:54:58*

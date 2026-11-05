@@ -1,7 +1,9 @@
 ---
 name: opsfeast-hosts
-description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform facts, and diagnose connections or configured su/sudo access when requested. Use for host configuration, Python configuration loading and diagnostics; recipe authoring belongs to opsfeast-recipes.
+description: Maintain OpsFeast hosts.yaml and profiles, initialize host platform facts, and diagnose connections or configured su/sudo access when requested. Use for host-specific questions and evidence lookup, host configuration, Python configuration loading and diagnostics; recipe authoring belongs to opsfeast-recipes.
 ---
+
+For questions about a named host's condition, performance, incidents or remedies, first follow [answer host questions from accumulated evidence](../../docs/host-notes.md#answer-host-questions-from-accumulated-evidence): read host notes, saved observation results and relevant inventory/retention history before giving host-specific conclusions. Distinguish historical evidence, current facts and hypotheses; report missing or inaccessible records. Chat memory alone is not a query of OpsFeast records. Local reads do not authorize fresh collection or repairs. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
 
@@ -337,4 +339,4 @@ Before retrying a host operation after an interpreter/package change, run the fa
 
 Use [host notes 0.1.0](../../docs/host-notes.md) for private knowledge: `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list`. Read relevant notes before operations; assess age/evidence without treating notes as execution authority. Use the shared CLI/Python/API for create/update/delete/merge, explicit profile/host and current revision. Present exact proposed content and UUID removals for human confirmation before organization. Preserve semantic conflicts, never silently choose a winner; do not edit storage or generated Vault pages directly.
 
-*Last modified: 2026-11-03 20:01:37*
+*Last modified: 2026-11-05 08:46:39*

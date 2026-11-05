@@ -4,10 +4,11 @@ import {adminInputError,mountAdminSettings} from '../web/assets/admin-settings.m
 import {getMessages} from '../web/assets/i18n.mjs';
 
 test('account form explains invalid usernames and counts Unicode code points',()=>{
+  assert.equal(adminInputError('synthetic','',''),'passwordHint');
   assert.equal(adminInputError('使用者','測試密碼'.repeat(4),'測試密碼'.repeat(4)),'usernameHint');
-  assert.equal(adminInputError('synthetic','🦉'.repeat(11),'🦉'.repeat(11)),'passwordHint');
+  assert.equal(adminInputError('synthetic','🦉','🦉'),null);
   assert.equal(adminInputError('synthetic','🦉'.repeat(256),'🦉'.repeat(256)),null);
-  assert.equal(adminInputError('synthetic','🦉'.repeat(257),'🦉'.repeat(257)),'passwordHint');
+  assert.equal(adminInputError('synthetic','🦉'.repeat(257),'🦉'.repeat(257)),null);
   assert.equal(adminInputError('synthetic','測試密碼'.repeat(4),'different'),'mismatch');
 });
 

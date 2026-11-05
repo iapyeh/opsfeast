@@ -39,7 +39,8 @@
         "operator",
         "agent",
         "executor",
-        "server"
+        "server",
+        "agent_owner"
       ]
     },
     "type": {
@@ -86,5 +87,5 @@
       }
     }
   },
-  "$comment": "Last modified: 2026-11-01 18:57:50"
+  "$comment": "Last modified: 2026-11-04 23:35:05"
 }

@@ -108,17 +108,17 @@ operator's authorized environment:
 
 ```sh
 .venv/bin/python -B -m pip install -r requirements-web.txt
-.venv/bin/python -B -m opsfeast.web
+.venv/bin/python -B -u -m opsfeast.web --agent-control
 ```
 
 Open <http://127.0.0.1:8740/>. The launcher binds only to IPv4 loopback; override
 the port with `--port 8741`. An occupied port fails without automatic replacement.
-The launcher creates a private per-launch site-edit token file in the external
-data root; see the guide
-above for unlocking settings and stale-token handling. Run in the foreground and press Ctrl-C to stop. There is no daemon, owner monitor,
-automatic agent-lifetime cleanup or restart recovery. Closing a browser tab does
-not stop the server. Python dependencies are optional and existing CLI entrypoints
-remain unchanged. Node.js and a frontend build are not needed for this prototype.
+The [agent owner controller](../docs/agent-owner.md) keeps its highest Web capability
+only in memory and accepts JSON-lines API/password/worker controls. It creates no
+token files. Preserve its private stdin; EOF or shutdown closes workers then stops
+the server. Closing a browser tab does not stop it. Without --agent-control, the
+foreground server supports an already configured human administrator. No automatic
+restart recovery exists. Node.js and a frontend build are not needed.
 
 ## Available interfaces
 
@@ -146,8 +146,9 @@ Unknown paths return 404; no repository/profile directory is served. Operational
 the canonical guides. API documentation routes are disabled to keep
 `/docs` available for product documentation. Host-header restrictions and response
 security headers reduce incidental exposure. A single-administrator session protects
-profile/account APIs; a local capability can edit site presentation and bootstrap
-the first administrator. OS-user isolation and per-agent identities are not provided. Do not expose this preview through a
+profile/account APIs. An independent agent owner capability can perform all Web
+operations, including administrator reset, under human instructions and consent.
+This is one launching-agent identity per server, not multi-agent accounts or OS isolation. Do not expose this preview through a
 proxy or external bind. Further domain authorization is required before executable host operations are connected.
 
 ## Language and authentication previews
@@ -264,4 +265,4 @@ stop channel, model wakeup or arbitrary HTML/media renderer is provided. The old
 `/interactive` also loads directly with administrator login; its execution gates
 remain separate. Read [the agent skill](../skills/opsfeast-console-records/SKILL.md).
 
-*Last modified: 2026-11-04 07:24:53*
+*Last modified: 2026-11-04 23:35:05*

@@ -11,6 +11,8 @@ test('live, historical and block URLs keep exact session and optional scope',()=
     assert.equal(readerScope({host_id:'other / a/b'},parsed.search),null);
     assert.equal(readerScope({host_id:'lab / web'},''),null);
   }
+  assert.deepEqual(readerScope({host_id:'Shared',targets:[{profile:'lab',host_id:'guest'}]},'?profile=lab&host_id=guest'),{profile:'lab',host_id:'guest'});
+  assert.equal(readerScope({host_id:'Shared',targets:[{profile:'lab',host_id:'guest'}]},'?profile=other&host_id=guest'),null);
   assert.equal(contentWindow({size:20000},16384,true),3616);
   assert.equal(contentWindow({size:20000},20000,true),0);
   assert.equal(contentWindow({size:20000},20000,false),16384);
@@ -19,19 +21,24 @@ test('live, historical and block URLs keep exact session and optional scope',()=
 // Exercise the actual page module with a small DOM and recorded HTTP transport.
 // No dependency on a browser package, managed host or running Web server.
 class Element{
-  constructor(tag='div'){this.tagName=tag.toUpperCase();this.childNodes=[];this.textContent='';this.hidden=false;this.dataset={};this.classes=new Set();this.classList={add:(...xs)=>xs.forEach(x=>this.classes.add(x)),toggle:(x,on)=>on?this.classes.add(x):this.classes.delete(x)};}
-  append(el){this.childNodes.push(el);}
-  insertBefore(el,before){this.childNodes.splice(this.childNodes.indexOf(before),0,el);}
+  constructor(tag='div'){this.tagName=tag.toUpperCase();this.childNodes=[];this.textContent='';this.hidden=false;this.dataset={};this.events={};this.classes=new Set();this.classList={add:(...xs)=>xs.forEach(x=>this.classes.add(x)),toggle:(x,on)=>on?this.classes.add(x):this.classes.delete(x)};}
+  get children(){return this.childNodes;}
+  focus(){this.focused=true;document.activeElement=this;}
+  contains(node){return this===node||this.childNodes.some(c=>c.contains(node));}
+  querySelectorAll(selector){return elements(this).slice(1).filter(el=>el.tagName===selector.toUpperCase());}
+  click(){this.events.click?.();}
+  append(el){el.parentNode=this;this.childNodes.push(el);}
+  insertBefore(el,before){if(el.parentNode){if(el.contains(document.activeElement))document.activeElement=null;const old=el.parentNode.childNodes;old.splice(old.indexOf(el),1);}el.parentNode=this;this.childNodes.splice(this.childNodes.indexOf(before),0,el);}
   replaceChildren(...els){this.childNodes=els;this.textContent='';}
   setAttribute(key,value){this[key]=value;}
-  addEventListener(){}
+  addEventListener(name,fn){this.events[name]=fn;}
 }
 function elements(root){return [root,...root.childNodes.flatMap(elements)];}
-function setup(history){
+function setup(history,secretRequest=false){
   const ids=new Map(['title','target','cursor','identity','toolbar','state','activity','breadcrumb','mode','new-window','history-view','connection','transcript','follow','latest'].map(id=>[id,new Element()]));
   ids.get('transcript').append(ids.get('activity'));
   const cleanup=[];
-  globalThis.document={getElementById:id=>ids.get(id),createElement:tag=>new Element(tag)};
+  globalThis.document={activeElement:null,getElementById:id=>ids.get(id)||[...ids.values()].flatMap(elements).find(el=>el.id===id),createElement:tag=>new Element(tag)};
   globalThis.location={pathname:'/console/fixture'+(history?'/history':''),search:'?profile=lab&host_id=web-01'};
   globalThis.window={addEventListener:(name,fn)=>cleanup.push(fn)};
   const base={title:'same task title',created_at:'2026-01-01T00:00:00Z',head:'output',tail:'tail',lines:1,revision:1};
@@ -41,17 +48,18 @@ function setup(history){
     {...base,id:'output',position:2,kind:'stdout',status:'streaming',size:30000},
     {...base,id:'form',position:3,kind:'form',status:'waiting',size:6,form:{fields:[],choices:[{id:'yes',label:'approve'}]},response:null},
   ]};
-  const calls=[];
+  const calls=[],streams=[];
   globalThis.fetch=async(url,options={})=>{
     calls.push({url,options});
-    if(url.includes('/stream?'))return {ok:true,body:{getReader:()=>({read:()=>new Promise(()=>{})})}};
+    if(url.endsWith('/secret-requests'))return {ok:true,json:async()=>({requests:secretRequest?[{request_id:'fixture-secret',label:'Synthetic password',state:'waiting'}]:[]})};
+    if(url.includes('/stream?'))return {ok:true,body:{getReader:()=>({read:()=>new Promise(resolve=>streams.push(resolve))})}};
     if(url.includes('/content?')){
       const query=new URL(url,'http://localhost').searchParams,offset=Number(query.get('offset')),limit=Number(query.get('limit'));
       return {ok:true,json:async()=>({text:'x'.repeat(limit),next_offset:offset+limit,total_bytes:40000})};
     }
     return {ok:true,json:async()=>structuredClone(snapshot)};
   };
-  return {ids,calls,cleanup};
+  return {ids,calls,cleanup,snapshot,streams};
 }
 test('history page never streams, animates or submits forms; expansion stops at loaded byte size',async()=>{
   const {ids,calls,cleanup}=setup(true);
@@ -65,7 +73,7 @@ test('history page never streams, animates or submits forms; expansion stops at 
   assert.equal(all.some(el=>el.classes.has('processing')),false);
   const analysis=all.find(el=>el.dataset.blockId==='analysis');
   assert.equal(elements(analysis).find(el=>el.tagName==='H2').hidden,true);
-  assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,true);
+  assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,false);
   assert.equal(elements(analysis).find(el=>el.tagName==='PRE').textContent,'output\n⋯\ntail');
   const output=all.find(el=>el.dataset.blockId==='output');
   const buttons=elements(output).filter(el=>el.tagName==='BUTTON');
@@ -88,7 +96,7 @@ test('live page streams only its own session and keeps live form replies explici
     assert.equal(ids.get('transcript').childNodes.at(-1),ids.get('activity'));
     const analysis=elements(ids.get('transcript')).find(el=>el.dataset.blockId==='analysis');
     assert.equal(elements(analysis).find(el=>el.tagName==='H2').hidden,true);
-    assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,true);
+    assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,false);
     const form=elements(ids.get('transcript')).find(el=>el.tagName==='FORM');
     assert.ok(form);
     globalThis.crypto??=(await import('node:crypto')).webcrypto;
@@ -96,4 +104,59 @@ test('live page streams only its own session and keeps live form replies explici
     assert.ok(calls.some(call=>call.url==='/api/v1/console-sessions/fixture/blocks/form/responses'&&call.options.method==='POST'));
     assert.equal(ids.get('history-view').href,'/console/fixture/history?profile=lab&host_id=web-01');
   }finally{cleanup.forEach(fn=>fn());}
+});
+
+test('host and block toggles preserve chronology, loaded content, drafts and new-stream defaults',async()=>{
+ const {ids,calls,cleanup,snapshot,streams}=setup(false);
+ snapshot.session.host_id='Shared investigation';snapshot.session.targets=[
+  {id:'lab / guest',profile:'lab',host_id:'guest',icon:'🦉'},
+  {id:'lab / hypervisor',profile:'lab',host_id:'hypervisor',icon:'🖥'}];
+ snapshot.blocks[0].target_id='lab / guest';snapshot.blocks[1].target_id='lab / guest';snapshot.blocks[2].target_id='lab / hypervisor';snapshot.blocks[3].target_id='lab / hypervisor';
+ snapshot.blocks[3].form.fields=[{name:'note',label:'Note',type:'text',required:false}];
+ try{
+  await import('../web/assets/console-reader.mjs?shared-fixture');await new Promise(resolve=>setImmediate(resolve));
+  const tabs=ids.get('toolbar').children.find(el=>el.id==='host-tabs');assert.equal(tabs.children.length,3);
+  const articles=()=>ids.get('transcript').children.filter(el=>el.dataset.blockId);
+  const order=articles().map(el=>el.dataset.blockId);
+  const output=articles().find(el=>el.dataset.blockId==='output'),analysis=articles().find(el=>el.dataset.blockId==='analysis');
+  await elements(output).find(el=>el.tagName==='BUTTON').onclick();
+  const full=elements(output).find(el=>el.className==='full-content'),text=full.textContent;
+  const form=elements(ids.get('transcript')).find(el=>el.tagName==='FORM'),input=elements(form).find(el=>el.tagName==='INPUT');
+  input.value='keep draft';input.events.input();
+  tabs.children[1].click();
+  assert.equal(output.classes.has('block-closed'),false);assert.equal(analysis.classes.has('block-closed'),true);tabs.children[2].click();assert.equal(output.classes.has('block-closed'),true);assert.equal(articles().find(el=>el.dataset.blockId==='form').classes.has('block-closed'),false);
+  assert.deepEqual(articles().map(el=>el.dataset.blockId),order);
+  const arrow=elements(output).find(el=>el.tagName==='A');assert.equal(arrow.hidden,true);assert.equal(arrow.target,'_blank');assert.equal(arrow.rel,'noopener');assert.match(arrow.href,/blocks\/output/);
+  assert.equal(elements(analysis).find(el=>el.tagName==='A').hidden,true);
+  const time=elements(output).find(el=>el.className==='source-time'),row=elements(output).find(el=>el.className==='source-line');assert.equal(row.children[0],time);assert.equal(time.hidden,false);assert.ok(time.textContent);
+  const toggle=elements(output).find(el=>el.className==='text-control block-toggle');assert.equal(toggle.hidden,false);assert.equal(toggle.textContent,'↓');toggle.onclick();assert.equal(output.classes.has('block-closed'),false);assert.equal(arrow.hidden,false);assert.equal(toggle.hidden,false);assert.equal(toggle.textContent,'↑');assert.equal(toggle.parentNode.children.at(-1),toggle);toggle.onclick();assert.equal(output.classes.has('block-closed'),true);assert.equal(arrow.hidden,true);assert.equal(toggle.textContent,'↓');assert.equal(time.hidden,false);
+  streams.shift()({done:false,value:new TextEncoder().encode('data: '+JSON.stringify({session_id:'fixture',seq:6,type:'block.appended',block:{...snapshot.blocks[2],revision:2,head:'new host output'}})+'\n\n')});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(output.classes.has('block-closed'),true);assert.deepEqual(articles().map(el=>el.dataset.blockId),order);
+  tabs.children[2].click();assert.equal(output.classes.has('block-closed'),false);assert.equal(analysis.classes.has('block-closed'),true);assert.equal(full.textContent,text);assert.equal(input.value,'keep draft');
+  const source=elements(output).find(el=>el.className==='source-line');source.events.keydown({key:'Enter',preventDefault(){}});assert.equal(output.classes.has('block-closed'),true);assert.equal(elements(output).find(el=>el.className==='source-suffix').textContent,'new host output');source.events.keydown({key:' ',preventDefault(){}});assert.equal(output.classes.has('block-closed'),false);
+  const waiting=articles().find(el=>el.dataset.blockId==='form');elements(waiting).find(el=>el.className==='source-line').events.keydown({key:'Enter',preventDefault(){}});assert.equal(waiting.classes.has('block-closed'),false);
+  streams.shift()({done:false,value:new TextEncoder().encode('data: '+JSON.stringify({session_id:'fixture',seq:7,type:'block.created',block:{...snapshot.blocks[0],id:'new-guest',position:6,head:'first line\nsecond line'}})+'\n\n')});
+  await new Promise(resolve=>setImmediate(resolve));
+  const incoming=articles().find(el=>el.dataset.blockId==='new-guest');assert.equal(incoming.classes.has('block-closed'),true);assert.equal(elements(incoming).find(el=>el.className==='source-suffix').textContent,'first line');
+  tabs.children[0].click();assert.equal(articles().some(el=>el.classes.has('block-closed')),false);
+  assert.equal(calls.filter(c=>c.url.includes('/content?')).length,1);
+ }finally{cleanup.forEach(fn=>fn());}
+});
+
+test('secret input retains focus across polling and newly streamed blocks without moving its subtree',async()=>{
+ const {ids,cleanup,snapshot,streams}=setup(false,true);
+ try{
+  await import('../web/assets/console-reader.mjs?focus-regression');await new Promise(resolve=>setImmediate(resolve));
+  const input=elements(ids.get('transcript')).find(el=>el.tagName==='INPUT'&&el.type==='password');assert.ok(input);
+  input.focus();input.value='synthetic-unsent';
+  await new Promise(resolve=>setTimeout(resolve,1100));
+  assert.equal(document.activeElement,input);assert.equal(input.value,'synthetic-unsent');
+  const block={...snapshot.blocks[0],id:'new-block',position:5,kind:'stdout',head:'next result',tail:'',status:'completed'};
+  streams.shift()({done:false,value:new TextEncoder().encode('data: '+JSON.stringify({session_id:'fixture',seq:6,type:'block.created',block})+'\n\n')});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(document.activeElement,input);assert.equal(input.value,'synthetic-unsent');
+  const children=ids.get('transcript').children,secret=document.getElementById('secret-input');
+  assert.ok(children.indexOf(children.find(el=>el.dataset.blockId==='new-block'))<children.indexOf(secret));
+ }finally{cleanup.forEach(fn=>fn());}
 });
