@@ -14,6 +14,31 @@ def excerpt(value):
     return {'text':text[:400],'clipped':clipped}
 
 
+def coverage_gaps(raw):
+    """Group incomplete requested properties, including platform support gaps."""
+    probes = {p.get('id'): p for p in (raw.get('probes') or []) if isinstance(p, dict)}
+    grouped = {}
+    groups = raw.get('groups')
+    if not isinstance(groups, list): return []
+    for group in groups:
+        samples = group.get('samples') or []
+        def ipv4_only(c):
+            return raw.get('platform') == 'esxi' and c.get('property','').startswith('network.ipv6.') and probes.get(c.get('source_id'),{}).get('command') == 'esxcli network ip interface ipv4 get'
+        incomplete = {c['property']: c for c in (group.get('coverage') or []) if not c.get('complete') or ipv4_only(c)}
+        for sample in samples:
+            if sample.get('status') != 'success': incomplete.setdefault(sample.get('property', 'unknown'), sample)
+        for name, coverage in incomplete.items():
+            source_id = coverage.get('source_id')
+            probe = probes.get(source_id, {})
+            bad = next((s for s in samples if s.get('property') == name and s.get('status') != 'success'), {})
+            reason = 'ipv6_not_collected' if ipv4_only(coverage) else bad.get('reason_code') or probe.get('reason_code') or 'value_not_reported'
+            key = (group.get('id'), source_id, reason)
+            row = grouped.setdefault(key, {'job': group.get('id'), 'source_id': source_id, 'reason_code': reason,
+                                           'observed_at': coverage.get('observed_at'), 'properties': []})
+            row['properties'].append(name)
+    return [{**row, 'properties': sorted(set(row['properties']))} for row in grouped.values()]
+
+
 def diagnose(root, identifier, *, limit=5, kind=None):
     """Use known evidence fields, never search arbitrary payloads or reconnect."""
     if type(limit) is not int or not 1<=limit<=50:
@@ -83,12 +108,15 @@ def diagnose(root, identifier, *, limit=5, kind=None):
     notes=[]
     if any(i['error_type'] for i in selected if i['stage']!='probe'):
         notes.append('Exception messages and source locations were not recorded; the exact failing key or line cannot be recovered from this result.')
-    if not issues and raw.get('status')!='success':
+    coverage = coverage_gaps(raw)
+    if not issues and not coverage and raw.get('status')!='success':
         notes.append('No specific failure evidence was recorded. The result does not establish a successful collection.')
     return {'diagnosis_version':'0.1.0','result_id':resolved,'requested_id':identifier,
             'host_id':raw.get('host_id'),'status':raw.get('status'),'reason_code':raw.get('reason_code'),
             'probe_count':len(probes),'unsupported_or_unattempted':skipped,'issue_count':len(issues),
-            'shown_count':len(selected),'omitted_count':len(issues)-len(selected),'issues':selected,'notes':notes}
+            'shown_count':len(selected),'omitted_count':len(issues)-len(selected),'issues':selected,'notes':notes,
+            'coverage_gap_count':sum(len(row['properties']) for row in coverage),
+            'coverage_gaps':coverage[:limit], 'omitted_coverage_groups':max(0,len(coverage)-limit)}
 
 
 def format_diagnosis(report):
@@ -117,6 +145,12 @@ def format_diagnosis(report):
                 lines += ['   '+stream+': capture truncated; output unavailable']
     if report['omitted_count']:
         lines += ['',str(report['omitted_count'])+' more problems omitted; increase --limit (maximum 50).']
+    if report.get('coverage_gaps'):
+        lines += ['', 'Incomplete requested properties: '+str(report['coverage_gap_count'])]
+        for gap in report['coverage_gaps']:
+            lines += ['  '+cell(gap['job'])+' / '+cell(gap['reason_code']), '    '+', '.join(cell(p) for p in gap['properties'])]
+        if report['omitted_coverage_groups']:
+            lines += [str(report['omitted_coverage_groups'])+' more gap groups omitted; increase --limit (maximum 50).']
     if report['notes']:
         lines += ['',*report['notes']]
     return '\n'.join(lines)

@@ -15,11 +15,14 @@ _CATEGORIES = [
      'apis': ['GET /api/v1/profiles', 'POST /api/v1/profiles', 'PUT /api/v1/profiles/default', 'POST /api/v1/profiles/attach'],
      'cli': ['python -B tools/opsfeast.py profiles --json', 'python -B tools/opsfeast.py init', 'python -B tools/opsfeast.py attach', 'python -B tools/opsfeast.py use'],
      'guide': 'docs/profiles.md'},
+    {'id': 'bundle-recipes', 'scope': 'installation', 'status': 'available', 'route': '/settings/bundle-recipes',
+     'apis': ['GET /api/v1/workspace/recipes?scope=bundle'],
+     'cli': ['python -B tools/opsfeast.py recipes list --checkout-only --json'], 'guide': 'docs/web-settings.md'},
     {'id': 'hosts', 'scope': 'profile', 'status': 'available', 'route': '/hosts',
      'apis': ['GET /api/v1/hosts','POST /api/v1/hosts','PATCH /api/v1/hosts','DELETE /api/v1/hosts'],
      'cli': ['python -B -m opsfeast.host_settings --profile NAME list', 'python -B -m opsfeast.host_settings --profile NAME create HOST --expected-revision REV', 'python -B -m opsfeast.host_settings --profile NAME update HOST --expected-revision REV', 'python -B -m opsfeast.host_settings --profile NAME delete HOST --expected-revision REV --confirm-host HOST'], 'guide': 'docs/web-hosts.md'},
-    {'id': 'recipes', 'scope': 'profile', 'status': 'planned', 'route': '/settings/recipes',
-     'apis': [], 'cli': [], 'guide': 'docs/recipe-sources.md'},
+    {'id': 'recipes', 'scope': 'profile', 'status': 'available', 'route': '/settings/recipes',
+     'apis': ['GET /api/v1/workspace/recipes?scope=user&profile=NAME'], 'cli': ['python -B tools/opsfeast.py recipes list --profile NAME --json'], 'guide': 'docs/recipe-sources.md'},
     {'id': 'parameters', 'scope': 'profile', 'status': 'planned', 'route': '/settings/parameters',
      'apis': [], 'cli': [], 'guide': 'docs/recipe-sources.md'},
     {'id': 'retention', 'scope': 'profile', 'status': 'planned', 'route': '/settings/retention',
@@ -29,7 +32,10 @@ _CATEGORIES = [
 
 def catalog():
     """Static availability only; never imports candidate programs or reads profiles."""
-    return {'schema_version': '0.1.0', 'categories': copy.deepcopy(_CATEGORIES)}
+    categories = copy.deepcopy(_CATEGORIES)
+    for item in categories:
+        item['parent'] = 'profiles' if item['scope'] == 'profile' else None
+    return {'schema_version': '0.2.0', 'categories': categories}
 
 
 def update_site(data_root, *, expected_revision, changes=None, images=None):

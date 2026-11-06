@@ -5,33 +5,55 @@ cover all supported human configuration needs while retaining CLI and agent APIs
 Build one service/validation contract per settings domain; Web and CLI are adapters,
 not separate configuration stores or independent interpretations of defaults.
 
-## Current availability
+## Settings hierarchy and availability
+
+The hub has three installation-level peers: **Site**, **Profiles** and **Bundle
+Recipes**. Within Profiles, select the owning Profile to open its Hosts, user
+Recipes, parameters and Retention policies. Selection changes the displayed scope,
+not the default Profile. The Profiles management page also nests these links under
+each registered Profile, preserving the exact name in the destination URL.
 
 | Route | Scope | Current delivery |
 | --- | --- | --- |
-| `/settings` | Discovery | Settings hub driven by the server capability catalog |
-| `/settings/site` | Installation | Site name/slogan/logo/avatar plus administrator setup/change |
-| `/settings/profiles` | Installation | Admin-only basic status, create, attach and default switch via Core |
-| `/hosts` (also linked from `/settings/hosts`) | Selected profile | Real host create/basic connection/metadata/group edit and confirmed delete; [contract](web-hosts.md) |
-| `/settings/recipes` | Selected profile | Planning page; no new recipe configuration writer |
-| `/settings/parameters` | Selected profile | Planning page; no new default/override writer |
-| `/settings/retention` | Selected profile | Planning page; no new policy/content writer |
+| `/settings` | Installation | Version checks and hierarchical capability discovery |
+| `/settings/site` | Installation | Presentation and administrator configuration |
+| `/settings/profiles` | Installation | Profile status/create/attach/default switch, with owned child links |
+| `/settings/bundle-recipes` | Installation | Read-only checkout Bundle catalog, independent of a selected Profile |
+| `/settings/hosts?profile=NAME` | Selected Profile | Entry to the real host editor, retaining Profile scope |
+| `/settings/recipes?profile=NAME` | Selected Profile | Read-only custom/registered external Recipe catalog, excluding Bundle recipes |
+| `/settings/parameters?profile=NAME` | Selected Profile | Parameter/policy guidance; Web writer remains planned |
+| `/settings/retention?profile=NAME` | Selected Profile | Retention-policy guidance; Web writer remains planned |
 
-The recipes/parameters/retention planning pages do not load private configuration or perform operations. Host settings require administrator login and use the shared configuration-only service. Existing CLI/Core/recipe/retention capabilities
-remain usable within their existing contracts. The catalog's empty interfaces for
-planned categories mean the new settings surface is not delivered, not that every
-related existing tool is unavailable. A [single-administrator login](web-administrator.md) is implemented; the site's
-local capability can bootstrap only the first account and cannot manage profiles,
-hosts or retention. Multiple users/per-agent credentials remain future work.
+Bundle definitions belong to the product checkout. This layout does not move
+execution enablement or variable overrides out of Profiles: those settings still
+follow [source/policy inheritance](recipe-sources.md). No configuration migration,
+global enablement default or independent Bundle code editor is introduced.
+
+Recipe settings views reuse the shared static catalog and provide inspection,
+not source registration, install, enablement, parameter editing or execution.
+Private data requires the existing administrator/owner authority; the site-edit
+capability alone does not manage Profiles or private Recipe catalogs.
 
 `GET /api/v1/settings/catalog`, `opsfeast.settings.catalog()` and
-`python -B -m opsfeast.settings catalog` return the same static JSON 0.1.0 catalog, defined by
-[settings-catalog.schema.json](../schemas/settings-catalog.schema.json).
-It lists category IDs, scope (`installation|profile`), availability
-(`available|planned`), UI route, implemented interface entrypoints and canonical
-guide path. Discovery reads no private configuration, initializes no data and imports
-no user program. UI copy is in the Traditional Chinese authoring catalog; English
-translation waits for the operator's request.
+`python -B -m opsfeast.settings catalog` share catalog **0.2.0**, defined by
+[the schema](../schemas/settings-catalog.schema.json). Every category has `parent`:
+null for installation peers, `profiles` for Profile-owned children. Scope remains
+`installation|profile`; availability remains `available|planned`. Implemented APIs,
+CLI routes and guide paths describe actual reads/writes. The catalog is static:
+it reads no Profile data and never imports user programs.
+
+The previous flat 0.1.0 catalog is replaced. Clients must consume parent hierarchy;
+`recipes` now means Profile user/external Recipes, while `bundle-recipes` is the
+installation peer. Read-only inspection availability does not imply a writer.
+
+## Version checks and confirmed Agent handoff
+
+The version panel reads installed evidence locally. Explicit checks consult official
+OpsFeast GitHub `main`/VERSION and SSHScript PyPI releases, distinguish new/current/
+locally-newer/diverged/unknown/failed evidence, and ask before producing an update
+instruction. The human sends that instruction to their Agent; the website does
+not run an installer or send a message. See [checks and handoff](web-updates.md)
+for module/CLI/HTTP use, dependencies, error states, compatibility and limits.
 
 ## Configuration principles for future domains
 
@@ -112,4 +134,4 @@ covers bundled defaults and persistent custom references. Web tests cover the sh
 catalog, category routes, and absent write endpoints for planned domains. Existing
 site/storage tests own image normalization, protected edits and upgrade persistence.
 
-*Last modified: 2026-11-01 23:27:07*
+*Last modified: 2026-11-05 17:18:10*

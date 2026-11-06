@@ -234,9 +234,10 @@ def collect(session, report, platform, timeout, *, budget=90, fields=None):
             probe('software', 'packages', 'pkgutil --pkgs', lambda t: [{'name': row, 'version': None, 'kind': 'installer-receipt'} for row in lines(t)])
             probe('services', 'services', 'launchctl list', lambda t: table(t, ('pid', 'exit_status', 'name'), header=True))
     elif platform == 'esxi':
+        from opsfeast.host_reference import esxi_ipv4_interfaces
         probe('hardware', 'logical_cpus', 'esxcli hardware cpu global get', lambda t: integer(pairs(t)['CPU Threads']))
         probe('software', 'packages', 'esxcli software vib list', lambda t: [{'entry': row} for row in lines(t)])
-        probe('network', 'interfaces', 'esxcli network ip interface ipv4 get', lambda t: [{'entry': row} for row in lines(t)])
+        probe('network', 'interfaces', 'esxcli network ip interface ipv4 get', esxi_ipv4_interfaces)
         probe('services', 'services', 'chkconfig --list', lambda t: [{'entry': row} for row in lines(t)])
     if platform != 'esxi':
         probe('network', 'dns_servers', 'cat /etc/resolv.conf', dns)

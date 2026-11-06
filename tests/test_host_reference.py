@@ -10,12 +10,23 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from opsfeast import ConfigError, main
-from opsfeast.host_reference import from_interfaces, read, update
+from opsfeast.host_reference import from_interfaces, read, update, esxi_ipv4_interfaces, refresh_from_saved
 import hosts_cli
 import inventory_jobs as service
 import retention_replay as replay
 import test_inventory_jobs as fixtures
 Actor = fixtures.Actor
+
+ESXI_TABLE = 'Name  IPv4 Address  IPv4 Netmask  IPv4 Broadcast  Address Type  Gateway  DHCP DNS\n----  ------------  ------------  --------------  ------------  -------  --------\nvmk0  192.0.2.42  255.255.255.0  192.0.2.255  STATIC  192.0.2.1  false\n'
+
+class EsxiActor(Actor):
+    def exec_command(self, argv, **kwargs):
+        from inventory_output_fixture import framed
+        result = super().exec_command(argv, **kwargs)
+        if 'uname -s' in argv[-1]: result.stdout = result.stdout.replace('Linux', 'VMkernel')
+        if 'esxcli network ip interface ipv4 get' in argv[-1]:
+            result.stdout = framed(argv[-1], ESXI_TABLE + '\n__OPSFEAST_EXIT_0\n')
+        return result
 
 
 class HostReferenceTests(unittest.TestCase):
@@ -25,6 +36,47 @@ class HostReferenceTests(unittest.TestCase):
 
     def files(self):
         return {str(p.relative_to(self.root)): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
+
+    def test_esxi_ipv4_updates_reference_and_does_not_claim_ipv6_collection(self):
+        self.enable()
+        raw = self.acquire(EsxiActor(), properties=['network.ipv4.address','network.ipv6.address'], save=True)
+        self.assertEqual(raw['platform'],'esxi')
+        self.assertEqual(raw['reference_ips_update']['status'],'updated',raw)
+        self.assertEqual(read(self.root,'node')['ipv4_addresses'],['192.0.2.42'])
+        self.assertEqual(read(self.root,'node')['collected_families'],[4])
+        samples=[sample for group in raw['groups'] for sample in group['samples']]
+        self.assertTrue(any(s['property']=='network.ipv4.address' and s['value']=='192.0.2.42' for s in samples))
+        self.assertTrue(any(s['property']=='network.ipv6.address' and s['reason_code']=='ipv6_not_collected' for s in samples))
+
+    def test_esxi_saved_recovery_verifies_provenance_and_never_rewrites_history(self):
+        self.enable()
+        with patch('opsfeast.host_reference.from_interfaces',side_effect=ValueError('simulate omitted projection')):
+            raw=self.acquire(EsxiActor(),properties=['network.ipv4.address'],save=True)
+        self.assertEqual(read(self.root,'node')['status'],'unknown')
+        before=self.files()
+        with patch.object(service,'collect_host',side_effect=AssertionError('no connection')):
+            receipt=refresh_from_saved(self.root,['node'])
+        self.assertEqual(receipt['hosts'][0]['status'],'updated',receipt)
+        self.assertEqual(read(self.root,'node')['ipv4_addresses'],['192.0.2.42'])
+        self.assertEqual(read(self.root,'node')['observed_at'],raw['probes'][1]['observed_at'])
+        after=self.files()
+        self.assertTrue(all(after[path]==content for path,content in before.items()))
+
+    def test_loopback_is_filtered_on_projection_and_existing_record_reads(self):
+        projected=from_interfaces([{'address':'127.0.0.1'},{'address':'127.5.1.2'},{'address':'::1'},{'address':'192.0.2.3'}],'2026-11-05T00:00:00Z','p')
+        self.assertEqual(projected['ipv4_addresses'],['192.0.2.3'])
+        self.assertEqual(projected['ipv6_addresses'],[])
+        self.enable();raw=self.acquire(Actor(),properties=['network.ipv4.address'],save=True)
+        path=next((self.root/'.host-reference-ips').glob('*.json'))
+        saved=json.loads(path.read_text());saved['ipv4_addresses'].append('127.0.0.1');path.write_text(json.dumps(saved))
+        before=path.read_bytes()
+        self.assertNotIn('127.0.0.1',read(self.root,'node')['ipv4_addresses'])
+        self.assertEqual(path.read_bytes(),before)
+
+    def test_esxi_parser_rejects_invalid_or_incomplete_tables(self):
+        self.assertEqual(esxi_ipv4_interfaces(ESXI_TABLE)[0]['prefix_length'],24)
+        for text in ('', 'vmk0 192.0.2.1', ESXI_TABLE.replace('192.0.2.42','invalid'), ESXI_TABLE.replace('255.255.255.0','bad-mask')):
+            with self.subTest(text=text), self.assertRaises(ValueError):esxi_ipv4_interfaces(text)
 
     def test_success_failure_unrelated_and_no_save(self):
         self.enable()

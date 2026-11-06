@@ -1014,3 +1014,17 @@ main p,main small { color:#586d51; }
 .host-confirm-dialog { max-width:620px; width:calc(100% - 40px); padding:28px; border:1px solid #d0d7c9; border-radius:10px; font-size:16px; line-height:1.8; color:#314c40; }
 .host-confirm-dialog::backdrop { background:#17251c88; }
 .host-confirm-dialog button:disabled { opacity:.45; cursor:default; }
+/* Source documents remain inert text; allow long paths and code on narrow screens. */
+.document-source { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: .9rem; }
+.workspace-profile { display: block; margin: 1rem 0; }
+.workspace-profile select { max-width: 100%; }
+.settings-tree { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr); gap:20px; align-items:start; }
+.settings-root h2 { margin-top:0; }
+.profile-settings-children { margin:16px 0 0 10px; padding-left:18px; border-left:2px solid #c2d2c6; display:grid; gap:12px; }
+.profile-setting-child { display:grid; gap:5px; padding:12px; border:1px solid #dfe6dc; border-radius:8px; background:#fafbf8; }
+.profile-setting-child span,.profile-setting-child small { font-size:.85rem; line-height:1.6; }
+.profile-owner-label { margin-top:16px; font-size:.9rem; font-weight:600; }
+#update-prompt { width:100%; max-width:100%; resize:vertical; font:inherit; line-height:1.6; }
+.version-grid section { min-width:0; }
+.version-grid .field-hint,.version-grid dd { overflow-wrap:anywhere; }
+@media(max-width:1100px) { .settings-tree { grid-template-columns:1fr; } }

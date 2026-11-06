@@ -2,16 +2,18 @@
 import {getMessages, readLocale, saveLocale, supportedLocales, translate} from "./i18n.mjs";
 import {mountSiteSettings} from "./site-settings.mjs";
 import {mountProfiles} from "./profiles-settings.mjs";
-import {mountRoadmap, roadmapPaths, roadmapCopy, versionPreview} from "./roadmap.mjs";
+import {mountWorkspace, workspacePaths, workspaceCopy} from "./workspace.mjs";
 import {siteAssetUrl} from "./site-assets.mjs";
 import {loginDestination} from "./login-navigation.mjs";
 import {mountFirstUse} from "./first-use.mjs";
+import {mountVersions} from "./updates.mjs";
+import {mountSettingsHub} from "./settings-hub.mjs";
 import {mountHostManager} from "./host-manager.mjs";
 
 let storage;
 try { storage = window.localStorage; } catch { /* Private/restricted browser storage. */ }
 const locale = readLocale(storage, navigator.languages || [navigator.language]);
-const m = getMessages(locale), s = m.shell, a = m.auth, h = m.home;
+const m = getMessages(locale), s = m.shell, a = m.auth;
 const t = (key, values) => translate(locale, key, values);
 // Escape every translated string before inserting it into the authored templates.
 const e = value => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char]));
@@ -51,8 +53,7 @@ if (settingsPage) {
 }
 const firstUsePage=path==="/setup" || (["/","/login"].includes(path)&&!authState.unavailable&&!authState.configured);
 const publicPage = firstUsePage || path === "/" || path === "/login";
-const roadmapKey = path === "/workspace" ? "home" : path === "/recipes/data" || path === "/retention" ? "recipes" : path.slice(1);
-const title = roadmapPaths.includes(path) ? roadmapCopy[roadmapKey].title : path === "/" ? s.entry : path === "/login" ? a.loginTitle : settingsPage ? (m.settings.categories[settingsCategory]?.title || m.settings.title) : m.pages[key]?.title || s.home;
+const title = workspacePaths.includes(path) ? workspaceCopy.titles[path] : path === "/" ? s.entry : path === "/login" ? a.loginTitle : settingsPage ? (m.settings.categories[settingsCategory]?.title || m.settings.title) : path === "/hosts" ? s.hosts : s.home;
 document.documentElement.lang = locale;
 document.title = `${siteName} · ${title}`;
 document.querySelector('link[rel="icon"]').href = siteAssetUrl(site, "logo");
@@ -83,30 +84,21 @@ function loginCard() {
 }
 function workspaceView() {
   const links = [["home", "/workspace", "◈"], ["hosts", "/hosts", "▤"], ["recipes", "/recipes", "▧"], ["work", "/work", "☷"], ["logs", "/logs", "≡"], ["apps", "/apps", "⊞"], ["settings", "/settings", "⚙"]];
-  const nav = ([id, href, icon]) => `<a href="${href}"${((key === id || id === "recipes" && (path === "/recipes/data" || path === "/retention")) || id === "settings" && settingsPage) ? ' class="active" aria-current="page"' : ""}><span class="nav-icon">${icon}</span>${e(id === "settings" ? m.settings.title : (roadmapCopy.nav[id] || s[id]))}${id === "operations" ? `<span class="nav-tag">${e(s.previewTag)}</span>` : ""}</a>`;
-  return `<a class="skip" href="#main">${e(s.skip)}</a><aside class="sidebar" aria-label="${e(s.navigation)}">${brand("/workspace")}<div class="workspace"><span class="workspace-icon">O</span><div>${e(s.workspace)}<small>${e(authState.authenticated?(profileState?(profileState.default_profile||m.profiles.none):m.profiles.unknown):s.noProfile)}</small></div></div><div class="nav-label">${e(s.area)}</div><nav>${links.map(nav).join("")}</nav><div class="nav-label second-label">${e(s.reference)}</div><nav>${[["learn", "/learn", "▱"], ["docs", "/docs", "≡"], ["skills", "/skills", "◇"]].map(nav).join("")}</nav><div class="sidebar-bottom"><span class="status-dot"></span>${e(s.local)}<small>${e(s.server)}</small></div></aside><div class="shell"><header class="topbar"><nav class="breadcrumb" aria-label="${e(s.area)}"><a href="/workspace">${e(s.area)}</a><span>/</span><strong>${e(title)}</strong></nav><div class="topbar-right">${languageControl()}<a class="guest-link" href="/">${e(s.guestLink)}</a><span class="preview-pill">${e(authState.authenticated?t("admin.authenticated",{username:authState.username}):s.user)}</span>${authState.authenticated?`<button id="logout" class="logout-button" type="button">${e(m.admin.logout)}</button>`:""}</div></header><main id="main" tabindex="-1">${notice()}${roadmapPaths.includes(path) ? `<section id="roadmap-view"></section>` : key === "site" ? `<section id="site-settings"></section>` : settingsCategory === "profiles" ? `<section id="profile-settings"></section>` : settingsPage ? settingsView() : detailView()}${footer()}</main></div>`;
+  const nav = ([id, href, icon]) => `<a href="${href}"${((key === id || id === "recipes" && (path === "/recipes/data" || path === "/retention")) || id === "settings" && settingsPage) ? ' class="active" aria-current="page"' : ""}><span class="nav-icon">${icon}</span>${e(id === "settings" ? m.settings.title : (workspaceCopy.nav[id] || s[id]))}${id === "operations" ? `<span class="nav-tag">${e(s.previewTag)}</span>` : ""}</a>`;
+  return `<a class="skip" href="#main">${e(s.skip)}</a><aside class="sidebar" aria-label="${e(s.navigation)}">${brand("/workspace")}<div class="workspace"><span class="workspace-icon">O</span><div>${e(s.workspace)}<small>${e(authState.authenticated?(profileState?(new URLSearchParams(location.search).get("profile")||profileState.default_profile||m.profiles.none):m.profiles.unknown):s.noProfile)}</small></div></div><div class="nav-label">${e(s.area)}</div><nav>${links.map(nav).join("")}</nav><div class="nav-label second-label">${e(s.reference)}</div><nav>${[["learn", "/learn", "▱"], ["docs", "/docs", "≡"], ["skills", "/skills", "◇"]].map(nav).join("")}</nav><div class="sidebar-bottom"><span class="status-dot"></span>${e(s.local)}<small>${e(s.server)}</small></div></aside><div class="shell"><header class="topbar"><nav class="breadcrumb" aria-label="${e(s.area)}"><a href="/workspace">${e(s.area)}</a><span>/</span><strong>${e(title)}</strong></nav><div class="topbar-right">${languageControl()}<a class="guest-link" href="/">${e(s.guestLink)}</a><span class="preview-pill">${e(authState.authenticated?t("admin.authenticated",{username:authState.username}):s.user)}</span>${authState.authenticated?`<button id="logout" class="logout-button" type="button">${e(m.admin.logout)}</button>`:""}</div></header><main id="main" tabindex="-1">${notice()}${(workspacePaths.includes(path)||path==="/hosts") ? `<section id="roadmap-view"></section>` : key === "site" ? `<section id="site-settings"></section>` : settingsCategory === "profiles" ? `<section id="profile-settings"></section>` : settingsPage ? settingsView() : ""}${footer()}</main></div>`;
 }
 function settingsView() {
   const c = m.settings;
   const header = `<div class="page-heading"><div><p class="eyebrow">${e(c.kicker)}</p><h1>${e(settingsCategory ? c.categories[settingsCategory].title : c.title)}</h1><p class="intro">${e(settingsCategory ? c.categories[settingsCategory].text : c.intro)}</p></div></div>`;
   if (!settingsCatalog) return header + `<div class="detail-note" role="status">${e(c.catalogError)}</div>`;
-  if(settingsCategory==="hosts")return header+`<section class="panel"><p>${e(m.hostManagement.intro)}</p><a class="button primary" href="/hosts">${e(m.hostManagement.title)} →</a></section>`;
+  if(["recipes","bundle-recipes"].includes(settingsCategory))return `<section id="settings-recipe-list"></section>`;
+  if(settingsCategory==="hosts")return header+`<section class="panel"><p>${e(m.hostManagement.intro)}</p><a class="button primary" href="${e("/hosts"+location.search)}">${e(m.hostManagement.title)} →</a></section>`;
   if (settingsCategory) {
     const category = c.categories[settingsCategory];
     return header + `<div class="settings-category-state"><span class="subtle-tag">${e(c.planned)}</span><span>${e(c.profile)}</span></div><div class="detail-note">${e(c.pending)}</div><section class="panel settings-contract"><h2>${e(c.boundaries)}</h2><p>${e(category.detail)}</p><ul>${category.rules.map(rule => `<li>${e(rule)}</li>`).join("")}</ul><p class="settings-shared-rule">${e(c.principle)}</p></section>`;
   }
-  return header + versionPreview(e) + `<div class="detail-note">${e(c.principle)}</div><section class="settings-category-grid">${settingsCatalog.categories.map(category => {
-    const text = c.categories[category.id];
-    if (!text) return "";
-    const available = category.status === "available";
-    return `<a class="settings-category-card" href="${e(category.route)}"><div class="settings-card-meta"><span>${e(category.scope === "installation" ? c.installation : c.profile)}</span><span class="${available ? "available-tag" : "subtle-tag"}">${e(available ? c.available : c.planned)}</span></div><h2>${e(text.title)}</h2><p>${e(text.text)}</p><small>${e(available ? c.implemented : c.pending)}</small><span class="entry-link">${e(available ? c.open : c.explore)} <b>↗</b></span></a>`;
-  }).join("")}</section><p class="field-hint">${e(c.catalogLabel)}</p>`;
+  return header + `<section id="installed-versions" class="panel roadmap-section"></section><div class="detail-note">${e(c.principle)}</div><section id="settings-hierarchy"></section>`;
 }
-function detailView() {
-  const page = m.pages[key];
-  return `<section id="detail-view"><div class="page-heading"><div><p class="eyebrow">${e(page.kicker)}</p><h1>${e(page.title)}</h1><p class="intro">${e(page.intro)}</p></div></div><div class="detail-grid">${page.cards.map(([heading, text], i) => `<article class="detail-card"><span class="entry-kicker">0${i+1} / ${e(s.plannedShort)}</span><h3>${e(heading)}</h3><p>${e(text)}</p><small>${e(s.planned)}</small></article>`).join("")}</div><div class="detail-note">${e(page.note)}</div>${["docs","learn"].includes(key) ? `<div class="roadmap-actions">${roadmapCopy.reference.links.map(([url,label])=>`<a class="button" href="${url}">${e(label)} →</a>`).join("")}</div>` : ""}</section>`;
-}
-
 function setBreadcrumb(parts) {
   const breadcrumb=document.querySelector('.breadcrumb');
   if(!breadcrumb)return;
@@ -114,49 +106,28 @@ function setBreadcrumb(parts) {
   document.title=`${siteName} · ${parts.map(part=>part.label).join(' / ')}`;
 }
 
-// These templates use only the bundled catalog and fixed routes, not remote data.
+// Shell templates render separately from authenticated, read-only workspace data.
 document.getElementById("app").innerHTML = firstUsePage ? `<div class="public-shell setup-shell"><header class="public-header"><a class="setup-brand" href="/">${e(m.firstUse.brand)}</a>${languageControl()}</header><main id="main"><div class="setup-heading"><h1>${e(m.firstUse.title)}</h1><p>${e(m.firstUse.intro)}</p></div><div id="first-use"></div>${footer()}</main></div>` : publicPage ? publicView() : workspaceView();
 if(firstUsePage){if(path!=="/setup")history.replaceState(null,"","/setup");document.title=`${m.firstUse.title} · OpsFeast`;mountFirstUse(document.getElementById("first-use"),{m,e,origin:location.origin,port:location.port});}
-if(settingsCategory)setBreadcrumb([{label:m.settings.title,url:"/settings"},{label:m.settings.categories[settingsCategory]?.title||m.settings.title}]);
+if(settingsCategory){
+  const selectedProfile=new URLSearchParams(location.search).get('profile')||profileState?.default_profile;
+  const owned=settingsCatalog?.categories.find(category=>category.id===settingsCategory)?.parent==='profiles';
+  setBreadcrumb([{label:m.settings.title,url:"/settings"},...(owned?[{label:m.profiles.title,url:"/settings/profiles"},{label:selectedProfile||m.profiles.none,url:"/settings?"+new URLSearchParams(selectedProfile?{profile:selectedProfile}:{})}]:[]),{label:m.settings.categories[settingsCategory]?.title||m.settings.title}]);
+}
 document.getElementById("language").value = locale;
 document.getElementById("language").addEventListener("change", event => {
   saveLocale(storage, event.target.value);
   location.reload();
 });
 if(path==="/hosts") mountHostManager(document.getElementById("roadmap-view"),{m,e,search:location.search,setBreadcrumb});
-if (roadmapPaths.includes(path)&&path!=="/hosts") mountRoadmap(document.getElementById("roadmap-view"), {path,e,siteName,search:location.search,setBreadcrumb});
+if (workspacePaths.includes(path)) mountWorkspace(document.getElementById("roadmap-view"), {path,e,siteName,search:location.search,profiles:profileState});
+if (settingsPage&&!settingsCategory) {
+  if(authState.authenticated) mountVersions(document.getElementById("installed-versions"), {e});
+  if(settingsCatalog) mountSettingsHub(document.getElementById("settings-hierarchy"), {m,e,catalog:settingsCatalog,profiles:profileState,search:location.search});
+}
+if (["recipes","bundle-recipes"].includes(settingsCategory)) mountWorkspace(document.getElementById("settings-recipe-list"), {path:"/recipes",e,siteName,search:location.search,profiles:profileState,recipeScope:settingsCategory==="bundle-recipes"?"bundle":"user"});
 if (key === "site") mountSiteSettings(document.getElementById("site-settings"), {m, e, site, siteName, authState});
 if (settingsCategory === "profiles") mountProfiles(document.getElementById("profile-settings"), {m,e,authState});
-if (key === "operations") mountDemo(document.getElementById("detail-view"));
-
-function mountDemo(view) {
-  const d = m.demo;
-  const section = document.createElement("section");
-  section.innerHTML = `<div class="demo-controls"><button id="demo-start" type="button">${e(d.start)}</button><button id="demo-stop" class="stop" type="button" disabled>${e(d.stop)}</button><span class="demo-label">${e(d.label)}</span></div><div class="terminal"><div class="terminal-title">${e(d.terminal)}</div><pre class="terminal-output" id="demo-output" aria-live="polite"></pre></div><p class="demo-status" id="demo-status" role="status"></p>`;
-  view.append(section);
-  const start = document.getElementById("demo-start"), stop = document.getElementById("demo-stop");
-  const output = document.getElementById("demo-output"), status = document.getElementById("demo-status");
-  const state = value => { status.textContent = t("demo.state", {state:value}); };
-  output.textContent = d.idle; state(d.notStarted);
-  let timer;
-  start.addEventListener("click", () => {
-    let index = 0;
-    output.textContent = ""; start.disabled = true; stop.disabled = false;
-    function next() {
-      const [text, value] = d.frames[index++];
-      output.textContent += text + "\n"; state(value);
-      if (index < d.frames.length) timer = setTimeout(next, 1400);
-      else { start.disabled = false; stop.disabled = true; }
-    }
-    next();
-  });
-  stop.addEventListener("click", () => {
-    clearTimeout(timer); start.disabled = false; stop.disabled = true;
-    output.textContent += d.stoppedOutput + "\n"; state(d.stopped);
-  });
-  window.addEventListener("pagehide", () => clearTimeout(timer));
-}
-
 window.addEventListener("opsfeast:site-updated", event => {
   site = event.detail;
   siteName = site.site_name || m.site.defaultName;
@@ -190,4 +161,9 @@ window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();
 window.addEventListener('opsfeast:profile-state',event=>{
   const label=document.querySelector('.workspace small');
   if(label)label.textContent=event.detail.default_profile||m.profiles.none;
+});
+
+window.addEventListener('opsfeast:profile-view',event=>{
+  const label=document.querySelector('.workspace small');
+  if(label)label.textContent=event.detail.profile||m.profiles.none;
 });

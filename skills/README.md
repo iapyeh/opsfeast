@@ -6,13 +6,34 @@ For agent website operations, use the [memory-only owner controller](../docs/age
 
 For entered programs and safe human password input, use [interactive worker 0.3.0](../docs/console-agent.md#entered-programs-and-private-input-worker-030) and [ephemeral secret delivery](../docs/console-secrets.md), routed through the interactive/Console-record skills. Passwords never belong in ordinary river forms.
 
+For [official version checks and confirmed Agent handoff](../docs/web-updates.md),
+use `opsfeast.updates.current/check`, its JSON CLI, or the authenticated Web check
+API. Checks never install. The human confirms and sends the generated instruction;
+follow the canonical update/Skill procedure, preserve local edits and report
+unsupported or uncertain targets. No automatic Agent notification is implied.
+[Settings catalog 0.2.0](../docs/web-settings.md) exposes Site, Profiles and Bundle
+Recipes as peers; Hosts and user/external Recipes belong to the selected Profile.
+Recipe catalog scope=bundle is Profile-independent; scope=user preserves exact
+Profile ownership. Read-only discovery does not grant configuration writes.
+
+For incomplete collection, use [saved-result diagnosis](../docs/result-diagnostics.md):
+`observation result ID --profile NAME --limit 50 --json`, or the same Web diagnosis
+linked from host summaries/Recipe history. Coverage gaps include unsupported and
+uncollected fields; preserve original status and source times. Do not mistake a
+successful property for a complete inventory or reconnect merely to explain a gap.
+For already saved IP evidence, [reference recovery](../docs/host-reference-ips.md)
+provides `hosts refresh-ips --profile NAME --host HOST ... --json` and
+`opsfeast.host_reference.refresh_from_saved`. This is a local metadata write,
+requiring recovery scope; it verifies raw/retained provenance without changing
+history. ESXi sources are IPv4-only; loopback is excluded from reference views.
+
 # AI Agent Guidance
 
 For a shared multi-host investigation and host TAB focus, read [shared task river 0.1.0](../docs/shared-console.md), routed through the [interactive](opsfeast-interactive/SKILL.md) and [record-service](opsfeast-console-records/SKILL.md) skills. Create one task with explicit targets, attach independent workers, show one reader, and address each command by worker ID. Host buttons independently toggle their own blocks open/closed; 全部 opens all. Individual block toggles preserve chronology and never select a command target.
 
 For a question about a named host, first use the [accumulated-evidence workflow](../docs/host-notes.md#answer-host-questions-from-accumulated-evidence): read private host notes, saved observation results and relevant inventory/retention history before drawing host-specific conclusions. Route to [hosts](opsfeast-hosts/SKILL.md) and [result-data](opsfeast-result-data/SKILL.md), including for advice-only questions. State evidence times, gaps and uncertainty; existing records do not authorize new connections or changes. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
 
-The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](../docs/web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
+The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](../docs/web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. Host draft mockups were removed; `/hosts` reads the real configuration service.
 
 
 ## Interactive Web Console
@@ -34,17 +55,19 @@ connecting or rerunning work; see [history discovery](../docs/console-records.md
 
 For chat-driven persistent shell interaction, read [the interactive skill](opsfeast-interactive/SKILL.md) and its [chat-shell procedure](opsfeast-interactive/references/chat-shell.md): show the river first, stream real output, acknowledge replies promptly and avoid routine login screenshots. For durable work/event protocol, exact plan approval, streaming/recovery and agent HTTP/CLI use, read [interactive Console](opsfeast-interactive/SKILL.md). This opt-in service is separate from host configuration and general logging.
 
-The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview) now includes synthetic recipe lists, notification/todo/issue layouts,
-activity/log and Skills inspection layouts, and exchange/archive/update controls.
-Browser filtering/navigation/disclosure and synthetic user/recipe draft editing
-are connected; draft saves do not write configuration or grant privileges; disabled controls do not
-perform domain operations. No general logging, issue service, upgrade service or
-new transfer API is introduced. Reuse existing services and portability contracts
-when those Web surfaces are implemented.
+The [saved-data Web workspace](../docs/web-workspace.md) reads the selected Profile's actual
+Recipe catalog, notification/todo objects, Retention summaries and Recipe/Console
+history. Skills, textbook and guide pages show local source documents; settings
+shows installed versions. Synthetic records, draft modules and browser-only
+command playback have been removed. Empty, failed and partial reads stay distinct.
+These are read-only views; execution, lifecycle changes and data transfer retain
+their existing Core/CLI authorization boundaries. General logging, issue tracking,
+automatic upgrade and arbitrary Web app hosting remain unavailable.
 
-For the local Web landing-page prototype, read the
-[Web preview guide](../web/README.md), also routed from the recipes skill.
-This is a design preview, not an operational UI or a presentation SDK.
+For the local Web workspace, read the
+[Web guide](../web/README.md) and [saved-data pages](../docs/web-workspace.md),
+also routed from the recipes skill. Data views are read-only; no presentation SDK
+or arbitrary Web extension hosting is provided.
 For owner-entered administrator credentials/login and profile state/create/attach/use,
 read [administrator and profiles](../docs/web-administrator.md); site tokens cannot
 manage profiles.
@@ -190,4 +213,4 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-05 23:13:33*

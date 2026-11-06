@@ -11,61 +11,27 @@ export default {
     area: "工作空間", reference: "教科書與文件", home: "總覽", operations: "操作工作台",
     hosts: "主機與群組", recipes: "Recipes", retention: "資料與成果", apps: "應用與呈現",
     learn: "教材與案例", docs: "文件與契約", preview: "設計預覽", previewTag: "預覽",
-    user: "登入後畫面示意", guest: "尚未登入", local: "本機介面原型",
-    server: "FastAPI + Uvicorn · 每套安裝獨立連接埠", language: "介面語言",
+    user: "尚未登入", guest: "尚未登入", local: "本機工作空間",
+    server: "每套安裝獨立連接埠", language: "介面語言",
     languageHint: "目前僅有繁體中文；英文版將於內容確認後翻譯。",
-    notice: "站台、Profiles 與主機設定已接入實際資料；其他管理版面仍有規劃預覽。",
-    previewNumber: "原型 02", back: "回到總覽", planned: "設計方向 · 尚未接入",
+    notice: "資料依目前選定的 Profile 顯示；開啟頁面不會連線主機或執行工作。",
+    previewNumber: "本機工作空間", back: "回到總覽", planned: "設計方向 · 尚未接入",
     plannedShort: "規劃中", footer: "看得見、停得下來、查得到發生過什麼事。",
-    localPreview: "本機原型", modified: "最後修改：{time}", guestLink: "查看未登入畫面",
-    workspaceLink: "預覽工作台", loginLink: "登入", entry: "入口"
-  },
-  home: {
-    kicker: "掌握操作，理解環境", title: "每一步，都看得見。",
-    intro: "從理解環境到採取行動，在同一個工作台掌握過程與證據。",
-    action: "探索操作工作台", metricsLabel: "資料連接狀態",
-    metrics: [["管理主機", "—", "尚未載入主機設定", "▤"], ["進行中操作", "—", "尚未接入執行服務", "⌘"], ["待核准事項", "—", "核准機制尚未實作", "◇"], ["資料更新時間", "未載入", "畫面即時，不代表採集即時", "◷"]],
-    start: "從這裡開始", startHint: "一個入口，連起操作與知識",
-    entries: [
-      {path: "/operations", icon: "⌘", color: "teal", kicker: "操作", title: "透明地操作", text: "看清計畫、命令與輸出，依約定核准，隨時提出停止。", action: "進入操作工作台"},
-      {path: "/retention", icon: "▥", color: "sand", kicker: "理解", title: "以證據理解環境", text: "查閱保留資料、結果與來源，辨識新鮮度、不完整與未知。", action: "探索資料與成果"},
-      {path: "/learn", icon: "▱", color: "blue", kicker: "學習與建立", title: "學習，也累積自己的方法", text: "從教材到 recipes，再到自己的資料契約與 Web 呈現。", action: "開啟教材與案例"}
-    ],
-    flowTitle: "操作的每個階段，都有交代", flowLabel: "互動流程示意",
-    steps: [["檢視計畫", "目標、權限與影響"], ["依約定核准", "沿用已授權範圍"], ["觀看執行", "直接輸出與停止"], ["核對成果", "結果、清理與證據"]],
-    flowNote: "停止已受理、遠端程序結束與清理完成，會分別呈現。",
-    own: "建立自己的方法", ownTitle: "也為你的應用，留一個位置。",
-    ownText: "使用者 recipes、retention 與自訂 presentation，共用資料與介面契約。",
-    ownAction: "查看擴充方向"
+    localPreview: "本機工作空間", modified: "最後修改：{time}", guestLink: "查看未登入畫面",
+    workspaceLink: "開啟工作台", loginLink: "登入", entry: "入口"
   },
   auth: {
     welcomeTitle: "讓每一次維運，都有脈絡。", welcomeIntro: "在同一個工作空間，連起環境、操作與知識。看清楚正在發生的事，再決定下一步。",
     welcomeKicker: "歡迎來到 OpsFeast", loginAction: "登入工作台", learnAction: "先認識 OpsFeast",
-    publicNote: "這是未登入入口的設計示意。主機、操作與私有資料不在這個入口呈現。",
+    publicNote: "登入後可查看管理環境、已保存資料與工作紀錄。",
     features: [["看得見", "計畫、輸出與證據，在同一個情境裡。"], ["停得下來", "依約定核准，也能清楚提出停止。"], ["累積得起來", "把經驗留下，成為可重複的 recipe 與呈現。"]],
-    illustrationTitle: "一個入口，掌握整個工作流程", illustrationLabel: "工作空間示意",
-    illustrationSteps: ["理解環境", "檢視計畫", "觀看執行", "核對成果"],
-    illustrationNote: "來源有依據 · 資料有時間 · 未知有標示",
     loginTitle: "登入你的工作台", loginIntro: "登入後，依你的身分與授權範圍開啟工作空間。",
-    loginKicker: "歡迎回來", formLabel: "登入版面示意", account: "帳號", password: "密碼",
-    accountPlaceholder: "帳號欄位示意", passwordPlaceholder: "此原型不接收密碼",
-    formNote: "驗證服務尚未接入，帳密欄位停用，不會收集或傳送憑證。",
-    previewAction: "預覽登入後工作台", previewHint: "僅切換到工作台版面，不會建立登入狀態或授予權限。",
+    loginKicker: "歡迎回來", formLabel: "管理帳號登入", account: "帳號", password: "密碼",
+
+
+
     back: "回到入口", help: "需要使用說明？", docsAction: "查看文件",
     accountNote: "你以管理帳號登入；agent 使用獨立的網站最高權限，依你的指示操作。"
-  },
-  demo: {
-    start: "播放流程示意", stop: "停止示意", label: "純前端模擬 · 合成內容",
-    terminal: "本機模擬 / 沒有主機連線", idle: "等待播放。沒有實際操作。",
-    state: "操作狀態：{state}", notStarted: "未開始",
-    frames: [
-      ["[示意] 計畫：檢視 demo-host 的已保存資料\n[示意] 授權：僅限示範流程，沒有實際請求", "計畫已展示"],
-      ["[示意] 讀取已保存的結果…\n[示意] 資料距今 2 小時 · 涵蓋情形：部分完成", "執行中（合成內容）"],
-      ["[示意] 收尾：分別確認結果、retention 與 consumer 狀態", "收尾中"],
-      ["[示意] 流程結束。沒有連線、執行或寫入資料。", "示意結束"]
-    ],
-    stoppedOutput: "[示意] 已停止播放。沒有遠端程序需要終止。",
-    stopped: "示意已停止（不是遠端終止驗證）"
   },
   settings: {
     title: "設定", kicker: "依你的方式，管理工作空間", intro: "從工作空間的樣貌，到主機、recipes 與資料政策，都在這裡設定。",
@@ -74,11 +40,13 @@ export default {
     installation: "整個 installation", profile: "依 profile 管理", boundaries: "作用範圍與變更邊界",
     service: "共用介面", implemented: "已提供 Web、CLI 與 Python／HTTP API。", pending: "目前提供規劃說明，尚無此類設定的 Web 寫入介面。",
     catalogError: "設定能力目錄讀取失敗，請重新載入；目前無法確認可用功能。", catalogLabel: "以目前 server 的能力目錄為準",
+    readOnly: "唯讀檢閱", profileHierarchy: "每個 Profile 擁有自己的主機、使用者 Recipes、預設參數與資料政策。", ownedBy: "隸屬於 Profile：{profile}",
     categories: {
+      "bundle-recipes": {title: "Bundle Recipes", text: "獨立檢閱隨 OpsFeast 提供的內建 Recipes、版本及契約。", detail: "內建程式隨產品更新；各 Profile 的執行啟用與參數仍在該 Profile 管理。", rules: []},
       profiles: {title: "Profiles", text: "查看目前預設 profile、環境狀態，建立或切換管理環境。", detail: "沿用 Core 的 profile 管理，現有管理目錄保持原處。", rules: ["不連線、不採集、不執行 recipe。"]},
       site: {title: "站台設定", text: "網站名稱、標語、Logo、代表角色與管理帳號。", detail: "屬於整個 installation，保存在產品目錄外。公開內容會出現在未登入頁。", rules: ["保留原有 UUID、name 與 namespace。", "可換上自己的圖片，也能恢復預設圖案。"]},
       hosts: {title: "主機與連線設定", text: "管理 hosts.yaml、主機、群組、連線方式與帳號。", detail: "依選定 profile 的實際 hosts.yaml 與 include 結構編輯，保留人類註記與私有憑證。", rules: ["區分設定驗證與連線測試；儲存不觸發連線。", "敏感值需遮蔽並個別授權修改，不用空白覆蓋既有密碼。", "先檢視差異，再以版本檢查保存，避免覆蓋他人修改。"]},
-      recipes: {title: "Recipes 管理", text: "來源註冊、可用範圍、啟用設定與內容檢視。", detail: "重用既有 recipe catalog、sources 與安裝契約。下載、安裝、啟用及執行是不同動作。", rules: ["安裝或啟用不自動授權主機操作。", "保留精確來源、版本與完整性證據。", "使用者程式保存在管理環境或外部來源，不寫進 bundled recipes。"]},
+      recipes: {title: "使用者 Recipes", text: "這個 Profile 的自訂 Recipes 與已註冊外部來源。", detail: "重用既有 recipe catalog、sources 與安裝契約。下載、安裝、啟用及執行是不同動作。", rules: ["安裝或啟用不自動授權主機操作。", "保留精確來源、版本與完整性證據。", "使用者程式保存在管理環境或外部來源，不寫進 bundled recipes。"]},
       parameters: {title: "預設參數與執行政策", text: "設定 recipe 的預設值、群組覆寫與主機覆寫。", detail: "遵守既有參數 schema、精確 recipe reference 與繼承規則，讓人類與 agent 看到相同的有效值。", rules: ["顯示值從哪一層而來，以及最終會套用的值。", "更新預設值不改寫既有結果，也不自動重跑工作。", "不另建一份只供 Web 使用的參數設定。"]},
       retention: {title: "Retention 政策與資料管理", text: "設定保存行為、檢視資料定義與管理已保存內容。", detail: "區分 recipe 定義的資料契約、平台保存政策及使用者的內容管理。consumer 只管理自己的衍生成果。", rules: ["政策修改、重建、重播、匯入與刪除分開授權。", "破壞性動作必須先預覽範圍，保留受保護的操作證據。", "透過既有 retention API，不直接修改 SQLite 或人類筆記。"]}
     }
@@ -135,14 +103,5 @@ export default {
     invalid: "設定或圖片無效，請檢查字數、格式與尺寸。", uploadLimit: "圖片超過 2 MiB，請選擇較小的檔案。",
     network: "無法連線到本機 server，請確認服務仍在執行。", preview: "目前設定", remaining: "站台外觀與管理帳號分開保存；這些設定不會授權主機操作。",
     settingsNote: "可登入管理員帳號編輯，或在對話中請 agent 協助設定。"
-  },
-  pages: {
-  operations: {title: "操作工作台", kicker: "操作流程", intro: "把計畫、核准、即時輸出與停止，放在同一個情境。", cards: [["先看清楚，再開始", "每項操作呈現目標、版本、參數、權限與效果。既有授權範圍沿用。"], ["輸出直接到畫面", "執行程序直接傳送進度與輸出；人類與 agent 共用同一操作契約。"], ["停止也有可核對的結果", "停止受理、遠端終止、清理及操作成果分開呈現，保留未知。"]], note: "下面只演示畫面變化；按鈕只改變瀏覽器內的文字，不會建立連線或執行任何命令。"},
-  hosts: {title: "主機與群組", kicker: "環境概況", intro: "把設定、最後已知狀態與原始證據連在一起。", cards: [["主機", "查看連線設定、已保存事實與相關操作。此原型未讀取 hosts.yaml。"], ["群組", "依既有群組呈現成員與涵蓋情形，不把資料缺口視為正常。"], ["Inventory", "區分歷史查詢、明確採集與排程；開啟頁面不會觸發採集。"]], note: "目前為版面預覽。實際資料將透過 Core 與既有公開介面接入。"},
-  recipes: {title: "Recipes", kicker: "可重複的操作", intro: "累積經過檢視的操作，讓下一次可以重複使用。", cards: [["發現與檢視", "呈現來源、支援平台、輸入、版本、依賴與驗證限制。"], ["準備執行", "選擇目標與參數，產生可供核對的操作計畫。此原型未提供執行能力。"], ["自己的 recipe", "保留在管理環境或外部來源，私有 bindings 不進入產品原始碼。"]], note: "Recipe、retention 與 presentation 可組合，但各自有獨立契約及授權範圍。"},
-  retention: {title: "資料與成果", kicker: "資料與證據", intro: "資料有時間、有來源，也有不完整與未知。", cards: [["Observations 與結果", "查閱批次與主機結果，分開呈現執行、清理、保存與內容更新狀態。"], ["Retention", "沿用權威儲存與查詢契約，不另外建立 Web 資料庫。"], ["報告與 Vault", "連結產物、來源時間、consumer 處理結果與閱讀輸出。"]], note: "畫面更新不會改變採樣時間。此原型未讀取 observations、retention 或 Vault。"},
-  apps: {title: "應用與呈現", kicker: "自己的應用", intro: "讓你的資料，有自己的閱讀與操作方式。", cards: [["Presentation", "不必附屬 consumer；可以直接查詢 retention，呈現特定領域的視圖。"], ["共用 utilities 與 libraries", "規劃提供公開元件、資料讀取與事件介面；此原型尚無擴充 SDK。"], ["明確註冊與權限", "自訂 route、依賴、資料來源與副作用需宣告。啟用 consumer 不等於啟用任意 Web 程式。"]], note: "未來 profile 內的應用路徑規劃為 /p/:profile/apps/:presentationId/*view；目前尚未註冊任何使用者程式。"},
-  learn: {title: "教材與案例", kicker: "與 OpsFeast 一起學習", intro: "從理解概念，到與自己的 AI agent 一起完成工作。", cards: [["理解 OpsFeast", "學習 profiles、主機、recipes、retention 與 consumer 的關係。"], ["從意圖到成果", "練習表達目標、界定範圍、檢視授權及判讀結果。"], ["建立可重複的方法", "從案例累積 recipe、資料契約與自己的 presentation。"]], note: "這是教材入口的版面預覽；章節內容尚未接入。既有 docs/textbook/ 保持原有權威來源。"},
-  docs: {title: "文件與契約", kicker: "參考依據", intro: "人類與 agent，都能找到同一份準確的使用依據。", cards: [["使用指南與 CLI", "沿用既有功能命名與契約；Web 與 CLI 共用服務邏輯。"], ["資料與服務契約", "查閱版本、輸入輸出、時間、失敗狀態與驗證限制。"], ["Agent 能力目錄", "發現 bundled utilities、libraries 與規則，優先使用已提供的功能。"]], note: "這是文件入口的版面預覽；文件閱讀與搜尋尚未接入。沒有把 repository 根目錄掛載為靜態網站。"}
-}
+  }
 };

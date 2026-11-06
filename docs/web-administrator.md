@@ -13,6 +13,13 @@ does not expose profile data or mutation forms before login. Its login link
 returns to Profiles after authentication; unsupported return destinations use
 the workspace. Server restart invalidates the in-memory administrator session.
 
+A valid human administrator session opening `/login` receives HTTP 303 to
+`/workspace` (the signed-in landing page), or to its supported local `next`
+destination using the same allowlist as successful login. External, unsupported
+and self-referencing destinations fall back to `/workspace`. Anonymous, expired,
+revoked or credential-invalidated sessions still see login; agent and site-edit
+capabilities alone do not trigger this redirect. Responses remain `no-store`.
+
 This is loopback-only single-administrator login plus an independent
 [agent owner capability](agent-owner.md), not multi-user RBAC or public hosting.
 The human administrator owns decisions; the agent can perform all Web operations
@@ -198,4 +205,4 @@ public-network readiness.
 Implementation references: [Python hashlib](https://docs.python.org/3/library/hashlib.html#hashlib.scrypt)
 and [Starlette response cookies](https://starlette.dev/responses/#set-cookie).
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-05 16:06:59*

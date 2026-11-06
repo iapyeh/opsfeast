@@ -469,6 +469,23 @@ def execution(report, icons=None, host=None, recipe=None, result_root=None):
                 for item in report.get('excluded_hosts', []))
     rendered=table(['host', 'collection identity', 'result', 'result id'], rows)
     for row in hosts:
+        if row.get('status') not in ('partial', 'failed'): continue
+        from result_diagnostics import coverage_gaps
+        gaps = row.get('collection_gaps') if 'collection_gaps' in row else coverage_gaps(row)
+        target = row.get('host', row.get('host_id', host)) or '-'
+        if gaps:
+            counts = {}
+            for gap in gaps:
+                reason = gap['reason_code']
+                counts[reason] = counts.get(reason, 0) + len(gap['properties'])
+            rendered += '\n'+cell(target)+': incomplete fields — '+', '.join(cell(reason)+': '+str(count) for reason,count in counts.items())
+        saved = row.get('result_path')
+        identifier = identifiers.get(str(Path(saved).resolve())) if saved else None
+        if identifier:
+            from shlex import quote
+            rendered += '\n  Inspect causes: python -B tools/opsfeast.py observation result '+quote(identifier)
+            if result_root is not None: rendered += ' --root '+quote(str(result_root))
+    for row in hosts:
         error = row.get('error')
         if isinstance(error, dict) and 'environment' in error:
             rendered += '\n' + details(error)

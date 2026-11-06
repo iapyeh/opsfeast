@@ -19,14 +19,30 @@ class SettingsTests(unittest.TestCase):
 
     def test_catalog_marks_unsupported_config_writes_as_planned(self):
         value=catalog()
-        self.assertEqual([x['id'] for x in value['categories']],['site','profiles','hosts','recipes','parameters','retention'])
-        self.assertEqual([x['id'] for x in value['categories'] if x['status']=='available'],['site','profiles','hosts'])
-        for category in value['categories'][3:]:
+        self.assertEqual([x['id'] for x in value['categories']],['site','profiles','bundle-recipes','hosts','recipes','parameters','retention'])
+        self.assertEqual([x['id'] for x in value['categories'] if x['status']=='available'],['site','profiles','bundle-recipes','hosts','recipes'])
+        for category in [x for x in value['categories'] if x['status']=='planned']:
             self.assertEqual(category['apis'],[])
             self.assertEqual(category['cli'],[])
             self.assertEqual(category['scope'],'profile')
+        self.assertEqual(value['schema_version'],'0.2.0')
+        self.assertEqual([x['id'] for x in value['categories'] if x['parent'] is None],['site','profiles','bundle-recipes'])
+        self.assertTrue(all(x['parent']=='profiles' for x in value['categories'] if x['scope']=='profile'))
         value['categories'][0]['status']='corrupted'
         self.assertEqual(catalog()['categories'][0]['status'],'available')
+
+    def test_catalog_matches_declared_fields_and_parent_constraints(self):
+        schema=json.loads((Path(__file__).resolve().parents[1]/'schemas/settings-catalog.schema.json').read_text())
+        value=catalog()
+        self.assertEqual(value['schema_version'],schema['properties']['schema_version']['const'])
+        item_schema=schema['properties']['categories']['items']
+        for category in value['categories']:
+            self.assertEqual(set(category),set(item_schema['required']))
+            for name in ('scope','status','parent'):
+                self.assertIn(category[name],item_schema['properties'][name]['enum'])
+            self.assertRegex(category['route'],item_schema['properties']['route']['pattern'])
+            self.assertEqual(category['parent'],'profiles' if category['scope']=='profile' else None)
+            self.assertTrue(all(isinstance(item,str) for name in ('apis','cli') for item in category[name]))
 
     def test_updates_preserve_other_fields_and_reject_stale_revision(self):
         value=update_site(self.root,expected_revision=0,changes={'site_name':'Synthetic site','slogan':'Keep'})

@@ -970,6 +970,15 @@ Use `opsfeast.py recipes run system/storage/inventory/disks-raid --profile NAME 
 
 Inspect without connecting using `inspect-recipe system/storage/inventory/disks-raid --json`. Read [the recipe](../recipes/system/storage/inventory/disks-raid/README.md) for prerequisites, target/root scope, default auto boot policy, supported providers, source health and failures. Configured count mismatch/unverified and unknown/unhealthy required evidence produce a non-success result. Collection, assessment, retention and content receipts remain distinct. The 0.4.0 contract replaces expected_group_disks, expected_physical_disks and include_boot_devices without aliases; preserve old history and recollect after updating settings. No installation, repair or schedule is performed.
 
+## Explain partial collection
+
+Completion summaries keep PARTIAL and show incomplete-field counts by reason,
+with an exact `observation result ID` command. That read-only diagnosis now lists
+unsupported/uncollected properties as well as execution errors. Use `--limit 50`
+for more groups; Web host summaries and Recipe batch history link to the same
+[diagnosis view](result-diagnostics.md). A useful successful value does not imply
+complete collection, and unsupported platform properties are not host failures.
+
 ## Read configured hosts and reference IPs
 
 `hosts list [--root PATH | --profile NAME] [--json]` and
@@ -999,6 +1008,12 @@ UUID/idempotency rules, byte offsets, limits, return cursors and exit codes.
 explicit timed_out result; it does not wake a model or authorize execution.
 Browser users use normal administrator login, without another reader unlock.
 
+`hosts refresh-ips --host HOST [HOST ...] [--root PATH | --profile NAME] [--json]`
+repairs only reference metadata from verified saved inventory evidence, preserving
+source timestamps and history. It does not connect or recollect. Loopback addresses
+are excluded from reference views; ESXi IPv4-only coverage is explicit. See
+[recovery, coverage and receipts](host-reference-ips.md).
+
 ## Host notes
 
 Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show|create|update|merge|delete`. All output is JSON. Read [host notes 0.1.0](host-notes.md) for exact stdin/revision/confirmation arguments, no-history deletion, error states and agent review procedure. These local operations never connect to hosts.
@@ -1008,4 +1023,4 @@ Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show
 
 Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.3.0 control reference](console-agent.md#entered-programs-and-private-input-worker-030) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
 
-*Last modified: 2026-11-05 13:49:41*
+*Last modified: 2026-11-05 23:07:10*

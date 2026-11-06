@@ -1,4 +1,6 @@
 export default {
+ latestResult:'最近盤點結果', inspectCauses:'查看結果與未完成原因', noResult:'尚無已保存的盤點結果。', resultError:'盤點結果讀取失敗，無法確認狀態。', resultStates:{success:'採集成功',partial:'部分完成：有欄位未取得，請查看原因。',failed:'採集失敗：請查看原因。',skipped:'已略過',unsupported:'尚未支援'},
+  ipv4Only:"這次來源只採集 IPv4；IPv6 尚未採集。",
  title:'主機與群組', intro:'管理目前環境的主機設定。新增、儲存與刪除只修改本機設定，不會連線主機。',
  profile:'管理環境（Profile）', add:'新增主機', empty:'目前沒有符合條件的主機。', search:'篩選 Host ID', allGroups:'全部群組', groupFilter:'依群組篩選',
  columns:['Host ID','登入帳號','群組','IP Address','備註'], disabled:'已停用', noIp:'尚無已保存的 IP 資料',

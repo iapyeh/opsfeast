@@ -481,6 +481,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
         # extractor. Project evidence before discarding those fields, for both
         # live rendering and machine output, just as saved observation views do.
         summary['identity_evidence'] = execution_identities(report)
+        from result_diagnostics import coverage_gaps
+        summary['collection_gaps'] = coverage_gaps(report)
         health = replication_health(report)
         if health is not None:
             summary['replication_health'] = health

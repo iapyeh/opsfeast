@@ -57,7 +57,14 @@ export async function mountHostManager(root,{m,e,search,setBreadcrumb}) {
     if(view==='settings'){renderEditor(host,detail);return;}
     if(view==='recipes'){detail.innerHTML=`<section class="panel"><h2>${e(l.recipes)}</h2><p>${e(l.recipesNote)}</p><ul>${host.recipe_references.map(reference=>`<li>${e(reference)}</li>`).join('')}</ul></section>`;return;}
     if(view==='console'){void mountHostConsoleHistory(detail,{profile,host_id:host.host_id,e,request});return;}
-    detail.innerHTML=`<section class="panel"><h2>${e(l.inventory)}</h2><p>${e(l.summaryNote)}</p><dl class="log-metadata"><dt>IPv4</dt><dd>${e(host.reference_ips.ipv4_addresses?.join(', ')||l.unknown)}</dd><dt>IPv6</dt><dd>${e(host.reference_ips.ipv6_addresses?.join(', ')||l.unknown)}</dd><dt>${e(l.sampledAt)}</dt><dd>${e(host.reference_ips.observed_at||l.unknown)}</dd><dt>${e(l.groups)}</dt><dd>${e(host.groups.join(' / '))}</dd><dt>${e(l.source)}</dt><dd>${e(host.source)}</dd></dl></section>`;
+    detail.innerHTML=`<section class="panel"><h2>${e(l.inventory)}</h2><p>${e(l.summaryNote)}</p>${host.reference_ips.collected_families?.join(',')==='4'?`<p class="field-hint">${e(l.ipv4Only)}</p>`:''}<dl class="log-metadata"><dt>IPv4</dt><dd>${e(host.reference_ips.ipv4_addresses?.join(', ')||l.unknown)}</dd><dt>IPv6</dt><dd>${e(host.reference_ips.ipv6_addresses?.join(', ')||l.unknown)}</dd><dt>${e(l.sampledAt)}</dt><dd>${e(host.reference_ips.observed_at||l.unknown)}</dd><dt>${e(l.groups)}</dt><dd>${e(host.groups.join(' / '))}</dd><dt>${e(l.source)}</dt><dd>${e(host.source)}</dd></dl></section>`;
+    const resultPanel=document.createElement('section');resultPanel.className='panel roadmap-section';detail.append(resultPanel);
+    resultPanel.innerHTML=`<h2>${e(l.latestResult)}</h2><p>${e(l.loading)}</p>`;
+    request('/api/v1/results/latest?'+new URLSearchParams({profile,host_id:host.host_id})).then(data=>{
+      const row=data.result;
+      resultPanel.innerHTML=`<h2>${e(l.latestResult)}</h2>`+(row?`<p>${e(l.resultStates[row.status]||row.status)}</p><a class="button" href="${e('/logs?'+new URLSearchParams({profile,result:row.short_id}))}">${e(l.inspectCauses)} →</a>${data.invalid_result_count?`<p role="status">${e(l.resultError)}</p>`:''}`:`<p>${e(data.invalid_result_count?l.resultError:l.noResult)}</p>`);
+    }).catch(()=>{resultPanel.innerHTML=`<h2>${e(l.latestResult)}</h2><p role="status">${e(l.resultError)}</p>`;});
+
   }
   function renderEditor(host,target=root){
     const creating=host===null,connection=host?.connection||{},mode=connection.local?'local':connection.ssh_config_alias?'alias':'ssh';

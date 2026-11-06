@@ -24,13 +24,14 @@ For incremental chat-owned exploration use the shipped [Console worker 0.1.0](..
 
 For an authorized exploration through the real opt-in Web Console, follow [the interactive skill](../opsfeast-interactive/SKILL.md) and [protocol](../../docs/interactive-console.md). Reuse its HTTP/CLI rather than opening parallel SSH to bypass operator approval. Preserve reviewed findings as a recipe later; interactive events do not automatically create retention.
 
-The [Web roadmap preview](../../web/README.md#human-centered-management-roadmap-preview) now includes synthetic host/recipe lists, notification/todo/issue layouts,
-activity/log and Skills inspection layouts, and exchange/archive/update controls.
-Browser filtering/navigation/disclosure and synthetic user/recipe draft editing
-are connected; draft saves do not write configuration or grant privileges; disabled controls do not
-perform domain operations. No general logging, issue service, upgrade service or
-new transfer API is introduced. Reuse existing services and portability contracts
-when those Web surfaces are implemented.
+The [saved-data Web workspace](../../docs/web-workspace.md) reads the selected Profile's actual
+Recipe catalog, notification/todo objects, Retention summaries and Recipe/Console
+history. Skills, textbook and guide pages show local source documents; settings
+shows installed versions. Synthetic records, draft modules and browser-only
+command playback have been removed. Empty, failed and partial reads stay distinct.
+These are read-only views; execution, lifecycle changes and data transfer retain
+their existing Core/CLI authorization boundaries. General logging, issue tracking,
+automatic upgrade and arbitrary Web app hosting remain unavailable.
 
 **看得見、停得下來、查得到發生過什麼事。** — **Make operations visible, keep them stoppable, and preserve a record of what happened.** This principle builds human trust in AI-assisted operations. Apply it both to interactive exploration and to running existing recipes.
 
@@ -89,6 +90,27 @@ capability, distinct from human login, no token files, no borrowed browser cooki
 Use worker.start/worker.send for Console work and request for API operations;
 admin.password accepts a human-provided password or explicitly requested generation.
 Follow the human's task/consent; capability possession never supplies authorization.
+
+For [official version checks and confirmed Agent handoff](../../docs/web-updates.md),
+use `opsfeast.updates.current/check`, its JSON CLI, or the authenticated Web check
+API. Checks never install. The human confirms and sends the generated instruction;
+follow the canonical update/Skill procedure, preserve local edits and report
+unsupported or uncertain targets. No automatic Agent notification is implied.
+[Settings catalog 0.2.0](../../docs/web-settings.md) exposes Site, Profiles and Bundle
+Recipes as peers; Hosts and user/external Recipes belong to the selected Profile.
+Recipe catalog scope=bundle is Profile-independent; scope=user preserves exact
+Profile ownership. Read-only discovery does not grant configuration writes.
+
+For incomplete collection, use [saved-result diagnosis](../../docs/result-diagnostics.md):
+`observation result ID --profile NAME --limit 50 --json`, or the same Web diagnosis
+linked from host summaries/Recipe history. Coverage gaps include unsupported and
+uncollected fields; preserve original status and source times. Do not mistake a
+successful property for a complete inventory or reconnect merely to explain a gap.
+For already saved IP evidence, [reference recovery](../../docs/host-reference-ips.md)
+provides `hosts refresh-ips --profile NAME --host HOST ... --json` and
+`opsfeast.host_reference.refresh_from_saved`. This is a local metadata write,
+requiring recovery scope; it verifies raw/retained provenance without changing
+history. ESXi sources are IPv4-only; loopback is excluded from reference views.
 
 # OpsFeast recipes
 
@@ -612,4 +634,4 @@ This read-only view neither executes recipes nor proves current host health.
 
 Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-05 23:07:10*

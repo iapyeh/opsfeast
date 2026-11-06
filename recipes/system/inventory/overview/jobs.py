@@ -225,7 +225,9 @@ def collect(actor, host, jobs, properties=None, *, timeout=30, budget=90):
         base_values['system.boot_time'] = ((datetime.fromisoformat(source['observed_at'])-timedelta(seconds=uptime)).isoformat() if source and uptime is not None else None, source or unavailable()[1])
     def project(name):
         spec = specs[name]
-        if name in base_values:
+        if platform == 'esxi' and name.startswith('network.ipv6.'):
+            value, source = unavailable('ipv6_not_collected')
+        elif name in base_values:
             value, source = base_values[name]
         else:
             section, field, *_ = name.split('.')
@@ -302,11 +304,12 @@ def collect(actor, host, jobs, properties=None, *, timeout=30, budget=90):
     report['observed_at'] = now()
     report['status'] = 'success' if all(g['status']=='success' for g in report['groups']) else 'partial' if any(g['status'] in ('success','partial') for g in report['groups']) else 'failed'
     source = extra_sources.get(('network', 'interfaces'))
-    if platform in ('linux', 'freebsd', 'macos') and source and source['status'] == 'success':
+    if platform in ('linux', 'freebsd', 'macos', 'esxi') and source and source['status'] == 'success':
         from opsfeast.host_reference import from_interfaces
         try:
             report['reference_ips'] = from_interfaces(old['inventory']['network']['interfaces'],
-                                                      source['observed_at'], source['id'])
+                                                      source['observed_at'], source['id'],
+                                                      collected_families=(4,) if platform == 'esxi' else (4, 6))
         except ValueError:
             # Unparsed/invalid source rows must never clear a previous good reference.
             pass

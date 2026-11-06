@@ -26,10 +26,10 @@ this principle does not itself bypass current contracts or authorize deleting da
 Recipe and retention exchange should support colleague-to-colleague reuse while
 preserving private bindings, source provenance and independent execution consent.
 
-The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview)
-illustrates these directions using synthetic records and disabled mutation controls.
-General logging, issue management, update services and these Web management actions
-remain planned; existing services/portability interfaces retain their own scope.
+The [saved-data Web workspace](web-workspace.md) now uses actual catalogs,
+service objects, saved evidence and document sources. General logging, issue
+management, automatic updates and Web transfer mutations remain planned; existing
+Core/CLI services and portability interfaces retain their own scope.
 
 ## Host-centered management and portable knowledge
 
@@ -249,4 +249,4 @@ access is not an administrator session.
 
 Recipe source, raw observation evidence and structured retention are independent portable units. The implemented [transfer foundation](portability.md) supports origin-preserving copy/import, explicit recipe conflicts/rollback and verified resumable archival with storage compaction. User [data contracts](portable-contracts.md) travel with recipes/data rather than requiring a product registry edit. Human authority remains explicit for code activation, transmission and destructive source removal; historical import never becomes a live incident. Network distribution, a general scheduler and automatic recovery-package cleanup remain outside this implementation.
 
-*Last modified: 2026-11-01 16:06:51*
+*Last modified: 2026-11-05 16:31:37*

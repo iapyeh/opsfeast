@@ -29,6 +29,7 @@ For Web personalization and upgrade-preserved installation identity/site assets,
 read [presentation](site-presentation.md), [persistent storage](installation-storage.md)
 and the [Web preview](../web/README.md). Profile management roots are separate.
 
+
 Use [recipe classification and location](recipe-taxonomy.md) for the current bundled paths, variable-depth domain/action convention, user profile/shared-source placement and relocation effects on configuration, jobs, consumers and historical evidence.
 
 For agents operating OpsFeast or developing Python integrations, start with [the existing tool/module capability map](agent-capabilities.md) and [skill index](../skills/README.md). Reuse suitable capabilities before creating new implementations.
@@ -102,4 +103,15 @@ For the independent agent-written Console transcript reader, see [console record
 
 [Host notes](host-notes.md): review/edit private host knowledge on the Web, share CLI/Python/API operations, resolve conflicts and confirm experience extraction.
 
-*Last modified: 2026-11-05 14:16:33*
+
+
+For actual local Web data pages, Profile scope and public source readers, see [saved-data workspace](web-workspace.md).
+
+For official version comparisons and the human-confirmed Agent update instruction,
+see [version checks](web-updates.md). Settings scope and ownership are described in
+[Settings hierarchy](web-settings.md).
+
+
+For incomplete-property causes, Web/CLI inspection and reference-IP recovery, see [result diagnostics](result-diagnostics.md) and [reference addresses](host-reference-ips.md).
+
+*Last modified: 2026-11-05 23:07:10*

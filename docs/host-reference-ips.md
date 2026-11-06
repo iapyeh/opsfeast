@@ -42,7 +42,7 @@ without connecting; retained-history analysis continues to use retention APIs.
 ## Automatic updates
 
 `system/inventory/overview` 0.4.1 emits an optional raw `reference_ips` projection when
-its interface probe succeeds and every address can be parsed. A shared interface
+its interface probe succeeds and every address can be parsed. On Linux/FreeBSD/macOS, a shared interface
 probe supplies both address families even if only an IPv4, IPv6, MAC, MTU or
 interface-state property was requested. No additional probe is introduced.
 
@@ -74,6 +74,44 @@ is delivery metadata excluded from the raw evidence digest, like retention and
 content receipts. After repairing a local storage problem, run a newly authorized
 saved network query; there is no separate cache-repair command.
 
+## ESXi and recovery from saved evidence
+
+ESXi uses the existing `esxcli network ip interface ipv4 get` probe, now parsed as
+validated interface/address/netmask rows. No extra command is introduced. Successful
+saved IPv4 collection updates reference addresses even if other jobs are partial.
+It does not establish IPv6 coverage: `collected_families: [4]` makes this explicit;
+Linux/FreeBSD/macOS interface sources use `[4,6]`. The optional field's absence on
+an existing record denotes the original dual-family source. The Web host summary
+shows the IPv4-only limitation. An empty IPv6 list on an IPv4-only record means
+uncollected, not verified absence. Future collection and current diagnosis no
+longer infer IPv6 success from an IPv4-only source.
+
+For already saved observations missing their reference projection, use the shared
+local recovery operation instead of reconnecting or editing cache files:
+
+```sh
+python -B tools/opsfeast.py hosts refresh-ips --profile main --host node another-node --json
+```
+
+This command changes only derived reference metadata. It selects the newest eligible
+saved inventory source for each explicitly configured host, verifies the retained
+record's original raw digest and source-observation identity, and parses a successful,
+untruncated saved source. It preserves source times, raw JSON, Retention, notes and
+connection settings. Newer reference timestamps cannot be overwritten by older
+samples. Invalid/missing evidence is reported as skipped/failed, never substituted
+with configured connection addresses. No host connection or new inventory occurs.
+
+The checkout-level Python interface is
+`opsfeast.host_reference.refresh_from_saved(root, host_ids)`. Its response has
+schema_version, per-host status/reason/result_id and invalid_result_count. CLI
+failures or invalid saved results exit 1; skipped hosts remain explicit. The
+existing Retention replay command still does not update reference metadata.
+
+Existing cached loopback values are filtered on read without rewriting their
+files; future projections omit them before save. Read-only host discovery still
+performs no write. For understanding an overall partial result, use
+[result diagnostics](result-diagnostics.md), independently of reference recovery.
+
 ## Data contract 0.1.0
 
 The [schema](../schemas/host-reference-ips.json) defines a reference record. A known
@@ -96,9 +134,9 @@ record resembles this synthetic example:
 
 - `status` is `known` or `unknown`, not an online/health verdict. A never-saved
   host returns `unknown`, empty arrays and null `observed_at`, without provenance.
-- Arrays are deduplicated and sorted lexicographically. All successfully parsed
-  observed addresses are included, including loopback/private/link-local
-  addresses. MAC rows are excluded. IPv6 zone identifiers are preserved when
+- Arrays are deduplicated and sorted lexicographically. Loopback addresses
+  (IPv4 127/8 and IPv6 ::1) are excluded from reference views; private and link-local
+  addresses remain included. Original inventory/retained evidence is unchanged. MAC rows are excluded. IPv6 zone identifiers are preserved when
   reported. There is no invented primary IP or preferred address order.
 - `observed_at` is the successful interface probe's original UTC time. Reading,
   failed attempts and unrelated queries never refresh it.
@@ -137,4 +175,4 @@ Linux/FreeBSD/macOS/ESXi or SSH/su/sudo behavior. Run
 `python -B -m unittest discover -s tests -p test_host_reference.py` and the complete
 public suite before delivery.
 
-*Last modified: 2026-10-30 16:02:12*
+*Last modified: 2026-11-05 23:07:10*

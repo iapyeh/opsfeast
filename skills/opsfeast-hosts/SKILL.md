@@ -24,6 +24,17 @@ Top-level `opsfeast.py -h` groups setup/profiles, hosts/access, recipes/reports,
 
 Use the selected CLI command's `--help` to first read its purpose, whether it reads/writes local data or connects/executes, and its examples; help itself requires no profile and performs no operations. Recipe/job subcommands have their own purpose text and complete usage prefixes. Continue with the [canonical CLI guide](../../docs/cli.md#read-what-a-command-does), current schemas and selected recipe/consumer guidance before execution. This help update changes descriptions, not authorization, invocation arguments, result formats or Python APIs.
 
+For incomplete collection, use [saved-result diagnosis](../../docs/result-diagnostics.md):
+`observation result ID --profile NAME --limit 50 --json`, or the same Web diagnosis
+linked from host summaries/Recipe history. Coverage gaps include unsupported and
+uncollected fields; preserve original status and source times. Do not mistake a
+successful property for a complete inventory or reconnect merely to explain a gap.
+For already saved IP evidence, [reference recovery](../../docs/host-reference-ips.md)
+provides `hosts refresh-ips --profile NAME --host HOST ... --json` and
+`opsfeast.host_reference.refresh_from_saved`. This is a local metadata write,
+requiring recovery scope; it verifies raw/retained provenance without changing
+history. ESXi sources are IPv4-only; loopback is excluded from reference views.
+
 # OpsFeast 主機設定維護
 
 For periodic inventory, use the [inventory job guide](../../docs/inventory-jobs.md). The separate profile-root inventory.yaml controls explicit scheduled-host enablement and job intervals; hosts.yaml still owns connections, source registrations and host enabled controls. `inventory configure` changes scheduling settings only; it does not connect or install cron. Configuration/schedule inspection does not authorize collection. Do not put inventory job intervals into undeclared hosts.yaml keys.
@@ -327,8 +338,8 @@ no connection/retention scan and create no files. Never scrape inventory raw JSO
 for this routine question. Unknown means never successfully saved, not no IP;
 known empty lists represent a successful empty enumeration. Addresses are only
 references, retain their last successful probe time after failures, and never
-select SSH endpoints. Refresh requires a separately authorized saved interface
-query; no-store queries do not update references. Read the
+select SSH endpoints. Fresh collection requires a separately authorized saved interface
+query; missing projections may instead use explicitly authorized saved-data recovery; no-store queries do not update references. Read the
 [0.1.0 contract, invocation and platform limits](../../docs/host-reference-ips.md).
 
 ## Diagnose local runtime failures
@@ -339,4 +350,4 @@ Before retrying a host operation after an interpreter/package change, run the fa
 
 Use [host notes 0.1.0](../../docs/host-notes.md) for private knowledge: `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list`. Read relevant notes before operations; assess age/evidence without treating notes as execution authority. Use the shared CLI/Python/API for create/update/delete/merge, explicit profile/host and current revision. Present exact proposed content and UUID removals for human confirmation before organization. Preserve semantic conflicts, never silently choose a winner; do not edit storage or generated Vault pages directly.
 
-*Last modified: 2026-11-05 08:46:39*
+*Last modified: 2026-11-05 23:07:10*

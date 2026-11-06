@@ -8,6 +8,8 @@ test('login returns to Profiles and rejects unsupported or external destinations
   assert.equal(loginDestination('?next=%2Fsettings%2Fprofiles'),'/settings/profiles');
   assert.equal(loginDestination('?next=%2Fsettings%2Fsite'),'/settings/site');
   assert.equal(loginDestination('?next=%2Fsetup'),'/setup');
+  assert.equal(loginDestination('?next='+encodeURIComponent('/logs?profile=main&result=fixture')),'/logs?profile=main&result=fixture');
+  assert.equal(loginDestination('?next='+encodeURIComponent('/logs?next=//bad')),'/workspace');
   const target='/hosts?profile=lab&host=web-01&view=settings';
   assert.equal(loginDestination('?next='+encodeURIComponent(target)),target);
   assert.equal(loginDestination('?next='+encodeURIComponent('/hosts?redirect=https://untrusted.example')),'/workspace');

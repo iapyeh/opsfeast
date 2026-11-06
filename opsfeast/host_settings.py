@@ -87,7 +87,7 @@ def inspect(installation,*,profile):
             'connection':safe,'advanced_connection':bool(set(connection)-CONNECTION_FIELDS) or ('via' in connection and 'via' not in safe),
             'login_user':login,'users':[{'name':name,'sudo':value.get('users',{}).get(name,{}).get('sudo',True)} for name in users],
             'recipe_references':list(value.get('recipes',{})) if isinstance(value.get('recipes',{}),dict) else [],
-            'reference_ips':{key:ips.get(key) for key in ('status','ipv4_addresses','ipv6_addresses','observed_at')}})
+            'reference_ips':{key:ips.get(key) for key in ('status','ipv4_addresses','ipv6_addresses','observed_at','collected_families')}})
     return {'schema_version':VERSION,'profile':profile,'revision':_revision(selected,files),
             'groups':[{'id':name,'label':value.get('label',name)} for name,value in config.groups.items()],
             'hosts':rows,'connectivity_verified':False}

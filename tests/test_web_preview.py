@@ -54,7 +54,7 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
                 self.assertIn(b'type="module"', body)
                 self.assertIn(b'lang="zh-TW"', body)
         for path in ("/assets/workbench.css", "/assets/workbench.js", "/assets/mark.svg",
-                     "/assets/i18n.mjs", "/assets/locales/zh-TW.mjs", "/assets/site-settings.mjs", "/assets/site-assets.mjs", "/assets/roadmap.mjs", "/assets/locales/roadmap-zh-TW.mjs", "/assets/host-draft.mjs", "/assets/host-model.mjs", "/assets/locales/host-draft-zh-TW.mjs"):
+                     "/assets/i18n.mjs", "/assets/locales/zh-TW.mjs", "/assets/site-settings.mjs", "/assets/site-assets.mjs", "/assets/workspace.mjs", "/assets/locales/workspace-zh-TW.mjs"):
             self.assertEqual((await self.request(path))[0], 200)
 
     async def test_no_private_file_or_arbitrary_spa_fallback(self):
@@ -298,7 +298,49 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await call('/api/v1/admin','PUT',{'username':'synthetic2','password':'Synthetic-test-password-002','current_password':'wrong','expected_revision':1},[cookie]))[0],401)
         self.assertEqual((await call('/api/v1/admin','PUT',{'username':'synthetic2','password':'Synthetic-test-password-002','current_password':password,'expected_revision':1},[cookie]))[0],200)
         self.assertEqual((await call('/api/v1/profiles',headers=[cookie]))[0],401)
+        self.assertEqual((await call('/login',headers=[cookie]))[0],200)
         self.assertEqual((await call('/api/v1/admin',headers=[token_header]))[0],401)
+
+    async def test_authenticated_login_redirect_and_session_boundaries(self):
+        from opsfeast import admin
+        from opsfeast.web.app import create_app
+        from opsfeast.web.security import Sessions, cookie_names
+        from unittest.mock import patch
+        from urllib.parse import quote
+        password = 'Synthetic-test-password-001'
+        admin.configure(self.root, username='synthetic', password=password, expected_revision=0)
+        app = create_app(self.root, agent_token='a' * 32, edit_token='synthetic-edit')
+        self.assertEqual((await self.request('/login', app=app))[0], 200)
+        for value in ('Bearer ' + 'a' * 32, 'Bearer synthetic-edit'):
+            self.assertEqual((await self.request('/login', headers=[(b'authorization', value.encode())], app=app))[0], 200)
+        payload = json.dumps({'username':'synthetic', 'password':password}).encode()
+        status, headers, _ = await self.request('/api/v1/auth/login', 'POST', body=payload,
+            headers=[(b'content-type', b'application/json')], app=app)
+        self.assertEqual(status, 200)
+        cookie = [(b'cookie', headers[b'set-cookie'].split(b';')[0])]
+        sid = '11af0ac8-f21c-49ec-a5de-8f99d8116aac'
+        valid = ['/settings/profiles', '/settings/site', '/setup', '/hosts', '/logs?profile=main&result=fixture',
+                 '/hosts?profile=lab&host=web-01&view=settings', '/interactive', '/interactive?work=' + sid]
+        valid += ['/console/' + sid + suffix + '?profile=lab&host_id=web-01'
+                  for suffix in ('', '/history', '/blocks/' + sid, '/history/blocks/' + sid)]
+        invalid = ['', 'https://untrusted.example', '//untrusted.example', '//[', '/login',
+                   '/settings/profiles/../site', '/hosts?redirect=https://untrusted.example',
+                   '/console/' + sid + '?profile=a&profile=b', '/console/' + sid + '#bad',
+                   '/hosts\\evil', '/hosts\n']
+        for destination in [None, *valid, *invalid]:
+            with self.subTest(destination=destination):
+                path = '/login' + ('?next=' + quote(destination, safe='') if destination is not None else '')
+                status, headers, _ = await self.request(path, headers=cookie, app=app)
+                self.assertEqual(status, 303)
+                self.assertEqual(headers[b'location'].decode(), destination if destination in valid else '/workspace')
+                self.assertEqual(headers[b'cache-control'], b'no-store')
+        self.assertEqual((await self.request('/workspace', headers=cookie, app=app))[0], 200)
+        with patch.object(Sessions, 'authenticated', return_value=False):
+            self.assertEqual((await self.request('/login', headers=cookie, app=app))[0], 200)
+        name, _ = cookie_names(self.root)
+        self.assertEqual((await self.request('/login', headers=[(b'cookie', (name + '=invalid').encode())], app=app))[0], 200)
+        await self.request('/api/v1/auth/logout', 'POST', headers=cookie, app=app)
+        self.assertEqual((await self.request('/login', headers=cookie, app=app))[0], 200)
 
     async def test_logout_session_expiry_and_login_rate_limit(self):
         from opsfeast.web.app import create_app

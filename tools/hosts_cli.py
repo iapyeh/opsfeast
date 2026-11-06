@@ -10,7 +10,7 @@ from console_output import prepare, table, ConsoleDependencyError
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='opsfeast.py hosts', allow_abbrev=False,
-        description='Read configured hosts and saved reference IPs. No connection, DNS lookup or writes.')
+        description='Read configured hosts and reference IPs, or refresh reference metadata from verified saved evidence. No connections or DNS lookups.')
     commands = parser.add_subparsers(dest='command', required=True)
     for command in ('list', 'show'):
         sub = commands.add_parser(command, help='read ' + ('all hosts' if command == 'list' else 'one host'),
@@ -23,11 +23,27 @@ def main(argv=None):
         env.add_argument('--root', type=Path)
         env.add_argument('--profile')
         sub.add_argument('--json', action='store_true')
+    refresh = commands.add_parser('refresh-ips', help='refresh reference metadata from verified saved inventory; no host connection',
+        description='Update only reference IP metadata using saved raw evidence matched to retained digests. Preserve original observation times; do not rerun inventory or modify raw/retained data.',
+        epilog='Example: opsfeast.py hosts refresh-ips --profile main --host node another-node --json')
+    refresh.add_argument('--host', nargs='+', required=True, dest='host_ids')
+    env = refresh.add_mutually_exclusive_group()
+    env.add_argument('--root', type=Path)
+    env.add_argument('--profile')
+    refresh.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
     try:
         prepare(args.json)
         from inventory_jobs import profile
-        hosts = profile(resolve_root(args.root, args.profile)).hosts
+        root = resolve_root(args.root, args.profile)
+        if args.command == 'refresh-ips':
+            from opsfeast.host_reference import refresh_from_saved
+            result = refresh_from_saved(root, list(dict.fromkeys(args.host_ids)))
+            if sys.stdout.isatty() and not args.json:
+                print(table(['Host ID', 'Reference update', 'Reason'], [(r['host_id'],r['status'],r.get('reason_code','')) for r in result['hosts']]))
+            else: print(json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False))
+            return 1 if result['invalid_result_count'] or any(r['status']=='failed' for r in result['hosts']) else 0
+        hosts = profile(root).hosts
         names = [args.host_id] if args.command == 'show' else sorted(hosts.list())
         rows = []
         for name in names:

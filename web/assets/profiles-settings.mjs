@@ -1,3 +1,4 @@
+import {profileChildren} from './settings-hub.mjs';
 export async function mountProfiles(container,{m,e,authState}) {
   const l=m.profiles;
   const heading=`<div class="page-heading"><div><p class="eyebrow">${e(l.kicker)}</p><h1>${e(l.title)}</h1><p class="intro">${e(l.intro)}</p></div></div>`;
@@ -6,6 +7,7 @@ export async function mountProfiles(container,{m,e,authState}) {
     return;
   }
   let current;
+  const catalog=await fetch('/api/v1/settings/catalog').then(response=>response.ok?response.json():null).catch(()=>null);
   const request=async(path,options={})=>{
     const response=await fetch(path,options);
     if(!response.ok){const error=new Error('profile_request_failed');error.status=response.status;throw error;}
@@ -17,7 +19,7 @@ export async function mountProfiles(container,{m,e,authState}) {
   function setBusy(busy){container.querySelectorAll('button').forEach(button=>{button.disabled=busy;});}
   function render(){
     const rows=current.profiles;
-    $('profiles-list').innerHTML=`<div class="panel-heading"><h2>${e(l.current)}</h2><strong>${e(current.default_profile||l.none)}</strong></div><p class="field-hint">${e(l.statusHint)}</p>${rows.length?`<div class="profile-records">${rows.map(row=>`<article><div><strong>${e(row.name)}</strong> ${row.active?`<span class="subtle-tag">${e(l.active)}</span>`:""}<span class="subtle-tag">${e(row.status==='available'?l.available:l.unavailable)}</span></div><p>${e(row.root)}</p><small>${e(l.namespace)}：${e(row.namespace||l.unknown)}</small>${!row.active&&row.status==='available'?`<button class="button" data-use="${e(row.name)}" type="button">${e(l.use)}</button>`:''}</article>`).join('')}</div>`:`<p class="field-hint">${e(l.empty)}</p>`}`;
+    $('profiles-list').innerHTML=`<div class="panel-heading"><h2>${e(l.current)}</h2><strong>${e(current.default_profile||l.none)}</strong></div><p class="field-hint">${e(l.statusHint)}</p>${rows.length?`<div class="profile-records">${rows.map(row=>`<article><div><strong>${e(row.name)}</strong> ${row.active?`<span class="subtle-tag">${e(l.active)}</span>`:""}<span class="subtle-tag">${e(row.status==='available'?l.available:l.unavailable)}</span></div><p>${e(row.root)}</p><small>${e(l.namespace)}：${e(row.namespace||l.unknown)}</small>${catalog?profileChildren(row.name,{m,e,catalog}):''}${!row.active&&row.status==='available'?`<button class="button" data-use="${e(row.name)}" type="button">${e(l.use)}</button>`:''}</article>`).join('')}</div>`:`<p class="field-hint">${e(l.empty)}</p>`}`;
     container.querySelectorAll('[data-use]').forEach(button=>button.addEventListener('click',()=>mutate('/api/v1/profiles/default','PUT',{name:button.dataset.use})));
     window.dispatchEvent(new CustomEvent('opsfeast:profile-state',{detail:current}));
   }

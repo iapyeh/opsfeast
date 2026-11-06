@@ -100,6 +100,18 @@ class DiagnosisTests(unittest.TestCase):
         self.assertEqual(data['issue_count'],2)
         self.assertEqual(data['issues'][1]['properties'],['b'])
 
+    def test_unsupported_coverage_and_ipv4_only_saved_sources_are_explained(self):
+        identifier=self.save(status='partial',platform='esxi',probes=[{'id':'v4','command':'esxcli network ip interface ipv4 get','status':'success'}],groups=[{'id':'network','coverage':[
+            {'property':'network.ipv6.address','source_id':'v4','complete':True}], 'samples':[
+            {'property':'network.dns_servers','source_id':'other','status':'unavailable','reason_code':'unsupported_platform_or_probe'}]}])
+        data=diagnostics.diagnose(self.root,identifier)
+        self.assertEqual(data['coverage_gap_count'],2)
+        self.assertEqual({gap['reason_code'] for gap in data['coverage_gaps']},{'ipv6_not_collected','unsupported_platform_or_probe'})
+        text=diagnostics.format_diagnosis(data)
+        self.assertIn('network.ipv6.address',text)
+        self.assertIn('network.dns_servers',text)
+        self.assertNotIn('No specific failure evidence',text)
+
     def test_success_and_missing_evidence_are_distinct(self):
         identifier=self.save(status='success')
         self.assertIn('No recorded failures.',diagnostics.format_diagnosis(diagnostics.diagnose(self.root,identifier)))

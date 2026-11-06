@@ -1,28 +1,101 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Settings capability catalog 0.1.0",
+  "title": "Settings capability catalog 0.2.0",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "categories"],
+  "required": [
+    "schema_version",
+    "categories"
+  ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {
+      "const": "0.2.0"
+    },
     "categories": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "scope", "status", "route", "apis", "cli", "guide"],
+        "required": [
+          "id",
+          "scope",
+          "status",
+          "route",
+          "apis",
+          "cli",
+          "guide",
+          "parent"
+        ],
         "properties": {
-          "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
-          "scope": {"enum": ["installation", "profile"]},
-          "status": {"enum": ["available", "planned"]},
-          "route": {"type": "string", "pattern": "^/settings/"},
-          "apis": {"type": "array", "items": {"type": "string"}},
-          "cli": {"type": "array", "items": {"type": "string"}},
-          "guide": {"type": "string"}
-        }
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "profile"
+            ]
+          },
+          "status": {
+            "enum": [
+              "available",
+              "planned"
+            ]
+          },
+          "route": {
+            "type": "string",
+            "pattern": "^/(settings/|hosts$)"
+          },
+          "apis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cli": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guide": {
+            "type": "string"
+          },
+          "parent": {
+            "enum": [
+              null,
+              "profiles"
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "profile"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "parent": {
+                  "const": "profiles"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "parent": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
-  "$comment": "Last modified: 2026-11-01 12:56:08"
+  "$comment": "Last modified: 2026-11-05 17:18:10"
 }

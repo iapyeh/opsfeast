@@ -81,4 +81,7 @@ Current ESXi opaque rows and old Linux without `ip -j` cannot supply the project
 this change does not add tool fallbacks. Public synthetic tests are in
 `tests/test_host_reference.py`; no new native host evidence is claimed.
 
-*Last modified: 2026-10-30 16:02:12*
+
+For incomplete-property causes, Web/CLI inspection and reference-IP recovery, see [result diagnostics](../../../../docs/result-diagnostics.md) and [reference addresses](../../../../docs/host-reference-ips.md).
+
+*Last modified: 2026-11-05 23:07:10*

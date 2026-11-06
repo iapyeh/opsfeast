@@ -11,9 +11,9 @@ test("only approved authoring locale is available; unsupported browser languages
   assert.equal(getMessages("en").shell.guest, "尚未登入");
 });
 test("messages interpolate whole sentences and expose missing keys/parameters", () => {
-  assert.equal(translate("zh-TW", "demo.state", {state:"收尾中"}), "操作狀態：收尾中");
+  assert.equal(translate("zh-TW", "admin.authenticated", {username:"fixture"}), "管理員：fixture");
   assert.throws(() => translate("zh-TW", "missing.key"), /Missing message/);
-  assert.throws(() => translate("zh-TW", "demo.state"), /Missing parameter/);
+  assert.throws(() => translate("zh-TW", "admin.authenticated"), /Missing parameter/);
 });
 test("browser preference storage is optional and unsupported languages cannot be saved", () => {
   const unavailable = {getItem() {throw Error();}, setItem() {throw Error();}};

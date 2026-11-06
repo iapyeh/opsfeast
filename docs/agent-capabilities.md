@@ -15,27 +15,65 @@ The [first-use Web guide](web-administrator.md#first-use-web-guide) opens direct
 
 An opt-in isolated `/interactive` page and `python -B -m opsfeast.interactive_client` expose persisted work snapshots, SSE deltas, exact plans, operator confirmation, checkpoints, feedback and text/table analysis. Use [the canonical contract](interactive-console.md) and [agent skill](../skills/opsfeast-interactive/SKILL.md). SSHScript 7.0.1 is required for execution. Default Web startup enables no target; there is one live Console per process, no Python/program stdin or privilege UI, no automatic reconnect/replay, and no general logging/retention integration.
 
-The [Web roadmap preview](../web/README.md#human-centered-management-roadmap-preview) now includes synthetic recipe lists, notification/todo/issue layouts,
-activity/log and Skills inspection layouts, and exchange/archive/update controls.
-Browser filtering/navigation/disclosure and synthetic user/recipe draft editing
-are connected; draft saves do not write configuration or grant privileges; disabled controls do not
-perform domain operations. No general logging, issue service, upgrade service or
-new transfer API is introduced. Reuse existing services and portability contracts
-when those Web surfaces are implemented.
+The [saved-data Web workspace](web-workspace.md) reads the selected Profile's actual
+Recipe catalog, notification/todo objects, Retention summaries and Recipe/Console
+history. Skills, textbook and guide pages show local source documents; settings
+shows installed versions. Synthetic records, draft modules and browser-only
+command playback have been removed. Empty, failed and partial reads stay distinct.
+These are read-only views; execution, lifecycle changes and data transfer retain
+their existing Core/CLI authorization boundaries. General logging, issue tracking,
+automatic upgrade and arbitrary Web app hosting remain unavailable.
 
-## Local Web design preview
+## Local Web workspace
 
-For the landing page and navigation prototype, use
-`python -B -m opsfeast.web` from a checkout with optional `requirements-web.txt`.
-It binds to `127.0.0.1:8740`; Ctrl-C stops the foreground process. Read the
-[Web preview guide](../web/README.md) for routes, dependencies and tests. This
-provides single-administrator login, basic profile and real host configuration. The optional isolated interactive service is documented above; no presentation SDK or arbitrary user-extension hosting is provided.
-`/` is public; `/login` is enabled after the owner sets credentials. Workspace
-previews require login once configured; private profiles always require it.
-UI messages use the prototype-private locale layer; only Traditional Chinese
-(`zh-TW`) is authored until the operator requests English translation.
+Use `python -B -u -m opsfeast.web --agent-control` with optional
+`requirements-web.txt`; preserve the owner controller handle. The returned URL
+uses the installation's saved or automatically allocated port. Follow the
+[Web guide](../web/README.md) and [read-only data adapters](web-workspace.md)
+for routes, authentication, Profile selection, summary schemas, pagination and
+verification limits. `/` is public; private data requires administrator login or
+the independent agent capability. Public guide/Skill/textbook source routes serve
+only allowlisted Markdown, never private profile files. UI copy remains Traditional
+Chinese until English translation is requested. Existing host/site/profile editors
+retain their documented writes; data views do not run recipes or connect hosts.
+
+## Official version checks and Settings hierarchy
+
+Use [version checks and Agent handoff](web-updates.md): `opsfeast.updates.current`
+reads installed evidence; `check` contacts fixed official sources, with PEP 440
+stable release comparison and Git ancestry evidence. CLI: `python -B -m
+opsfeast.updates show` / `check --product sshscript|opsfeast`; HTTP uses authenticated
+GET `/api/v1/updates` and POST `/api/v1/updates/check`. No check applies an update.
+After human confirmation, the page prepares an exact update instruction for the
+human to send to their Agent. Preserve local edits and follow release/Skill support;
+no automatic message delivery or model wakeup is implied.
+
+[Settings catalog 0.2.0](web-settings.md) groups Site, Profiles and Bundle Recipes
+as peers. Profile-owned Hosts/user Recipes/parameters/Retention have parent=profiles.
+Bundle catalog reads use `scope=bundle` without a Profile; user catalog reads use
+`scope=user&profile=NAME`. These are read-only catalog adapters, not new writers.
+
+## Explain incomplete collection and recover saved IP references
+
+Use [result diagnostics](result-diagnostics.md) through the existing
+`observation result ID --profile NAME [--limit 50] [--json]` or checkout-level
+`result_diagnostics.diagnose`. Unsupported properties and source failures are
+separate evidence. Web host summaries and Recipe history link to the authenticated
+latest/diagnosis adapters; no host query is performed. Reuse this classification
+rather than building a second interpretation of partial results.
+
+For missing IP projections from already saved inventory, use
+`hosts refresh-ips --profile NAME --host HOST ... --json` or
+`opsfeast.host_reference.refresh_from_saved`. It writes only derived reference
+metadata after raw/retained provenance verification, never history or connection
+settings. ESXi IPv4-only sources are supported and explicit; reference views omit
+loopback. See [the reference-IP contract](host-reference-ips.md).
 
 ## Local administrator and profile configuration
+
+A valid human session opening `/login` redirects to `/workspace` or the supported
+local `next` destination; see [login behavior](web-administrator.md). Agent/site-edit
+capabilities do not substitute for that human session.
 
 Read [administrator/profile settings](web-administrator.md) before account or
 profile changes. `/settings/site` includes owner-entered credentials; no defaults
@@ -558,4 +596,4 @@ For host-specific advice or diagnosis, use the [accumulated-evidence workflow](h
 
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-05 14:35:41*
+*Last modified: 2026-11-05 23:07:10*

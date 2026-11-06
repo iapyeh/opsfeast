@@ -20,6 +20,16 @@ Read [recipe taxonomy and relocation](../../docs/recipe-taxonomy.md) for the cur
 
 For automatic retention handlers/converters, read [consumer contract 0.1.0](../../docs/retention-consumers.md) and the [bundled Vault consumer](../../consumers/vault/README.md). First discover existing programs with `consumers list --recipe system/inventory/overview --profile NAME --json` or `recipes show`. Sources are checkout consumers/NAME and Feast-local consumers/NAME; candidate discovery never activates code. Before enabling a reviewed program, verify its Python/dependencies, supported retention contracts, input sources, output ownership and authorized side effects. Register source/enabled explicitly in feast.yaml; default builtin:vault is already enabled. Author `execute(context)` with context.retention.query/show and metadata event hints, preserving partial/unknown/identity context. Outputs must tolerate at-least-once delivery, deletion and stale creation hints. Reuse the documented dispatcher rather than modifying runner, scanning raw files or writing SQL acknowledgement code. Inspect per-consumer status/attempts in content_update.consumers or `consumers inspect`; retry with `consumers dispatch [ID]`. Disabled backlog is processed after activation, while eventless historical data needs explicit application rebuild. In-process Python is not sandboxed or time-limited; no network delivery, installer or scheduler is implied.
 
+For the local [saved-data Web workspace](../../docs/web-workspace.md), reuse the
+existing catalog, Profile Services and Retention readers; HTTP adapters expose
+GET-only summaries with exact Profile scope, pagination and explicit failures.
+Local document routes show real public Markdown; agent-loaded skills are not inferred.
+
+For login-page navigation, an existing valid human session redirects from `/login`
+to `/workspace` or its supported local `next`; invalid sessions still see login.
+Agent and site-edit capabilities alone do not trigger this human-session redirect.
+See [administrator login](../../docs/web-administrator.md).
+
 For [single-administrator and profile settings](../../docs/web-administrator.md),
 use `/settings/site` (站台設定), `/settings/profiles` and their documented APIs.
 There are no default credentials: let the human enter their username/password
@@ -63,6 +73,16 @@ capability, distinct from human login, no token files, no borrowed browser cooki
 Use worker.start/worker.send for Console work and request for API operations;
 admin.password accepts a human-provided password or explicitly requested generation.
 Follow the human's task/consent; capability possession never supplies authorization.
+
+For [official version checks and confirmed Agent handoff](../../docs/web-updates.md),
+use `opsfeast.updates.current/check`, its JSON CLI, or the authenticated Web check
+API. Checks never install. The human confirms and sends the generated instruction;
+follow the canonical update/Skill procedure, preserve local edits and report
+unsupported or uncertain targets. No automatic Agent notification is implied.
+[Settings catalog 0.2.0](../../docs/web-settings.md) exposes Site, Profiles and Bundle
+Recipes as peers; Hosts and user/external Recipes belong to the selected Profile.
+Recipe catalog scope=bundle is Profile-independent; scope=user preserves exact
+Profile ownership. Read-only discovery does not grant configuration writes.
 
 # Operate and compose OpsFeast Core
 
@@ -287,4 +307,4 @@ before interpreting values; these are not SSH endpoints or current-health claims
 
 Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvironmentError` is a `ConfigError` subclass with a controlled diagnostic report; exact type strings have changed for these failures. Reuse the failing interpreter with `-B tools/check_environment.py --json` and follow [runtime diagnosis and authorized repair](../../docs/runtime-troubleshooting.md) for version/source failures or duplicate metadata. Do not implement a second scanner, retry sessions to diagnose packages, or modify environments without scope.
 
-*Last modified: 2026-11-05 13:49:41*
+*Last modified: 2026-11-05 17:18:10*

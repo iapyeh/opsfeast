@@ -12,10 +12,10 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from opsfeast import ConfigError
 from opsfeast.identity import read_identity
 from opsfeast import site, admin
-from .security import Sessions, LIFETIME, EditingSessions, EDIT_LIFETIME, AgentCapability, cookie_names
+from .security import Sessions, LIFETIME, EditingSessions, EDIT_LIFETIME, AgentCapability, cookie_names, login_destination
 
 WEB_ROOT = Path(__file__).resolve().parents[2] / 'web'
-PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
+PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/bundle-recipes', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
 
 
 def create_app(installation=None, *, data_root=None, agent_token=None, edit_token=None, interactive_options=None, console_options=None) -> FastAPI:
@@ -110,6 +110,8 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
         return bytes(data)
 
     async def landing(request: Request):
+        if request.url.path == '/login' and human_authenticated(request):
+            return RedirectResponse(login_destination(request.query_params.get('next')), status_code=303)
         protected = admin.status(root)['configured'] and request.url.path in ('/workspace','/operations','/hosts','/recipes','/retention','/apps','/work','/logs','/skills','/recipes/data')
         if protected and not authenticated(request):
             destination=request.url.path+('?' + request.url.query if request.url.query else '')
@@ -143,6 +145,25 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
 
     from .host_api import install as install_hosts
     install_hosts(app,product=product,require_admin=require_admin,json_body=json_body)
+
+    from .workspace_api import install as install_workspace
+    install_workspace(app, product=product, require_admin=require_admin)
+
+    @app.get('/api/v1/updates')
+    def installed_versions(request: Request):
+        require_admin(request)
+        from opsfeast.updates import current
+        return current(product)
+
+    @app.post('/api/v1/updates/check')
+    async def check_versions(request: Request):
+        require_admin(request)
+        body = await json_body(request)
+        if set(body) != {'product'} or body['product'] not in ('opsfeast', 'sshscript'):
+            raise HTTPException(422, 'invalid_update_check')
+        from opsfeast.updates import check
+        from starlette.concurrency import run_in_threadpool
+        return await run_in_threadpool(check, product, body['product'])
 
     from .host_notes_api import install as install_host_notes
     install_host_notes(app,product=product,require_admin=require_admin,json_body=json_body,agent_authorized=agent_authorized)

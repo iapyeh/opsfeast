@@ -4,11 +4,40 @@ import hashlib
 import secrets
 import threading
 import time
+import re
+from urllib.parse import parse_qsl, urlsplit
 
 from opsfeast import admin
 
 LIFETIME = 8 * 60 * 60
 EDIT_LIFETIME = 30 * 60
+
+
+def login_destination(next_url):
+    """Allow the same local return destinations as login-navigation.mjs."""
+    default = '/workspace'
+    if not isinstance(next_url, str) or any(ord(char) < 32 or char == '\\' for char in next_url):
+        return default
+    if next_url in ('/settings/profiles', '/settings/site', '/setup', '/hosts', '/interactive'):
+        return next_url
+    uuid = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    if re.fullmatch(r'/interactive\?work=' + uuid, next_url):
+        return next_url
+    try:
+        target = urlsplit(next_url)
+    except ValueError:
+        return default
+    if target.scheme or target.netloc or target.fragment or '#' in next_url:
+        return default
+    keys = [key for key, _ in parse_qsl(target.query, keep_blank_values=True)]
+    if re.fullmatch(r'/console/' + uuid + r'(?:/history)?(?:/blocks/' + uuid + r')?', target.path):
+        if len(keys) == len(set(keys)) and set(keys) <= {'profile', 'host_id'}:
+            return next_url
+    if target.path == '/hosts' and set(keys) <= {'profile', 'host', 'view', 'new'}:
+        return next_url
+    if target.path == '/logs' and len(keys) == len(set(keys)) and set(keys) <= {'profile', 'entry', 'result'}:
+        return next_url
+    return default
 
 
 def cookie_names(data_root):
