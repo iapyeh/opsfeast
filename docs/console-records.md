@@ -2,6 +2,12 @@ For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): op
 
 # Console blocks 0.2.0
 
+Shared Console history uses [one canonical river and per-participant associations](shared-console.md#one-canonical-river-discoverable-from-every-participant).
+A task label/main host does not own the transcript: each declared Profile/host
+finds the same session UUID while blocks/events are stored once. Declare targets
+at creation; single-host records are not automatically relabelled or linked later.
+
+
 For a multi-host investigation in one river, read [shared task river 0.1.0](shared-console.md): declared participants, per-block source IDs, exact host-history membership and independent host batch toggles and individual block toggles. Closed blocks keep one time/source/content row with a far-right ↓/↑ open/close toggle in both states; only open blocks show ↗ immediately to its left; waiting live forms remain open. Folding never changes execution or authorization.
 
 For automatic SSHScript execution/output forwarding from an agent, use the shipped [Console worker](console-agent.md). It uses this service's existing handlers; the record API itself does not execute commands.
@@ -392,4 +398,4 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-06 14:34:35*

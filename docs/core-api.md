@@ -1,5 +1,15 @@
 # Core Python API 0.1.0
 
+For editable registration descriptions, use
+`instance.profiles.set_description(name, description, expected_revision=revision)`.
+It validates text, writes only registry metadata under the shared lock, and returns
+the updated registration. `profiles.list()` includes `description` (empty when
+absent); `profiles.attach(..., description=None)` and
+`instance.init_profile(..., description=None)` optionally set it, preserving it
+when omitted. Prefer required-revision `opsfeast.profile_settings.update` for UI
+adapters. See [limits, concurrency and CLI examples](profiles.md#profile-descriptions).
+
+
 ## Configured headless SSHScript Console
 
 `profile.sessions.console_target(host_id)` returns namespace, configured endpoint/login, hop count and a SHA-256 fingerprint of root/namespace/resolved connection settings. It reads configuration and checks the runtime without connecting. Credential values remain private; the digest is a change detector, not publisher authentication. `with profile.sessions.console(host_id, timeout=30, expected_fingerprint=fingerprint) as console:` yields the SSHScript 7.0.1 Console through the existing connection owner. A changed expected target fails before connecting; host/jump enabled policy and strict cleanup remain shared. Construct/use/close on the same thread. Managed su/sudo is denied by default. Pass `switch_authorizer(request)` to evaluate each runtime switch; only the literal result `True` allows credential resolution. Validate the exact current host, effective actor, method, target and the human's task scope, and consume grants once per intended switch. The worker provides this scoped runtime policy automatically after an explicit sudo/su control. Sudo uses current-actor policy and credentials; su uses target credentials, with private `password_func` input when missing. Root-to-user su has no password. Explicit credential arguments and unverified/program identities are denied; no automatic retry occurs. `console.submit('$.exit()')` returns one managed layer. The former `sudo_root` argument is removed. Optional `stdout=stream, stderr=stream` forward output as it arrives, including synchronous switch output; corresponding ConsoleUpdate fields are empty when redirected. Optional `password_func(prompt)` supplies hidden entered-program input; never log/return its value to a model. The worker provides the [ephemeral human-input channel](console-secrets.md), while custom hosts must supply an equivalent safe reader. This does not change managed SSH/sudo credential policy. Trusted arbitrary Console code is not sandboxed. For incremental chat operations prefer the shipped [Console worker](console-agent.md), not a temporary bridge. For the restricted Web adapter, use [interactive protocol](interactive-console.md).
@@ -421,4 +431,4 @@ recipe, use `recipe.profile.hosts.reference_ips(recipe.host_id)`.
 Use this API instead of scanning recipe raw data; see the
 [reference-only 0.1.0 contract](host-reference-ips.md) for update rules and limits.
 
-*Last modified: 2026-11-04 17:05:04*
+*Last modified: 2026-11-06 09:23:54*

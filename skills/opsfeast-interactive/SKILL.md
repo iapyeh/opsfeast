@@ -26,6 +26,22 @@ never automatically replay host commands.
 
 # Use the interactive Console service
 
+When the human authorizes root on selected hosts, [prefer the login account's sudo](../../docs/console-agent.md#choose-the-actor-for-an-authorized-root-switch).
+If already root, continue within scope. Otherwise, at login identity use managed
+sudo unless the human chose another method, Boolean `sudo: false` disables it, or
+concrete failure evidence blocks it. Omitted sudo policy means enabled, not a
+reason to ask which account to use. Do not start with su root/request a root
+password or probe another account. Reuse existing root authorization; resolve
+only genuine missing information. Nested actor layers keep current-actor policy.
+
+
+For an A/B/C investigation, [declare every participant on one canonical river](../../docs/shared-console.md#one-canonical-river-discoverable-from-every-participant).
+All participants' Console histories discover the same session without duplicated
+content. A main subject is optional; respect a human-selected main host, otherwise
+choose a useful label without asking merely about record placement. History
+membership follows declared targets, never the label or the selected browser tab.
+
+
 Every Console session is interactive. Agent-led operation means the human can
 remain silent while the agent decides within the agreed scope; it is not a
 different record mode or permission grant.
@@ -191,4 +207,4 @@ merely to validate a prose correction. Preserve unrelated work and report the
 updated source; do not claim installed or cached copies were refreshed unless
 that separate action was actually authorized and completed.
 
-*Last modified: 2026-11-05 14:35:41*
+*Last modified: 2026-11-06 15:10:22*

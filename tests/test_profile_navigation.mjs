@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loginDestination} from '../web/assets/login-navigation.mjs';
-import {mountProfiles} from '../web/assets/profiles-settings.mjs';
+import {mountProfiles,renderProfileCards} from '../web/assets/profiles-settings.mjs';
 import {getMessages} from '../web/assets/i18n.mjs';
 
 test('login returns to Profiles and rejects unsupported or external destinations',()=>{
@@ -34,4 +34,29 @@ test('unauthenticated Profiles retains its page and offers login or account setu
     assert.ok(container.innerHTML.includes(configured?'/login?next=%2Fsettings%2Fprofiles':'/settings/site'));
     assert.ok(!container.innerHTML.includes('profile-create'));
   }
+});
+
+test('default badge and switch buttons stay inside their owning cards and use the canonical default',()=>{
+  const m=getMessages('zh-TW'), e=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const state={default_profile:'vault-test4',profiles:[{name:'main',active:true,status:'available',root:'/main'},{name:'vault-test4',active:false,status:'available',root:'/vault'},{name:'broken',status:'unavailable',root:'/broken'}]};
+  const html=renderProfileCards(state,{m,e,catalog:null});
+  const cards=[...html.matchAll(/<article[^>]*data-profile="([^"]+)"[^>]*>(.*?)<\/article>/gs)];
+  assert.equal(cards.length,3);
+  assert.match(cards.find(card=>card[1]==='vault-test4')[2],/目前預設/);
+  assert.doesNotMatch(cards.find(card=>card[1]==='vault-test4')[2],/data-use/);
+  assert.match(cards.find(card=>card[1]==='main')[2],/data-use="main"/);
+  assert.doesNotMatch(cards.find(card=>card[1]==='broken')[2],/data-use/);
+  const switched=renderProfileCards({...state,default_profile:'main'},{m,e,catalog:null});
+  assert.doesNotMatch(switched, /data-use="main"/);
+  assert.match(switched,/data-use="vault-test4"/);
+  assert.doesNotMatch(html,/<h2>目前預設 profile<\/h2>/);
+});
+
+test('profile descriptions are escaped, preserve line breaks and offer an editor even when unavailable',()=>{
+  const m=getMessages('zh-TW'),e=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const html=renderProfileCards({default_profile:'main',profiles:[{name:'main',description:'Production\n<script>unsafe</script>',status:'missing',root:'/missing'},{name:'empty',description:'',root:'/empty'}]},{m,e,catalog:null});
+  assert.match(html,/Production\n&lt;script&gt;unsafe&lt;\/script&gt;/);
+  assert.doesNotMatch(html,/<script>/);
+  assert.match(html,/data-edit-description="main"/);
+  assert.ok(html.includes(m.profiles.noDescription));
 });

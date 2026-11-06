@@ -1,4 +1,5 @@
 export default {
+  parametersLocation:'執行參數由各 Profile 分別設定。', parametersAction:'查看參數設定方式',
   bundleRecipes:'Bundle Recipes', userRecipes:'使用者 Recipes', bundleNote:'隨 OpsFeast 提供的內建 Recipes，獨立於各 Profile。各 Profile 的啟用與參數仍由該 Profile 管理。', userNote:'此 Profile 的使用者 Recipes 與已註冊外部來源；不包含 Bundle Recipes。此處可唯讀檢閱目錄與中繼資料。',
   resultCauses:'主機結果與未完成項目', diagnosis:'結果診斷', missingFields:'未完整取得的欄位', commandIssues:'執行／保存問題', boundedDiagnosis:'此頁先顯示部分診斷項目；可載入更多（最多 50 組）。', gapColumns:['採集工作','未完成欄位','原因','來源時間'], reasons:{unsupported_platform_or_probe:'此平台未支援或尚未提供此採集項目',ipv6_not_collected:'此來源只採集 IPv4，未採集 IPv6',value_not_reported:'來源未回報所需值',invalid_property_value:'回報值的格式或型別不正確',command_failed:'查詢命令失敗',parse_failed:'來源輸出解析失敗',permission_denied:'權限不足',timeout:'查詢逾時'},
   nav: {home:'總覽', hosts:'主機與群組', recipes:'Recipes', work:'工作與通知', logs:'活動與紀錄', skills:'Skills 檢閱'},

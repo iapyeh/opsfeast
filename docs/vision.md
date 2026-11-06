@@ -1,5 +1,29 @@
 # Vision and design principles
 
+## Treat a recipe as a growing unit of purpose and knowledge
+
+A recipe includes its declared function and purpose, expected outcomes, scope,
+reviewed implementation, accumulated execution evidence and reusable lessons.
+Its current program is one implemented method of achieving that purpose, not the
+limit of an agent's ability to fulfill the human's authorized objective.
+
+An operational agent first understands the recipe's purpose and success criteria.
+When the implementation cannot fulfill them in the current environment, the agent
+must investigate the gap and use suitable alternative methods within the existing
+authorization. Do not stop at “the program failed” when scoped work can still
+achieve the requested outcome. Reuse tools, verify evidence, and ask only for
+material missing information or authority. This does not permit inventing data,
+changing the goal, widening targets/privileges/effects or claiming the original
+run succeeded after a separate investigation.
+
+Preserve host-specific experience privately and promote reviewed general methods
+into recipe code, tests, contracts and guidance. Future agents should discover
+relevant experience without relying on the originating conversation. Routine
+execution then reuses the improved implementation; AI investigates new gaps.
+Follow [purpose-led authoring](recipe-authoring.md#declare-purpose-and-success-criteria)
+and [execution experience](../skills/opsfeast-recipes/references/execution-experience.md).
+
+
 The inventory-specific [job/utility/periodic collection service](inventory-jobs.md) now implements deterministic minute dispatch with opt-in hosts, source-timestamped samples and public YANG model reuse. References below to planned scheduling concern a general scheduler; they do not negate this narrower implemented capability.
 
 
@@ -249,4 +273,4 @@ access is not an administrator session.
 
 Recipe source, raw observation evidence and structured retention are independent portable units. The implemented [transfer foundation](portability.md) supports origin-preserving copy/import, explicit recipe conflicts/rollback and verified resumable archival with storage compaction. User [data contracts](portable-contracts.md) travel with recipes/data rather than requiring a product registry edit. Human authority remains explicit for code activation, transmission and destructive source removal; historical import never becomes a live incident. Network distribution, a general scheduler and automatic recovery-package cleanup remain outside this implementation.
 
-*Last modified: 2026-11-05 16:31:37*
+*Last modified: 2026-11-06 14:07:41*

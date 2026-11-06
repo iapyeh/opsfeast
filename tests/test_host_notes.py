@@ -99,3 +99,49 @@ class HostNotesTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)['notes'][0]['uuid'],note['uuid'])
         result=subprocess.run(prefix+['create','--expected-revision',self.state()['revision']],input='{bad',text=True,capture_output=True)
         self.assertEqual(result.returncode,1);self.assertEqual(json.loads(result.stdout)['error'],'note_request_failed')
+
+    def test_recipe_and_tag_filters_canonical_scope_and_general_notes(self):
+        general=self.change(changes=self.content('General'))['note']
+        targeted=self.change(changes=dict(self.content('Target'),recipe_references=['bundle:system/check','system/check',':system/check','vendor:system/check'],tags=['Linux','network','LINUX']))['note']
+        self.assertEqual(targeted['recipe_references'],[':system/check','system/check','vendor:system/check'])
+        self.assertEqual(targeted['tags'],['linux','network'])
+        other=self.change(changes=dict(self.content('Other'),recipe_references=['system/check-more'],tags=['linux']))['note']
+        self.assertEqual([n['uuid'] for n in self.state(recipe_reference='bundle:system/check',tags=['LINUX','network'])['notes']],[targeted['uuid']])
+        self.assertEqual({n['uuid'] for n in self.state(recipe_reference='system/check',include_general=True)['notes']},{general['uuid'],targeted['uuid']})
+        self.assertEqual(self.state(recipe_reference='absent:system/check')['notes'],[])
+        self.assertEqual(len(self.state(query='vendor:system/check')['notes']),1)
+        self.assertEqual(self.state('other',recipe_reference='system/check')['notes'],[])
+        with self.assertRaises(service.HostNotesError):self.state(include_general=True)
+
+    def test_metadata_omission_clear_merge_and_existing_unlabelled_storage(self):
+        first=self.change(changes=dict(self.content(),recipe_references=['system/check'],tags=['linux']))['note']
+        updated=self.change('update',note_uuid=first['uuid'],changes=self.content('Edited'))['note']
+        self.assertEqual(updated['tags'],['linux']);self.assertEqual(updated['recipe_references'],['system/check'])
+        second=self.change(changes=dict(self.content('Second'),recipe_references=[':extra/check'],tags=['storage']))['note']
+        merged=self.change('merge',note_uuid=first['uuid'],remove=[second['uuid']],confirmation=[second['uuid']],changes=self.content('Merged'))['note']
+        self.assertEqual(merged['tags'],['linux','storage'])
+        self.assertEqual(merged['recipe_references'],[':extra/check','system/check'])
+        clear=self.change('update',note_uuid=first['uuid'],changes=dict(self.content(),tags=[],recipe_references=[]))['note']
+        self.assertEqual(clear['tags'],[]);self.assertEqual(clear['recipe_references'],[])
+        path=self.root/service.FILENAME;data=json.loads(path.read_text())
+        for n in data['notes']:n.pop('tags');n.pop('recipe_references')
+        path.write_text(json.dumps(data));before=path.read_bytes()
+        self.assertEqual(self.state()['notes'][0]['tags'],[])
+        self.assertEqual(path.read_bytes(),before)
+
+    def test_invalid_metadata_and_filters_do_not_write(self):
+        self.change(changes=self.content());before=(self.root/service.FILENAME).read_bytes()
+        for key,values in [('tags',None),('tags','linux'),('tags',['']),('tags',['x'*65]),('tags',['x']*33),('tags',['bad\n']),('tags',['a,b']),('recipe_references',['../escape']),('recipe_references',['https://example.invalid/r']),('recipe_references',['system/*']),('recipe_references',[False])]:
+            with self.subTest(key=key,values=values),self.assertRaises(service.HostNotesError):self.change(changes=dict(self.content(),**{key:values}))
+            self.assertEqual((self.root/service.FILENAME).read_bytes(),before)
+        with self.assertRaises(service.HostNotesError):self.state(recipe_reference='../escape')
+
+    def test_cli_exact_recipe_tag_and_general_filters(self):
+        self.change(changes=self.content('General'))
+        note=self.change(changes=dict(self.content(),recipe_references=['system/check'],tags=['linux']))['note']
+        prefix=[sys.executable,'-B','-m','opsfeast.host_notes','--installation',str(self.code),'--profile','main','--host','sample','list']
+        result=subprocess.run(prefix+['--recipe','bundle:system/check','--tag','LINUX'],text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertEqual([n['uuid'] for n in json.loads(result.stdout)['notes']],[note['uuid']])
+        result=subprocess.run(prefix+['--recipe','system/check','--include-general'],text=True,capture_output=True)
+        self.assertEqual(len(json.loads(result.stdout)['notes']),2)

@@ -40,6 +40,11 @@ export default {
     installation: "整個 installation", profile: "依 profile 管理", boundaries: "作用範圍與變更邊界",
     service: "共用介面", implemented: "已提供 Web、CLI 與 Python／HTTP API。", pending: "目前提供規劃說明，尚無此類設定的 Web 寫入介面。",
     catalogError: "設定能力目錄讀取失敗，請重新載入；目前無法確認可用功能。", catalogLabel: "以目前 server 的能力目錄為準",
+    parametersHelpLabel: "設定方式（尚無 Web 編輯器）",
+    parametersWhere: "Bundle Recipe 的參數設定位置", parametersOwnership: "Bundle 程式由各 Profile 共用；參數、啟用狀態及執行政策分別由各 Profile 管理，使用者 Recipes 也使用相同規則。",
+    parametersFile: "設定檔：", parametersGenericPath: "所選 Profile 的管理目錄/hosts.yaml", parametersNoEditor: "目前 Web 尚未提供參數編輯器。可在對話中請 Agent 協助設定，或直接修改這個 Profile 的 hosts.yaml。此頁不會變更任何設定。",
+    parametersSteps: ["Profile 共用值：default.recipes.<完整 Recipe 參照>.vars。", "只套用到特定群組或主機：在該群組或主機的 recipes.<同一參照>.vars 覆寫。", "Bundle 使用 system/network/check/port 這類完整路徑；使用者 Recipe 使用 :分類/路徑。不要修改產品內建 Recipe 的程式或描述檔來設定自己的參數。"],
+    parametersExample: "範例：設定 Bundle Recipe 的 Profile 預設參數（不會啟用或執行 Recipe）", parametersYaml: "default:\n  recipes:\n    system/network/check/port:\n      vars:\n        port: 443", parametersPrecedence: "同一 Recipe 的值依主機覆寫、群組覆寫、Profile 預設及 Recipe 預設值套用；單次執行的 --var／--vars-file 只影響該次執行。完整合併規則請見指南。", parametersGuide: "閱讀參數與繼承規則", parametersChooseProfile: "選擇或管理 Profiles",
     readOnly: "唯讀檢閱", profileHierarchy: "每個 Profile 擁有自己的主機、使用者 Recipes、預設參數與資料政策。", ownedBy: "隸屬於 Profile：{profile}",
     categories: {
       "bundle-recipes": {title: "Bundle Recipes", text: "獨立檢閱隨 OpsFeast 提供的內建 Recipes、版本及契約。", detail: "內建程式隨產品更新；各 Profile 的執行啟用與參數仍在該 Profile 管理。", rules: []},
@@ -47,7 +52,7 @@ export default {
       site: {title: "站台設定", text: "網站名稱、標語、Logo、代表角色與管理帳號。", detail: "屬於整個 installation，保存在產品目錄外。公開內容會出現在未登入頁。", rules: ["保留原有 UUID、name 與 namespace。", "可換上自己的圖片，也能恢復預設圖案。"]},
       hosts: {title: "主機與連線設定", text: "管理 hosts.yaml、主機、群組、連線方式與帳號。", detail: "依選定 profile 的實際 hosts.yaml 與 include 結構編輯，保留人類註記與私有憑證。", rules: ["區分設定驗證與連線測試；儲存不觸發連線。", "敏感值需遮蔽並個別授權修改，不用空白覆蓋既有密碼。", "先檢視差異，再以版本檢查保存，避免覆蓋他人修改。"]},
       recipes: {title: "使用者 Recipes", text: "這個 Profile 的自訂 Recipes 與已註冊外部來源。", detail: "重用既有 recipe catalog、sources 與安裝契約。下載、安裝、啟用及執行是不同動作。", rules: ["安裝或啟用不自動授權主機操作。", "保留精確來源、版本與完整性證據。", "使用者程式保存在管理環境或外部來源，不寫進 bundled recipes。"]},
-      parameters: {title: "預設參數與執行政策", text: "設定 recipe 的預設值、群組覆寫與主機覆寫。", detail: "遵守既有參數 schema、精確 recipe reference 與繼承規則，讓人類與 agent 看到相同的有效值。", rules: ["顯示值從哪一層而來，以及最終會套用的值。", "更新預設值不改寫既有結果，也不自動重跑工作。", "不另建一份只供 Web 使用的參數設定。"]},
+      parameters: {title: "預設參數與執行政策", text: "Bundle 與使用者 Recipes 的 Profile 預設值、群組與主機覆寫。", detail: "遵守既有參數 schema、精確 recipe reference 與繼承規則，讓人類與 agent 看到相同的有效值。", rules: ["顯示值從哪一層而來，以及最終會套用的值。", "更新預設值不改寫既有結果，也不自動重跑工作。", "不另建一份只供 Web 使用的參數設定。"]},
       retention: {title: "Retention 政策與資料管理", text: "設定保存行為、檢視資料定義與管理已保存內容。", detail: "區分 recipe 定義的資料契約、平台保存政策及使用者的內容管理。consumer 只管理自己的衍生成果。", rules: ["政策修改、重建、重播、匯入與刪除分開授權。", "破壞性動作必須先預覽範圍，保留受保護的操作證據。", "透過既有 retention API，不直接修改 SQLite 或人類筆記。"]}
     }
   },
@@ -67,11 +72,14 @@ export default {
     loginHint: "使用這個 installation 的管理帳號登入。", configuredNote: "登入後可以管理站台與 profiles；主機操作服務尚未啟用。"
   },
   profiles: {
+    description: "說明（Description）", noDescription: "尚未設定說明。", editDescription: "編輯說明", saveDescription: "儲存說明", cancelDescription: "取消", descriptionHint: "最多 1000 個字；留白可清除。這是 Profile 登記的用途說明，不會改變名稱、目錄、Namespace、主機或預設選擇。",
     title: "Profiles", kicker: "管理環境", intro: "查看與切換目前環境，或建立獨立的管理空間。",
     current: "目前預設 profile", none: "尚未選擇", name: "Profile 名稱", namespace: "Namespace", root: "既有管理目錄的絕對路徑",
     create: "建立新的 profile", attach: "附加既有環境", use: "切換為預設", active: "目前預設", available: "設定可用", unavailable: "設定不可用",
     namespaceHint: "留白沿用 profile 名稱；新的管理目錄建立於持久資料目錄的 profiles/ 下。",
-    attachHint: "只驗證並註冊既有環境，不重建或覆寫其資料。", statusHint: "此狀態只代表本機設定可用性，不代表已驗證主機連線。",
+    manageEnvironments: "建立或登記管理環境", manageHint: "這些操作會增加 Profile 登記，不屬於上面任何一個既有 Profile。",
+    attachExplanation: "將磁碟上已存在的 Feast 管理目錄登記成 Profile，沿用其中的主機設定、Recipes、保存資料與 Vault。適合登記既有環境，或重新接回原有資料；目前已列出的 Profiles 不需要再附加。",
+    attachHint: "請指定含 hosts.yaml 的既有管理目錄。只驗證並登記，不複製、搬移、重建或覆寫其資料。", statusHint: "此狀態只代表本機設定可用性，不代表已驗證主機連線。",
     boundary: "建立、附加與切換不會連線、採集或執行 recipe。現有 profile 與 namespace 保持原處；目前未提供更名或刪除。",
     saving: "正在保存 profile 設定…", saved: "Profile 設定已保存。", conflict: "Profile 設定已被更新，請重新載入後再操作。",
     failed: "Profile 操作失敗，請檢查名稱、namespace 與目錄。若建立途中失敗，可能保留新目錄，請先檢查再重試。",

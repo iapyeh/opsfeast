@@ -2,6 +2,12 @@
 
 Operational execution selects one explicit recipe reference and host targets; it does not execute every configured recipe. Configuration, source registration, code review, installation and execution are separate scopes. Use [execution](recipe-execution.md) and the [CLI reference](cli.md#operational-recipe-execution) for commands, outputs and authorization.
 
+For Web navigation, open the owning Profile's **預設參數與執行政策** link, or
+`/settings/parameters?profile=NAME`. Bundle and user recipes use the same
+Profile-owned parameter layers described below. The page shows the file/location
+and merge guidance; a Web parameter editor is not implemented. Bundle catalog
+pages link here without moving settings to global product code.
+
 ## Register sources at the entrypoint
 
 Only the management root's `hosts.yaml` may register `recipe_sources`; included files can reference registered sources. External entries accept a local `path`, Boolean `enabled` (default true) and `vars` mapping. Relative paths resolve from the entry file; absolute paths and `~` are accepted. Registration downloads nothing and does not validate publisher trust. A referenced enabled source must exist.
@@ -138,4 +144,4 @@ Different paths may contain the same recipe ID, including coexistence of version
 
 Exact-reference mappings accept `execution` alongside enabled/vars. Leaves merge through the same default/group/host rules; `execution: null` resets inherited account policy. Effective default is login, and su/sudo requires an explicit user. Nondefault policies require python-recipe. Read [results and accounts](recipe-results-and-accounts.md); invocation vars do not override account policy.
 
-*Last modified: 2026-10-26 11:49:24*
+*Last modified: 2026-11-06 09:12:22*

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Host note 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uuid",
+    "host_id",
+    "title",
+    "content",
+    "source",
+    "timestamp"
+  ],
+  "properties": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "host_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "content": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32000
+    },
+    "source": {
+      "enum": [
+        "console",
+        "user",
+        "agent"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recipe_references": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      }
+    }
+  },
+  "$comment": "Syntax/canonical-reference, tag lowercase and text-control rules are enforced by opsfeast.host_notes. Last modified: 2026-11-06 14:13:32"
+}

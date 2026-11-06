@@ -9,6 +9,36 @@ Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed o
 
 ## Exact-reference recipe policy
 
+For agent-directed Console root work, [login-account sudo is the default](../../docs/console-agent.md#choose-the-actor-for-an-authorized-root-switch)
+after the human authorizes root. An omitted sudo key permits this attempt; only
+Boolean false disables it by configuration. Do not ask the human to choose the
+account again or default to su root. Handle actual failures with their evidence,
+without credential/account retries. This does not replace inventory's separately
+documented automatic actor-selection contract.
+
+
+For recipe-linked host notes, use structured `recipe_references` and `tags` with
+[documented exact filters](../../docs/host-notes.md#relate-notes-to-recipes).
+Before execution use `host-notes --profile NAME --host HOST list --recipe REF --include-general`.
+Review general/unlabelled constraints too; tags narrow by AND and never authorize
+execution. Preserve omitted metadata on updates; explicit `[]` clears it.
+
+
+Before and after agent-led inventory, follow [execution experience](../opsfeast-recipes/references/execution-experience.md).
+Read host notes and saved attempts before connecting; preserve source/actor/time,
+review new lessons with the human, and use the existing revision-checked notes
+service. Verified general methods should improve the reviewed recipe rather than
+remaining private workarounds. No per-host automatic command cache is implemented.
+
+
+For old Linux iproute2 rejecting `-j`, use bundled inventory 0.4.2's
+[capability-specific text collector](../../recipes/system/inventory/overview/README.md#linux-iproute2-capabilities-042).
+Read saved probe stderr before diagnosing missing IPs; unsupported command
+options differ from permission failures and absent addresses. The fix does not
+repair historical observations or authorize fresh collection. Partial terminal
+summaries list exact incomplete properties; inspect the printed result ID locally.
+
+
 For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
 
 Before editing execution settings, read [recipe sources and policy](../../docs/recipe-sources.md). Use default/group/host recipes mappings keyed by exact filesystem references, with enabled/vars; bare PATH and bundle:PATH are the same bundle key, :PATH is profile-only, NAME:PATH is a registered source. Do not flatten paths or substitute descriptor IDs. Discover references with `python -B tools/opsfeast.py recipes list --profile NAME --json`. Mappings merge by leaf; lists replace, explicit false wins and the first resolved group wins overlapping leaves. Recipes default disabled; new init enables bundled inventory explicitly, preserving existing configs.
@@ -350,4 +380,4 @@ Before retrying a host operation after an interpreter/package change, run the fa
 
 Use [host notes 0.1.0](../../docs/host-notes.md) for private knowledge: `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list`. Read relevant notes before operations; assess age/evidence without treating notes as execution authority. Use the shared CLI/Python/API for create/update/delete/merge, explicit profile/host and current revision. Present exact proposed content and UUID removals for human confirmation before organization. Preserve semantic conflicts, never silently choose a winner; do not edit storage or generated Vault pages directly.
 
-*Last modified: 2026-11-05 23:07:10*
+*Last modified: 2026-11-06 15:10:22*

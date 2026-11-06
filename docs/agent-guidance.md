@@ -1,5 +1,20 @@
 # Public and local agent guidance
 
+For authorized root Console work, follow [the actor-selection procedure](console-agent.md#choose-the-actor-for-an-authorized-root-switch):
+prefer the login account's sudo, treat an omitted sudo key as enabled policy,
+reuse the human's existing root grant and verify effective identity. A general
+root grant must not turn into a redundant account-choice question. Alternatives
+require an explicit human choice, policy denial or concrete failure evidence;
+configuration/credentials do not independently authorize execution.
+
+
+For agent-led recipe runs, [execution experience](../skills/opsfeast-recipes/references/execution-experience.md)
+requires reading structured recipe-linked notes and general host constraints.
+Use existing host-note APIs with `recipe_reference`/`include_general` rather than
+chat memory or title tags; preserve useful verified lessons with exact metadata.
+This is an agent workflow, not automatic runner enforcement.
+
+
 OpsFeast separates shared project instructions from each user's private environment and maintenance preferences.
 
 For first use, the [single-prompt walkthrough](first-use.md) lets an agent clone or reuse OpsFeast in the active workspace, explicitly read the acquired guidance, and propose setup. Follow [checkout bootstrap](getting-started.md#agent-led-checkout-bootstrap) for empty/nonempty directories, repository verification and failure handling. Clone-only authorization stops before software installation and initialization; the agent offers to execute the concrete local plan after the user agrees.
@@ -90,4 +105,4 @@ The first command should list the public file, the second should identify its ig
 
 Before committing or sharing, inspect the staged file allowlist and archive inventory. Ignore rules do not prevent force-adding files or packaging them with other tools. Exclude local instruction files, private settings and operational data explicitly. Do not copy another maintainer's local guidance into a new user's environment.
 
-*Last modified: 2026-10-25 15:28:33*
+*Last modified: 2026-11-06 15:10:22*

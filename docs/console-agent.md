@@ -102,6 +102,47 @@ Privilege targets use the explicit runtime switch controls below. Entered progra
 
 ## Runtime account switching (worker 0.3.0)
 
+### Choose the actor for an authorized root switch
+
+For agent-directed Console inspection or operation, use this default decision
+order unless the human explicitly selected another method/account:
+
+1. Inspect the verified current identity. If it is already root, continue within
+   the authorized task; do not acquire another root layer.
+2. At the configured login identity, prefer **that login account's sudo to root**
+   through the existing worker `sudo` control. A human grant to obtain root on
+   these hosts covers this choice within the same task; do not ask again which
+   account to use or whether the already-authorized switch is permitted.
+3. Sudo is enabled by account policy unless the account explicitly sets Boolean
+   `sudo: false`. An omitted sudo key is not an unknown choice requiring human
+   clarification. This policy permits an attempt; it does not prove the host's
+   sudoers rules will allow it. Reuse the current actor's configured credential
+   selection; follow [the presence/control-value rules](inventory-access.md#inventory-account-selection).
+4. Do not start with `su root`, ask for the root password, enumerate alternative
+   accounts or change credentials merely because another method/account exists.
+   Consider alternatives only when the human explicitly chose them, policy
+   disables the default actor's sudo, or concrete failure evidence establishes
+   why the default cannot complete this task. Explain that evidence and ask only
+   for missing method/credential information or materially different authority.
+   No automatic credential retry or different-account probing is implied.
+5. If already inside another explicitly authorized actor layer, sudo uses that
+   **current actor's** policy/credentials; do not silently switch back to login.
+   Confirm the resulting effective identity before protected commands and keep
+   all choices scoped to this host/task.
+
+| Situation | Agent action |
+| --- | --- |
+| Login is iap, sudo key omitted, human authorized root | Submit managed sudo as iap; no account-choice question |
+| Login account explicitly has `sudo: false` | Do not attempt that sudo; explain the policy and resolve the missing permitted method |
+| Sudo actually fails | Preserve the error/identity/cleanup evidence, then resolve the specific blocker; do not guess another account/password |
+| Current identity is verified root | Continue within the authorized task without another switch |
+| Human explicitly requested su or another actor | Follow that instruction within policy/scope; the default does not override it |
+
+This is the agent's manual/interactive switch-selection procedure, not a change
+to the separate inventory bounded-actor or Core `Recipe.root()` acquisition
+contracts. The worker still requires an explicit scoped authorization control;
+configuration and capability possession alone never authorize elevation.
+
 Start with the normal host command and connect as its configured login account.
 Only when the human authorizes the needed identity, send one of:
 
@@ -295,4 +336,4 @@ shell state, active close, control validation, duplicate refusal and no retry.
 Native local tests also verify that a nonzero command preserves cwd/environment for the next explicitly submitted command and that prompt/input share a block. A real local Console test executes the saved displayed dollar expression itself, including quoted Unicode, dollar signs and backslashes. Profile-selection regressions cover a non-main locator default, an explicit override without registry changes, unknown/missing selection with no fallback, and local mode without profile loading. Core tests cover configured sudo policy and output hooks. These are local/mocked
 evidence, not proof of current connectivity or sudo policy on a real host.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-06 15:10:22*

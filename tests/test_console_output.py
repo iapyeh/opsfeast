@@ -519,6 +519,17 @@ hosts:
                     self.assertEqual(code, 0)
                     self.assertIsInstance(json.loads(output), dict) if flags else self.assertIn('│ field', output)
 
+class IncompleteFieldOutputTests(unittest.TestCase):
+    def test_summary_names_each_missing_property(self):
+        report={'host_id':'synthetic','status':'partial','collection_gaps':[
+            {'job':'network-configuration','reason_code':'value_not_reported','properties':['network.interfaces.kind']},
+            {'job':'storage-layout','reason_code':'value_not_reported','properties':['storage.block_devices.fstype','storage.block_devices.model','storage.block_devices.mountpoint']}]}
+        text=console.execution(report)
+        self.assertIn('value_not_reported: 4',text)
+        for gap in report['collection_gaps']:
+            for name in gap['properties']:self.assertIn(name,text)
+        self.assertIn('storage-layout / value_not_reported:',text)
+
 
 if __name__ == '__main__':
     unittest.main()

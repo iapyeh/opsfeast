@@ -247,7 +247,7 @@ class ProfileTests(unittest.TestCase):
         rows = [[part.strip() for part in line.split('│')[1:-1]]
                 for line in output.splitlines() if line.startswith('│')][1:]
         start = next(index for index, row in enumerate(rows) if row[1] == 'default')
-        self.assertEqual(rows[start][3:], ['available', 'true'])
+        self.assertEqual(rows[start][3:], ['available', 'true', ''])
         # Join continuation cells so a long path remains fully verified after wrapping.
         pieces = []
         for row in rows[start:]:

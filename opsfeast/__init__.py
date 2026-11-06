@@ -112,6 +112,16 @@ def profile_root(location, installation=None):
     return (path if path.is_absolute() else (Path(installation) if installation is not None else REPOSITORY_ROOT) / path).resolve()
 
 
+def profile_description(value):
+    if not isinstance(value, str) or len(value) > 1000 or any((ord(c) < 32 and c not in '\n\t') or ord(c) == 127 for c in value):
+        raise ConfigError('profile description must be text of at most 1000 characters without control characters')
+    try:
+        value.encode('utf-8')
+    except UnicodeEncodeError:
+        raise ConfigError('profile description must contain valid Unicode text') from None
+    return value
+
+
 def load_profiles(installation=None):
     pointer = registry_path(installation)
     if not pointer.exists() and not pointer.is_symlink():
@@ -139,7 +149,8 @@ def load_profiles(installation=None):
     paths = set()
     for name, item in profiles.items():
         profile_name(name)
-        item = mapping(item, f'{pointer}: profile', ('root',))
+        item = mapping(item, f'{pointer}: profile', ('root', 'description'))
+        if 'description' in item: profile_description(item['description'])
         root = profile_root(string(item.get('root'), f'{pointer}: root'), installation)
         if root in paths:
             raise ConfigError('multiple profiles refer to the same management directory')
@@ -243,7 +254,7 @@ def registration_plan(root, profile=None):
 def register_profile(root, name, data):
     checkout = REPOSITORY_ROOT.resolve(strict=True)
     location = root.relative_to(checkout).as_posix() if root.is_relative_to(checkout) else str(root)
-    data['profiles'][name] = {'root': location}
+    data['profiles'][name] = {**data['profiles'].get(name, {}), 'root': location}
     if data['default_profile'] is None:
         data['default_profile'] = name
     save_profiles(data)
@@ -260,7 +271,7 @@ def list_profiles(data=None, numbered=False, json_output=False):
         return
     rows = []
     if not human_output(json_output) and not json_output:
-        print('PROFILE  ROOT  STATUS  DEFAULT')
+        print('PROFILE  ROOT  STATUS  DEFAULT  DESCRIPTION')
     for index, (name, item) in enumerate(data['profiles'].items(), 1):
         prefix = f'{index}. ' if numbered else ''
         mark = (' [current default]' if numbered else ' *') if name == data['default_profile'] else ''
@@ -278,14 +289,15 @@ def list_profiles(data=None, numbered=False, json_output=False):
                 status = 'unavailable'
         except OSError:
             status = 'unavailable'
-        rows.append([index if numbered else name, name, str(root), status, name == data["default_profile"]])
+        rows.append([index if numbered else name, name, str(root), status, name == data["default_profile"], item.get('description','')])
         if not human_output(json_output) and not json_output:
             print(f"{prefix}{name}  {root}  {status}{mark}")
+            if item.get('description'): print('  '+json.dumps(item['description'],ensure_ascii=False))
     if json_output:
-        print_report({"report_version": "0.1.0", "profiles": [{"name": r[1], "root": r[2], "status": r[3], "default": r[4]} for r in rows]}, json_output=True)
+        print_report({"report_version": "0.1.0", "profiles": [{"name": r[1], "root": r[2], "status": r[3], "default": r[4], "description": r[5]} for r in rows]}, json_output=True)
     elif human_output():
-        print(table(["selection", "profile", "root", "status", "default"] if numbered else
-                    ["profile", "root", "status", "default"], rows if numbered else [row[1:] for row in rows]))
+        print(table(["selection", "profile", "root", "status", "default", "description"] if numbered else
+                    ["profile", "root", "status", "default", "description"], rows if numbered else [row[1:] for row in rows]))
 
 
 def detach_profile(name):
@@ -1472,8 +1484,13 @@ def main(argv=None):
     commands.add_parser('vault', help='rebuild/inspect bundled vault content and group indexes; use vault --help')
     profiles_parser = commands.add_parser('profiles', help='list all registered profiles',
         description=('List registered Feast management directories and identify the selected default. '
-                     'This reads the profile registry without connecting to hosts or changing the selection.'))
+                     'show returns the revision snapshot; set-description edits registration text using --expected-revision. '
+                     'These operations run without connecting to hosts or changing the default selection.'))
     profiles_parser.add_argument('--json', action='store_true')
+    profiles_parser.add_argument('action', nargs='?', choices=('show','set-description'))
+    profiles_parser.add_argument('name', nargs='?')
+    profiles_parser.add_argument('--description', help='Profile registration description; empty text clears it, maximum 1000 characters.')
+    profiles_parser.add_argument('--expected-revision', help='Registry revision from the profile settings inspection; required for set-description.')
     instance_parser = commands.add_parser('instance', help='inspect or explicitly initialize/update installation identity',
         description=('Inspect or maintain the UUID, name and description of this OpsFeast installation. '
                      'inspect is read-only; init, set, renew and relocate write identity metadata. '
@@ -1647,6 +1664,19 @@ def main(argv=None):
                 print(json.dumps(report, indent=2, ensure_ascii=False) if args.json else format_report(report, details=args.details))
             return 1 if report['status'] == 'failed' else 0
         if args.command == 'profiles':
+            if args.action == 'set-description':
+                if args.name is None or args.description is None or args.expected_revision is None:
+                    parser.error('profiles set-description requires NAME, --description and --expected-revision')
+                from .profile_settings import update
+                value = update(REPOSITORY_ROOT, name=args.name, description=args.description, expected_revision=args.expected_revision)
+                print(json.dumps(value, ensure_ascii=False, indent=2))
+                return 0
+            if args.name is not None or args.description is not None or args.expected_revision is not None:
+                parser.error('profile metadata arguments require set-description')
+            if args.action == 'show':
+                from .profile_settings import inspect
+                print(json.dumps(inspect(REPOSITORY_ROOT),ensure_ascii=False,indent=2))
+                return 0
             list_profiles(json_output=args.json)
             return 0
         if args.command == 'use':

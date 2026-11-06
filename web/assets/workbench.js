@@ -7,7 +7,7 @@ import {siteAssetUrl} from "./site-assets.mjs";
 import {loginDestination} from "./login-navigation.mjs";
 import {mountFirstUse} from "./first-use.mjs";
 import {mountVersions} from "./updates.mjs";
-import {mountSettingsHub} from "./settings-hub.mjs";
+import {mountSettingsHub, renderParameterGuide} from "./settings-hub.mjs";
 import {mountHostManager} from "./host-manager.mjs";
 
 let storage;
@@ -93,6 +93,12 @@ function settingsView() {
   if (!settingsCatalog) return header + `<div class="detail-note" role="status">${e(c.catalogError)}</div>`;
   if(["recipes","bundle-recipes"].includes(settingsCategory))return `<section id="settings-recipe-list"></section>`;
   if(settingsCategory==="hosts")return header+`<section class="panel"><p>${e(m.hostManagement.intro)}</p><a class="button primary" href="${e("/hosts"+location.search)}">${e(m.hostManagement.title)} →</a></section>`;
+  if(settingsCategory==='parameters'){
+    const profile=new URLSearchParams(location.search).get('profile')||profileState?.default_profile;
+    const selected=profileState?.profiles.find(row=>row.name===profile);
+    if(profileState&&profile&&!selected)return header+`<p role="alert">${e(m.profiles.failed)}</p>`;
+    return header+renderParameterGuide({profile,root:selected?.root,m,e});
+  }
   if (settingsCategory) {
     const category = c.categories[settingsCategory];
     return header + `<div class="settings-category-state"><span class="subtle-tag">${e(c.planned)}</span><span>${e(c.profile)}</span></div><div class="detail-note">${e(c.pending)}</div><section class="panel settings-contract"><h2>${e(c.boundaries)}</h2><p>${e(category.detail)}</p><ul>${category.rules.map(rule => `<li>${e(rule)}</li>`).join("")}</ul><p class="settings-shared-rule">${e(c.principle)}</p></section>`;

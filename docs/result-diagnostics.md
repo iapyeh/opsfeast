@@ -1,5 +1,16 @@
 # Explain partial inventory and saved-result failures
 
+Terminal execution summaries now list the exact incomplete properties under
+each job/reason count. A count of four means four distinct requested property
+paths, not necessarily four devices or four failed commands. For example,
+`network.interfaces.kind` and three `storage.block_devices.*` properties may
+share successful source commands whose output omitted some values.
+`value_not_reported` means the selected output did not supply the value; it does
+not prove a permission problem. Use the printed `observation result ID` command
+for saved source commands, exit codes and bounded stderr; add `--limit 50` for
+more diagnosis groups. These inspections do not connect or rerun collection.
+
+
 `partial` means the requested collection is incomplete. Successfully collected
 values remain useful; missing fields are not a host-health verdict. Unsupported
 platform properties, failed commands, parsing errors, permissions and time/output
@@ -65,4 +76,4 @@ inventory complete. Public tests use synthetic platform output and saved evidenc
 Offline diagnosis/recovery of real saved observations is not a new SSH execution
 or verification of current host condition.
 
-*Last modified: 2026-11-05 23:07:10*
+*Last modified: 2026-11-06 13:44:50*

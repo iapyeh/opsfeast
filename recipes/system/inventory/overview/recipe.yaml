@@ -5,7 +5,7 @@ author:
   - Bundle
 license: MIT
 id: inventory-system
-version: 0.4.1
+version: 0.4.3
 status: implemented
 title: System inventory
 description: Collect bounded system, hardware, storage, network, software and services

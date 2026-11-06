@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import csv
 import io
+import ipaddress
 import json
 import math
 from pathlib import Path
@@ -133,6 +134,37 @@ def linux_interfaces(text):
     return rows
 
 
+def linux_text_interfaces(text):
+    """Parse iproute2 address text when its JSON option is unavailable."""
+    rows, current, addresses = [], None, []
+    def finish():
+        if current is not None:
+            rows.extend(dict(current, **address) for address in addresses or [{}])
+    for line in text.splitlines():
+        header = re.match(r'^\d+: ([^:]+):\s+<[^>]*>.*?\bmtu (\d+)\b(.*)$', line)
+        if header:
+            finish()
+            state = re.search(r'\bstate (\S+)', header[3])
+            current = {'name': header[1].split('@', 1)[0], 'mtu': int(header[2]),
+                       'state': state[1] if state else None, 'mac': None}
+            addresses = []
+        elif re.match(r'^\d+:', line):
+            raise ValueError('malformed interface header')
+        elif line.strip():
+            if current is None: raise ValueError('interface data without header')
+            parts = line.split()
+            if parts[0].startswith('link/') and len(parts) > 1:
+                current['mac'] = parts[1]
+            elif parts[0] in ('inet', 'inet6'):
+                address = ipaddress.ip_interface(parts[1])
+                if address.version != (4 if parts[0] == 'inet' else 6):
+                    raise ValueError('address family mismatch')
+                addresses.append({'address': str(address.ip), 'prefix_length': address.network.prefixlen})
+    finish()
+    if not rows: raise ValueError('no interface headers')
+    return rows
+
+
 def linux_devices(text):
     rows = []
     def walk(items):
@@ -140,6 +172,28 @@ def linux_devices(text):
             rows.append({key: item.get(key) for key in ('name', 'type', 'size', 'fstype', 'mountpoint', 'model')})
             walk(item.get('children', []))
     walk(json.loads(text)['blockdevices'])
+    return rows
+
+
+def linux_pair_devices(text):
+    """Read the explicit six-column lsblk --pairs interface, including hex escapes."""
+    expected = {'NAME', 'TYPE', 'SIZE', 'FSTYPE', 'MOUNTPOINT', 'MODEL'}
+    def unescape(value):
+        parts = re.split(r'(\\x[0-9a-fA-F]{2})', value)
+        return b''.join(bytes([int(p[2:],16)]) if re.fullmatch(r'\\x[0-9a-fA-F]{2}',p)
+                        else p.encode('utf-8') for p in parts).decode('utf-8')
+    rows = []
+    for line in lines(text):
+        values = {}
+        for token in shlex.split(line):
+            key, separator, value = token.partition('=')
+            if not separator or key in values: raise ValueError('invalid lsblk pair')
+            values[key] = unescape(value)
+        if set(values) != expected or not values['NAME'] or not values['TYPE']:
+            raise ValueError('missing lsblk columns')
+        rows.append({key.lower(): integer(value) if key=='SIZE' else value or None
+                     for key,value in values.items()})
+    if not rows: raise ValueError('no block device rows')
     return rows
 
 
@@ -202,6 +256,11 @@ def collect(session, report, platform, timeout, *, budget=90, fields=None):
             item['observed_at'] = datetime.now(timezone.utc).isoformat()
     probe('storage', 'filesystems', 'LC_ALL=C df -Pk', filesystems)
     probe('system', 'timezone', 'date +%Z')
+    def option_unavailable(section, field, option):
+        source = next((p for p in reversed(process['probes']) if p['section']==section and p['field']==field), {})
+        return source.get('reason_code')=='command_failed' and bool(re.search(
+            r'(?:option\s+[\"\x27]?'+re.escape(option)+r'[\"\x27]?\s+is\s+unknown|(?:invalid|unrecognized) option.*[\"\x27]'+re.escape(option.lstrip('-'))+r'[\"\x27])',
+            source.get('stderr',''), re.I))
     if platform == 'linux':
         probe('system', 'uptime_seconds', 'cat /proc/uptime', lambda t: float(t.split()[0]))
         probe('system', 'virtualization', 'systemd-detect-virt', text_value)
@@ -211,8 +270,14 @@ def collect(session, report, platform, timeout, *, budget=90, fields=None):
         for field, path in (('vendor', 'sys_vendor'), ('model', 'product_name'), ('serial', 'product_serial'), ('uuid', 'product_uuid')):
             probe('hardware', field, 'cat /sys/class/dmi/id/' + path)
         probe('storage', 'block_devices', 'lsblk -b -J -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINT,MODEL', linux_devices)
+        if option_unavailable('storage', 'block_devices', '-J'):
+            probe('storage', 'block_devices', 'LC_ALL=C lsblk -b -P -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINT,MODEL', linux_pair_devices)
         probe('network', 'interfaces', 'ip -j address show', linux_interfaces)
+        if option_unavailable('network', 'interfaces', '-j'):
+            probe('network', 'interfaces', 'LC_ALL=C ip address show', linux_text_interfaces)
         probe('network', 'routes', 'ip -j route show table all', lambda t: [{k: v for k, v in row.items() if k in ('dst', 'gateway', 'dev', 'protocol', 'scope', 'prefsrc', 'metric', 'table')} for row in json.loads(t)])
+        if option_unavailable('network', 'routes', '-j'):
+            probe('network', 'routes', 'LC_ALL=C ip route show table all', lambda t: [{'entry': row} for row in lines(t)])
         probe('network', 'listening_endpoints', 'LC_ALL=C ss -H -lntu', lambda t: table(t, ('protocol', 'state', 'recv_queue', 'send_queue', 'local', 'peer')))
         probe('software', 'packages', "if command -v dpkg-query >/dev/null; then dpkg-query -W -f='${Package} ${Version}\\n'; elif command -v rpm >/dev/null; then rpm -qa --qf '%{NAME} %{VERSION}-%{RELEASE}\\n'; else exit 127; fi", packages)
         probe('services', 'services', 'LC_ALL=C systemctl list-units --type=service --all --no-legend --no-pager --plain', lambda t: table(t, ('name', 'load', 'active', 'sub', 'description')))

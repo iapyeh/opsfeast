@@ -2,6 +2,27 @@ For agent-owned Web startup and password management, use [owner controller 0.1.0
 
 # Ops command-line reference
 
+Host notes `list --recipe REFERENCE --include-general` selects exact recipe
+experience plus unassociated host constraints; repeat `--tag TAG` for all-tag
+matching. Create/update/merge stdin accepts `recipe_references`/`tags` arrays;
+omission preserves existing update metadata and explicit empty lists clear it.
+See [validation and merge behavior](host-notes.md#relate-notes-to-recipes).
+
+
+Recipe execution's incomplete-field summary lists exact property paths per
+job/reason, followed by a saved-result inspection command. Counts refer to distinct
+properties, not device counts. `observation result ID --limit 50` shows causes
+without running the recipe again; see [diagnosis](result-diagnostics.md).
+
+
+`profiles show --json` returns the profile-settings snapshot and registry revision.
+`profiles set-description NAME --description TEXT --expected-revision REVISION --json`
+updates only registration description and returns the new snapshot. Empty text
+clears it, stale revisions fail, and no host connection occurs. Ordinary
+`profiles --json` also includes `description` per registration. See
+[Profile descriptions](profiles.md#profile-descriptions) for limits and examples.
+
+
 For multiple independent Console workers in one task, read [shared task river 0.1.0](shared-console.md). The worker accepts `--session UUID`; owner-controller `worker.start` accepts `session`. These attach to predeclared participants without connecting. The existing console_client create/block/activity JSON accepts the documented targets/target_id fields. Host TAB focus is a reader view and does not route commands.
 
 For configuration-only host creation, selected-field updates and confirmed deletion,
@@ -1023,4 +1044,4 @@ Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show
 
 Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.3.0 control reference](console-agent.md#entered-programs-and-private-input-worker-030) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
 
-*Last modified: 2026-11-05 23:07:10*
+*Last modified: 2026-11-06 14:16:59*

@@ -1,5 +1,5 @@
 """Administrator-only host notes adapter over the shared local service."""
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Query
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from opsfeast.host_notes import HostNotesError, inspect, mutate
@@ -12,10 +12,11 @@ def install(app, *, product, require_admin, json_body, agent_authorized):
         return JSONResponse({'detail': exc.code}, status_code=status)
 
     @app.get('/api/v1/host-notes')
-    def notes(request: Request, profile: str, host_id: str, query: str = ''):
+    def notes(request: Request, profile: str, host_id: str, query: str = '', recipe_reference: str | None = None,
+              tags: list[str] | None = Query(default=None, alias='tag'), include_general: bool = False):
         require_admin(request)
         try:
-            return inspect(product, profile=profile, host_id=host_id, query=query)
+            return inspect(product, profile=profile, host_id=host_id, query=query,recipe_reference=recipe_reference,tags=tags,include_general=include_general)
         except OSError:
             raise HTTPException(422, 'note_storage_unavailable') from None
 

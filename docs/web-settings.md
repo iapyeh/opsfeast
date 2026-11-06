@@ -1,5 +1,11 @@
 # Shared settings area
 
+Profile cards display editable registration descriptions. Use **編輯說明** to
+save or clear plain text; create/attach also accept descriptions. Reuse the
+revision-checked `PATCH /api/v1/profiles` adapter rather than writing the registry
+from UI code. See [description limits, CLI/Core examples and failure behavior](profiles.md#profile-descriptions).
+
+
 The Web settings area is separate from operational/result views. It must eventually
 cover all supported human configuration needs while retaining CLI and agent APIs.
 Build one service/validation contract per settings domain; Web and CLI are adapters,
@@ -45,6 +51,23 @@ it reads no Profile data and never imports user programs.
 The previous flat 0.1.0 catalog is replaced. Clients must consume parent hierarchy;
 `recipes` now means Profile user/external Recipes, while `bundle-recipes` is the
 installation peer. Read-only inspection availability does not imply a writer.
+
+### Where Bundle Recipe parameters are set
+
+Bundle Recipe code is shared by Profiles; each Profile owns its execution
+configuration. On `/settings/profiles`, open the owning card's **預設參數與執行政策**
+link. `/settings/parameters?profile=NAME` identifies that Profile's actual
+`hosts.yaml` for authenticated users, explains `default.recipes.<reference>.vars`
+and group/host overrides, and links to [the complete merge rules](recipe-sources.md).
+The Bundle and user Recipe lists also link to this guidance, retaining Profile
+scope. Bundle parameters do not belong in the replaceable bundled descriptor/code.
+
+This page is guidance, not a Web editor: ask the Agent to make an authorized
+configuration change, or edit the selected Profile's `hosts.yaml`. Its illustrative
+YAML changes only parameters and does not enable or run a Recipe. No file is
+written by reading the guide. The Profile cards distinguish their own settings
+with a full-height border/background; creation/attachment stays in a separate
+installation-management section.
 
 ## Version checks and confirmed Agent handoff
 
@@ -134,4 +157,4 @@ covers bundled defaults and persistent custom references. Web tests cover the sh
 catalog, category routes, and absent write endpoints for planned domains. Existing
 site/storage tests own image normalization, protected edits and upgrade persistence.
 
-*Last modified: 2026-11-05 17:18:10*
+*Last modified: 2026-11-06 09:23:54*

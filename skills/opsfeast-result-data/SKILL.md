@@ -45,6 +45,26 @@ history. ESXi sources are IPv4-only; loopback is excluded from reference views.
 
 # OpsFeast result data
 
+Saved findings can be linked to exact recipes through note `recipe_references`
+and classified with `tags`. Query with the selected Profile/host and recipe plus
+`include_general=True`; preserve source times and evidence IDs in content.
+See [the shared metadata service](../../docs/host-notes.md#relate-notes-to-recipes).
+
+
+For reusable collection experience, follow [the agent workflow](../opsfeast-recipes/references/execution-experience.md).
+Separate unsupported tools/features, absent optional values, access failures and
+parsing/truncation. Cite result/probe IDs and original times in reviewed host notes;
+never substitute old successful values or treat a note as fresh measurement.
+
+
+Incomplete-field terminal counts now include exact property paths grouped by
+job/reason. `value_not_reported` can mean optional attributes absent from otherwise
+successful output. Inventory 0.4.2 supports old iproute2 through text probes;
+preserve the original failed JSON attempt and the successful text source/time.
+See [capability handling and limits](../../recipes/system/inventory/overview/README.md#linux-iproute2-capabilities-042).
+No historical rewrite or automatic recollection occurs.
+
+
 Inventory recipe 0.4.0 job samples use inventory-job-observations 0.1.0, separate from whole-snapshot inventory/exchange. Read [inventory jobs](../../docs/inventory-jobs.md). Query structured history through retention/Core; `inventory latest --host HOST --json` is a no-write latest-attempt view per property. Preserve sample/probe times, entity keys, public YANG module revisions, source IDs, actor/identity warnings, coverage and failure gaps. `inventory query --property PROPERTY` does not store by default; `--save --note TEXT` creates a manual comparison through the same retention/consumer flow without changing schedules. New-format failed observations retain error/gap evidence and support offline replay. No old-data migration, interpolation or automatic retry is implemented. Job-history Vault names use whole-second UTC time/title with ordinal suffixes for collisions, without UUID/hash filenames. Do not use legacy snapshot exchange/CSV interfaces as if they exported this new contract.
 
 
@@ -276,4 +296,4 @@ from latest-attempt inventory gaps. For historical/quality analysis use retentio
 query/show; replay/import/deletion/Vault rebuild do not update reference metadata.
 See [contract, source/namespace scope and verification limits](../../docs/host-reference-ips.md).
 
-*Last modified: 2026-11-05 23:07:10*
+*Last modified: 2026-11-06 14:16:59*

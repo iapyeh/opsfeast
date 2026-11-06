@@ -11,7 +11,7 @@ import threading
 from uuid import uuid4
 
 from . import (API_VERSION, ConfigError, Validator, REPOSITORY_ROOT, load_profiles,
-               registered_root, profile_root, profile_name, save_profiles, initialize)
+               registered_root, profile_root, profile_name, profile_description, save_profiles, initialize)
 from .identity import read_identity, initialize_identity, update_identity
 
 
@@ -92,8 +92,22 @@ class Profiles:
             except (ConfigError, OSError):
                 root = profile_root(item['root'], self.instance.root)
                 status = 'unavailable'
-            items[name] = {'root': str(root), 'status': status, 'active': name == data['default_profile']}
+            items[name] = {'root': str(root), 'status': status, 'active': name == data['default_profile'], 'description': item.get('description','')}
         return items
+
+    def set_description(self, name, description, *, expected_revision=None):
+        from .identity import _locked
+        name = profile_name(name)
+        description = profile_description(description)
+        with _locked(self.instance.root / '.opsfeast-profiles.json'):
+            if expected_revision is not None:
+                from .profile_settings import check_revision
+                check_revision(self.instance.root, expected_revision)
+            data = load_profiles(self.instance.root)
+            if name not in data['profiles']: raise ConfigError('unknown profile')
+            data['profiles'][name]['description'] = description
+            save_profiles(data, self.instance.root)
+        return self.list()[name]
 
     def use(self, name, *, expected_revision=None):
         from .identity import _locked
@@ -107,11 +121,12 @@ class Profiles:
             save_profiles(data, self.instance.root)
         return self.instance.profile(name)
 
-    def attach(self, root, *, name=None, expected_revision=None):
+    def attach(self, root, *, name=None, expected_revision=None, description=None):
         from . import instance_definition, definition_path
         from .identity import _locked
         root = Path(root).expanduser().resolve(strict=True)
         name = profile_name(root.name if name is None else name)
+        if description is not None: profile_description(description)
         definition = definition_path(root)
         if definition.exists() or definition.is_symlink():
             instance_definition(root)
@@ -126,7 +141,8 @@ class Profiles:
                     raise ConfigError('profile name already refers to another root')
             elif any(profile_root(item['root'], self.instance.root) == root for item in data['profiles'].values()):
                 raise ConfigError('management root is already registered under another name')
-            data['profiles'][name] = {'root': str(root.relative_to(self.instance.root)) if root.is_relative_to(self.instance.root) else str(root)}
+            data['profiles'][name] = {**data['profiles'].get(name, {}), 'root': str(root.relative_to(self.instance.root)) if root.is_relative_to(self.instance.root) else str(root)}
+            if description is not None: data['profiles'][name]['description'] = description
             if data['default_profile'] is None:
                 data['default_profile'] = name
             save_profiles(data, self.instance.root)
@@ -174,8 +190,9 @@ class Instance:
     def update_metadata(self, *, name=None, description=None):
         return update_identity(self.root, name=name, description=description)
 
-    def init_profile(self, name='main', *, root=None, namespace=None, expected_revision=None, create_only=False):
+    def init_profile(self, name='main', *, root=None, namespace=None, expected_revision=None, create_only=False, description=None):
         name = profile_name(name)
+        if description is not None: profile_description(description)
         registry = load_profiles(self.root)
         if expected_revision is not None:
             from .profile_settings import check_revision
@@ -197,7 +214,7 @@ class Instance:
             except FileExistsError:
                 raise ConfigError('new profile directory already exists; inspect or attach explicitly') from None
         initialize(target, quiet=True, profile=name, namespace=namespace)
-        profile = self.profiles.attach(target, name=name, expected_revision=expected_revision)
+        profile = self.profiles.attach(target, name=name, expected_revision=expected_revision, description=description)
         self.initialize()
         return profile
 

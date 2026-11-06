@@ -13,17 +13,18 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "root", "status", "active", "namespace", "definition_status"],
+        "required": ["name", "root", "status", "active", "namespace", "definition_status", "description"],
         "properties": {
           "name": {"type": "string"},
           "root": {"type": "string"},
           "status": {"enum": ["available", "unavailable"]},
           "active": {"type": "boolean"},
           "namespace": {"type": ["string", "null"]},
-          "definition_status": {"enum": ["present", "missing", "invalid", "unknown"]}
+          "definition_status": {"enum": ["present", "missing", "invalid", "unknown"]},
+          "description": {"type": "string", "maxLength": 1000}
         }
       }
     }
   },
-  "$comment": "Last modified: 2026-11-01 13:20:29"
+  "$comment": "Last modified: 2026-11-06 09:26:10"
 }

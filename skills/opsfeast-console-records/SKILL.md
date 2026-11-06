@@ -10,6 +10,21 @@ For several hosts in one task river, read [shared task river 0.1.0](../../docs/s
 
 # Publish Console blocks and await human responses
 
+For already-authorized root inspection, use [the login-account sudo decision rule](../../docs/console-agent.md#choose-the-actor-for-an-authorized-root-switch).
+A missing sudo flag is enabled policy, not missing human preference. Do not
+substitute su root or repeat an account-choice approval; use the exact current
+actor's managed switch and verify its result. Preserve explicit user choices,
+policy denials and concrete failure/cleanup evidence.
+
+
+For multi-host tasks, [one canonical river appears in every declared host's history](../../docs/shared-console.md#one-canonical-river-discoverable-from-every-participant).
+Declare all Profile/host participants in `targets` before attachment; never copy
+transcripts or create filesystem links. The agent can choose a task display label
+or main subject unless the human specifies one; that choice does not affect
+history membership or grant execution rights. Existing single-host records do not
+automatically acquire participants, and retroactive association is unsupported.
+
+
 For human-directed shell work, follow the [interactive chat-shell procedure](../opsfeast-interactive/references/chat-shell.md), including immediate reader display, no routine login screenshots and the agreed prompt/input presentation.
 
 Read the complete [0.2.0 contract](../../docs/console-records.md) before use.
@@ -117,4 +132,4 @@ Historical readers provide no secret field. Old workers must be replaced and the
 Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-06 15:10:22*

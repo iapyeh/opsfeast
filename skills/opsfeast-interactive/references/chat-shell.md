@@ -24,6 +24,18 @@ Web service restarted after this update; preserve existing records and reconcile
 active work before doing so. No automatic reconnect or program replay exists.
 
 
+## Choose root access without a redundant account question
+
+When the human grants root for a host/task, use the verified login account's
+managed sudo unless they explicitly selected another method/account, the account
+sets Boolean `sudo: false`, or an actual failed attempt explains the blocker.
+An omitted sudo key means enabled policy; it does not require asking the human
+which account to use. Already-root sessions need no further elevation. Do not
+start with su root, request a root password or try other accounts by default.
+Reuse current-actor credential selection and confirm the returned identity.
+Nested actor scopes retain their actual current identity. Follow the full
+[decision table and limits](../../../docs/console-agent.md#choose-the-actor-for-an-authorized-root-switch).
+
 ## Start quickly, then keep the same shell
 
 - Use the [memory-only owner controller](../../../docs/agent-owner.md): start
@@ -213,4 +225,4 @@ in OpsFeast rather than requiring a new connection/record bridge each time.
 
 After each concluded interaction (including agent-led Console inspection), ask whether the human wants reusable experience extracted into [host notes](../../../docs/host-notes.md). Agreement authorizes extraction only: present the draft for final confirmation before calling the notes writer. Use source `console` for distilled Console evidence. When organizing existing notes on request, use source `agent`, display conflicts and exact retained/removed UUIDs, and obtain confirmation for the final mutation. Read relevant existing notes before starting host diagnosis.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-06 15:10:22*

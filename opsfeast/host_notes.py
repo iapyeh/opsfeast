@@ -50,13 +50,33 @@ def _uuid(value):
 
 
 def _content(changes):
-    if not isinstance(changes, dict) or set(changes) != {'title', 'content', 'source'}:
+    if not isinstance(changes, dict) or not {'title', 'content', 'source'} <= set(changes) or set(changes)-{'title','content','source','recipe_references','tags'}:
         _fail('invalid_note_input')
     _text(changes['title'], 200)
     _text(changes['content'], 32000, multiline=True)
     if not isinstance(changes['source'], str) or changes['source'] not in SOURCES:
         _fail('invalid_note_source')
-    return dict(changes)
+    result = dict(changes)
+    for key in ('recipe_references','tags'):
+        if key in changes: result[key] = _labels(changes[key], key)
+    return result
+
+
+def _labels(values, kind):
+    if not isinstance(values, list) or len(values)>32: _fail('invalid_note_input')
+    result=[]
+    for value in values:
+        _text(value, 500 if kind=='recipe_references' else 64)
+        if value != value.strip(): _fail('invalid_note_input')
+        if kind=='recipe_references':
+            from recipe_settings import reference
+            try: value=reference(value)
+            except ConfigError: _fail('invalid_note_input')
+        else:
+            if ',' in value: _fail('invalid_note_input')
+            value=value.lower()
+        if value not in result: result.append(value)
+    return sorted(result)
 
 
 def _selected(installation, profile):
@@ -94,14 +114,15 @@ def _read(selected):
             _uuid(data['revision'])
             seen = set()
             for note in data['notes']:
-                if not isinstance(note, dict) or set(note) != {'uuid', 'host_id', 'title', 'content', 'source', 'timestamp'}:
+                if not isinstance(note, dict) or not {'uuid','host_id','title','content','source','timestamp'} <= set(note) or set(note)-{'uuid','host_id','title','content','source','timestamp','recipe_references','tags'}:
                     raise ValueError()
                 _uuid(note['uuid'])
                 if note['uuid'] in seen:
                     raise ValueError()
                 seen.add(note['uuid'])
                 _text(note['host_id'], 200)
-                _content({k: note[k] for k in ('title', 'content', 'source')})
+                metadata=_content({k:note[k] for k in ('title','content','source','recipe_references','tags') if k in note})
+                note.update({key:metadata.get(key,[]) for key in ('recipe_references','tags')})
                 stamp = datetime.fromisoformat(note['timestamp'])
                 if stamp.utcoffset() is None or stamp.isoformat(timespec='seconds') != note['timestamp']:
                     raise ValueError()
@@ -113,16 +134,21 @@ def _read(selected):
     return data, revision
 
 
-def inspect(installation, *, profile, host_id, query=''):
+def inspect(installation, *, profile, host_id, query='', recipe_reference=None, tags=None, include_general=False):
     """Read selected host notes; missing storage stays absent, orphan notes readable."""
     selected = _selected(installation, profile)
     _text(host_id, 200)
     if not isinstance(query, str) or len(query) > 1000:
         _fail('invalid_note_input')
+    if type(include_general) is not bool or (include_general and recipe_reference is None): _fail('invalid_note_input')
+    if recipe_reference is not None: recipe_reference=_labels([recipe_reference],'recipe_references')[0]
+    tags=_labels([] if tags is None else tags,'tags')
     data, revision = _read(selected)
     needle = query.casefold()
     notes = [n for n in data['notes'] if n['host_id'] == host_id and
-             (not needle or needle in (n['title'] + '\n' + n['content']).casefold())]
+             (not needle or needle in (n['title'] + '\n' + n['content']+'\n'+'\n'.join(n['recipe_references']+n['tags'])).casefold()) and
+             (recipe_reference is None or recipe_reference in n['recipe_references'] or (include_general and not n['recipe_references'])) and
+             set(tags)<=set(n['tags'])]
     return {'schema_version': VERSION, 'profile': profile, 'host_id': host_id,
             'host_present': host_id in selected.hosts._config.hosts, 'revision': revision,
             'notes': sorted(notes, key=lambda n: (n['timestamp'], n['uuid']), reverse=True)}
@@ -172,6 +198,11 @@ def mutate(installation, *, profile, host_id, action, expected_revision,
             note = None
             if action != 'delete':
                 identifier = str(uuid4()) if action == 'create' else note_uuid
+                related = [] if action=='create' else [rows[x] for x in [note_uuid]+(remove or [])]
+                changes=dict(changes)
+                for key in ('recipe_references','tags'):
+                    if key not in changes:
+                        changes[key]=_labels(sorted({v for old in related for v in old[key]}),key)
                 note = {'uuid': identifier, 'host_id': host_id, **changes,
                         'timestamp': datetime.now(timezone.utc).isoformat(timespec='seconds')}
                 data['notes'] = [n for n in data['notes'] if n['uuid'] != identifier] + [note]
@@ -194,7 +225,11 @@ def main(argv=None):
     parser.add_argument('--profile', required=True)
     parser.add_argument('--host', required=True)
     sub = parser.add_subparsers(dest='action', required=True)
-    sub.add_parser('list').add_argument('--query', default='')
+    listing=sub.add_parser('list')
+    listing.add_argument('--query', default='')
+    listing.add_argument('--recipe', help='Exact source-qualified recipe reference; no execution or recipe resolution.')
+    listing.add_argument('--tag', action='append', default=[], help='Require this tag; repeat for all-tag matching.')
+    listing.add_argument('--include-general', action='store_true', help='With --recipe, also include notes without recipe associations.')
     for action in ('show', 'create', 'update', 'delete', 'merge'):
         command = sub.add_parser(action, description={
             'show': 'Read one note and its current revision; no writes or connections.',
@@ -215,7 +250,7 @@ def main(argv=None):
     try:
         scope = dict(profile=args.profile, host_id=args.host)
         if args.action in ('list', 'show'):
-            result = inspect(args.installation, **scope, query=getattr(args, 'query', ''))
+            result = inspect(args.installation, **scope, query=getattr(args, 'query', ''), recipe_reference=getattr(args,'recipe',None), tags=getattr(args,'tag',None), include_general=getattr(args,'include_general',False))
             if args.action == 'show':
                 _uuid(args.uuid)
                 result['notes'] = [n for n in result['notes'] if n['uuid'] == args.uuid]

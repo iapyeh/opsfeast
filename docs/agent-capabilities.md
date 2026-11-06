@@ -6,6 +6,34 @@ For agent website operations, use the [memory-only owner controller](agent-owner
 
 # Reuse OpsFeast tools and Python modules
 
+Host notes now expose structured `recipe_references` and `tags` through existing
+inspect/mutate, CLI and HTTP surfaces. Use exact recipe filtering with general
+notes for pre-run experience discovery; repeated tag filters require all tags.
+See [metadata contract and examples](host-notes.md#relate-notes-to-recipes).
+
+
+[Recipe execution experience](../skills/opsfeast-recipes/references/execution-experience.md)
+uses existing host-note inspect/mutate and saved-result/retention APIs. Agents
+read applicable experience before work and propose evidence-linked notes after
+new findings; shared verified methods enter recipe code/tests. This is a procedural
+skill, not automatic runtime learning. Inventory 0.4.3 additionally supports
+old lsblk rejecting JSON through bounded `-P` parsing; see its recipe guide.
+
+
+For Linux hosts whose `ip` rejects `-j`, bundled inventory 0.4.2 supports bounded
+text address/route queries without installing tools. Reuse the existing inventory
+runner and [documented capability handling](../recipes/system/inventory/overview/README.md#linux-iproute2-capabilities-042).
+Terminal partial summaries name missing property paths; `observation result ID`
+reads saved causes and original probe evidence without connecting.
+
+
+Profile registration descriptions are editable through
+`profiles show/set-description`, `Instance.profiles.set_description` and
+administrator `PATCH /api/v1/profiles`. Reuse the revision-checked
+`opsfeast.profile_settings.update` helper; metadata edits do not open a management
+root or connect to hosts. See [Profile description contract](profiles.md#profile-descriptions).
+
+
 For one task involving multiple hosts, use [shared task river 0.1.0](shared-console.md): create declared targets through the existing record API, attach separate workers with `session` / `--session`, and preserve each block's target_id. The reader offers 全部/host TABs, independently toggles each host’s blocks open/closed without reordering (dark consistently means all applicable blocks are open, including 全部), and places time first in both states. A far-right ↓/↑ toggle opens/closes each block; open blocks show ↗ full-content links immediately to its left. Per-target activity and exact host-history membership are implemented; source metadata grants no execution permission.
 
 The [first-use Web guide](web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
@@ -596,4 +624,4 @@ For host-specific advice or diagnosis, use the [accumulated-evidence workflow](h
 
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-05 23:07:10*
+*Last modified: 2026-11-06 14:16:59*

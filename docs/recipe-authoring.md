@@ -1,5 +1,26 @@
 # Recipe authoring guide
 
+## Declare purpose and success criteria
+
+Document the recipe's function and operational purpose before implementation
+details: what outcome the human needs, which objects/properties are in scope,
+what counts as success/partial/failure, and which prerequisites, privileges and
+side effects are acceptable. Describe non-applicable and unavailable values.
+Descriptor title/description help discovery; the recipe guide owns the fuller
+purpose and limits. These are documented semantics, not a new descriptor schema.
+
+Treat the program as a reviewed current method. An agent whose environment
+prevents that method from achieving the declared purpose should investigate and
+use other suitable methods within the existing authorization. It need not ask for
+the same authorized read again merely because a command differs, but installation,
+new privileges/targets or consequential writes require their own applicable scope.
+Do not silently edit installed product code or bypass execution/data contracts.
+Keep supplementary findings and their actual source/time separate from the failed
+run, and promote a verified general method through reviewed code and regression
+tests. See [the enduring principle](vision.md#treat-a-recipe-as-a-growing-unit-of-purpose-and-knowledge)
+and [experience discovery and preservation](../skills/opsfeast-recipes/references/execution-experience.md).
+
+
 Before choosing a directory, read [recipe classification and location](recipe-taxonomy.md). Default user recipes go in `<selected-profile-root>/recipes/<domain>/<optional-subdomains>/<action>/<name>/`; shared recipes use an explicitly registered external root. The corresponding selectors are :classified/path and company:classified/path. Intermediate folders are categories, not recipes; only leaves carry recipe.yaml. Keep descriptor identity stable across a classification-only move and review dependent selectors/jobs/consumers.
 
 For retained-data handlers and converters, use [retention consumers](retention-consumers.md). Declare consumer subscriptions separately from the producing recipe, reuse the read-only retention reader and existing output/artifact interfaces, and enable reviewed local programs explicitly. Multi-recipe content belongs in a consumer or offline report, with preserved source/status/quality context. No runner edits or recipe-side subscriber list is needed.
@@ -157,4 +178,4 @@ Prefer [portable retention declarations](portable-contracts.md) for user-defined
 
 Return optional `assessment: {label, severity, summary}` to interpret findings while retaining fixed execution status. Operator-selected account policy is applied before `execute(recipe)`; continue using the supplied scoped Recipe/session. Do not add per-recipe root/account vars or switching loops. See [contracts, examples and transport limits](recipe-results-and-accounts.md).
 
-*Last modified: 2026-10-30 12:17:33*
+*Last modified: 2026-11-06 14:07:41*

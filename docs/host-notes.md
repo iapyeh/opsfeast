@@ -1,5 +1,13 @@
 # Host notes 0.1.0
 
+For agent-led recipe work, [execution experience](../skills/opsfeast-recipes/references/execution-experience.md)
+provides a pre-run evidence checklist, post-run diagnosis and a lesson template
+using this existing store. It covers recipe version, tool capabilities, actor,
+source time/result/probe references, validated alternatives and unresolved gaps.
+Apply the reviewed save workflow below; routine CLI execution neither reads these
+notes nor writes lessons automatically. The existing private store is extended with structured recipe associations and tags.
+
+
 Host notes accumulate installation-specific knowledge for humans and their agents.
 The host's **主機筆記** tab under `/hosts?profile=NAME&host=HOST&view=notes`
 reads real private data, supports title/content search, and lets an administrator
@@ -9,6 +17,70 @@ The page displays source and last modification time, for example
 A delete confirmation names the note and explains that deletion cannot be undone.
 Merging is available through the CLI/Python/HTTP service; no Web merge editor is
 provided. No TUI notes editor or automatic semantic conflict resolver is provided.
+
+## Relate notes to recipes
+
+Notes support structured `recipe_references` and `tags`. Recipe references match
+exactly after the shared reference normalization: `bundle:system/check` and
+`system/check` are identical; `:system/check` and `vendor:system/check` are distinct.
+References are syntax-checked, not resolved/executed, so removed or unavailable
+recipes can remain linked to historical experience. No substring recipe matching,
+package installation, execution permission or cross-Profile association is implied.
+
+Each list accepts up to 32 entries. Recipe references have at most 500 Unicode
+characters; tags at most 64, without commas or control characters. Entries must
+be nonblank with no surrounding whitespace. Tags normalize to lowercase; both
+lists deduplicate and sort. Null, scalar values and malformed references fail.
+An empty recipe list identifies general host experience, not “no useful knowledge.”
+
+Read filters are optional: `recipe_reference` selects one exact reference,
+`tags` requires all supplied tags, and `query` searches title/content/references/tags.
+Filters combine with AND. With a recipe filter, `include_general=True` additionally
+includes notes with no recipe references; it is invalid without a recipe filter.
+Tag/query filters still apply to those general notes. Reads return the existing
+profile-wide revision, not a filtered revision, and never write storage.
+
+Python example:
+
+```python
+state = host_notes.inspect(installation, profile='lab', host_id='node',
+    recipe_reference='system/inventory/overview', include_general=True)
+# Require both tags when narrowing an investigation:
+state = host_notes.inspect(installation, profile='lab', host_id='node',
+    recipe_reference='system/inventory/overview', tags=['linux', 'iproute2'])
+```
+
+CLI and HTTP examples:
+
+```sh
+python -B tools/opsfeast.py host-notes --profile lab --host node list --recipe system/inventory/overview --include-general
+python -B tools/opsfeast.py host-notes --profile lab --host node list --recipe system/inventory/overview --tag linux --tag iproute2
+```
+
+`GET /api/v1/host-notes?profile=lab&host_id=node&recipe_reference=system/inventory/overview&include_general=true`
+accepts repeated `tag=linux&tag=iproute2`. Administrator/owner authentication and
+same-origin protections apply to filtered reads and metadata writes alike.
+
+Create/update/merge `changes` can include `recipe_references` and `tags` arrays:
+
+```json
+{"title":"Inventory tool capability","content":"Reviewed evidence and limits...","source":"agent","recipe_references":["system/inventory/overview"],"tags":["linux","iproute2","unsupported-option"]}
+```
+
+Creation defaults omitted lists to empty. Updates preserve omitted metadata;
+explicit `[]` clears it. Merges union omitted metadata across the survivor and all
+removed notes, while explicit arrays replace the union. Limits still apply to the
+merged result. UUID/revision/source rules remain unchanged. A Web editor displays
+both fields, uses one reference per line and comma-separated tags, supports
+clearing, and offers exact recipe/all-tag/general-note filters.
+
+This is an additive extension of note contract 0.1.0. Existing stored notes without
+these fields remain valid and return empty lists; reading does not migrate/rewrite
+them. Future writes emit explicit lists. A running older Web process must be
+restarted before editing newly labelled notes; old readers rejecting new fields
+are not supported. Back up/preserve the Profile as usual. No separate memory store,
+automatic runner lookup or automatic execution strategy cache is added. Agents
+follow [the experience discovery workflow](../skills/opsfeast-recipes/references/execution-experience.md#make-recipe-related-notes-discoverable).
 
 ## Storage and record contract
 
@@ -23,7 +95,8 @@ retention ingestion and synchronization into existing Vault README notes are not
 implemented. Existing human notes remain untouched.
 
 The file contains `schema_version: "0.1.0"`, an internal revision nonce and `notes`.
-Each note has exactly:
+The [note JSON Schema](../schemas/host-note.schema.json) documents its shape; the shared service additionally validates canonical references and text rules.
+Each note has the following fields (metadata lists are optional in existing storage and always present in service output):
 
 | Field | Meaning |
 | --- | --- |
@@ -32,6 +105,8 @@ Each note has exactly:
 | `title` | Nonblank plain text, up to 200 Unicode code points |
 | `content` | Nonblank plain text, up to 32,000 code points; multiline allowed |
 | `source` | `console`, `user`, or `agent` for the latest content change |
+| `recipe_references` | Exact normalized recipe references; empty means general host experience |
+| `tags` | Lowercase descriptive labels; no execution semantics |
 | `timestamp` | System-generated last modification time, ISO 8601 to seconds with offset |
 
 There is no separate confirmation time, author field or edit history. Storage uses
@@ -95,21 +170,21 @@ Python uses `note_uuid=KEEP`, `remove=[DROP]`, `confirmation=[DROP]`; delete use
 `--installation PATH` selects another installation explicitly. CLI exit 0 means
 success; 1 returns a sanitized error object; argument errors use argparse exit 2.
 Lists return schema/profile/host, host_present, revision and notes, newest first.
-Search is case-insensitive over title/content. `show` returns the same envelope
+Text search is case-insensitive over title/content/references/tags; structured filters follow the rules above. `show` returns the same envelope
 with one note. Mutations return action, profile/host, revision, note (null on delete)
 and deleted UUIDs. No write proves human approval; local OS authority and the
 agent's authorization discipline remain necessary.
 
 ## HTTP and failure behavior
 
-All endpoints require a signed-in administrator and same-origin checks. Console
-writer/agent tokens and site-edit tokens cannot manage notes. The Web adapter
-sets source to `user`; local agents use CLI/Python, without borrowing administrator
-cookies or self-approving a Console proposal.
+All endpoints require a signed-in administrator and same-origin checks. Console worker and site-edit tokens cannot manage notes. The installation owner
+capability can use these APIs independently of a human session. The Web adapter
+sets source to `user` for human sessions and `agent` for owner capability; local
+agents can also use CLI/Python without borrowing human cookies.
 
 | Request | Input |
 | --- | --- |
-| `GET /api/v1/host-notes?profile=NAME&host_id=HOST&query=TEXT` | query optional |
+| `GET /api/v1/host-notes?profile=NAME&host_id=HOST&query=TEXT` | query, recipe_reference, repeated tag, include_general optional |
 | `POST /api/v1/host-notes` | profile, host_id, expected_revision, changes |
 | `PATCH /api/v1/host-notes` | same plus note_uuid |
 | `DELETE /api/v1/host-notes` | profile, host_id, expected_revision, note_uuid, confirmation |
@@ -255,4 +330,4 @@ escaped rendering, timestamp formatting and actual create/edit/delete event hand
 including draft preservation on conflicts. These synthetic tests do not connect to
 any host or prove arbitrary filesystem-writer isolation.
 
-*Last modified: 2026-11-05 08:46:39*
+*Last modified: 2026-11-06 14:16:59*

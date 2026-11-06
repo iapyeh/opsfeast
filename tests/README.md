@@ -1,5 +1,26 @@
 # Tests
 
+Host-note metadata tests cover normalized exact recipe references, all-tag and
+general-note filters, existing unlabelled data without writes, omission/clear,
+merge unions, CLI/HTTP auth/origin/conflict boundaries and Web edit/filter/XSS
+behavior. Synthetic tests use private temporary Profiles; no host connections.
+
+
+`test_inventory_legacy_lsblk.py` covers inventory 0.4.3's old-util-linux
+capability path, key/value escaping, byte sizes, missing optional attributes,
+malformed/duplicate/missing columns, permission failures and probe provenance.
+The execution-experience reference reuses existing notes/results APIs without
+adding a new runtime service; existing notes concurrency/authorization tests remain
+applicable. New lsblk behavior is synthetic-tested, not real-host verified.
+
+
+`test_inventory_legacy_ip.py` verifies inventory 0.4.2's unsupported-JSON-option
+handling, text address/route data, dual-stack reference publication, retained
+probe evidence and explicit permission/malformed-data failures. These are
+synthetic tests, not a new real-host collection. Console output tests verify
+that partial counts also name all incomplete property paths.
+
+
 test_vault_layout.py verifies compact second-resolution observation names, a single final metadata section and absent success banner, scalar/ordered primary-group routing, distinct ungrouped/reserved groups, archived-host placement, valid secondary-group/index/overview links, regeneration after group changes, unchanged retention and preserved old human notes. Same-second/title collisions preserve both retained records and existing published bytes; operation-journal filenames remain distinct.
 
 test_vault_evidence.py verifies title/UTC page names, same-time/source separation, safe bounded filenames and explicit collision failure; verified actor capture, output/credential omission, optional local retention metadata, unchanged legacy exchange, typed validation, historical unknowns, managed-path cleanup and human-note preservation. Collector tests cover LF/CRLF, distinct marker/exit/parser reasons and byte-limit checks before normalization. Existing synthetic runner tests verify actor metadata, and historical snapshot tests continue to bind unchanged inventory normalizer/schema bytes.
@@ -616,7 +637,7 @@ match this commit's unchanged dependency contract; the working checkout's separa
 
 Human/agent documentation, CLI/Core references, capability map, recipe guide,
 migration notes and host/recipe/result-data/Core skills are delivered together.
-The recipe is 0.4.1; property/YANG and normalized retention contracts remain
+The recipe is 0.4.3; property/YANG and normalized retention contracts remain
 unchanged. Existing histories are not backfilled and connection settings never
 use the new reference metadata. Old-Linux tool fallbacks and ESXi interface
 normalization remain separate work.
@@ -671,4 +692,4 @@ on CPython 3.14.4, including all 16 runtime diagnostics regressions and packaged
 wheel/sdist checks. Unrelated textbook, figure and private files were excluded;
 staged document links, skill metadata, timestamps and 3.11 grammar checks passed.
 
-*Last modified: 2026-10-31 22:38:08*
+*Last modified: 2026-11-06 14:16:59*

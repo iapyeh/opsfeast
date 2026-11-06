@@ -1,5 +1,47 @@
 # Feasts and profiles
 
+## Profile descriptions
+
+Each registration in `.opsfeast.yaml` can include an optional `description` string.
+It belongs to the installation registry, independently of the registration name,
+management root, Namespace and default selection. Existing entries without it read
+as empty text; no migration or management-directory rewrite is needed.
+
+In Settings → Profiles, choose **編輯說明** on a Profile card, edit and save.
+Create/attach also accept a description. Empty text in the editor clears it;
+empty attach input preserves an existing registration description. Text supports
+multiple lines and up to 1,000 Unicode characters; control characters other than
+tab/newline and invalid Unicode are rejected. Descriptions are plain text, not
+Markdown, and appear only in authenticated Profile views; do not store secrets.
+Cancellation writes nothing. Revision conflicts return 409 and retain the draft;
+reload the page, review the current description and reapply the intended edit.
+An unavailable management root does not prevent editing registration metadata.
+These changes do not connect to hosts or change default selection.
+
+For agents, run `python -B tools/opsfeast.py profiles show --json` to obtain the
+registry `revision`, then run:
+
+```sh
+python -B tools/opsfeast.py profiles set-description main --description 'Production hosts' --expected-revision REVISION --json
+```
+
+Pass `--description ''` to clear. Stale revisions fail without overwriting changes.
+The result uses the same profile-settings snapshot as `profiles show`, including
+`description` in every row. The ordinary `profiles --json` list also includes it.
+The checkout-level helper is
+`opsfeast.profile_settings.update(installation, name=..., description=..., expected_revision=...)`.
+Core callers can use `instance.profiles.set_description(name, text, expected_revision=revision)`;
+`profiles.list()` returns description text, and `attach`/`init_profile` accept
+optional `description`. Omitting description preserves it on reattachment/reinit.
+An explicit Core `None` on create/attach means omission; HTTP `null` is invalid.
+
+`PATCH /api/v1/profiles` requires exactly `name`, `description`, and
+`expected_revision`. Administrator/owner capability and same-origin rules match
+other Profile writes; site-edit tokens are insufficient. POST create/attach accept
+optional description. Invalid requests return 422, stale revisions 409, and
+unauthenticated requests 401. See [Web administrator boundaries](web-administrator.md).
+
+
 User-authored recipes normally live under the selected profile's actual management root at recipes/domain/subdomains/action/name, for example feasts/main/recipes/database/mysql/check/replication. Use a :classified/path selector. Profiles can point to arbitrary registered directories; a profiles/ parent is not required. For code shared across profiles, register one external recipe source. See [classification, placement and relocation](recipe-taxonomy.md).
 
 ## Profile roots, retention and vault content
@@ -81,6 +123,20 @@ checkout-local and must be preserved separately on replacement. See
 [administrator/profile interfaces](web-administrator.md) for exact APIs, permissions
 and verification. No Web rename, detach or deletion is implemented.
 
+The Web list gives every Profile its own bordered card, with its name, status,
+management-root path and owned settings inside that card. Only the card whose name
+matches `default_profile` receives the current-default badge; it has no switch
+button. The same rule is reapplied after a successful switch. Switch actions stay
+in their card header, avoiding floating controls that can overlap another Profile.
+There is no separate pinned current-default summary.
+
+Creation and attachment are installation-level actions below the Profile cards.
+**Attach existing environment** registers an already present Feast management
+root (containing `hosts.yaml`) under a Profile name. It reuses settings, recipes,
+observations, Retention and Vault in place; it does not copy, move or rebuild those
+files. Already registered Profiles do not need to be attached again. Attachment
+is not a way to add a child object to a Profile.
+
 ## TUI profile selection
 
 Bare `python -B tools/opsfeast.py` includes a Profiles table with the same availability checks. Enter or Switch selected profile updates the persisted default and refreshes Hosts; cursor movement is read-only. Invalid/unavailable rows and failed writes preserve the default. Explicit recipe root/profile form values remain unchanged. See [terminal UI](terminal-ui.md#profiles) for navigation, execution boundaries and limits.
@@ -111,4 +167,4 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-*Last modified: 2026-11-05 13:49:41*
+*Last modified: 2026-11-06 09:23:54*

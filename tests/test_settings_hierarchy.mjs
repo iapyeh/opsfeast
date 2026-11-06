@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {renderSettingsTree,profileChildren} from '../web/assets/settings-hub.mjs';
+import {renderSettingsTree,profileChildren,renderParameterGuide} from '../web/assets/settings-hub.mjs';
 import {updateResult,updatePrompt} from '../web/assets/updates.mjs';
 import {getMessages} from '../web/assets/i18n.mjs';
 const e=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -31,4 +31,13 @@ test('new-release confirmation gives an exact, scoped Agent handoff without clai
   assert.match(prompt,/7.0.1/);assert.match(prompt,/7.1.0/);
   assert.match(prompt,/docs\/skill-updates.md/);assert.match(prompt,/不得覆寫/);
   assert.match(prompt,/不授權 commit\/push/);
+});
+
+test('Bundle parameters guide identifies the selected Profile file and its current editing limits',()=>{
+  const html=renderParameterGuide({profile:'vault-test4',root:'/private/<fixture>',m,e});
+  assert.match(html,/vault-test4/);assert.match(html,/\/private\/&lt;fixture&gt;\/hosts.yaml/);
+  assert.match(html,/目前 Web 尚未提供參數編輯器/);
+  assert.match(html,/system\/network\/check\/port/);
+  assert.match(html,/default:/);assert.match(html,/port: 443/);
+  assert.doesNotMatch(html,/enabled: true|<fixture>/);
 });

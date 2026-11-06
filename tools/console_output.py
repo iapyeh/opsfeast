@@ -479,6 +479,8 @@ def execution(report, icons=None, host=None, recipe=None, result_root=None):
                 reason = gap['reason_code']
                 counts[reason] = counts.get(reason, 0) + len(gap['properties'])
             rendered += '\n'+cell(target)+': incomplete fields — '+', '.join(cell(reason)+': '+str(count) for reason,count in counts.items())
+            for gap in gaps:
+                rendered += '\n  '+cell(gap['job'])+' / '+cell(gap['reason_code'])+': '+', '.join(cell(name) for name in gap['properties'])
         saved = row.get('result_path')
         identifier = identifiers.get(str(Path(saved).resolve())) if saved else None
         if identifier:

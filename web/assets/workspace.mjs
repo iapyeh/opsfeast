@@ -48,6 +48,11 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
     return response.json();
   };
   try {
+    if(recipeScope==='bundle'||recipeScope==='user'){
+      const owner=recipeScope==='user'?profile:profiles?.default_profile;
+      const target=owner?workspaceUrl('/settings/parameters',owner):'/settings/profiles';
+      content.insertAdjacentHTML('beforebegin',`<p class="detail-note">${e(c.parametersLocation)} <a class="button" href="${e(target)}">${e(c.parametersAction)}${owner?' ('+e(owner)+')':''} →</a></p>`);
+    }
     if(['/docs','/learn','/skills'].includes(path)) {
       const kind=path.slice(1), data=await read('/api/v1/library?kind='+kind);
       const doc=query.get('doc');

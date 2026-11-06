@@ -1,5 +1,41 @@
 # Shared task river 0.1.0
 
+## One canonical river, discoverable from every participant
+
+A shared session has one canonical UUID and one set of blocks/events in the
+installation's central record store. Its `session_target` associations make that
+same session discoverable from every declared Profile/host's Console history.
+This is the logical equivalent of per-host link placeholders: no copied transcript,
+per-host river directory or filesystem symbolic link is needed. History entry
+counts do not multiply stored block content.
+
+For a task involving A, B and C, declare all three in `targets` before workers
+attach. Each host's history then links to the same `/console/SESSION/history`,
+with its own navigation context; the full common timeline remains the same.
+A block's `target_id` identifies the actual declared source independently of the
+host from which the human opened history. Unrelated hosts/Profiles do not match.
+
+A “major host” is optional task organization, not a storage owner or permission
+boundary. If the human specifies B as the main subject, preserve that context in
+the task title/display label. Otherwise the agent may choose a useful task label
+or main subject without asking solely to decide record placement. Session
+`host_id` is currently a display label; there is no separate `major_host` field.
+Declare every actual participant regardless of that label, and keep execution,
+privileges, workers, activity and cleanup scoped to the individual targets.
+
+This applies to sessions created with explicit `targets`. A historical single-host
+session does not gain participants merely because prose mentions them. Existing
+participant declarations are immutable; this contract provides no retroactive
+link/participant editing tool, automatic membership inference or history migration.
+Do not manufacture per-host copies to compensate or silently relabel old evidence.
+
+Verification: a synthetic A/B/C task with B as the display label was discoverable
+from all three histories while storing one session, three associations and three
+blocks total, rather than nine copied blocks. Existing shared-river/history tests
+cover membership, source attribution, scope exclusion and pagination. No managed
+host connection or user-record rewrite is needed for this lookup behavior.
+
+
 Use one river for an investigation involving several hosts, such as a guest VM
 and its hypervisor. Each host keeps an independent worker, connection, account,
 command budget and authorization. The shared reader never chooses an execution
@@ -159,4 +195,4 @@ expanded-content preservation, waiting-form visibility and form drafts.
 Real multi-host SSH, simultaneous privilege switching and real private input
 across hosts are not established by these synthetic/local tests.
 
-*Last modified: 2026-11-05 14:35:41*
+*Last modified: 2026-11-06 14:34:35*

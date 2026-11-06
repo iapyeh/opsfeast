@@ -43,7 +43,7 @@ def inspect(installation):
     raise SiteConflict('profile registry changed while reading')
 
 
-def create(installation, data_root, *, name, expected_revision, namespace=None):
+def create(installation, data_root, *, name, expected_revision, namespace=None, description=None):
     from .core import Instance
     from . import profile_name
     from .site import _root
@@ -54,7 +54,7 @@ def create(installation, data_root, *, name, expected_revision, namespace=None):
         raise ConfigError('profile container must be a real directory')
     target=parent/name
     Instance.open(installation).init_profile(name,root=target,namespace=namespace,
-                                            expected_revision=expected_revision,create_only=True)
+                                            expected_revision=expected_revision,create_only=True,description=description)
     return inspect(installation)
 
 
@@ -64,8 +64,15 @@ def use(installation, *, name, expected_revision):
     return inspect(installation)
 
 
-def attach(installation, *, root, name, expected_revision):
+def attach(installation, *, root, name, expected_revision, description=None):
     from .core import Instance
     if not isinstance(root,str) or not Path(root).is_absolute(): raise ConfigError('existing profile root must be absolute')
-    Instance.open(installation).profiles.attach(root,name=name,expected_revision=expected_revision)
+    Instance.open(installation).profiles.attach(root,name=name,expected_revision=expected_revision,description=description)
+    return inspect(installation)
+
+
+def update(installation, *, name, description, expected_revision):
+    from .core import Instance
+    check_revision(installation,expected_revision)
+    Instance.open(installation).profiles.set_description(name,description,expected_revision=expected_revision)
     return inspect(installation)

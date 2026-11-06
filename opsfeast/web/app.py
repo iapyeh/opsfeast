@@ -266,7 +266,10 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     async def create_profile(request: Request):
         require_admin(request)
         body=await json_body(request)
-        if set(body)!={'name','namespace','expected_revision'}:raise HTTPException(422,'invalid_profile_request')
+        if not {'name','namespace','expected_revision'} <= set(body) or set(body)-{'name','namespace','expected_revision','description'}:raise HTTPException(422,'invalid_profile_request')
+        if 'description' in body:
+            from opsfeast import profile_description
+            profile_description(body['description'])
         from opsfeast.profile_settings import create
         from starlette.concurrency import run_in_threadpool
         return await run_in_threadpool(create,product,root,**body)
@@ -280,11 +283,23 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
         from starlette.concurrency import run_in_threadpool
         return await run_in_threadpool(use,product,**body)
 
+    @app.patch('/api/v1/profiles')
+    async def update_profile(request: Request):
+        require_admin(request)
+        body=await json_body(request)
+        if set(body)!={'name','description','expected_revision'}:raise HTTPException(422,'invalid_profile_request')
+        from opsfeast.profile_settings import update
+        from starlette.concurrency import run_in_threadpool
+        return await run_in_threadpool(update,product,**body)
+
     @app.post('/api/v1/profiles/attach')
     async def attach_profile(request: Request):
         require_admin(request)
         body=await json_body(request)
-        if set(body)!={'name','root','expected_revision'}:raise HTTPException(422,'invalid_profile_request')
+        if not {'name','root','expected_revision'} <= set(body) or set(body)-{'name','root','expected_revision','description'}:raise HTTPException(422,'invalid_profile_request')
+        if 'description' in body:
+            from opsfeast import profile_description
+            profile_description(body['description'])
         from opsfeast.profile_settings import attach
         from starlette.concurrency import run_in_threadpool
         return await run_in_threadpool(attach,product,**body)

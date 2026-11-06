@@ -29,6 +29,29 @@ history. ESXi sources are IPv4-only; loopback is excluded from reference views.
 
 # AI Agent Guidance
 
+For agent-directed root Console work, [choose login-account sudo by default](../docs/console-agent.md#choose-the-actor-for-an-authorized-root-switch)
+within the existing human grant. Omitted sudo policy is enabled; do not ask again
+which account should obtain root or begin with su root. Explicit human choices,
+Boolean sudo=false and actual failures determine exceptions.
+
+
+For multi-host Console history, [canonical river associations](../docs/shared-console.md#one-canonical-river-discoverable-from-every-participant)
+make one session discoverable from every declared participant, without copying
+transcripts. The agent may choose the main subject/display label; declare all
+targets regardless. Retroactive participant edits remain unsupported.
+
+
+For recipe experience discovery, [structured host-note associations](../docs/host-notes.md#relate-notes-to-recipes)
+provide exact recipe and all-tag filters. Agents query recipe-linked plus general
+notes before work; the runner has no automatic note/AI execution dependency.
+
+
+For agent-led recipe runs, [execution experience](opsfeast-recipes/references/execution-experience.md)
+routes pre-run host-note/result reads and post-run diagnosis, reviewed lesson
+preservation and general recipe improvements. Reuse host-notes 0.1.0; standalone
+CLI runs have no automatic learning or per-host strategy cache.
+
+
 For a shared multi-host investigation and host TAB focus, read [shared task river 0.1.0](../docs/shared-console.md), routed through the [interactive](opsfeast-interactive/SKILL.md) and [record-service](opsfeast-console-records/SKILL.md) skills. Create one task with explicit targets, attach independent workers, show one reader, and address each command by worker ID. Host buttons independently toggle their own blocks open/closed; 全部 opens all. Individual block toggles preserve chronology and never select a command target.
 
 For a question about a named host, first use the [accumulated-evidence workflow](../docs/host-notes.md#answer-host-questions-from-accumulated-evidence): read private host notes, saved observation results and relevant inventory/retention history before drawing host-specific conclusions. Route to [hosts](opsfeast-hosts/SKILL.md) and [result-data](opsfeast-result-data/SKILL.md), including for advice-only questions. State evidence times, gaps and uncertainty; existing records do not authorize new connections or changes. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
@@ -213,4 +236,4 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-05 23:13:33*
+*Last modified: 2026-11-06 15:10:22*

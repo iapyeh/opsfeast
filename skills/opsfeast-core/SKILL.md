@@ -86,6 +86,15 @@ Profile ownership. Read-only discovery does not grant configuration writes.
 
 # Operate and compose OpsFeast Core
 
+For Profile descriptions, read [the registration metadata contract](../../docs/profiles.md#profile-descriptions).
+Use `profiles show --json` for a revision, then
+`profiles set-description NAME --description TEXT --expected-revision REVISION --json`,
+or `opsfeast.profile_settings.update(installation, name=..., description=..., expected_revision=...)`.
+Core exposes `instance.profiles.set_description(name, text, expected_revision=revision)`.
+Empty text clears; stale revisions require reload/review, not blind retry. Preserve
+names, roots, Namespace and default selection. No host connection is needed.
+
+
 For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
 
 ## Headless Console integration
@@ -307,4 +316,4 @@ before interpreting values; these are not SSH endpoints or current-health claims
 
 Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvironmentError` is a `ConfigError` subclass with a controlled diagnostic report; exact type strings have changed for these failures. Reuse the failing interpreter with `-B tools/check_environment.py --json` and follow [runtime diagnosis and authorized repair](../../docs/runtime-troubleshooting.md) for version/source failures or duplicate metadata. Do not implement a second scanner, retry sessions to diagnose packages, or modify environments without scope.
 
-*Last modified: 2026-11-05 17:18:10*
+*Last modified: 2026-11-06 09:23:54*

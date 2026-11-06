@@ -886,10 +886,19 @@ footer time {
 .login-card form button:disabled { opacity:.4; cursor:default; }
 .logout-button { border:0; background:none; color:#7a8f6d; cursor:pointer; font-size:14px; }
 .profile-forms { margin-top:22px; }
-.profile-records article { border-top:1px solid #e2ead9; padding:18px 0; }
-.profile-records p { font-size:14px; color:#879d75; overflow-wrap:anywhere; }
-.profile-records small { font-size:13px; color:#9aa98c; }
-.profile-records button { float:right; border:1px solid #d7e4cb; background:#f3f7ed; cursor:pointer; color:#648153; }
+.profile-records { display:grid; gap:24px; }
+.profile-records .profile-card { border:1px solid #cbd7ca; border-left:6px solid #b8cbbb; border-radius:12px; padding:22px; background:#f5f8f2; min-width:0; }
+.profile-records .profile-card.is-default { border-left-color:#087d70; background:#edf6f1; }
+.profile-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.profile-card-header>div { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.profile-card-header h2 { margin:0; }
+.profile-default-badge { background:#087d70; color:white; border-radius:5px; padding:4px 8px; font-size:.8rem; }
+.profile-card .profile-settings-children { margin:18px 0 0; padding:0; border-left:0; }
+.profile-card-metadata { margin:12px 0; }
+.profile-management-actions { margin-top:36px; padding-top:22px; border-top:2px solid #d0dccb; }
+.profile-records p { font-size:14px; color:#42594a; overflow-wrap:anywhere; }
+.profile-records small { font-size:13px; color:#526652; }
+.profile-records button { border:1px solid #c2d1bd; background:white; cursor:pointer; color:#36533e; }
 
 /* Human-centered roadmap preview; fixtures are isolated from configuration. */
 .roadmap-section { margin:24px 0; }
@@ -1028,3 +1037,11 @@ main p,main small { color:#586d51; }
 .version-grid section { min-width:0; }
 .version-grid .field-hint,.version-grid dd { overflow-wrap:anywhere; }
 @media(max-width:1100px) { .settings-tree { grid-template-columns:1fr; } }
+
+.parameter-guide code { overflow-wrap:anywhere; }
+
+.profile-description { margin:16px 0; display:flex; align-items:flex-start; gap:16px; justify-content:space-between; }
+.profile-description p { white-space:pre-wrap; margin:0; flex:1; }
+.profile-description button { flex-shrink:0; }
+#profile-description-dialog textarea,.profile-forms textarea { width:100%; max-width:100%; font:inherit; resize:vertical; }
+@media(max-width:600px) { .profile-description { flex-direction:column; } }

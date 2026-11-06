@@ -1,5 +1,80 @@
 # System inventory
 
+## Function, purpose and Agent responsibility
+
+The function is to collect the selected system, hardware, network, storage,
+software/service and resource properties with verifiable source/time and explicit
+coverage. The purpose is to give administrators and their agents trustworthy
+knowledge of the target environment for operational decisions, not merely to
+complete a fixed list of shell commands.
+
+If this program cannot obtain an in-scope property, an agent should inspect the
+saved cause, use suitable alternative methods within the authorized targets,
+actors and effects, and verify the resulting evidence. Preserve unavailable,
+unsupported, inapplicable and unknown distinctions; never fabricate values to
+satisfy a completeness target. The declared selected properties bound the task;
+the purpose does not authorize unrelated probing or modifications.
+
+Record supplementary observations with their actual source/time and verification
+limits; do not rewrite the failed run as success or claim unsaved findings are
+retained inventory. Host experience belongs in reviewed private notes, while
+portable validated methods belong in improved recipe code/tests/guidance. See
+[execution experience](../../../../skills/opsfeast-recipes/references/execution-experience.md).
+
+
+## Accumulated execution experience and lsblk support (0.4.3)
+
+Use [the Agent workflow](../../../../skills/opsfeast-recipes/references/execution-experience.md)
+to read Profile-specific host notes and saved results before execution, diagnose
+new gaps, and propose reviewed evidence-linked lessons. Existing host notes store
+host constraints; general methods become reviewed recipe code/tests. The runner
+does not execute note content, call a model, automatically learn commands or cache
+per-host strategy decisions.
+
+Linux block-device collection first uses JSON `lsblk -b -J`. Only an explicit
+unsupported-option error permits the bounded `LC_ALL=C lsblk -b -P` query with
+the same six selected columns. Key/value rows preserve hex-escaped text and byte
+sizes; absent optional filesystem/model/mountpoint values stay null. Empty,
+malformed, duplicate/missing columns or invalid sizes fail parsing. Permission,
+transport and unrelated failures do not trigger another query. Both attempts are
+saved; successful samples cite the actual alternate probe. SSHScript execution,
+accounts, dependencies, output limits and total deadlines remain unchanged.
+
+`tests/test_inventory_legacy_lsblk.py` verifies synthetic parsing and capability
+selection, permission/data failures and source evidence. The original old-Linux
+`-J` rejection was observed in a saved result; the new pairs query has not yet
+been executed on a managed host. Missing kernel interfaces such as PSI remain
+explicit gaps; more time cannot create an unsupported feature. No package install
+or host-setting change is part of this improvement.
+
+
+## Linux iproute2 capabilities (0.4.2)
+
+The existing SSHScript bounded-command collector first requests JSON from
+`ip -j address show` and `ip -j route show table all`. When command failure
+explicitly reports an unsupported JSON option, it reads `LC_ALL=C ip address show`
+or `LC_ALL=C ip route show table all` within the same deadline/output limits.
+No package installation, privilege escalation or host setting change is added.
+Permission failures, timeouts, malformed JSON and other errors do not trigger
+another command. Both the failed JSON probe and the text probe remain in saved
+evidence; successful properties reference the text probe's own timestamp.
+
+Address text is normalized into interface names, MACs, MTU/state, IPv4/IPv6
+addresses and prefixes. Interfaces without addresses remain represented. Missing
+attributes stay unavailable; malformed text does not become an empty successful
+address list. Text routes retain `entry` rows rather than guessing structured
+route fields. Reference IP publication reuses the normalized interface rows and
+excludes loopback. Existing failed results are unchanged and require a newly
+authorized collection to obtain fresh addresses.
+
+Verification: `tests/test_inventory_legacy_ip.py` covers synthetic old-iproute2
+errors, dual-stack/addressless interfaces, source evidence, reference IPs,
+permission failures and malformed text. A human-authorized run on 2026-11-06 verified both text queries on a CentOS 7
+host whose iproute2 rejects `-j`; addresses were retained and reference IP
+publication succeeded. Other unsupported tools still produce explicit partial
+coverage; this is not a claim of complete inventory support on every old Linux.
+
+
 Recipe 0.4.0 uses descriptor 0.3.0, inventory-jobs runner 0.1.0 and raw job schema 0.3.0. It collects source-timestamped, sparse property observations through one program with independently selectable jobs.
 
 Start with the [collection table](collection-plan.md) for all 11 job IDs, contents and default intervals, and the [inventory guide](../../../../docs/inventory-jobs.md) for utility queries, manual saved comparisons, scheduling, YANG mappings, provenance and verification.
@@ -84,4 +159,4 @@ this change does not add tool fallbacks. Public synthetic tests are in
 
 For incomplete-property causes, Web/CLI inspection and reference-IP recovery, see [result diagnostics](../../../../docs/result-diagnostics.md) and [reference addresses](../../../../docs/host-reference-ips.md).
 
-*Last modified: 2026-11-05 23:07:10*
+*Last modified: 2026-11-06 14:07:41*

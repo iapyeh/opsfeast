@@ -1,6 +1,21 @@
 # Inventory jobs, immediate queries and periodic collection
 
-System inventory recipe 0.4.1 provides one collection program with independently selectable jobs. Read the [collection table](../recipes/system/inventory/overview/collection-plan.md) for job IDs, contents and starting intervals. The new job observation contract is `inventory-job-observations` 0.1.0; raw job results use schema 0.3.0. Historical whole-snapshot inventory/exchange files remain separate read/replay contracts; new collection has no snapshot execution path. No old-data migration or automatic deletion is performed, and no legacy payload is converted to job samples.
+For agent-assisted discovery and repeat runs, use [execution experience](../skills/opsfeast-recipes/references/execution-experience.md).
+First runs may use explicit finite budget overrides, while later runs reuse
+reviewed recipe methods. Preserve useful host-specific findings through confirmed
+host notes. Direct CLI collection has no automatic note reader or per-host method
+cache. Inventory 0.4.3 adds `lsblk -P` support when `-J` is explicitly unsupported;
+missing optional values and unavailable PSI remain honest gaps.
+
+
+Linux inventory 0.4.2 supports iproute2 without `-j` through capability-specific
+text queries, preserving both attempts and their source times. Missing optional
+fields remain partial. See [supported inputs, limits and verification](../recipes/system/inventory/overview/README.md#linux-iproute2-capabilities-042).
+Execution summaries name incomplete properties; use
+[the saved-result diagnosis workflow](result-diagnostics.md) to inspect causes.
+
+
+System inventory recipe 0.4.3 provides one collection program with independently selectable jobs. Read the [collection table](../recipes/system/inventory/overview/collection-plan.md) for job IDs, contents and starting intervals. The new job observation contract is `inventory-job-observations` 0.1.0; raw job results use schema 0.3.0. Historical whole-snapshot inventory/exchange files remain separate read/replay contracts; new collection has no snapshot execution path. No old-data migration or automatic deletion is performed, and no legacy payload is converted to job samples.
 
 ## Discover before running
 
@@ -193,4 +208,4 @@ without changing collected samples. These reference addresses never change
 connection settings. Unlike `inventory latest`, which keeps latest failed attempts
 as gaps, `hosts list/show` deliberately retain the last successful address list.
 
-*Last modified: 2026-10-30 16:07:03*
+*Last modified: 2026-11-06 14:01:40*
