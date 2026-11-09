@@ -12,3 +12,15 @@
 .interactive-shell dd { overflow-wrap:anywhere; }
 .interactive-shell table { width:100%; border-collapse:collapse; }
 .interactive-shell td,.interactive-shell th { padding:10px; text-align:left; border-bottom:1px solid #cfdac5; }
+
+/* Same desktop surfaces and controls as the main workspace. */
+.interactive-shell { max-width:1440px; padding:32px 40px; }
+.interactive-shell>header { padding-bottom:24px; border-bottom:1px solid var(--ui-border); }
+.interactive-shell>header>strong { color:var(--ui-accent); font-size:.875rem; }
+.interactive-shell>header>p { max-width:65em; }
+.interactive-shell .panel { padding:24px; border-color:var(--ui-border); background:var(--ui-surface); }
+.interactive-shell p { color:var(--ui-muted); }
+.interactive-shell input,.interactive-shell textarea,.interactive-shell select { color:var(--ui-text); background:var(--ui-surface); border-color:var(--ui-control); }
+.interactive-shell #status { background:var(--ui-subtle); border:1px solid var(--ui-border); border-radius:8px; }
+.interactive-shell #status:empty { display:none; }
+.interactive-shell td,.interactive-shell th,.interactive-step { border-color:var(--ui-border); overflow-wrap:anywhere; }

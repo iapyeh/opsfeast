@@ -125,6 +125,20 @@ fails without fallback. Profile registrations and management roots are not moved
 protect them separately before removing product directories. Web/site APIs require
 marked external data. No automatic format migration or independent backup is implied.
 
+## Host account declaration editor 0.2.0
+
+Reuse `opsfeast.host_settings.inspect/mutate`, its JSON CLI or the protected
+`PATCH /api/v1/hosts` adapter for local account declarations. Send
+`changes={"users":{"auditor":{"sudo":False}}}` to add/update sudo policy, or
+`{"users":{"auditor":None}}` to remove a declaration under the user's scope.
+Require explicit Profile/host and current revision; the writer validates the entire
+Profile, preserves hidden fields during updates and backs up the defining source.
+Snapshot `users` lists explicit declarations only; `login_user` is independent.
+No remote account, password or host operation is performed. See
+[host settings 0.2.0](web-hosts.md#account-declarations-020) for errors, examples,
+compatibility and synthetic verification. Do not replace this with YAML editing
+or credential manipulation scripts.
+
 ## Shared settings discovery and site CLI
 
 Use [settings](web-settings.md), `/settings`, `GET /api/v1/settings/catalog`,
@@ -624,4 +638,4 @@ For host-specific advice or diagnosis, use the [accumulated-evidence workflow](h
 
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-06 14:16:59*
+*Last modified: 2026-11-08 23:07:31*

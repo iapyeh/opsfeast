@@ -6,6 +6,10 @@ Read [saved-data workspace 0.1.0](../docs/web-workspace.md) for page behavior,
 HTTP schemas, Profile scope, document access, failures and verification limits.
 UI copy remains Traditional Chinese until English translation is requested.
 
+The current design/verification target is desktop browsers; dedicated mobile and
+tablet support is deferred. For the shared design system, all-page scope and review, read
+[Web design and review](../docs/web-design.md) and [host presentation](../docs/web-hosts.md#host-workspace-presentation).
+
 ## Human-centered management workspace
 
 `/workspace`, `/recipes`, `/work`, `/retention` and `/logs` read the selected
@@ -218,4 +222,4 @@ stop channel, model wakeup or arbitrary HTML/media renderer is provided. The old
 `/interactive` also loads directly with administrator login; its execution gates
 remain separate. Read [the agent skill](../skills/opsfeast-console-records/SKILL.md).
 
-*Last modified: 2026-11-05 17:18:10*
+*Last modified: 2026-11-08 23:07:31*

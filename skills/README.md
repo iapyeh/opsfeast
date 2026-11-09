@@ -56,7 +56,7 @@ For a shared multi-host investigation and host TAB focus, read [shared task rive
 
 For a question about a named host, first use the [accumulated-evidence workflow](../docs/host-notes.md#answer-host-questions-from-accumulated-evidence): read private host notes, saved observation results and relevant inventory/retention history before drawing host-specific conclusions. Route to [hosts](opsfeast-hosts/SKILL.md) and [result-data](opsfeast-result-data/SKILL.md), including for advice-only questions. State evidence times, gaps and uncertainty; existing records do not authorize new connections or changes. Use recorded facts to search relevant authoritative documentation (for example, FreeBSD guidance after identifying FreeBSD). If direct and indirect information remain insufficient, ask the user for the missing facts or propose an interactive Console inspection, reusing existing authorization within scope.
 
-The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](../docs/web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. Host draft mockups were removed; `/hosts` reads the real configuration service.
+The [first-use Web guide](../docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](../docs/web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete, account-declaration CRUD/sudo policy and confirmed deletion through shared CLI/Python/HTTP interfaces (host settings 0.2.0). Host draft mockups were removed; `/hosts` reads the real configuration service.
 
 
 ## Interactive Web Console
@@ -236,4 +236,4 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-06 15:10:22*
+*Last modified: 2026-11-08 23:07:31*

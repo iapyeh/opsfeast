@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Host configuration snapshot and success receipt 0.1.0",
+  "title": "Host configuration snapshot and success receipt 0.2.0",
   "oneOf": [
     {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "const": "0.1.0"
+          "const": "0.2.0"
         },
         "profile": {
           "type": "string"
@@ -173,6 +173,18 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "collected_families": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "enum": [
+                        4,
+                        6
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -218,7 +230,7 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "const": "0.1.0"
+          "const": "0.2.0"
         },
         "action": {
           "enum": [
@@ -274,5 +286,5 @@
       ]
     }
   ],
-  "$comment": "Last modified: 2026-11-01 23:27:07"
+  "$comment": "Last modified: 2026-11-08 23:05:28"
 }

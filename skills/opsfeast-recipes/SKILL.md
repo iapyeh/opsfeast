@@ -56,7 +56,7 @@ For an authorized database-client session that needs a human password, route to 
 
 ## Human trust during exploration and recipe execution
 
-For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
+For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.2.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. For account declarations, `changes.users` adds/updates exactly `{"sudo": BOOLEAN}` or removes an entry with null; preserve hidden credentials through the shared patch service. The snapshot lists only explicitly declared accounts, separately from `login_user`. No connection, password editing or recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
 
 ## Interactive work before recipe authoring
 
@@ -681,4 +681,4 @@ This read-only view neither executes recipes nor proves current host health.
 
 Recipe authors and operational agents can read host context through the shared [host notes service](../../docs/host-notes.md), using `opsfeast.host_notes.inspect` or `opsfeast.py host-notes`. Notes are private profile data, not recipe code, retention or execution permission. For reusable Console experience, ask whether to extract, show the draft, then save only after final human confirmation. The hosts skill owns exact CRUD/merge and concurrency guidance.
 
-*Last modified: 2026-11-06 14:16:59*
+*Last modified: 2026-11-08 23:07:31*

@@ -106,6 +106,45 @@ groups:
         with self.assertRaisesRegex(service.HostSettingsError,'yaml_alias_edit_unsupported'):self.change('update','a',changes={'group':['prod']})
         self.assertEqual(self.entry.read_bytes(),before)
 
+    def test_account_patches_preserve_private_settings_and_use_defining_source(self):
+        self.extra.write_text(self.extra.read_text().replace('operator: {password: "Synthetic-private-password"}', 'operator: {password: "Synthetic-private-password", sudo-password: "Synthetic-sudo", vars: {source: synthetic}}'))
+        before=self.entry.read_bytes()
+        self.change('update','target',changes={'users':{'operator':{'sudo':False},'auditor':{'sudo':False}}})
+        raw=read_yaml(self.extra)['groups']['linux']['hosts']['target']
+        self.assertEqual(raw['users']['operator']['password'],'Synthetic-private-password')
+        self.assertFalse(raw['users']['operator']['sudo'])
+        self.assertEqual(raw['users']['operator']['sudo-password'],'Synthetic-sudo')
+        self.assertEqual(raw['users']['operator']['vars'],{'source':'synthetic'})
+        self.assertEqual(raw['users']['auditor'],{'sudo':False})
+        self.assertEqual(self.entry.read_bytes(),before)
+        self.assertIn('# Included source',self.extra.read_text())
+        state=self.state();self.assertEqual(state['schema_version'],'0.2.0')
+        self.assertNotIn('Synthetic-private-password',json.dumps(state))
+        target=next(row for row in state['hosts'] if row['host_id']=='target')
+        self.assertEqual(target['users'],[{'name':'operator','sudo':False},{'name':'auditor','sudo':False}])
+        self.change('update','target',changes={'users':{'operator':{'sudo':True}}})
+        self.assertEqual(read_yaml(self.extra)['groups']['linux']['hosts']['target']['users']['operator']['password'],'Synthetic-private-password')
+        receipt=self.change('update','target',changes={'users':{'auditor':None}})
+        self.assertNotIn('auditor',read_yaml(self.extra)['groups']['linux']['hosts']['target']['users'])
+        backup=read_yaml(self.root/'.host-settings-backups'/receipt['backup_id']/'original.yaml')
+        self.assertIn('auditor',backup['groups']['linux']['hosts']['target']['users'])
+        self.assertFalse(receipt['remote_effects'])
+
+    def test_account_secret_fields_bad_types_and_missing_removal_fail_without_write(self):
+        before=self.extra.read_bytes()
+        for users in [{},[],{'operator':{}},{'operator':{'sudo':'false'}},{'operator':{'password':'never-write'}},{'operator':{'sudo':True,'sudo-password':'never-write'}},{' bad ': {'sudo':False}},{'missing':None},{'auditor':{'sudo':False},'missing':None}]:
+            with self.subTest(users=users),self.assertRaises(service.HostSettingsError):
+                self.change('update','target',changes={'users':users})
+            self.assertEqual(self.extra.read_bytes(),before)
+        self.assertFalse((self.root/'.host-settings-backups').exists())
+
+    def test_login_identity_is_not_fabricated_as_an_account_declaration(self):
+        jump=next(row for row in self.state()['hosts'] if row['host_id']=='jump')
+        self.assertEqual(jump['login_user'],'operator')
+        self.assertEqual(jump['users'],[])
+        self.change('create','with-accounts',changes={'connection':{'local':True},'users':{'reader':{'sudo':False}}})
+        self.assertEqual(read_yaml(self.entry)['hosts']['with-accounts']['users'],{'reader':{'sudo':False}})
+
     def test_json_cli_uses_same_revisions_and_confirmation(self):
         import subprocess,sys
         prefix=[sys.executable,'-B','-m','opsfeast.host_settings','--installation',str(self.code),'--profile','main']

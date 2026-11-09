@@ -53,7 +53,7 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
                 self.assertIn(b"text/html", headers[b"content-type"])
                 self.assertIn(b'type="module"', body)
                 self.assertIn(b'lang="zh-TW"', body)
-        for path in ("/assets/workbench.css", "/assets/workbench.js", "/assets/mark.svg",
+        for path in ("/assets/workbench.css", "/assets/design-tokens.css", "/assets/ui-icons.mjs", "/assets/host-accounts.mjs", "/assets/workbench.js", "/assets/mark.svg",
                      "/assets/i18n.mjs", "/assets/locales/zh-TW.mjs", "/assets/site-settings.mjs", "/assets/site-assets.mjs", "/assets/workspace.mjs", "/assets/locales/workspace-zh-TW.mjs"):
             self.assertEqual((await self.request(path))[0], 200)
 
@@ -158,6 +158,14 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await call('POST',payload,[cookie]))[0],200)
         self.assertEqual((await call('POST',payload,[cookie]))[0],409)
         state=json.loads((await call(headers=[cookie]))[2])
+        account_payload={'profile':'main','host_id':'new','expected_revision':state['revision'],'changes':{'users':{'auditor':{'sudo':False}}}}
+        self.assertEqual((await call('PATCH',account_payload))[0],401)
+        self.assertEqual((await call('PATCH',account_payload,[cookie,(b'origin',b'https://untrusted.example')]))[0],403)
+        self.assertEqual((await call('PATCH',account_payload,[cookie]))[0],200)
+        self.assertEqual((await call('PATCH',account_payload,[cookie]))[0],409)
+        state=json.loads((await call(headers=[cookie]))[2])
+        self.assertEqual(state['schema_version'],'0.2.0')
+        self.assertEqual(next(host for host in state['hosts'] if host['host_id']=='new')['users'],[{'name':'auditor','sudo':False}])
         deletion={'profile':'main','host_id':'new','expected_revision':state['revision'],'confirmation':'wrong'}
         self.assertEqual((await call('DELETE',deletion,[cookie]))[0],422)
         self.assertIn('new',[host['host_id'] for host in json.loads((await call(headers=[cookie]))[2])['hosts']])

@@ -26,8 +26,10 @@ clears it, stale revisions fail, and no host connection occurs. Ordinary
 For multiple independent Console workers in one task, read [shared task river 0.1.0](shared-console.md). The worker accepts `--session UUID`; owner-controller `worker.start` accepts `session`. These attach to predeclared participants without connecting. The existing console_client create/block/activity JSON accepts the documented targets/target_id fields. Host TAB focus is a reader view and does not route commands.
 
 For configuration-only host creation, selected-field updates and confirmed deletion,
-use the shared [host-settings CLI 0.1.0](web-hosts.md#python-and-cli):
+use the shared [host-settings CLI 0.2.0](web-hosts.md#python-and-cli):
 `python -B -m opsfeast.host_settings --profile NAME list|create|update|delete`.
+Account declaration add/update/remove uses `update` with a `users` patch on stdin;
+see [account patch examples and limits](web-hosts.md#account-declarations-020).
 Create/update take JSON changes on stdin and require `--expected-revision`; delete
 also requires `--confirm-host HOST`. This never connects or changes retained data.
 
@@ -1044,4 +1046,4 @@ Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show
 
 Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.3.0 control reference](console-agent.md#entered-programs-and-private-input-worker-030) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
 
-*Last modified: 2026-11-06 14:16:59*
+*Last modified: 2026-11-08 23:07:31*

@@ -1,0 +1,28 @@
+/* Shared internal design roles. No external font or presentation SDK dependency. */
+:root {
+  --ui-font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;
+  --ui-mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  --ui-canvas:#f4f6f3;
+  --ui-surface:#ffffff;
+  --ui-subtle:#f0f4f1;
+  --ui-text:#243b34;
+  --ui-muted:#52665c;
+  --ui-border:#d8e2da;
+  --ui-control:#80958a;
+  --ui-accent:#096b57;
+  --ui-accent-hover:#075440;
+  --ui-accent-soft:#e6f2eb;
+  --ui-danger:#983f32;
+  --ui-danger-soft:#fff3ee;
+  --ui-warning:#76531b;
+  --ui-warning-soft:#fff5df;
+  --ui-radius:12px;
+  --ui-control-radius:6px;
+  --ui-space-1:8px;
+  --ui-space-2:16px;
+  --ui-space-3:24px;
+  --ui-space-4:32px;
+  --ui-terminal:#18251f;
+  --ui-terminal-text:#e6eee5;
+  --ui-terminal-muted:#b5c8bc;
+}

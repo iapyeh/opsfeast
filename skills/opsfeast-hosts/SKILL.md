@@ -39,7 +39,7 @@ repair historical observations or authorize fresh collection. Partial terminal
 summaries list exact incomplete properties; inspect the printed result ID locally.
 
 
-For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.1.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. No connection or secret/account/recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
+For real Web/CLI host creation, group autocomplete/updates and confirmed configuration deletion, use [host settings 0.2.0](../../docs/web-hosts.md). Reuse `opsfeast.host_settings.inspect/mutate` or its JSON CLI; require explicit profile/revision and deletion confirmation. For account declarations, `changes.users` adds/updates exactly `{"sudo": BOOLEAN}` or removes an entry with null; preserve hidden credentials through the shared patch service. The snapshot lists only explicitly declared accounts, separately from `login_user`. No connection, password editing or recipe-variable editing is performed. Preserve private source backups and fail on unsupported aliases.
 
 Before editing execution settings, read [recipe sources and policy](../../docs/recipe-sources.md). Use default/group/host recipes mappings keyed by exact filesystem references, with enabled/vars; bare PATH and bundle:PATH are the same bundle key, :PATH is profile-only, NAME:PATH is a registered source. Do not flatten paths or substitute descriptor IDs. Discover references with `python -B tools/opsfeast.py recipes list --profile NAME --json`. Mappings merge by leaf; lists replace, explicit false wins and the first resolved group wins overlapping leaves. Recipes default disabled; new init enables bundled inventory explicitly, preserving existing configs.
 
@@ -380,4 +380,4 @@ Before retrying a host operation after an interpreter/package change, run the fa
 
 Use [host notes 0.1.0](../../docs/host-notes.md) for private knowledge: `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list`. Read relevant notes before operations; assess age/evidence without treating notes as execution authority. Use the shared CLI/Python/API for create/update/delete/merge, explicit profile/host and current revision. Present exact proposed content and UUID removals for human confirmation before organization. Preserve semantic conflicts, never silently choose a winner; do not edit storage or generated Vault pages directly.
 
-*Last modified: 2026-11-06 15:10:22*
+*Last modified: 2026-11-08 23:07:31*

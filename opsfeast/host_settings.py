@@ -1,4 +1,4 @@
-"""Host configuration editing 0.1.0; no connections or remote effects."""
+"""Host configuration editing 0.2.0; no connections or remote effects."""
 from copy import deepcopy
 from datetime import datetime,timezone
 import hashlib
@@ -13,7 +13,7 @@ from .core import Instance
 from .identity import _locked
 from .site import SiteConflict,_atomic
 
-VERSION='0.1.0'
+VERSION='0.2.0'
 CONNECTION_FIELDS={'hostname','port','user','identity_file','allow_agent','look_for_keys','ssh_config_alias','local','via'}
 
 class HostSettingsError(ConfigError):
@@ -62,7 +62,14 @@ def _edit_document(document,action,host_id,changes):
     owner,_=_definition(document,host_id)
     if action=='delete':del owner[host_id];return
     for key,value in changes.items():
-        if key=='connection':
+        if key=='users':
+            users=owner[host_id].setdefault('users',{})
+            for name,settings in value.items():
+                if settings is None:
+                    if name not in users:raise HostSettingsError('host_account_not_found')
+                    del users[name]
+                else:users.setdefault(name,{}).update(deepcopy(settings))
+        elif key=='connection':
             for field,item in value.items():
                 if item is None:owner[host_id][key].pop(field,None)
                 else:owner[host_id][key][field]=deepcopy(item)
@@ -85,7 +92,7 @@ def inspect(installation,*,profile):
             'parent_group':parent,'groups':list(dict.fromkeys(group_names(value.get('group',[]),'host group'))),
             'enabled':value.get('enabled',True),'label':value.get('label',''),'description':value.get('description',''),
             'connection':safe,'advanced_connection':bool(set(connection)-CONNECTION_FIELDS) or ('via' in connection and 'via' not in safe),
-            'login_user':login,'users':[{'name':name,'sudo':value.get('users',{}).get(name,{}).get('sudo',True)} for name in users],
+            'login_user':login,'users':[{'name':name,'sudo':settings.get('sudo',True)} for name,settings in value.get('users',{}).items()],
             'recipe_references':list(value.get('recipes',{})) if isinstance(value.get('recipes',{}),dict) else [],
             'reference_ips':{key:ips.get(key) for key in ('status','ipv4_addresses','ipv6_addresses','observed_at','collected_families')}})
     return {'schema_version':VERSION,'profile':profile,'revision':_revision(selected,files),
@@ -101,11 +108,20 @@ def _connection(value,*,create):
     return deepcopy(value)
 
 def _changes(value,*,create=False):
-    allowed={'connection','group','enabled','label','description'}
+    allowed={'connection','group','enabled','label','description','users'}
     if not isinstance(value,dict) or not value or set(value)-allowed:raise HostSettingsError('unsupported_host_fields')
     clean=deepcopy(value)
     if create and 'connection' not in clean:raise HostSettingsError('connection_required')
     if 'connection' in clean:clean['connection']=_connection(clean['connection'],create=create)
+    if 'users' in clean:
+        users=clean['users']
+        if not isinstance(users,dict) or not users:raise HostSettingsError('invalid_host_accounts')
+        for name,settings in users.items():
+            _text(name)
+            if settings is None:
+                if create:raise HostSettingsError('invalid_host_accounts')
+            elif not isinstance(settings,dict) or set(settings)!={'sudo'} or type(settings['sudo']) is not bool:
+                raise HostSettingsError('invalid_host_accounts')
     if 'group' in clean:
         clean['group']=list(dict.fromkeys(group_names(clean['group'],'host group')))
         for name in clean['group']:_text(name)

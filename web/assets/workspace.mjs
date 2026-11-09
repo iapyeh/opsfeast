@@ -7,20 +7,29 @@ export const workspaceUrl = (path, profile, extra={}) => {
   if(profile)query.set('profile',profile);
   return path + (query.size?'?'+query:'');
 };
-const state=value=>typeof value==='string'?(c.states[value]||value):JSON.stringify(value??c.unknown);
+const state=value=>{
+  if(typeof value==='string')return c.states[value]||value;
+  if(value&&typeof value==='object'&&!Array.isArray(value)&&Object.values(value).every(count=>Number.isInteger(count)&&count>=0))
+    return Object.entries(value).map(([name,count])=>(c.states[name]||name)+' '+count).join(' · ')||c.unknown;
+  return JSON.stringify(value??c.unknown);
+};
 const time=value=>{try{return value?formatDateTime(value):c.unknown;}catch{return String(value??c.unknown);}};
 const json=value=>JSON.stringify(value,null,2);
+const statusBadge=(value,e)=>{
+  const tone=(value&&typeof value==='object'&&value.failed>0)||['failed','error','critical'].includes(value)?'danger':['partial','warning','blocked'].includes(value)?'warning':['success','done','resolved'].includes(value)?'success':'neutral';
+  return `<span class="data-state data-state-${tone}">${e(state(value))}</span>`;
+};
 export function table(headers, rows, e) {
   return rows.length?`<div class="table-scroll"><table class="roadmap-table"><thead><tr>${headers.map(value=>`<th scope="col">${e(value)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(value=>`<td>${value}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:`<p role="status">${e(c.empty)}</p>`;
 }
 function objects(items,e) {
-  return items.length?items.map(item=>`<article class="attention-row"><span class="priority">${e(state(item.severity||item.priority||'unknown'))}</span><div><h3>${e(item.title)}</h3><p>${e(state(item.status))} · ${e(item.source?.host_id||c.unknown)}</p><p>${e(item.body||'')}</p><small>${e(time(item.updated_at))}</small></div></article>`).join(''):`<p role="status">${e(c.empty)}</p>`;
+  return items.length?items.map(item=>`<article class="attention-row"><span class="priority">${e(state(item.severity||item.priority||'unknown'))}</span><div><h3>${e(item.title)}</h3><p>${statusBadge(item.status,e)} · ${e(item.source?.host_id||c.unknown)}</p><p>${e(item.body||'')}</p><small>${e(time(item.updated_at))}</small></div></article>`).join(''):`<p role="status">${e(c.empty)}</p>`;
 }
 export function renderData(path,data,{e,profile,recipeScope='all'}) {
   const link=(target,label,extra={})=>`<a href="${e(workspaceUrl(target,profile,extra))}">${e(label)}</a>`;
   let html=data.status!=='success'?`<p class="detail-note" role="status">${e(c.partial)}</p>`:'';
   if(path==='/workspace') {
-    html+=`<section class="panel"><h2>${e(c.hostCount)}</h2><p>${e(data.host_count)}</p><p class="field-hint">${e(c.summaryNote)}</p></section><div class="roadmap-columns">`;
+    html+=`<section class="panel workspace-summary-panel"><div><h2>${e(c.hostCount)}</h2><strong class="workspace-host-count">${e(data.host_count)}</strong></div><p class="field-hint">${e(c.summaryNote)}</p></section><div class="roadmap-columns">`;
     for(const name of ['notifications','todos']) {
       const component=data.components[name];
       html+=`<section class="panel"><div class="panel-heading"><h2>${e(c[name])}${component.status==='success'?` (${e(component.total)})`:''}</h2>${link('/work',c.all)}</div>${component.status==='success'?objects(component.items,e):`<p role="status">${e(c.failed)}</p>`}</section>`;
@@ -29,11 +38,11 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
   }
   if(path==='/recipes') {
     html+=`<p class="field-hint">${e(c.catalogNote)}</p><details><summary>${e(c.sources)}</summary><pre class="log-content">${e(json(data.sources))}</pre></details>`;
-    return html+table(c.recipeColumns,data.items.map(item=>[link(recipeScope==='bundle'?'/settings/bundle-recipes':recipeScope==='user'?'/settings/recipes':'/recipes',item.reference,{recipe:item.reference}),e(item.version??c.unknown),e(state(item.source)),e(state(item.status))]),e)+data.items.map(item=>`<details class="panel roadmap-section"><summary>${e(item.reference)} · ${e(item.title||item.id||'')}</summary><p>${e(item.description||'')}</p><h3>${e(c.recipeDetails)}</h3><pre class="log-content">${e(json(item))}</pre></details>`).join('');
+    return html+table(c.recipeColumns,data.items.map(item=>[link(recipeScope==='bundle'?'/settings/bundle-recipes':recipeScope==='user'?'/settings/recipes':'/recipes',item.reference,{recipe:item.reference}),e(item.version??c.unknown),e(state(item.source)),statusBadge(item.status,e)]),e)+data.items.map(item=>`<details class="panel roadmap-section"><summary>${e(item.reference)} · ${e(item.title||item.id||'')}</summary><p>${e(item.description||'')}</p><h3>${e(c.recipeDetails)}</h3><pre class="log-content">${e(json(item))}</pre></details>`).join('');
   }
-  if(path==='/work')return html+`<p class="field-hint">${e(c.serviceNote)}</p>`+table(c.workColumns,data.items.map(item=>[e(state(item.kind)),`<details><summary>${e(item.title)}</summary><p>${e(item.body||'')}</p><pre class="log-content">${e(json(item))}</pre></details>`,e(state(item.status)),e(item.source?.host_id||c.unknown),e(time(item.updated_at))]),e);
-  if(path==='/logs')return html+`<p class="field-hint">${e(c.logsNote)}</p>`+table(c.logColumns,data.items.map(item=>[e(time(item.time)),e(state(item.source)),`${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}<details><summary>${e(item.title)}</summary>${(item.result_links||[]).length?`<h3>${e(c.resultCauses)}</h3><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul>`:''}<pre class="log-content">${e(json(item.details))}</pre></details>`,e(state(item.status))]),e);
-  return html+`<p class="field-hint">${e(c.retentionNote)}</p>`+table(c.retentionColumns,data.items.map(item=>[e(time(item.observed_at)),e(item.host_id),e(item.recipe_reference),e(item.kind),e(state(item.status))]),e);
+  if(path==='/work')return html+`<p class="field-hint">${e(c.serviceNote)}</p>`+table(c.workColumns,data.items.map(item=>[e(state(item.kind)),`<details><summary>${e(item.title)}</summary><p>${e(item.body||'')}</p><pre class="log-content">${e(json(item))}</pre></details>`,statusBadge(item.status,e),e(item.source?.host_id||c.unknown),e(time(item.updated_at))]),e);
+  if(path==='/logs')return html+`<p class="field-hint">${e(c.logsNote)}</p>`+table(c.logColumns,data.items.map(item=>[e(time(item.time)),e(state(item.source)),`${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}<details><summary>${e(item.title)}</summary>${(item.result_links||[]).length?`<h3>${e(c.resultCauses)}</h3><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul>`:''}<pre class="log-content">${e(json(item.details))}</pre></details>`,statusBadge(item.status,e)]),e);
+  return html+`<p class="field-hint">${e(c.retentionNote)}</p>`+table(c.retentionColumns,data.items.map(item=>[e(time(item.observed_at)),e(item.host_id),e(item.recipe_reference),e(item.kind),statusBadge(item.status,e)]),e);
 }
 
 export async function mountWorkspace(root,{path,e,siteName,search='',profiles=null,recipeScope='all',fetchImpl=fetch}) {
@@ -42,6 +51,7 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
   const title=recipeScope==='bundle'?c.bundleRecipes:recipeScope==='user'?c.userRecipes:c.titles[path];
   root.innerHTML=`<div class="page-heading"><div><p class="eyebrow">${e(siteName)}</p><h1>${e(title)}</h1><p class="intro">${e(recipeScope==='bundle'?c.bundleNote:recipeScope==='user'?c.userNote:c.intros[path])}</p></div></div><div id="workspace-content" class="panel roadmap-section" role="status">${e(c.loading)}</div>`;
   const content=root.querySelector('#workspace-content');
+  if(path==='/workspace')content.className='workspace-overview roadmap-section';
   const read=async url=>{
     const response=await fetchImpl(url);
     if(!response.ok)throw new Error(response.status===401?'unauthorized':'failed');
@@ -62,8 +72,8 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
         const source=await read('/api/v1/library/content?'+new URLSearchParams({path:doc}));
         content.innerHTML=`<a href="${path}">← ${e(c.back)}</a><h2>${e(doc)}</h2><p>${e(c.libraryNote)}</p><pre class="document-source">${e(source.content)}</pre>`;
       }else{
-        content.innerHTML=`<p>${e(c.libraryNote)}</p><label>${e(c.search)}<input type="search" id="library-query"></label><div id="library-items"></div>`;
-        const render=()=>{const needle=content.querySelector('#library-query').value.toLowerCase();content.querySelector('#library-items').innerHTML=data.items.filter(item=>item.path.toLowerCase().includes(needle)).map(item=>`<p><a href="${e(workspaceUrl(path,null,{doc:item.path}))}">${e(item.path)}</a></p>`).join('')||`<p>${e(c.empty)}</p>`;};
+        content.innerHTML=`<p>${e(c.libraryNote)}</p><label class="library-search">${e(c.search)}<input type="search" id="library-query"></label><div id="library-items" class="library-index"></div>`;
+        const render=()=>{const needle=content.querySelector('#library-query').value.toLowerCase();content.querySelector('#library-items').innerHTML=data.items.filter(item=>[item.path,item.title||''].some(value=>value.toLowerCase().includes(needle))).map(item=>`<a class="library-entry" href="${e(workspaceUrl(path,null,{doc:item.path}))}"><strong>${e(item.title||item.path)}</strong><span>${e(item.path)}</span></a>`).join('')||`<p>${e(c.empty)}</p>`;};
         content.querySelector('#library-query').addEventListener('input',render);render();
       }
       return;

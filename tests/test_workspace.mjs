@@ -35,7 +35,7 @@ test('overview distinguishes unavailable services from empty lists and reports s
 });
 test('saved log links use read-only history and preserve original source times and outcomes',()=>{
   const html=renderData('/logs',{status:'success',items:[{id:'a',source:'console',time:'2026-11-01T00:00:00Z',title:'<host>',status:{failed:1},url:'/console/a/history',details:{original:'saved'}}]},options);
-  assert.match(html,/\/console\/a\/history/);assert.match(html,/failed/);assert.match(html,/saved/);
+  assert.match(html,/\/console\/a\/history/);assert.match(html,/失敗 1/);assert.match(html,/data-state-danger/);assert.match(html,/saved/);
   assert.match(html,/&lt;host&gt;/);
 });
 test('unauthorized and failed reads never become an empty or successful workspace',async()=>{
@@ -86,4 +86,14 @@ test('partial diagnosis explains unsupported fields and escapes saved command ev
   assert.match(html,/未採集 IPv6/);assert.match(html,/network.ipv6.address/);
   assert.match(html,/permission denied/);assert.match(html,/&lt;script&gt;/);
   assert.doesNotMatch(html,/<script>/);
+});
+
+test('library cards search titles as well as paths and keep titles inert',async()=>{
+  const root=new Element();
+  await mountWorkspace(root,{path:'/docs',e,siteName:'Fixture',fetchImpl:async()=>({ok:true,json:async()=>({items:[{path:'docs/guide.md',title:'Scope <img src=x>'},{path:'docs/other.md',title:'Other'}]})})});
+  const content=root.querySelector('#workspace-content'),query=content.querySelector('#library-query'),list=content.querySelector('#library-items');
+  query.value='scope';query.events.input();
+  assert.match(list.innerHTML,/docs%2Fguide.md/);assert.match(list.innerHTML,/Scope &lt;img src=x&gt;/);
+  assert.doesNotMatch(list.innerHTML,/<img|docs%2Fother/);
+  query.value='not found';query.events.input();assert.match(list.innerHTML,/目前沒有資料/);
 });

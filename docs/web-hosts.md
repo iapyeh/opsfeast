@@ -1,14 +1,41 @@
-# Host configuration service 0.1.0
+# Host configuration service 0.2.0
 
 `/hosts` now reads the explicitly selected registered profile's real host inventory.
 The page supports creation, basic connection/metadata/group changes, and confirmed
 host-definition deletion. The CLI and HTTP adapters use `opsfeast.host_settings`;
 there is no separate Web configuration store. These operations do not connect,
 run proxy commands, test credentials, collect inventory, execute recipes or stop
-running work. Host ID filtering is case-insensitive; group matching uses exact
-catalog IDs. Group input completes declared and implicit group IDs and permits
+running work. Search matches Host ID, display name, login account, group IDs, saved IPv4/IPv6
+addresses and notes case-insensitively; group selection uses exact catalog IDs. Group input completes declared and implicit group IDs and permits
 new implicit groups, preserving ordered membership. The enclosing group of a
 bulk host remains its first membership under the canonical loader rules.
+
+## Host workspace presentation
+
+The list provides Profile-wide counts of configured hosts, enabled definitions
+and hosts with known saved reference IPs. These counts do not change with list
+filters. Enablement is configuration, not connectivity or health; known IPs are
+historical evidence, not a live availability check.
+
+Combine the search field, exact group selection and enabled/disabled filter.
+The single status message reports matching versus total hosts. **清除篩選** resets
+all three filters and returns keyboard focus to search. A Profile with no hosts,
+no matching search results and a failed configuration read remain distinct states.
+Search runs locally over the inspected snapshot; refresh the page to read updates.
+
+Host rows show display names, login accounts, notes, group labels, complete saved
+addresses and explicit configuration badges. On narrow screens the same semantic
+table becomes labelled records; long IDs and addresses wrap instead of disappearing.
+Opening a host retains its Profile and offers **總覽**, **設定**, **主機筆記**,
+**Console 紀錄** and **Recipes**. The overview separates saved IP/source/time
+from the latest inventory outcome. Valid source times display in Asia/Taipei with
+seconds; missing times stay unknown and unparseable source strings stay visible.
+Partial or failed results remain explicit and link to the existing result view.
+No search, filter, summary or navigation action collects data or executes commands.
+
+See [Web design and review](web-design.md) for the implementation, design source
+and repeatable review procedure. Host service schemas, mutation authorization,
+revision checks and storage are unchanged by this presentation update.
 
 ## Selection and supported writes
 
@@ -29,6 +56,7 @@ updated/deleted in their actual defining source, including included documents an
 | `enabled` | Explicit Boolean; new Web hosts start disabled until checked |
 | `label`, `description` | Plain text metadata (up to 4,000 code points), no NUL |
 | `connection` | Local, direct SSH or SSH-config alias on creation; patches supported fields on update |
+| `users` | Narrow account-name patches: explicit sudo Boolean to add/update, null to remove |
 
 Connection fields accepted by the service are `hostname`, `port`, `user`,
 `identity_file`, `allow_agent`, `look_for_keys`, `ssh_config_alias`, `local` and
@@ -41,12 +69,65 @@ fallback; it is not evidence of a remote identity.
 
 The Web form exposes common connection fields. Raw proxy commands/environments,
 inline jumps, passwords and arbitrary variables are not returned or accepted by
-this service. Existing values remain in the original document. Existing users are
-shown as names/sudo configuration only; account/secret and recipe-parameter editing
-remain unimplemented. The actual host tabs never substitute synthetic run logs
+this service. Existing values remain in the original document. Declared accounts
+support creation, sudo-policy updates and removal as described below. Password,
+account rename and recipe-parameter editing remain outside this interface. The actual host tabs never substitute synthetic run logs
 or inventories. Saved reference IPs come from `profile.hosts.reference_ips`, retain
 observation time and unknown/empty states, and never select a connection endpoint.
-Full inventory rendering and live Console/history integration remain separate work.
+Full inventory rendering remains unimplemented. The Console tab reads saved
+history through the existing record service without reconnecting or replaying work.
+
+## Account declarations (0.2.0)
+
+On a host's **設定** page, **已宣告帳號** provides **新增帳號宣告**, **編輯**
+and **移除宣告**. Enter a new account name and choose its sudo policy; new Web
+account forms default sudo off. Editing an existing declaration keeps its name
+read-only and updates its sudo Boolean. Removal opens a dialog showing the account
+and host before submission. Focus returns to the account section after success;
+validation/conflict errors retain the draft and do not change the displayed list.
+The connection account is displayed separately. Removing a declaration does not
+change `connection.user` or remove the OS account from the managed host.
+
+The shared `inspect` snapshot and success receipts now use `schema_version: 0.2.0`.
+`hosts[].users` contains only explicitly declared host `users` entries; an inferred
+connection identity is no longer inserted into this list. `login_user` remains
+separate. Clients expecting exact version 0.1.0 must read the updated schema;
+no stored host data migration is required. Old snapshots are not rewritten.
+
+`changes.users` is a nonempty mapping of account name to exactly `{"sudo": BOOLEAN}`
+for add/update, or JSON null to remove an existing declaration. Names use the same
+bounded nonempty, no-edge-whitespace/control-character text check as host IDs.
+No implicit rename exists. New declarations receive only the supplied sudo policy;
+existing ones merge just that field, retaining passwords, sudo-password, vars and
+icons without reading or returning them. Other account fields, empty account
+patches, non-Boolean sudo and removing nonexistent declarations fail with
+`invalid_host_accounts` or `host_account_not_found` (422). Whole-profile validation,
+source selection, revision checks and private pre-change backups apply as before.
+An invalid multi-account patch has no persistent partial write.
+
+Examples use the existing authorized Profile and a freshly inspected revision:
+
+```python
+from opsfeast.host_settings import inspect, mutate
+snapshot = inspect(installation, profile="lab")
+receipt = mutate(installation, profile="lab", action="update", host_id="web-01",
+    expected_revision=snapshot["revision"],
+    changes={"users": {"auditor": {"sudo": False}}})
+# Removal is a separate explicit user-authorized operation with a fresh revision:
+# changes={"users": {"auditor": None}}
+```
+
+```sh
+python -B -m opsfeast.host_settings --profile lab update web-01 --expected-revision REV <<'JSON'
+{"users":{"auditor":{"sudo":false}}}
+JSON
+```
+
+The same `changes` object is accepted by administrator/agent-owner-authorized
+`PATCH /api/v1/hosts`. This is local configuration editing, not account provisioning,
+permission verification, credential recovery or authorization to run a recipe.
+Removing an entry removes all of its private fields from the active configuration;
+the original source remains in the private pre-change backup. Do not share backups.
 
 ## Revision, validation, comments and backup
 
@@ -123,8 +204,8 @@ pending operation checkpoint. Configuration changes do not authorize connection.
 
 ## HTTP and errors
 
-All host endpoints require an authenticated administrator session and enforce
-same-origin access. Site-edit/interactive-agent/operator tokens and the local
+All host endpoints require an authenticated administrator session or the launching
+agent owner capability and enforce same-origin access. Site-edit/interactive-agent/operator tokens and the local
 site-edit cookie are not host-management credentials. No delegated host API token
 has been introduced; local agents can use the shared CLI/Python service within
 OS authority and user authorization.
@@ -144,7 +225,8 @@ passwords or exception snippets. Do not retry ambiguous writes automatically:
 reload and reconcile the selected profile before proposing the next action.
 
 Public tests: `tests/test_host_settings.py`, real host API tests in
-`tests/test_web_preview.py`, and `tests/test_host_manager.mjs`. They use isolated
+`tests/test_web_preview.py`, `tests/test_host_manager.mjs` and
+`tests/test_host_accounts.mjs`. They use isolated
 synthetic local profiles and preserve source/backup evidence. No real host has to
 be added/deleted, connected or initialized to validate this feature.
 
@@ -168,4 +250,4 @@ later removed. Viewing history does not verify the host's present health.
 
 The host detail now includes a **主機筆記** tab with real shared profile-local notes, search, add/edit and confirmed delete. See [host notes 0.1.0](host-notes.md) for UUID/source/timestamp, CLI/API, concurrency and merge semantics. These notes are independent of configuration backups and preserved Vault README files.
 
-*Last modified: 2026-11-04 07:24:53*
+*Last modified: 2026-11-08 23:07:31*
