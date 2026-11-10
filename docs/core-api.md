@@ -431,4 +431,9 @@ recipe, use `recipe.profile.hosts.reference_ips(recipe.host_id)`.
 Use this API instead of scanning recipe raw data; see the
 [reference-only 0.1.0 contract](host-reference-ips.md) for update rules and limits.
 
-*Last modified: 2026-11-06 09:23:54*
+
+## Borrowed routine execution scopes
+
+[Recipe.child](recipe-routines.md#cli-and-checkout-services) creates a guarded child scope with copied variables and an independent report. Its parent is suspended until return; actor/transport ownership stays with the parent and child handles expire. Children cannot acquire privilege or close the shared connection via Core. The routine executor verifies identity and groups login/root phases. This is not an untrusted Python sandbox. Existing profile.recipe/root APIs retain their independent ownership behavior.
+
+*Last modified: 2026-11-10 15:57:34*

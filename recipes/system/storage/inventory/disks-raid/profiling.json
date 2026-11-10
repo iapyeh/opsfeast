@@ -1,0 +1,139 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "retained": {
+      "title": "Retained disks-raid"
+    }
+  },
+  "properties": {
+    "raid.physical_drives": {
+      "id": "raid.physical_drives",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "All reported physical drives, including boot/spare/standalone; source identifiers and health are retained.",
+      "path": [
+        "physical_drives"
+      ],
+      "coverage_path": [
+        "coverage",
+        "physical_drives"
+      ],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": [
+        "controller",
+        "address"
+      ]
+    },
+    "raid.os_disks": {
+      "id": "raid.os_disks",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "OS-visible devices are not certified physical drives.",
+      "path": [
+        "os_disks"
+      ],
+      "coverage_path": [
+        "coverage",
+        "os_disks"
+      ],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": [
+        "path"
+      ]
+    },
+    "raid.controllers": {
+      "id": "raid.controllers",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "Storage controller evidence.",
+      "path": [
+        "controllers"
+      ],
+      "coverage_path": [
+        "coverage",
+        "controllers"
+      ],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": [
+        "controller"
+      ]
+    },
+    "raid.virtual_drives": {
+      "id": "raid.virtual_drives",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "Provider virtual volumes; no inferred physical-to-OS chain.",
+      "path": [
+        "virtual_drives"
+      ],
+      "coverage_path": [
+        "coverage",
+        "virtual_drives"
+      ],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": []
+    },
+    "raid.md_arrays": {
+      "id": "raid.md_arrays",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "Linux MD arrays only; not all storage pools.",
+      "path": [
+        "md_arrays"
+      ],
+      "coverage_path": [
+        "coverage",
+        "md_arrays"
+      ],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": [
+        "name"
+      ]
+    },
+    "raid.summary": {
+      "id": "raid.summary",
+      "job": "retained",
+      "type": "object",
+      "unit": "",
+      "description": "Saved physical/RAID health and human policy summary; not recollected or reassessed.",
+      "path": [
+        "summary"
+      ],
+      "coverage_path": [],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": []
+    },
+    "raid.findings": {
+      "id": "raid.findings",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "Saved findings; successful empty findings do not imply full storage health.",
+      "path": [
+        "findings"
+      ],
+      "coverage_path": [],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": []
+    }
+  }
+}

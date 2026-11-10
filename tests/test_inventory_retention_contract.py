@@ -23,6 +23,7 @@ from test_result_data import raw
 from inventory_fixture import historical_metadata
 
 BUNDLE = ROOT / 'recipes/system/inventory/overview'
+CURRENT = BUNDLE.parent/'hardware'
 
 
 class InventoryRetentionContractTests(unittest.TestCase):
@@ -30,7 +31,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
     enable = fixtures.VaultTests.enable
 
     def metadata(self):
-        return read_yaml(BUNDLE/'recipe.yaml')
+        return read_yaml(CURRENT/'recipe.yaml')
 
     def historical_directory(self):
         candidate = self.root/'historical-definition'
@@ -41,35 +42,35 @@ class InventoryRetentionContractTests(unittest.TestCase):
 
     def test_recipe_declaration_is_discovery_authority(self):
         metadata = self.metadata()
-        report = recipe_inspection.inspect_one(BUNDLE, [])
+        report = recipe_inspection.inspect_one(CURRENT, [])
         self.assertEqual(report['status'], 'success', report)
         self.assertEqual(report['retention']['declaration'], metadata['retention'])
-        self.assertEqual(report['retention']['schema_path'], str(BUNDLE/'job-retention.schema.json'))
+        self.assertEqual(report['retention']['schema_path'], str(CURRENT/'inventory-routine.schema.json'))
         self.assertIn('retention list', report['retention']['cli'])
         # Discovery never guesses a declaration based on recipe ID.
         self.assertIsNone(store.describe({'id': 'inventory-system'})['declaration'])
         metadata['id'] = 'some-other-producer'
-        self.assertEqual(store.describe(metadata)['declaration']['contract'], 'inventory-job-observations')
+        self.assertEqual(store.describe(metadata)['declaration']['contract'], 'inventory-routine-observations')
 
     def test_descriptor_requires_retention_and_rejects_output_adapter_knobs(self):
         metadata = self.metadata()
-        recipe_dispatch.validate(BUNDLE, metadata)
+        __import__('recipe_contract').validate(CURRENT,metadata)
         bad = copy.deepcopy(metadata)
         bad.pop('retention')
         with self.assertRaises(ConfigError):
-            recipe_dispatch.validate(BUNDLE, bad)
+            __import__('recipe_contract').validate(CURRENT,bad)
         for field in ('retention_adapter', 'retained_contract_version', 'exchange_version'):
             bad = copy.deepcopy(metadata)
             bad['output'][field] = 'inventory-system-v1'
             with self.subTest(field=field), self.assertRaises(ConfigError):
-                recipe_dispatch.validate(BUNDLE, bad)
+                __import__('recipe_contract').validate(CURRENT,bad)
 
     def test_static_discovery_and_snapshot_do_not_load_normalizer(self):
         with patch.object(contracts, 'implementation', side_effect=AssertionError('must not import normalizer')):
-            report = recipe_inspection.inspect_one(BUNDLE, [])
-            saved = replay.snapshot(self.metadata(), BUNDLE)
+            report = recipe_inspection.inspect_one(CURRENT, [])
+            saved = replay.snapshot(self.metadata(), CURRENT)
         self.assertEqual(report['status'], 'success', report)
-        self.assertEqual(saved['normalizer_sha256'], hashlib.sha256((BUNDLE/'job_retention.py').read_bytes()).hexdigest())
+        self.assertEqual(saved['normalizer_sha256'], hashlib.sha256((ROOT/'tools/inventory_routine_retention.py').read_bytes()).hexdigest())
 
     def test_schema_declares_nested_data_meanings_units_and_limits(self):
         schema = json.loads((BUNDLE/'retention.schema.json').read_text())
@@ -91,11 +92,11 @@ class InventoryRetentionContractTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             contracts.validate_declaration(meta, candidate)
         for invalid in ('{}', '{', '[]', '{"a":1,"a":1}'):
-            (candidate/'retention.schema.json').write_text(invalid)
+            (candidate/'inventory-routine.schema.json').write_text(invalid)
             with self.subTest(invalid=invalid), self.assertRaises(ConfigError):
                 contracts.validate_declaration(meta, candidate)
-        (candidate/'retention.schema.json').unlink()
-        (candidate/'retention.schema.json').symlink_to(BUNDLE/'retention.schema.json')
+        (candidate/'inventory-routine.schema.json').unlink()
+        (candidate/'inventory-routine.schema.json').symlink_to(CURRENT/'inventory-routine.schema.json')
         with self.assertRaises(ConfigError):
             contracts.validate_declaration(meta, candidate)
         meta['retention']['schema'] = '../escape.json'
@@ -148,7 +149,7 @@ class InventoryRetentionContractTests(unittest.TestCase):
         self.assertEqual(replay.ingest(self.root, [file], recipe_directory=self.historical_directory())['status'], 'success')
 
     def test_schema_digest_is_verified_independently_of_code(self):
-        saved = replay.snapshot(self.metadata(), BUNDLE)
+        saved = replay.snapshot(self.metadata(), CURRENT)
         self.assertEqual(saved['schema_sha256'], contracts.schema_digest(saved['retention']))
         saved['schema_sha256'] = 'b'*64
         saved['sha256'] = replay.digest({k:v for k,v in saved.items() if k!='sha256'})

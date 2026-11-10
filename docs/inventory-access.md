@@ -1,9 +1,21 @@
 # Inventory access checks and partitioned results
 
-system/inventory/overview 0.3.2 owns its [structured retention declaration, schema and normalizer](../recipes/system/inventory/overview/README.md#recipe-owned-retention-contract). This architecture change preserves the access, actor, data-state and identity rules below; it adds data-definition snapshots and registered schema/normalizer digests without new host probes.
+## Current routine collection
 
+Current [inventory recipes and Overview meal](recipe-routines.md) use independent
+execution scopes: login routines run first, then selected root routines share one
+bounded two-candidate root acquisition. A root body requires verified UID 0. Root
+unavailability does not rerun protected probes as an ordinary user; it leaves those
+fields unavailable and preserves completed login observations. Uncertain identity
+or restoration stops subsequent work. Each child retains its own actor evidence
+through inventory-routine-observations 0.1.0. No automatic credential retry,
+installation or target configuration changes occur.
 
-Inventory-system recipe 0.3.0 adds an access gate and inventory-values contract 0.1.0. Read this guide before execution: selecting inventory includes bounded account selection with possible su/sudo by default. These are real connections and authentication attempts, even in dryrun. Login-shell startup, configured proxies and authentication/audit records can have side effects. No installation, target configuration changes, environment-variable capture, process arguments or arbitrary file crawling is performed.
+Account credential/policy definitions and explicit check-access diagnostics below
+remain applicable. Sections describing one whole-collection actor, fallback_user,
+inventory-values or six-section exports document the frozen historical inventory
+execution/data model, not the current meal invocation contract. Use the canonical
+[routine guide](recipe-routines.md) for current CLI/Web execution and storage.
 
 ## Configure the actual connection account
 
@@ -328,4 +340,4 @@ was performed. Existing data schemas and dependency settings need no update beca
 the API addition reuses existing contracts and SSHScript 5.0.0. Human/agent docs,
 capability routing and public reproducible tests are included in this delivery.
 
-_Last modified: 2026-10-20 11:24:28_
+*Last modified: 2026-11-10 17:34:14*

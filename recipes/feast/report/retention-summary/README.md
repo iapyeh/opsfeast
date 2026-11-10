@@ -17,4 +17,14 @@ The same retention records feed the bundled vault without reading these artifact
 
 [Source](main.py), [descriptor](recipe.yaml), [synthetic multi-recipe selection](examples/selection.synthetic.json), [public tests](../../../../tests/test_retention_content.py), [retention interfaces](../../../../docs/retention.md).
 
-_Last modified: 2026-10-19 15:24:36_
+## Current child and historical reference selection
+
+This report already reads every declared observation generically. Its exact
+`recipes` filter does not expand meals: select child references for current data,
+Overview explicitly for historical Overview records, or an empty array for all.
+Read [the inventory dependency map](../../../../docs/inventory-consumers.md) for a
+multi-child invocation, contract/source boundaries and the subscriber update guide.
+The split regressions verify exact filters and original record immutability; no
+collection or private selection/configuration migration occurs.
+
+*Last modified: 2026-11-10 16:49:25*

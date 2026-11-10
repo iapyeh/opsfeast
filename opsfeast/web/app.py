@@ -9,12 +9,12 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from opsfeast import ConfigError
+from opsfeast import ConfigError, REPOSITORY_ROOT
 from opsfeast.identity import read_identity
 from opsfeast import site, admin
 from .security import Sessions, LIFETIME, EditingSessions, EDIT_LIFETIME, AgentCapability, cookie_names, login_destination
 
-WEB_ROOT = Path(__file__).resolve().parents[2] / 'web'
+WEB_ROOT = REPOSITORY_ROOT / 'web'
 PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/bundle-recipes', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
 
 
@@ -36,11 +36,11 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     @app.middleware('http')
     async def preview_headers(request, call_next):
         response = await call_next(request)
-        response.headers['Content-Security-Policy'] = (
+        response.headers.setdefault('Content-Security-Policy', (
             "default-src 'self'; script-src 'self'; style-src 'self'; "
             "img-src 'self' blob:; connect-src 'self'; object-src 'none'; "
             "base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
-        )
+        ))
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Referrer-Policy'] = 'no-referrer'
         response.headers['Cache-Control'] = 'no-store'
@@ -148,6 +148,9 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
 
     from .workspace_api import install as install_workspace
     install_workspace(app, product=product, require_admin=require_admin)
+
+    from .recipe_api import install as install_recipe_execution
+    install_recipe_execution(app, product=product, root=root, require_admin=require_admin, json_body=json_body)
 
     @app.get('/api/v1/updates')
     def installed_versions(request: Request):

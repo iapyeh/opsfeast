@@ -139,12 +139,12 @@ class ObservationRunTests(unittest.TestCase):
         before=copy.deepcopy(run)
         actor=Actor();actor.percent=20
         self.acquire(actor,save=True,properties=['storage.filesystems.used_percent'])
-        (self.root/'hosts.yaml').write_text(json.dumps({'default':{'recipes':{REF:{'vars':{'attention':{'enabled':False}}}}},
+        (self.root/'hosts.yaml').write_text(json.dumps({'default':{'recipes':{'system/inventory/storage-capacity':{'vars':{'attention':{'enabled':False}}}}},
                                                      'hosts':{'node':{'connection':{'local':True}}}}))
         vault.rebuild(self.root)
         self.assertEqual(runs.show(self.root,run['run_id']),before)
         self.assertIn('82% used',pages[0].read_text())
-        current=next((self.root/'vault').rglob('current-system-inventory.md')).read_text()
+        current=next((self.root/'vault').rglob('current-*storage-capacity*.md')).read_text()
         self.assertNotIn('## Attention',current)
         altered=copy.deepcopy(run);altered['targets'][0]['status']='failed'
         with self.assertRaises(ConfigError),store.locked(self.root):runs._save(self.root,altered)

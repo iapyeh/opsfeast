@@ -66,7 +66,7 @@ class ReportContext:
     retention: object = None
 
 
-def validate_artifacts(directory, declarations):
+def validate_artifacts(directory, declarations, *, max_bytes=None):
     if not isinstance(declarations, list):
         raise ConfigError('report artifacts must be a list')
     output, names = [], set()
@@ -83,8 +83,14 @@ def validate_artifacts(directory, declarations):
             raise ConfigError('artifact is missing or escapes output directory')
         if any(part.is_symlink() for part in [path, *path.parents] if part.is_relative_to(directory)):
             raise ConfigError('artifact symlinks are not supported')
+        if max_bytes is not None and path.stat().st_size > max_bytes:
+            raise ConfigError('artifact exceeds requested byte limit')
         names.add(name.as_posix())
-        output.append(dict(item, size_bytes=path.stat().st_size, sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+        with path.open('rb') as stream:
+            content = stream.read() if max_bytes is None else stream.read(max_bytes+1)
+        if max_bytes is not None and len(content) > max_bytes:
+            raise ConfigError('artifact exceeds requested byte limit')
+        output.append(dict(item, size_bytes=len(content), sha256=hashlib.sha256(content).hexdigest()))
     return output
 
 
@@ -194,8 +200,33 @@ def result_short_ids(root):
     return {str(path.resolve()):identifiers[identifier] for identifier,path in files if not path.is_symlink()}
 
 
+def routine_collection_user(raw):
+    """Summarize only one verified routine actor; mixed/unknown scopes stay unknown."""
+    rows=raw.get('routine_evidence')
+    if rows is None:
+        children=raw.get('children',[])
+        if not isinstance(children,list) or any(not isinstance(c,dict) or not isinstance(c.get('routine_evidence'),list) for c in children):return None
+        rows=[row for child in children for row in child['routine_evidence']]
+    if not isinstance(rows,list):return None
+    actors=set()
+    for row in rows:
+        if not isinstance(row,dict):return None
+        if row.get('status') in ('skipped','unsupported'):continue
+        if row.get('status') not in ('success','partial'):return None
+        actor=row.get('actor')
+        if not isinstance(actor,dict):return None
+        name,uid,mode=actor.get('username'),actor.get('effective_uid'),actor.get('mode')
+        if (not isinstance(name,str) or not name.strip() or any(ord(c)<32 or ord(c)==127 for c in name)
+                or type(uid) is not int or uid<0 or mode not in ('root','user') or (mode=='root')!=(uid==0)
+                or row.get('required_permission') not in ('login','root') or row['required_permission']=='root' and uid!=0):return None
+        actors.add((name,uid))
+    return next(iter(actors))[0] if len(actors)==1 else None
+
+
 def collection_user(raw):
     """Return only a supported, observed collection actor; never guess from login."""
+    if isinstance(raw,dict) and isinstance(raw.get('recipe'),dict) and (raw['recipe'].get('runner_contract')=='python-routines' or raw['recipe'].get('id')=='recipe-meal'):
+        return routine_collection_user(raw)
     if isinstance(raw, dict) and raw.get('execution_identity'):
         from opsfeast.recipe_execution import validate_evidence
         try:
@@ -312,7 +343,7 @@ def show_result(root, identifier, *, kind=None):
     return document
 
 
-def show_artifact(root, identifier, name):
+def show_artifact(root, identifier, name, *, max_bytes=None):
     path = result_path(root, identifier)
     report = json_object(path)
     if report.get('report_contract') != VERSION or path.parent.parent != root / 'reports':
@@ -321,7 +352,7 @@ def show_artifact(root, identifier, name):
     if len(declared) != 1:
         raise ConfigError('artifact not declared by report')
     info = declared[0]
-    checked = validate_artifacts(path.parent / 'artifacts', [{key: info[key] for key in ('path', 'title', 'media_type')}])[0]
+    checked = validate_artifacts(path.parent / 'artifacts', [{key: info[key] for key in ('path', 'title', 'media_type')}], max_bytes=max_bytes)[0]
     if checked['sha256'] != info.get('sha256') or checked['size_bytes'] != info.get('size_bytes'):
         raise ConfigError('artifact content changed after generation')
     return {**checked, 'relative_path': checked['path'], 'path': str((path.parent / 'artifacts' / name).resolve())}

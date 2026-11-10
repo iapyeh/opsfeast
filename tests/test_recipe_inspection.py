@@ -116,7 +116,7 @@ class RecipeInspectionTests(unittest.TestCase):
         report = inspection.inspect_recipes('system/inventory/overview', ['freebsd'])
         text = inspection.format_report(report)
         self.assertIn('freebsd: implemented', text)
-        self.assertIn('ssh: not-tested', text)
+        self.assertIn('System inventory meal', text)
         self.assertNotIn('linux', text)
         self.assertNotIn('macos', text)
 
@@ -133,10 +133,12 @@ class RecipeInspectionTests(unittest.TestCase):
         report = inspection.inspect_recipes('system/inventory/overview', ['linux', 'freebsd', 'macos', 'openbsd'])
         self.assertEqual(report['status'], 'success')
         item = report['recipes'][0]
-        self.assertEqual(item['runner_contract'], 'valid-inventory-system')
+        self.assertEqual(item['runner_contract'], 'valid-recipe-meal')
         self.assertEqual(item['coverage']['not_declared_implemented'], ['openbsd'])
         self.assertEqual(item['implementations'], [])
-        self.assertEqual(item['collection']['declaration']['entrypoint'], 'jobs.py')
+        self.assertEqual(item['descriptor']['runner']['entrypoint'], 'meal.json')
+        child=inspection.inspect_recipes('system/inventory/hardware')['recipes'][0]
+        self.assertEqual(child['runner_contract'],'valid-python-routines')
 
 
 if __name__ == '__main__':

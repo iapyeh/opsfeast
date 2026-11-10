@@ -7,7 +7,22 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FILE = '.opsfeast-author.yaml'
-BUNDLED = ('system/storage/inventory/disks-raid', 'database/mysql/check/replication', 'system/account/check/identity', 'system/network/check/port', 'system/inventory/overview', 'feast/report/execution-summary', 'feast/report/retention-summary')
+BUNDLED = tuple('system/inventory/'+leaf for leaf in ('hardware','system','network-configuration','software','storage-layout','storage-capacity','services','network-state','system-runtime','resource-metrics','hardware-sensors')) + (
+    'system/storage/inventory/disks-raid',
+    'database/mysql/check/replication',
+    'system/account/check/identity',
+    'system/account/inventory/local-users',
+    'system/process/inventory/snapshot',
+    'system/network/check/port',
+    'system/inventory/overview',
+    'feast/report/execution-summary',
+    'feast/report/retention-summary',
+    'system/access/inventory/ssh-policy',
+    'system/account/inventory/sudo-policy',
+    'system/network/inventory/firewall-policy',
+    'system/time/inventory/synchronization',
+    'system/logging/inventory/configuration',
+)
 UNKNOWN = {'author': {'name': 'Unknown', 'contacts': ['Unknown']}, 'license': 'Unknown'}
 
 

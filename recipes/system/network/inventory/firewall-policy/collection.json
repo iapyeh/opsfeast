@@ -1,0 +1,160 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "firewall-policy": {
+      "title": "Linux firewall policy views"
+    }
+  },
+  "properties": {
+    "policy.nft_rules": {
+      "id": "policy.nft_rules",
+      "job": "firewall-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Linux firewall policy views: nft_rules",
+      "path": [
+        "datasets",
+        "nft_rules",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "nft_rules"
+      ],
+      "time_path": [
+        "datasets",
+        "nft_rules",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.iptables_rules": {
+      "id": "policy.iptables_rules",
+      "job": "firewall-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Linux firewall policy views: iptables_rules",
+      "path": [
+        "datasets",
+        "iptables_rules",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "iptables_rules"
+      ],
+      "time_path": [
+        "datasets",
+        "iptables_rules",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.ip6tables_rules": {
+      "id": "policy.ip6tables_rules",
+      "job": "firewall-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Linux firewall policy views: ip6tables_rules",
+      "path": [
+        "datasets",
+        "ip6tables_rules",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "ip6tables_rules"
+      ],
+      "time_path": [
+        "datasets",
+        "ip6tables_rules",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.firewalld_runtime": {
+      "id": "policy.firewalld_runtime",
+      "job": "firewall-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Linux firewall policy views: firewalld_runtime",
+      "path": [
+        "datasets",
+        "firewalld_runtime",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "firewalld_runtime"
+      ],
+      "time_path": [
+        "datasets",
+        "firewalld_runtime",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.firewalld_permanent": {
+      "id": "policy.firewalld_permanent",
+      "job": "firewall-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Linux firewall policy views: firewalld_permanent",
+      "path": [
+        "datasets",
+        "firewalld_permanent",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "firewalld_permanent"
+      ],
+      "time_path": [
+        "datasets",
+        "firewalld_permanent",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.ufw_runtime": {
+      "id": "policy.ufw_runtime",
+      "job": "firewall-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Linux firewall policy views: ufw_runtime",
+      "path": [
+        "datasets",
+        "ufw_runtime",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "ufw_runtime"
+      ],
+      "time_path": [
+        "datasets",
+        "ufw_runtime",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    }
+  }
+}

@@ -404,7 +404,7 @@ def main(argv=None):
         '  dispatch [ID]   Execute pending/running/failed deliveries; successful pairs stay acked.\n'
         '\n'
         'Delivery is at least once: consumers must tolerate repeated attempts.\n'
-        'Example: opsfeast.py consumers list --recipe system/inventory/overview --profile main --json'),
+        'Example: opsfeast.py consumers list --recipe system/inventory/storage-capacity --profile main --json'),
         formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
     parser.add_argument('action', choices=('list', 'show', 'inspect', 'dispatch'))
     parser.add_argument('consumer', nargs='?')

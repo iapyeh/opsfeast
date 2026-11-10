@@ -1,0 +1,185 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "time-sync": {
+      "title": "Linux time synchronization configuration and state"
+    }
+  },
+  "properties": {
+    "policy.clock_state": {
+      "id": "policy.clock_state",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: clock_state",
+      "path": [
+        "datasets",
+        "clock_state",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "clock_state"
+      ],
+      "time_path": [
+        "datasets",
+        "clock_state",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.chrony_state": {
+      "id": "policy.chrony_state",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: chrony_state",
+      "path": [
+        "datasets",
+        "chrony_state",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "chrony_state"
+      ],
+      "time_path": [
+        "datasets",
+        "chrony_state",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.chrony_sources": {
+      "id": "policy.chrony_sources",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: chrony_sources",
+      "path": [
+        "datasets",
+        "chrony_sources",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "chrony_sources"
+      ],
+      "time_path": [
+        "datasets",
+        "chrony_sources",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.ntp_state": {
+      "id": "policy.ntp_state",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: ntp_state",
+      "path": [
+        "datasets",
+        "ntp_state",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "ntp_state"
+      ],
+      "time_path": [
+        "datasets",
+        "ntp_state",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.ntp_peers": {
+      "id": "policy.ntp_peers",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: ntp_peers",
+      "path": [
+        "datasets",
+        "ntp_peers",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "ntp_peers"
+      ],
+      "time_path": [
+        "datasets",
+        "ntp_peers",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.timesyncd_state": {
+      "id": "policy.timesyncd_state",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: timesyncd_state",
+      "path": [
+        "datasets",
+        "timesyncd_state",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "timesyncd_state"
+      ],
+      "time_path": [
+        "datasets",
+        "timesyncd_state",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.time_configuration": {
+      "id": "policy.time_configuration",
+      "job": "time-sync",
+      "type": "array",
+      "unit": "",
+      "description": "Linux time synchronization configuration and state: time_configuration",
+      "path": [
+        "datasets",
+        "time_configuration",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "time_configuration"
+      ],
+      "time_path": [
+        "datasets",
+        "time_configuration",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    }
+  }
+}

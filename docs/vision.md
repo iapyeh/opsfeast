@@ -1,5 +1,14 @@
 # Vision and design principles
 
+## System profiling and persistent services
+
+The [profiling architecture](system-profiling.md) defines broad bundled discovery,
+recipe/other-collector boundaries, retention/consumer/Web roles and the intended
+independent daemon lifecycle. Host ID is user-managed within its namespace;
+conflict warnings, history-continuation choices and explicit deletion scopes are
+product responsibilities. The [profiling read service 0.1.0](profiling.md) is the
+first delivered step; daemon expansion and lifecycle mutations remain planned.
+
 ## Treat a recipe as a growing unit of purpose and knowledge
 
 A recipe includes its declared function and purpose, expected outcomes, scope,
@@ -273,4 +282,4 @@ access is not an administrator session.
 
 Recipe source, raw observation evidence and structured retention are independent portable units. The implemented [transfer foundation](portability.md) supports origin-preserving copy/import, explicit recipe conflicts/rollback and verified resumable archival with storage compaction. User [data contracts](portable-contracts.md) travel with recipes/data rather than requiring a product registry edit. Human authority remains explicit for code activation, transmission and destructive source removal; historical import never becomes a live incident. Network distribution, a general scheduler and automatic recovery-package cleanup remain outside this implementation.
 
-*Last modified: 2026-11-06 14:07:41*
+*Last modified: 2026-11-09 11:51:59*

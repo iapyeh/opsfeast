@@ -46,7 +46,7 @@ def invocation(parser):
     parser.add_argument('--json', action='store_true')
 
 
-def validate_invocation(root, item, inv):
+def validate_invocation(root, item, inv, *, variables=None):
     expected = {'targets', 'all', 'exclude', 'threads', 'timeout', 'assignments', 'vars_file', 'inputs', 'verbose', 'quiet'}
     if not isinstance(inv, dict) or set(inv) != expected:
         raise ConfigError('invocation fields do not match job contract')
@@ -69,7 +69,7 @@ def validate_invocation(root, item, inv):
             raise ConfigError('offline report recipes do not accept host/group/all/exclude/threads')
         config = configuration(root)
         info = config.recipe_location(item['reference'], config.root / 'hosts.yaml', cli=True)
-        values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
+        values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else variables
         prepare_vars(item['descriptor'], info['vars'], {}, cli_variables(item['descriptor'], values, inv['assignments']))
     else:
         if inv['inputs']:
@@ -80,15 +80,20 @@ def validate_invocation(root, item, inv):
             raise ConfigError('invalid all/target/exclusion combination')
 
 
-def execute(root, spec, *, json_output=False):
+def execute(root, spec, *, json_output=False, variables=None, inventory_selection=None):
     prepare_console(json_output)
     item = choose(root, spec['recipe'])
     if not item['runnable']:
         raise ConfigError('selected recipe has invalid or unsupported execution contract')
     inv = spec['invocation']
-    validate_invocation(root, item, inv)
+    if inventory_selection is not None:
+        from opsfeast.recipe_runs import inventory_selection as resolve_inventory_selection
+        resolve_inventory_selection(item['descriptor'], Path(item['directory']), inventory_selection)
+    if variables is not None and inv['vars_file'] is not None:
+        raise ConfigError('select input variables or vars_file, not both')
+    validate_invocation(root, item, inv, variables=variables)
     if item['kind'] == 'report':
-        values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
+        values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else variables
         report, path = run_report(root, item, [Path(p) for p in inv['inputs']], values,
                                   inv['assignments'], inv['timeout'])
         print_report({'status': report['status'], 'reason_code': report['reason_code'], 'message': report['message'],
@@ -98,7 +103,8 @@ def execute(root, spec, *, json_output=False):
     if inv['inputs']:
         raise ConfigError('--input is for offline report recipes only')
     from recipe_runner import execute_hosts
-    return execute_hosts(root, item['reference'], inv, json_output=json_output)
+    return execute_hosts(root, item['reference'], inv, json_output=json_output, cli_vars=variables,
+                         **({'inventory_selection': inventory_selection} if inventory_selection is not None else {}))
 
 
 def specification(args):

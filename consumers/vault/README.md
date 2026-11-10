@@ -4,7 +4,9 @@
 dispatch snapshot to host_vault.rebuild, while each event keeps its own durable
 receipt and retry count. Failed rebuilds leave all selected events retryable; explicit vault rebuild uses that same renderer without creating/acknowledging events.
 
-Requirements are Python 3.11+, OpsFeast initialization dependencies, a namespace-enabled profile, valid hosts.yaml, retention read access and writable owned Vault output. No connection, SSHScript execution or model is needed. Plain Markdown tables work without a plugin; Mermaid fences render natively in Obsidian; other readers need Mermaid support. No additional Obsidian plugin, MCP server or new collection is needed. The renderer consumes registered inventory-job-observations 0.1.0, historical inventory-observations 0.1.0, host-values 0.2.0, operation evidence and explicit observation-run 0.1.0.
+Requirements are Python 3.11+, OpsFeast initialization dependencies, a namespace-enabled profile, valid hosts.yaml, retention read access and writable owned Vault output. No connection, SSHScript execution or model is needed. Plain Markdown tables work without a plugin; Mermaid fences render natively in Obsidian; other readers need Mermaid support. No additional Obsidian plugin, MCP server or new collection is needed. The renderer consumes current inventory-routine-observations 0.1.0, historical inventory-job-observations 0.1.0, historical inventory-observations 0.1.0, host-values 0.2.0, operation evidence and explicit observation-run 0.1.0.
+
+## Figure authoring
 
 ## Reader assets
 
@@ -56,4 +58,15 @@ sanitized payload. Rendering does not rerun probes or modify retention policy/da
 
 Vault renders [backup-files-check 0.1.0](../../docs/backup-file-checks.md) current summaries and complete historical file lists with saved policy and explicit partial states. The separate [service presentation adapter](../../docs/service-adapters.md) owns Services pages and source-report links; the retention Vault consumer does not own notification/todo lifecycle or send mail. Keep their receipts distinct and mutate service objects only through the platform API/CLI.
 
-*Last modified: 2026-10-30 11:44:50*
+## Independent inventory children
+
+The existing all-observation subscriptions already cover every child; no selector
+rewrite or extra consumer is needed. Current pages retain independent source/recipe
+identity. The host index selects the latest attempted OS-name property and links
+its actual source report, including an unknown value after a newer failed attempt.
+Attention can use saved as-of hardware baselines across children in the same
+host/origin namespace. It starts with saved effective policy, then applies any
+current exact-child Attention override; source IDs/references/times stay visible.
+Historical records/events are not relabeled. See [dependencies and adoption](../../docs/inventory-consumers.md).
+
+*Last modified: 2026-11-10 16:49:25*

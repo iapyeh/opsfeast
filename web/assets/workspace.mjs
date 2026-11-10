@@ -1,5 +1,6 @@
 import c from './locales/workspace-zh-TW.mjs';
 import {formatDateTime} from './i18n.mjs';
+import {mountRecipeMenu} from './recipe-menu.mjs';
 export const workspaceCopy = c;
 export const workspacePaths = Object.keys(c.titles);
 export const workspaceUrl = (path, profile, extra={}) => {
@@ -46,6 +47,7 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
 }
 
 export async function mountWorkspace(root,{path,e,siteName,search='',profiles=null,recipeScope='all',fetchImpl=fetch}) {
+  if(path==='/recipes'&&recipeScope==='all')return mountRecipeMenu(root,{e,profiles,search,fetchImpl});
   const query=new URLSearchParams(search);
   let profile=query.get('profile')||profiles?.default_profile;
   const title=recipeScope==='bundle'?c.bundleRecipes:recipeScope==='user'?c.userRecipes:c.titles[path];

@@ -19,11 +19,19 @@ CONTRACT = {'contract':'inventory-job-observations','version':'0.1.0',
 
 
 def catalog():
-    return json.loads((BUNDLE/'collection.json').read_text())
+    from opsfeast.profiling import provider_catalog
+    return provider_catalog('system-inventory')
 
 
 def inspect_collection(directory, metadata):
     """Data-only collection declaration validation, shared with recipe discovery."""
+    if metadata.get('runner',{}).get('contract') in ('python-routines','recipe-meal'):
+        from opsfeast.routine_contract import validate
+        from opsfeast.routine_execution import collection
+        validate(directory,metadata)
+        data=collection(metadata)
+        if data is None:raise ConfigError('not an inventory collection')
+        return data
     from recipe_dispatch import declared_version
     from retention_contracts import validate_declaration
     if metadata.get('collection') != {'version':'0.1.0','catalog':'collection.json','entrypoint':'jobs.py','retention':CONTRACT}:
@@ -52,7 +60,10 @@ def definition(config, reference='system/inventory/overview', *, explicit_host=F
     directory = info['scope'].path(info['pattern'],info['origin'])
     from recipe_dispatch import validate, bundle_digest
     metadata = read_yaml(directory/'recipe.yaml')
-    validate(directory, metadata)
+    if metadata.get('runner',{}).get('contract') in ('python-routines','recipe-meal'):
+        from opsfeast.routine_contract import validate as validate_routine
+        validate_routine(directory,metadata)
+    else:validate(directory, metadata)
     data = inspect_collection(directory, metadata)
     if metadata.get('access_mode') != 'read':
         raise ConfigError('inventory job collection requires access_mode read')
@@ -125,125 +136,19 @@ def _collect_host(root, host, *, jobs=None, properties=None, save=False, note=''
                  reference='system/inventory/overview', timeout=30, budget=90,
                  session_class=None, prepared=None, cli_values=None, assignments=(), explicit_host=True,
                  observation_run_id=None):
-    if not isinstance(note,str) or len(note)>4096 or '\x00' in note:
-        raise ConfigError('note must be at most 4096 characters without NUL')
+    if jobs and properties:raise ConfigError('select properties or jobs, not both')
+    if not isinstance(note,str) or len(note)>4096 or '\x00' in note:raise ConfigError('invalid inventory note')
     from opsfeast import positive_timeout
-    timeout, budget = positive_timeout(timeout), positive_timeout(budget)
-    p = profile(root)
-    config = p.hosts._config
-    if host not in config.hosts or (not explicit_host and not config.hosts[host].get('enabled',True)):
-        raise ConfigError('unknown or disabled inventory host')
-    if explicit_host:
-        config.hosts[host]['enabled'] = True
-    # Revalidate current source enabled/settings even after scheduler planning.
-    chosen = definition(config, prepared['reference'] if prepared else reference, explicit_host=explicit_host)
-    if not explicit_host and not config.recipe_options(host, chosen['reference']).get('enabled', False):
-        return {'host_id':host, 'status':'skipped', 'reason_code':'recipe_disabled'}
-    from recipe_inputs import prepare_vars, cli_variables
-    source = chosen['source_info']
-    variables = prepare_vars(chosen['metadata'],source['vars'],config.matching_recipe_vars(host,chosen['directory'],source),
-                             cli_variables(chosen['metadata'],cli_values,assignments))
-    from inventory_attention import resolve as resolve_attention
-    attention_policy = resolve_attention(variables.get('attention', {}))
-    command_timeout = variables.get('command_timeout_seconds',timeout)
-    budget = variables.get('collection_budget_seconds',budget)
-    selected, names = select(chosen['catalog'], jobs, properties)
-    if save:
-        from retention_store import settings
-        if settings(root) is None:
-            raise ConfigError('saved inventory requires an initialized retention namespace')
-        checked(root,'observations')
-    session_class = session_class or runtime_class()
-    raw = {'schema_version':'0.3.0','host_id':host,'started_at':now(),'observed_at':now(),
-           'status':'failed','reason_code':'collection_failed','groups':[],'probes':[],
-           'source_observation_id':str(uuid4()),'producer_instance_id':p.instance.identity['id'],
-           'evidence_kind':'local' if config.hosts[host]['connection'].get('local') else 'ssh',
-           'execution_access_mode':'read','trigger':trigger,'note':note,
-           'definition_sha256':chosen['definition_sha256'],
-           'actor':{'username':None,'effective_uid':None,'mode':'unverified'},
-           'recipe':{'id':'inventory-system','version':chosen['metadata']['version'],
-                     'reference':chosen['reference'],'bundle_sha256':chosen['bundle_sha256']},
-           'execution_errors':[], 'attention_policy':attention_policy, 'observation_run_id':observation_run_id}
-    raw['host_metadata'] = {key:config.hosts[host][key] for key in ('label','description') if key in config.hosts[host]}
-    raw['identity_warning'] = ('Configured identity_key is administrator-assigned, not independently verified machine identity.'
-                               if config.hosts[host].get('identity_key') else
-                               'Identity is scoped to the configured namespace and host ID. Host replacement and namespace changes are not independently detected; do not infer physical-device continuity.')
-    raw['recipe']['variable_names'] = sorted(variables)
-    if save:
-        from retention_replay import snapshot
-        metadata = dict(chosen['metadata'], retention=CONTRACT)
-        raw['retention_snapshot'] = snapshot(metadata,chosen['directory'])
-    stage = 'connection'
-    try:
-        with connected(config,host,session_class,timeout,raw) as session:
-            stage = 'collection_actor'
-            access = raw.setdefault('access',{})
-            with collection_actor(session,config,host,timeout,access,
-                                  authenticated_user=raw.get('login_identity',{}).get('username')) as actor:
-                actual = access.get('actual_identity') or {}
-                raw['actor'] = {'username':actual.get('username'),'effective_uid':actual.get('effective_uid'),
-                                'mode':access.get('mode','unverified')}
-                stage = 'collection'
-                from recipe_runner import _implementation_lock
-                with _implementation_lock:
-                    code = runpy.run_path(str(chosen['directory']/'jobs.py'))
-                acquired = code['collect'](actor,host,selected,names,timeout=command_timeout,budget=budget)
-                # Keep the outer acquisition start, including connection/identity setup.
-                raw.update({key:value for key,value in acquired.items() if key!='started_at'})
-                raw['reason_code'] = 'inventory_jobs_'+raw['status']
-    except Exception as exc:
-        raw['execution_errors'].append({'stage':stage,'error_type':type(exc).__name__,
-                                        'reason_code':exc.reason_code if isinstance(exc,__import__('host_runtime').IdentityProbeError) else 'collection_failed'})
-        raw.update(status='failed',reason_code='collection_failed')
-    raw['observed_at'] = now()
-    if raw.get('cleanup_error'):
-        raw.update(status='failed',reason_code='cleanup_failed')
-        raw['execution_errors'].append({'stage':'cleanup','error_type':raw['cleanup_error']})
-    if not raw['groups']:
-        raw['probes'].append({'id':'acquisition','command':None,'started_at':raw['started_at'],
-            'observed_at':raw['observed_at'],'status':'failed','reason_code':raw['reason_code'],
-            'exitcode':None,'error_type':raw['execution_errors'][-1]['error_type'] if raw['execution_errors'] else None})
-        requested = names or [name for name,spec in chosen['catalog']['properties'].items() if spec['job'] in selected]
-        raw['groups'] = [{'id':job,'title':chosen['catalog']['jobs'][job]['title'],
-                          'started_at':raw['started_at'],'observed_at':raw['observed_at'],
-                          'status':'failed',
-                          'samples':[{'property':name,'keys':{},'value':None,'status':'unavailable','reason_code':raw['reason_code'],
-                                      'observed_at':raw['observed_at'],'source_id':'acquisition'} for name in requested if chosen['catalog']['properties'][name]['job']==job],
-                          'coverage':[{'property':name,'complete':False,'observed_at':raw['observed_at'],'source_id':'acquisition'}
-                                      for name in requested if chosen['catalog']['properties'][name]['job']==job]} for job in selected]
-    covered = {c['property'] for group in raw['groups'] for c in group['coverage']}
-    raw['property_definitions'] = {name:copy.deepcopy(chosen['catalog']['properties'][name]) for name in sorted(covered)}
-    raw['implementation'] = {'entrypoint':'jobs.py','version':'0.1.0','platform':raw.get('platform'),
-                             'sha256':hashlib.sha256((chosen['directory']/'jobs.py').read_bytes()).hexdigest()}
-    if not save:
-        raw['retention'] = {'status':'skipped','reason_code':'utility_no_store'}
-        raw['reference_ips_update'] = {'status':'skipped','reason_code':'utility_no_store'}
-        raw['result_path'] = None
-        return raw
-    # Raw evidence is durable before normalization or consumer work.
-    from recipe_runner import save_report, save_receipt, inventory_result_filename, finalize_content
-    directory = checked(root,'observations')
-    directory.mkdir(exist_ok=True)
-    path = directory/inventory_result_filename(raw['started_at'])
-    raw['result_path'] = str(path)
-    save_report(path,raw)
-    try:
-        from retention_store import retain
-        raw['retention'] = retain(root,raw)
-    except Exception as exc:
-        raw['retention'] = {'status':'failed','error_type':type(exc).__name__,'reason_code':'retention_failed'}
-    try:
-        from opsfeast.host_reference import update
-        raw['reference_ips_update'] = update(root, raw)
-    except Exception as exc:
-        raw['reference_ips_update'] = {'status':'failed','reason_code':'reference_ips_update_failed',
-                                       'error_type':type(exc).__name__}
-    if observation_run_id:
-        raw['content_update'] = {'status':'pending','reason_code':'observation_run_in_progress'}
-    else:
-        finalize_content(root,raw)
-    save_receipt(path,raw)
-    return raw
+    from opsfeast.routine_execution import run_host
+    from recipe_inputs import cli_variables
+    timeout,budget=positive_timeout(timeout),positive_timeout(budget)
+    selected_reference=prepared['reference'] if prepared else reference
+    chosen=definition(profile(root).hosts._config,selected_reference,explicit_host=explicit_host)
+    values=cli_variables(chosen['metadata'],cli_values,assignments)
+    selection={'properties':properties} if properties else {'jobs':jobs} if jobs else None
+    return run_host(root,host,[{'reference':selected_reference,'vars':values,'inventory_selection':selection}],
+                    timeout=timeout,default_budget=budget,session_class=session_class,save=save,
+                    trigger=trigger,note=note,observation_run_id=observation_run_id,explicit_host=explicit_host)
 
 
 def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, collect=None):
@@ -275,7 +180,7 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
                 chosen = {'reference':reference,'definition_sha256':hashlib.sha256(('unavailable:'+reference).encode()).hexdigest(),
                           'planning_error':type(exc).__name__}
             key = schedule.state_key(host,chosen['reference'],chosen['definition_sha256'])
-            jobs = schedule.effective(data,settings,host)
+            jobs = schedule.effective(chosen.get('catalog',data),settings,host)
             selected = schedule.due(jobs,state['targets'].get(key,{}),stamp)
             if not selected:
                 continue
@@ -362,7 +267,7 @@ def latest_groups(records):
     """A read-only mixed-age view. Latest attempt wins per property; never fill failed values."""
     selected = {}
     for record in sorted(records,key=lambda r:(r['observed_at'],r['record_id'])):
-        if (record.get('retention_definition') or {}).get('contract') != CONTRACT['contract']:
+        if (record.get('retention_definition') or {}).get('contract') not in (CONTRACT['contract'],'inventory-routine-observations'):
             continue
         for group in record['data']['groups']:
             for coverage in group['coverage']:
@@ -382,6 +287,7 @@ def latest_groups(records):
         group['coverage'] = [s for s in group['coverage'] if s['property'] in names]
         group['source_record_id'] = record['record_id']
         group['source_actor'] = record['data']['actor']
+        group['source_routines']=[copy.deepcopy(r) for r in record['data'].get('routine_evidence',[]) if set(r['properties']).intersection(names)]
         used={s['source_id'] for s in group['samples']} | {c['source_id'] for c in group['coverage']}
         probes={p['id']:p for p in record['data']['probes']}
         pending=list(used)

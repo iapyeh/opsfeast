@@ -105,7 +105,14 @@ def main(argv=None):
                 result = update(root,args.operation)
             elif args.command=='latest':
                 from retention_store import query
-                records = query(root,hosts=[args.host],recipe=args.recipe,kind='observation')['records']
+                records = query(root,hosts=[args.host],kind='observation')['records']
+                from recipe_catalog import choose
+                item=choose(root,args.recipe)
+                refs={args.recipe}
+                if item['descriptor'].get('runner',{}).get('contract')=='recipe-meal':
+                    from opsfeast.routine_contract import validate
+                    refs.update(m['reference'] for m in validate(Path(item['directory']),item['descriptor'])['members'])
+                records=[r for r in records if r['recipe_reference'] in refs]
                 result = {'status':'success','host_id':args.host,'groups':service.latest_groups(records),
                           'note':'Mixed-age latest attempts; consult each sample time and source observation. No interpolation.'}
             else:

@@ -1046,4 +1046,48 @@ Use `python -B tools/opsfeast.py host-notes --profile NAME --host HOST list|show
 
 Use `python -B -u -m opsfeast.console_agent --token-file FILE --host HOST` from the trusted checkout. This worker is distinct from recipe execution and the exact-plan executor. Its [0.3.0 control reference](console-agent.md#entered-programs-and-private-input-worker-030) defines enter/input/secret/poll/leave on one shell. Use the [ephemeral secret service](console-secrets.md) for authenticated human passwords; ordinary CLI controls, chat, form fields and saved recipes must never carry their values. Reader history cannot submit live input. A program prompt is readiness evidence, not proof of successful SQL.
 
-*Last modified: 2026-11-08 23:07:31*
+## System profiling discovery and saved evidence
+
+`profiling describe [--domain ID] --json` reads the product capability catalog
+without a Profile. `profiling show --profile NAME --host HOST [--domain ID]
+[--offset N] [--limit N] --json` reads retained latest property attempts without
+connecting/writing; `--root DIRECTORY` replaces `--profile`. Limit is 1–250,
+default 100; follow next_offset. Domains, output schema, partial integration,
+preview bounds and full-value recovery are in [profiling 0.1.0](profiling.md).
+Exit 0 means read success, independently of missing/unavailable evidence. Errors
+return nonzero; TTY tables and explicit JSON follow the shared console policy.
+
+## Web recipe execution and the CLI
+
+The [Web menu](web-recipe-menu.md) uses the same recipe/report executor as
+`recipes run`; it adds confirmed selections and local-worker lifecycle records,
+not new CLI selectors or a second retention flow. Both Web and the existing inventory CLI support opt-in sensors and individual jobs/properties. Inspect raw,
+retention and consumer receipts independently after either entrypoint.
+
+## Shared Web inventory and report interfaces
+
+The Web recipe menu now supports the existing job/property choices and report
+artifact reads/downloads without requiring CLI use. Existing inventory run/query
+and recipe artifact CLI commands retain their syntax and semantics. The common
+executor's optional inventory_selection argument is a checkout Python interface,
+not a new recipes run CLI flag. See [complete Web contracts](web-recipe-menu.md).
+
+
+## Independent inventory and meals
+
+`recipes run system/inventory/overview --profile NAME --host HOST --json` now runs an actual meal, while `recipes run system/inventory/storage-capacity ...` runs one independent recipe. `inventory query/run --recipe REF` supports either form and exact job/property selectors. `inventory latest --recipe system/inventory/overview` reads current child and historical Overview records with boundaries intact. See [routines](recipe-routines.md) for shared connection/permission planning and new retained references. No schedule or migration is enabled by a run.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

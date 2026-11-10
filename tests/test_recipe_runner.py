@@ -32,21 +32,18 @@ class UnifiedRunnerTests(unittest.TestCase):
     def test_public_inventory_run_routes_to_same_job_service(self):
         self.enable()
         actor=jobs.Actor()
-        @contextlib.contextmanager
-        def connected(*args,**kwargs):
-            yield actor
-        @contextlib.contextmanager
-        def selected(session,config,host,timeout,evidence,**kwargs):
-            evidence.update(actual_identity={'username':'synthetic','effective_uid':1000},mode='user')
-            yield actor
-        with patch.object(service,'connected',connected), patch.object(service,'collection_actor',selected):
+        from routine_transport_fixture import connection,root
+        with patch('opsfeast.routine_execution.connected',lambda *args:connection(actor,*args)),patch('root_access.root_actor',root):
             report,path=runner.run(self.root,'node',recipe='system/inventory/overview',session_class=jobs.Actor)
         self.assertIn(report['status'],('success','partial'))
         self.assertEqual(len(report['groups']),10)
         self.assertNotIn('observations',report)
         self.assertNotIn('inventory',report)
         self.assertEqual(report['retention']['status'],'stored')
-        self.assertEqual(report['retention_snapshot']['retention']['contract'],'inventory-job-observations')
+        self.assertEqual(len(report['children']),10)
+        records=__import__('retention_store').query(self.root)['records']
+        self.assertEqual(len(records),10)
+        self.assertTrue(all(r['retention_definition']['contract']=='inventory-routine-observations' for r in records))
         self.assertEqual(json.loads(path.read_text()),report)
         self.assertFalse((self.root/'host-facts').exists())
 
@@ -70,7 +67,7 @@ class UnifiedRunnerTests(unittest.TestCase):
         candidate=self.candidate()
         metadata=yaml.safe_load((candidate/'recipe.yaml').read_text())
         metadata['descriptor_version']='0.2.0'
-        metadata.pop('collection')
+        metadata.pop('collection',None)
         (candidate/'recipe.yaml').write_text(yaml.safe_dump(metadata))
         with patch.object(runner,'load_runtime') as runtime, self.assertRaises(ConfigError):
             runner.run(self.root,'node',recipe=':candidate')

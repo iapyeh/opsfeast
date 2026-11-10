@@ -135,8 +135,9 @@ class OpsTests(unittest.TestCase):
                          '{glob: "recipes/**/overview"}'):
             with self.subTest(selector=selector):
                 self.write('hosts.yaml', f'hosts: {{web: {{connection: {{local: true}}, recipes: [{selector}, {{recipe: recipes/system/inventory/overview}}]}}}}')
-                expected = (sorted([ops.REPOSITORY_RECIPES / 'system/storage/inventory/disks-raid', ops.REPOSITORY_RECIPES / 'database/mysql/check/replication', ops.REPOSITORY_RECIPES / 'system/account/check/identity', ops.REPOSITORY_RECIPES / 'system/network/check/port', ops.REPOSITORY_RECIPES / 'system/inventory/overview', ops.REPOSITORY_RECIPES / 'feast/report/retention-summary', ops.REPOSITORY_RECIPES / 'feast/report/execution-summary'])
-                            if selector == '{directory: recipes, recursive: true}' else [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
+                from recipe_identity import BUNDLED
+                expected = (sorted(ops.REPOSITORY_RECIPES / reference for reference in BUNDLED)
+                            if selector == '{directory: recipes, recursive: true}' else sorted(ops.REPOSITORY_RECIPES/reference for reference in BUNDLED if reference.startswith('system/inventory/')) if selector=='{directory: recipes/system/inventory}' else [ops.REPOSITORY_RECIPES / 'system/inventory/overview'])
                 self.assertEqual(self.check().selected['web'], expected)
 
     def test_checkout_boundary_does_not_allow_include_or_recipe_escape(self):

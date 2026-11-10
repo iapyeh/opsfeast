@@ -8,7 +8,7 @@ For questions about a named host's condition, performance, incidents or remedies
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
 
-Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../../docs/recipe-execution.md).
+Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; current inventory uses descriptor 0.3.0, python-routines/recipe-meal 0.1.0 and inventory-routine-observations 0.1.0; frozen historical contracts remain readable. See [the canonical execution guide](../../docs/recipe-execution.md).
 
 
 Human terminal tables automatically wrap headers and complete values to the current terminal cell width; narrow multi-column views become labeled records. Reuse the shared console_output.table helper for new checkout summaries. Use --json where supported for agent parsing; wrapped text is presentation, not a data contract. See [console output policy](../../docs/cli.md#terminal-tables-and-json) for width lookup, redirected output and limits.
@@ -25,7 +25,7 @@ Vault observation pages start with only the host; historical reports end with on
 
 For readable Vault observations, reuse the bundled vault_content.render_observation / vault rebuild workflow described in [Vault content](../../docs/host-vault.md#recipe-retention-and-markdown). Inventory is presented in domain tables; source IDs and full record provenance are in a final disclosure section, while identity/partial warnings and collection coverage remain visible. Human-friendly capacities retain exact base units. Null, zero, false and empty collections remain distinct. Authorized rebuild replaces owned historical/latest Markdown without collection or retention changes and preserves unmanaged notes. Read structured data through retention APIs, not Markdown scraping.
 
-For automatic retention handlers/converters, read [consumer contract 0.1.0](../../docs/retention-consumers.md) and the [bundled Vault consumer](../../consumers/vault/README.md). First discover existing programs with `consumers list --recipe system/inventory/overview --profile NAME --json` or `recipes show`. Sources are checkout consumers/NAME and Feast-local consumers/NAME; candidate discovery never activates code. Before enabling a reviewed program, verify its Python/dependencies, supported retention contracts, input sources, output ownership and authorized side effects. Register source/enabled explicitly in feast.yaml; default builtin:vault is already enabled. Author `execute(context)` with context.retention.query/show and metadata event hints, preserving partial/unknown/identity context. Outputs must tolerate at-least-once delivery, deletion and stale creation hints. Reuse the documented dispatcher rather than modifying runner, scanning raw files or writing SQL acknowledgement code. Inspect per-consumer status/attempts in content_update.consumers or `consumers inspect`; retry with `consumers dispatch [ID]`. Disabled backlog is processed after activation, while eventless historical data needs explicit application rebuild. In-process Python is not sandboxed or time-limited; no network delivery, installer or scheduler is implied.
+For automatic retention handlers/converters, read [consumer contract 0.1.0](../../docs/retention-consumers.md) and the [bundled Vault consumer](../../consumers/vault/README.md). First discover existing programs with `consumers list --recipe system/inventory/storage-capacity --profile NAME --json` or `recipes show`. Sources are checkout consumers/NAME and Feast-local consumers/NAME; candidate discovery never activates code. Before enabling a reviewed program, verify its Python/dependencies, supported retention contracts, input sources, output ownership and authorized side effects. Register source/enabled explicitly in feast.yaml; default builtin:vault is already enabled. Author `execute(context)` with context.retention.query/show and metadata event hints, preserving partial/unknown/identity context. Outputs must tolerate at-least-once delivery, deletion and stale creation hints. Reuse the documented dispatcher rather than modifying runner, scanning raw files or writing SQL acknowledgement code. Inspect per-consumer status/attempts in content_update.consumers or `consumers inspect`; retry with `consumers dispatch [ID]`. Disabled backlog is processed after activation, while eventless historical data needs explicit application rebuild. In-process Python is not sandboxed or time-limited; no network delivery, installer or scheduler is implied.
 
 For browser inspection of saved Retention summaries and Recipe/Console history,
 use [saved-data Web views](../../docs/web-workspace.md). They preserve the selected
@@ -296,4 +296,89 @@ from latest-attempt inventory gaps. For historical/quality analysis use retentio
 query/show; replay/import/deletion/Vault rebuild do not update reference metadata.
 See [contract, source/namespace scope and verification limits](../../docs/host-reference-ips.md).
 
-*Last modified: 2026-11-06 14:16:59*
+## Profiling retained host evidence
+
+Use [profiling 0.1.0](../../docs/profiling.md) for a read-only eight-domain coverage
+view: `opsfeast.py profiling show --profile NAME --host HOST --json`, or
+`opsfeast.profiling.inspect_host(profile, host_id)`. Follow `next_offset` for
+properties and use retention show for full values: previews cap 20 samples and
+2,000 characters per value. Original namespace/reference/definition boundaries
+and newer failed attempts stay explicit. Complete enumeration is not freshness or
+health. The supported inventory and specialized contract versions are listed below;
+diagnose raw-only failures and unregistered contracts through results/retention. Web host
+系統全貌 is the same read model; opening it never collects or retries.
+
+
+## Specialized profiling evidence
+
+Profiling now integrates disks-raid 0.4.0, mysql-replication 0.1.0,
+linux-local-accounts 0.1.0 and linux-process-snapshot 0.1.0, alongside inventory jobs.
+Use the same profiling show/Python/Web view. Latest specialized attempts are scoped
+to namespace/Host ID/exact reference/definition digest; MySQL preserves instance
+labels. Unknown/not-applicable empty storage arrays are not complete enumeration;
+query completeness is independent of health. Current read projections are labeled
+separately from saved producer field definitions. Values/previews retain original
+times and record IDs; follow retention show for full data. Raw-only failures cannot
+invalidate old retention automatically; inspect recipe results too. No producer
+code is imported during these reads. See [provider semantics](../../docs/profiling.md).
+
+
+## Policy evidence and source basis
+
+The [policy profiling guide](../../docs/linux-policy-profiling.md) adds five
+portable 0.1.0 contracts: linux-ssh-policy, linux-sudo-policy, linux-firewall-policy,
+linux-time-sync, linux-logging-config. Same profiling show/Python/Web interfaces;
+opening views never collects. Samples can have configured/effective/runtime/context
+basis; evidence includes source scope and safe argv/timing/exit/termination metadata,
+never raw streams. Preserve this basis rather than interpreting all values as
+currently effective settings. Defaults/arguments/unsupported configs may be omitted;
+complete applies only to the declared projection. Use original source times and
+retention show for full data, recipe results for outer raw-only failure. A time
+report saying unsynchronized or a policy query marked partial is not an execution
+failure to hide, nor authorization to repair or retry under another account.
+
+## Web menu execution receipts
+
+The [recipe menu](../../docs/web-recipe-menu.md) now starts explicitly confirmed
+selections through the existing runner. Its installation-data recipe-runs records
+are progress/confirmation/receipt evidence, not a second retention store or a new
+observation schema. Read the returned raw result ID and retention/content receipts
+through existing result-data interfaces; do not infer successful retention from
+worker exit alone. Interrupted/stopped workers leave remote cleanup unknown and
+must never be replayed merely by opening history.
+
+## Report artifact viewing and integrity
+
+Use [Web artifact readers](../../docs/web-recipe-menu.md#view-and-download-report-artifacts)
+or checkout opsfeast.report_view.list_reports/show_report/read_artifact. Readers
+reuse recipe_reports' saved result/declaration/path/hash checks, bound files to
+16 MiB and verify the exact bytes served. Metadata presence does not prove current
+integrity. Missing/changed/symlink/oversize files remain explicit failures; do not
+regenerate them silently. HTML preview is static/opaque-sandboxed, Markdown/JSON
+and SVG are inert text, original downloads are attachments. No retention write,
+consumer dispatch or host connection is part of viewing.
+
+
+## Recipe-specific retained history
+
+The [recipe page](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) distinguishes collection declarations, actual historical records, recent raw attempts and report artifacts. Use recipe-detail/record with the exact Profile/reference/record ID; full reads are bounded to 16 MiB. Preserve dataset completeness and source time; unavailable is not empty. Viewing never collects again.
+
+
+## Independent inventory records and checkpoints
+
+New [routine inventory retention](../../docs/recipe-routines.md#durable-evidence-and-consumers) is per child recipe, preserving field IDs, sample times, actors/permissions, meal/capture IDs, policy and cleanup. Query exact child references or use the Overview latest view; never relabel historical records. Meal receipts link children; incomplete routine_checkpoints remain raw evidence and cannot be ingested as completed observations. Use public readers; no view, rebuild or interrupted-run diagnosis authorizes recollection.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](../../docs/inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

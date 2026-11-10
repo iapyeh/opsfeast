@@ -1,0 +1,98 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "inventory-system-runtime",
+  "version": "0.1.0",
+  "title": "System runtime",
+  "description": "Independent system-runtime observations; partial source/permission coverage remains explicit.",
+  "kind": "collection",
+  "access_mode": "read",
+  "platforms": {
+    "implemented": [
+      "linux",
+      "freebsd",
+      "macos",
+      "esxi"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "runner": {
+    "contract": "python-routines",
+    "version": "0.1.0",
+    "entrypoint": "main.py",
+    "finalizer": "finalize",
+    "routines": [
+      {
+        "id": "collect",
+        "function": "collect",
+        "required_permission": "login",
+        "properties": [
+          "system.uptime_seconds",
+          "system.boot_time"
+        ],
+        "depends_on": [],
+        "platforms": []
+      }
+    ]
+  },
+  "inputs": {
+    "variables": {
+      "attention": {
+        "type": "object",
+        "default": {}
+      },
+      "collection_budget_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true,
+        "default": 90
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true,
+        "default": 30
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "dependencies": {
+    "controller": [
+      "Python >=3.11",
+      "SSHScript ==7.0.1",
+      "OpsFeast routines 0.1.0"
+    ],
+    "target": [
+      "Platform-specific inventory tools; unavailable sources remain gaps"
+    ]
+  },
+  "permissions": {
+    "routines": "login first; explicit root routines last"
+  },
+  "side_effects": [
+    "Read-only selected probes; controller saves raw/retention evidence and configured consumer receipts."
+  ],
+  "inventory": {
+    "version": "0.1.0",
+    "job": "system-runtime",
+    "properties": [
+      "system.uptime_seconds",
+      "system.boot_time"
+    ]
+  },
+  "retention": {
+    "contract": "inventory-routine-observations",
+    "version": "0.1.0",
+    "description": "Per-recipe inventory with verified per-routine permission evidence and original source times.",
+    "schema": "inventory-routine.schema.json"
+  }
+}

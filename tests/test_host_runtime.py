@@ -540,16 +540,16 @@ class DispatchTests(unittest.TestCase):
             dispatch.version_match('1','>=bad')
 
     def test_manifest_version_symlink_and_unselected_code(self):
-        import shutil
+        import recipe_contract
+        source=BUNDLE.parent/'hardware'
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp); bundle=root/'recipe'; copy_recipe(BUNDLE,bundle)
+            bundle=Path(tmp)/'recipe';copy_recipe(source,bundle)
             metadata=ops.read_yaml(bundle/'recipe.yaml')
-            dispatch.validate(bundle,metadata)
-            entry=bundle/'jobs.py'
-            entry.write_text(entry.read_text().replace("VERSION = '0.1.0'","VERSION = '9'"))
-            with self.assertRaises(ops.ConfigError): dispatch.validate(bundle,metadata)
-            entry.unlink(); entry.symlink_to(BUNDLE/'jobs.py')
-            with self.assertRaises(ops.ConfigError): dispatch.validate(bundle,metadata)
+            recipe_contract.validate(bundle,metadata)
+            entry=bundle/'main.py';entry.write_text(entry.read_text().replace('VERSION = "0.1.0"','VERSION = "9"'))
+            with self.assertRaises(ops.ConfigError):recipe_contract.validate(bundle,metadata)
+            entry.unlink();entry.symlink_to(source/'main.py')
+            with self.assertRaises(ops.ConfigError):recipe_contract.validate(bundle,metadata)
 
 
 class InventoryDispatchTests(unittest.TestCase):

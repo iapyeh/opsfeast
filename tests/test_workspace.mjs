@@ -47,10 +47,10 @@ test('unauthorized and failed reads never become an empty or successful workspac
     assert.doesNotMatch(html,/目前沒有資料/);
   }
 });
-test('workspace selection and pagination retain exact Profile scope',async()=>{
+test('settings recipe selection and pagination retain exact Profile scope',async()=>{
   assert.equal(workspaceUrl('/recipes','p&x',{recipe:':nested/check'}),'/recipes?recipe=%3Anested%2Fcheck&profile=p%26x');
   const root=new Element(),urls=[];
-  await mountWorkspace(root,{path:'/recipes',e,siteName:'owner',search:'?profile=other&recipe=%3Acheck',profiles:{default_profile:'main',profiles:[{name:'main'},{name:'other'}]},fetchImpl:async url=>{
+  await mountWorkspace(root,{path:'/recipes',recipeScope:'user',e,siteName:'owner',search:'?profile=other&recipe=%3Acheck',profiles:{default_profile:'main',profiles:[{name:'main'},{name:'other'}]},fetchImpl:async url=>{
     urls.push(url);return {ok:true,json:async()=>({profile:'other',status:'success',items:[],sources:[],next_offset:null})};
   }});
   assert.match(urls[0],/profile=other/);assert.match(urls[0],/item_id=%3Acheck/);

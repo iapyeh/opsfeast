@@ -1,104 +1,99 @@
-descriptor_version: 0.3.0
-author:
-  name: Bundle
-  contacts:
-  - Bundle
-license: MIT
-id: inventory-system
-version: 0.4.3
-status: implemented
-title: System inventory
-description: Collect bounded system, hardware, storage, network, software and services
-  metadata.
-kind: collection
-platforms:
-  planned:
-  - linux
-  - freebsd
-  - macos
-  - esxi
-  implemented:
-  - linux
-  - freebsd
-  - macos
-  - esxi
-  tested:
-  - macos
-compatibility:
-  sshscript: ==7.0.1
-  note: Published sshscript==7.0.1, release source b8d7c8fe88b4096e8a58e6609ba805ee2bf41049; version and package files checked before connection.
-dependencies:
-  controller:
-  - Python >=3.11
-  - PyYAML
-  - SSHScript ==7.0.1
-  target:
-  - /bin/sh
-  - uname
-  - id
-  - head
-  - platform-specific tools declared by the property probes
-  status: defined
-permissions:
-  account: login-user
-  elevation: verified-root-by-default-unless-account-sudo-disabled
-side_effects:
-  target: read-only-queries
-  controller: Save raw JSON under observations/, retain declared data in retention/
-    annual archives, and optionally refresh bundled vault content with an independent
-    receipt.
-inputs:
-  required:
-  - management-root
-  - host-id
-  optional:
-  - command-timeout-seconds
-  note: Use opsfeast.py inventory query/run or recipes run; no standalone runner.
-  variables:
-    attention:
-      type: object
-    collection_budget_seconds:
-      type: number
-      minimum: 0
-      exclusive_minimum: true
-    command_timeout_seconds:
-      type: number
-      minimum: 0
-      exclusive_minimum: true
-output:
-  format: json
-  schema_version: 0.3.0
-  run_statuses:
-  - success
-  - partial
-  - failed
-  - skipped
-verification:
-  tests:
-  - tests/test_inventory_jobs.py
-  - tests/test_recipe_runner.py
-  local_execution: macOS local selective kernel/architecture query and retention/Vault
-    verified
-  ssh_execution: not-tested
-access_mode: read
-collection:
-  version: 0.1.0
-  catalog: collection.json
-  entrypoint: jobs.py
-  retention:
-    contract: inventory-job-observations
-    version: 0.1.0
-    description: Per-job standard YANG node references and extension values with source
-      times, identity scope and explicit gaps.
-    schema: job-retention.schema.json
-retention:
-  contract: inventory-job-observations
-  version: 0.1.0
-  description: Per-job standard YANG node references and extension values with source
-    times, identity scope and explicit gaps.
-  schema: job-retention.schema.json
-runner:
-  contract: inventory-jobs
-  version: 0.1.0
-  entrypoint: jobs.py
-# Last modified: 2026-10-30 16:07:03
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "inventory-overview",
+  "version": "0.1.0",
+  "status": "implemented",
+  "title": "System inventory meal",
+  "description": "Independent inventory recipes; one owned connection, verified login/root phases per host.",
+  "kind": "meal",
+  "platforms": {
+    "planned": [
+      "linux",
+      "freebsd",
+      "macos",
+      "esxi"
+    ],
+    "implemented": [
+      "linux",
+      "freebsd",
+      "macos",
+      "esxi"
+    ],
+    "tested": []
+  },
+  "compatibility": {
+    "sshscript": "==7.0.1",
+    "note": "Published sshscript==7.0.1, release source b8d7c8fe88b4096e8a58e6609ba805ee2bf41049; version and package files checked before connection."
+  },
+  "dependencies": {
+    "controller": [
+      "Python >=3.11",
+      "PyYAML",
+      "SSHScript ==7.0.1"
+    ],
+    "target": [
+      "/bin/sh",
+      "uname",
+      "id",
+      "head",
+      "platform-specific tools declared by the property probes"
+    ],
+    "status": "defined"
+  },
+  "side_effects": {
+    "target": "read-only-queries",
+    "controller": "Save raw JSON under observations/, retain declared data in retention/ annual archives, and optionally refresh bundled vault content with an independent receipt."
+  },
+  "inputs": {
+    "required": [
+      "management-root",
+      "host-id"
+    ],
+    "optional": [
+      "command-timeout-seconds"
+    ],
+    "note": "Use opsfeast.py inventory query/run or recipes run; no standalone runner.",
+    "variables": {
+      "attention": {
+        "type": "object"
+      },
+      "collection_budget_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "verification": {
+    "tests": [
+      "tests/test_routine_meals.py",
+      "tests/test_web_inventory_reports.py"
+    ],
+    "local_execution": "Synthetic transports only for the split/composed contract; no native target validation.",
+    "ssh_execution": "not-tested"
+  },
+  "access_mode": "read",
+  "runner": {
+    "contract": "recipe-meal",
+    "version": "0.1.0",
+    "entrypoint": "meal.json"
+  },
+  "permissions": {
+    "routines": "Declared per child; login first and verified root last."
+  }
+}

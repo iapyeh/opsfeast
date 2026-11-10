@@ -12,7 +12,7 @@ from opsfeast.core import Instance
 def document_files(product):
     """Only bundled Markdown guides; never mount the repository or profile root."""
     paths = [product / 'README.md']
-    for directory in ('docs', 'skills'):
+    for directory in ('docs', 'skills', 'recipes'):
         paths.extend((product / directory).rglob('*.md'))
     return {path.relative_to(product).as_posix(): path for path in paths
             if path.is_file() and not any(part.is_symlink() for part in (path, *path.parents))
@@ -25,6 +25,27 @@ def page(items, offset, limit):
 
 
 def install(app, *, product, require_admin):
+    @app.get('/api/v1/profiling/catalog')
+    def profiling_catalog(request: Request, domain: str | None = None):
+        require_admin(request)
+        from opsfeast.profiling import catalog
+        try:
+            return catalog(domain=domain)
+        except OSError:
+            raise HTTPException(503, 'profiling_storage_unavailable') from None
+
+    @app.get('/api/v1/profiling/host')
+    def profiling_host(request: Request, host_id: str, profile: str | None = None,
+                       domain: str | None = None, offset: int = Query(0, ge=0),
+                       limit: int = Query(100, ge=1, le=250)):
+        require_admin(request)
+        from opsfeast.profiling import inspect_host
+        selected = Instance.open(product).profile(profile)
+        try:
+            return inspect_host(selected, host_id, domain=domain, offset=offset, limit=limit)
+        except (OSError, sqlite3.Error):
+            raise HTTPException(503, 'profiling_storage_unavailable') from None
+
     @app.get('/api/v1/results/latest')
     def latest_result(request: Request, host_id: str, profile: str | None = None):
         require_admin(request)
@@ -53,7 +74,7 @@ def install(app, *, product, require_admin):
         def selected(name):
             if kind == 'learn': return name.startswith('docs/textbook/')
             if kind == 'skills': return name.startswith('skills/')
-            return name == 'README.md' or (name.startswith('docs/') and not name.startswith('docs/textbook/'))
+            return name == 'README.md' or name.startswith('recipes/') or (name.startswith('docs/') and not name.startswith('docs/textbook/'))
         return {'items': [{'path': name, 'title': path.stem} for name, path in sorted(document_files(product).items()) if selected(name)]}
 
     @app.get('/api/v1/library/content')

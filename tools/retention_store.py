@@ -512,7 +512,7 @@ def retain_general(root, report, metadata, directory, *, saved_snapshot=None, dr
     declaration = selected['retention']
     if declaration is None or settings(root) is None:
         return {'status': 'skipped', 'reason_code': 'no_retention_adapter'}
-    if report['status'] not in ('success', 'partial') or report['evidence_kind'] not in ('local', 'ssh'):
+    if (report['status'] not in ('success', 'partial') and declaration.get('contract')!='inventory-routine-observations') or report['evidence_kind'] not in ('local', 'ssh'):
         return {'status': 'skipped', 'reason_code': 'result_not_retained'}
     if declaration.get('mode') == 'portable':
         # The recipe produces final domain data. Storage/import performs data-only validation.

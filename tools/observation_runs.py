@@ -93,8 +93,12 @@ def validate(run):
         target_fields = {'host_id','icon','jobs','requested_jobs','status','record_id','retention_status',
                          'reason_code','attention','baseline_record_ids','recipe_reference'}
         for target in targets:
-            if not target_fields <= set(target) or set(target) - target_fields - {'assessment', 'execution_identity'} or not isinstance(target['host_id'],str) or not target['host_id']:
+            if not target_fields <= set(target) or set(target) - target_fields - {'assessment', 'execution_identity','children'} or not isinstance(target['host_id'],str) or not target['host_id']:
                 raise ConfigError('invalid observation run target')
+            if 'children' in target:
+                if not isinstance(target['children'],list) or len(target['children'])>32:raise ConfigError('invalid child recipe receipts')
+                for child in target['children']:
+                    if not isinstance(child,dict) or set(child)-{'attention'}!={'recipe_reference','record_id','status','retention_status'} or any(not isinstance(child[k],str) or not child[k] for k in ('recipe_reference','status','retention_status')) or child['record_id'] is not None and not isinstance(child['record_id'],str):raise ConfigError('invalid child recipe receipt')
             if 'assessment' in target:
                 from opsfeast.recipe_assessment import validate as validate_assessment
                 validate_assessment(target['assessment'])
@@ -193,15 +197,20 @@ def start(root, targets, reference, *, trigger='manual', selection=None):
     return run['run_id']
 
 
-def attention_context(root, record):
+def attention_context(root, record, *, records=None):
+    """Read as-of baselines; callers may supply already queried, copied records."""
     from inventory_jobs import latest_groups
     from retention_store import query
-    records=[r for r in query(root,hosts=[record['host_id']],kind='observation')['records']
-             if r['observed_at'] <= record['observed_at'] and r['recipe_id']==record['recipe_id']
-             and r['recipe_reference']==record['recipe_reference'] and r['origin']['namespace']==record['origin']['namespace']]
+    candidates=query(root,hosts=[record['host_id']],kind='observation')['records'] if records is None else records
+    scoped=[r for r in candidates if r['kind']=='observation' and r['host_id']==record['host_id']
+            and r['observed_at']<=record['observed_at'] and r['origin']['namespace']==record['origin']['namespace']]
+    if (record.get('retention_definition') or {}).get('contract')=='inventory-routine-observations':
+        scoped=[r for r in scoped if (r.get('retention_definition') or {}).get('contract')=='inventory-routine-observations']
+    else:
+        scoped=[r for r in scoped if r['recipe_id']==record['recipe_id'] and r['recipe_reference']==record['recipe_reference']]
     context=copy.deepcopy(record)
     if 'groups' in record['data']:
-        context['data']['groups']=latest_groups(records)
+        context['data']['groups']=latest_groups(scoped)
     return context, sorted({g['source_record_id'] for g in context['data'].get('groups',[]) if 'source_record_id' in g})
 
 
@@ -224,12 +233,25 @@ def record_result(root, run_id, host, result):
         target['record_id']=receipt.get('record_id')
         if 'attention_policy' in result:
             target['attention'] = evaluate({'data':{}},result['attention_policy'])
+        if result.get('children'):
+            target['children']=[{'recipe_reference':c['recipe']['reference'],'record_id':c.get('retention',{}).get('record_id'),'status':c['status'],'retention_status':c.get('retention',{}).get('status','not_stored')} for c in result['children']]
+            target['jobs']=[{'id':g['id'],'title':g['title'],'status':g['status']} for g in result.get('groups',[])]
+            for child in target['children']:
+                if child['record_id']:
+                    observation=retained(root,child['record_id']);context,_=attention_context(root,observation)
+                    policy=observation['data'].get('attention_policy')
+                    if policy:child['attention']=evaluate(context,policy)
+            observations=[retained(root,c['record_id']) for c in target['children'] if c['record_id']]
+            if observations:
+                observation=max(observations,key=lambda r:r['observed_at']);context,baselines=attention_context(root,observation)
+                target['baseline_record_ids']=baselines
+                target['attention']=evaluate(context,result['attention_policy']) if 'attention_policy' in result else None
         if target['record_id']:
             observation=retained(root,target['record_id'])
             context, baselines=attention_context(root,observation)
             target['baseline_record_ids']=baselines
             target['recipe_reference']=observation['recipe_reference']
-            if (observation.get('retention_definition') or {}).get('contract') in ('inventory-job-observations','inventory-observations'):
+            if (observation.get('retention_definition') or {}).get('contract') in ('inventory-job-observations','inventory-observations','inventory-routine-observations'):
                 target['attention']=evaluate(context,result.get('attention_policy',{}))
             target['jobs']=[{'id':g['id'],'title':g['title'],'status':g['status']} for g in observation['data'].get('groups',[])]
         _save(root,run)

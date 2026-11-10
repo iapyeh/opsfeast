@@ -295,21 +295,34 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     save_receipt(path, report)
     return report, path
 
-def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli_vars=None, assignments=(), explicit_host=True, observation_run_id=None):
+def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli_vars=None, assignments=(), explicit_host=True, observation_run_id=None, inventory_selection=None):
     """Execute a reviewed explicit recipe; inventory always uses the job collector."""
     timeout = positive_timeout(timeout)
     progress('validating configuration and recipe')
     config, directory, digest, output_dir = preflight(root, host, recipe, cli_vars, assignments, explicit_host=explicit_host)
+    if directory is not None and inventory_selection is not None:
+        from opsfeast.recipe_runs import inventory_selection as resolve_inventory_selection
+        resolve_inventory_selection(config.execution_recipe['metadata'], directory, inventory_selection)
     if directory is None:
         info = config.execution_recipe
         return {'host_id': host, 'status': 'skipped', 'reason_code': info['reason_code'],
                 'message': 'Host or recipe source is disabled.', 'evidence_kind': 'not-executed',
                 'recipe': {'id': None, 'reference': info.get('reference')}}, None
+    if config.execution_recipe['metadata'].get('runner',{}).get('contract') in ('python-routines','recipe-meal'):
+        if config.execution_recipe['metadata'].get('inventory') or config.execution_recipe['metadata']['runner']['contract']=='recipe-meal':
+            from inventory_jobs import collect_host
+            report=collect_host(root,host,save=True,reference=config.execution_recipe['reference'],timeout=timeout,session_class=session_class,cli_values=cli_vars,assignments=assignments,explicit_host=explicit_host,observation_run_id=observation_run_id,**(inventory_selection or {}))
+            return report,Path(report['result_path']) if report.get('result_path') else None
+        from opsfeast.routine_execution import run_host
+        from recipe_inputs import cli_variables
+        values=cli_variables(config.execution_recipe['metadata'],cli_vars,assignments)
+        result=run_host(root,host,[{'reference':config.execution_recipe['reference'],'vars':values,'inventory_selection':inventory_selection}],timeout=timeout,session_class=session_class,runtime=runtime,observation_run_id=observation_run_id,explicit_host=explicit_host)
+        return result,Path(result['result_path']) if result.get('result_path') else None
     if config.execution_recipe['metadata'].get('collection'):
         from inventory_jobs import collect_host
         report = collect_host(root, host, save=True, reference=recipe, timeout=timeout,
                               session_class=session_class, cli_values=cli_vars, assignments=assignments,
-                              explicit_host=explicit_host, observation_run_id=observation_run_id)
+                              explicit_host=explicit_host, observation_run_id=observation_run_id, **(inventory_selection or {}))
         return report, Path(report['result_path']) if report.get('result_path') else None
     if session_class is None:
         progress('checking execution runtime')
@@ -384,7 +397,7 @@ class TargetAction(argparse.Action):
 
 
 
-def execute_hosts(root, recipe, inv, *, json_output=False):
+def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, inventory_selection=None):
     """Shared operation batch for recipes run and saved jobs; no command parsing."""
     from recipe_inputs import json_object
     excluded = []
@@ -397,7 +410,7 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
             if excluded:
                 print(json.dumps({'hosts':[], 'excluded_hosts':excluded}))
             raise
-    values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else None
+    values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else cli_vars
     workers = max(1, min(inv['threads'] or default_threads(), len(hosts)))
     show_progress = not inv['quiet'] and (inv['verbose'] or sys.stdout.isatty())
     icons = {}
@@ -424,7 +437,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
             try:
                 report, path = run(root, host, inv['timeout'], recipe=recipe,
                                    cli_vars=values, assignments=inv['assignments'],
-                                   explicit_host=host in explicit, observation_run_id=run_id)
+                                   explicit_host=host in explicit, observation_run_id=run_id,
+                                   **({'inventory_selection': inventory_selection} if inventory_selection is not None else {}))
                 if run_id:
                     report['observation_run_id']=run_id
                 progress(f"completed: {report['status']} ({report.get('reason_code', 'unknown')})")
@@ -469,12 +483,15 @@ def execute_hosts(root, recipe, inv, *, json_output=False):
             if report.get('content_update',{}).get('status') != 'failed':
                 report['content_update'] = content
             if path:
+                if report.get('children'):
+                    from opsfeast.routine_execution import update_children_content
+                    update_children_content(root,report,content)
                 save_receipt(path,report)
         tail_progress(f'finished in {time.monotonic() - tail_started:.2f}s')
     summaries = []
     from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
-        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity') if key in report}
+        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity','children','meal_run_id','connection_evidence') if key in report}
         if isinstance(report.get('error'), dict) and 'environment' in report['error']:
             summary['error'] = report['error']
         # The compact summary omits recipe/connection metadata used by the role

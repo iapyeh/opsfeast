@@ -296,7 +296,8 @@ assert receipt['status'] == 'stored', receipt
 record = profile.retention.show(receipt['record_id'])
 assert record['retention_definition']['contract'] == 'inventory-observations'
 assert record['data']['inventory']['hardware']['memory_total_bytes'] is not None
-assert inspect_one(REPOSITORY_RECIPES/'system/inventory/overview', [])['retention']['schema_path'].endswith('retention.schema.json')
+assert inspect_one(REPOSITORY_RECIPES/'system/inventory/hardware', [])['retention']['schema_path'].endswith('inventory-routine.schema.json')
+assert inspect_one(REPOSITORY_RECIPES/'system/inventory/overview', [])['runner_contract']=='valid-recipe-meal'
 from retention_consumers import catalog, dispatch, inspect_deliveries
 installed_consumers = {c['id']: c for c in catalog(profile.root)['consumers']}
 assert installed_consumers['vault']['source'] == 'builtin:vault'

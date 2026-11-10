@@ -2,16 +2,18 @@
 
 A consumer is a reviewed local program that reacts to retained-data or explicit observation-run changes. It can render Vault Markdown, rebuild an index, combine recipe datasets or update another local application. Recipe creators keep ownership of retention definitions. Consumers declare their input dependencies independently; adding a consumer requires no edits to the recipe or runner.
 
+See the [split inventory dependency map](inventory-consumers.md) before adopting child datasets; it separates current subscriptions, exact report filters and unchanged historical ownership.
+
 ## Discover the relation to a recipe
 
 ```sh
-python -B tools/opsfeast.py recipes show system/inventory/overview --profile main --json
-python -B tools/opsfeast.py consumers list --recipe system/inventory/overview --profile main --json
+python -B tools/opsfeast.py recipes show system/inventory/storage-capacity --profile main --json
+python -B tools/opsfeast.py consumers list --recipe system/inventory/storage-capacity --profile main --json
 python -B tools/opsfeast.py consumers show vault --profile main --json
 python -B tools/opsfeast.py consumers inspect --profile main --json
 ```
 
-`recipes show` includes `consumers` with ID, source, registration, effective enabled state and static validation errors. `consumers list --recipe` resolves the recipe through the existing catalog, then matches its exact source-qualified reference and declared retention contract/version. The bundled reference is `system/inventory/overview`; profile recipes use `:system/inventory/overview`, and registered sources use `company:system/inventory/overview`. A contract-only subscription can consume compatible definitions from multiple sources. Unknown recipe references fail explicitly. A missing consumer descriptor is reported as unavailable; it does not imply that no dependency exists.
+`recipes show` includes `consumers` with ID, source, registration, effective enabled state and static validation errors. `consumers list --recipe` resolves the recipe through the existing catalog, then matches its exact source-qualified reference and declared retention contract/version. For example, the current bundled child is `system/inventory/storage-capacity`; user/external copies keep their actual source-qualified references. Overview is a meal without its own current retention declaration; inspect each child for current consumer dependencies. A contract-only subscription can consume compatible definitions from multiple sources. Unknown recipe references fail explicitly. A missing consumer descriptor is reported as unavailable; it does not imply that no dependency exists.
 
 List/show inspect descriptors and entrypoint bytes without importing candidate programs, creating directories or connecting. They distinguish unregistered candidates from enabled registrations. Inspection is static evidence; Python dependencies, historical output quality and execution safety require review. `consumers inspect [ID]` reads the durable event/delivery journal without writing. Its top-level success means the inspection succeeded; inspect individual delivery statuses for failures. An empty delivery list means no attempt has been recorded, including events without matching enabled subscribers.
 
@@ -60,13 +62,11 @@ entrypoint: main.py
 subscriptions:
   - event: retention.observation.created
     selector:
-      recipe_reference: system/inventory/overview
-      contract: inventory-observations
+      contract: inventory-routine-observations
       version: "0.1.0"
   - event: retention.observation.deleted
     selector:
-      recipe_reference: system/inventory/overview
-      contract: inventory-observations
+      contract: inventory-routine-observations
       version: "0.1.0"
 ```
 
@@ -78,12 +78,12 @@ The selected Python must be 3.11+ with the normal OpsFeast initialization depend
 ```python
 def execute(context):
     # Rebuild from current retained state; handles duplicate and deletion hints.
-    selection = context.retention.query(
-        recipe="system/inventory/overview", kind="observation"
-    )
+    records = [r for r in context.retention.query(kind="observation")["records"]
+               if (r.get("retention_definition") or {}).get("contract") == "inventory-routine-observations"
+               and r["retention_definition"].get("version") == "0.1.0"]
     # Render selection into this consumer's reviewed output location.
     # Preserve partial/unknown states, source times and identity warnings.
-    return {"status": "success", "records": len(selection["records"])}
+    return {"status": "success", "records": len(records)}
 ```
 
 `context.root` is the selected profile's absolute Path. `context.event` is a copy of the event envelope. `context.retention.query/show` is the existing read-only retention facade. It supports the same filters and schemas as [retention queries](retention.md#discover-and-read-data). Use this facade instead of parsing raw files or generating SQL storage code. Relative helper imports such as `from .render import build` are supported; only the reviewed entrypoint is automatically called. Do not print to stdout, mutate process-wide state, start background work, connect or transmit without the user's corresponding authorization. No consumer-specific configuration/input-variable mechanism is implemented in 0.1.0; private application settings belong in reviewed local configuration.
@@ -111,9 +111,9 @@ its reviewed publisher should replace only that consumer's owned output paths:
 ```python
 def execute_batch(context):
     from .render import publish_inventory  # Your reviewed, idempotent publisher.
-    records = context.retention.query(
-        recipe="system/inventory/overview", kind="observation"
-    )["records"]
+    records = [r for r in context.retention.query(kind="observation")["records"]
+               if (r.get("retention_definition") or {}).get("contract") == "inventory-routine-observations"
+               and r["retention_definition"].get("version") == "0.1.0"]
     publish_inventory(context.root, records)
     return {"status": "success", "events": len(context.events),
             "records": len(records)}
@@ -206,4 +206,4 @@ The opt-in bundled [backup-check](../consumers/backup-check/README.md) demonstra
 
 Imported observation/retention packages preserve historical context without enqueuing live consumer events or activating providers. Optional consumer source can travel inside a recipe package, but installation into the profile's consumer directory and explicit registration are separate reviewed operations. A portable retention declaration can use an arbitrary named contract/version without product registry edits; consumers subscribe to that declared contract/version. Archive preserves selected event/delivery context in the package and removes corresponding active rows without invoking arbitrary consumers. Bundled views are repaired through data-only paths; custom applications need a separately authorized refresh. See [transfer and recovery](portability.md).
 
-*Last modified: 2026-10-25 14:56:19*
+*Last modified: 2026-11-10 16:49:25*

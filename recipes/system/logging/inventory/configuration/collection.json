@@ -1,0 +1,135 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "logging-config": {
+      "title": "Linux logging configuration metadata"
+    }
+  },
+  "properties": {
+    "policy.journald_configuration": {
+      "id": "policy.journald_configuration",
+      "job": "logging-config",
+      "type": "array",
+      "unit": "",
+      "description": "Linux logging configuration metadata: journald_configuration",
+      "path": [
+        "datasets",
+        "journald_configuration",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "journald_configuration"
+      ],
+      "time_path": [
+        "datasets",
+        "journald_configuration",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.journal_state": {
+      "id": "policy.journal_state",
+      "job": "logging-config",
+      "type": "array",
+      "unit": "",
+      "description": "Linux logging configuration metadata: journal_state",
+      "path": [
+        "datasets",
+        "journal_state",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "journal_state"
+      ],
+      "time_path": [
+        "datasets",
+        "journal_state",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.syslog_configuration": {
+      "id": "policy.syslog_configuration",
+      "job": "logging-config",
+      "type": "array",
+      "unit": "",
+      "description": "Linux logging configuration metadata: syslog_configuration",
+      "path": [
+        "datasets",
+        "syslog_configuration",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "syslog_configuration"
+      ],
+      "time_path": [
+        "datasets",
+        "syslog_configuration",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.application_logs": {
+      "id": "policy.application_logs",
+      "job": "logging-config",
+      "type": "array",
+      "unit": "",
+      "description": "Linux logging configuration metadata: application_logs",
+      "path": [
+        "datasets",
+        "application_logs",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "application_logs"
+      ],
+      "time_path": [
+        "datasets",
+        "application_logs",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    },
+    "policy.log_rotation": {
+      "id": "policy.log_rotation",
+      "job": "logging-config",
+      "type": "array",
+      "unit": "",
+      "description": "Linux logging configuration metadata: log_rotation",
+      "path": [
+        "datasets",
+        "log_rotation",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "log_rotation"
+      ],
+      "time_path": [
+        "datasets",
+        "log_rotation",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    }
+  }
+}

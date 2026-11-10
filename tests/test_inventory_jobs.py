@@ -54,14 +54,17 @@ class InventoryJobTests(unittest.TestCase):
     enable = vault_fixtures.VaultTests.enable
 
     def acquire(self,actor,**kwargs):
-        @contextmanager
-        def connected(config,host,session_class,timeout,report):
-            yield actor
-        @contextmanager
-        def chosen(session,config,host,timeout,report,**options):
-            report.update(actual_identity={'username':'synthetic','effective_uid':1000},mode='user')
-            yield actor
-        with patch.object(service,'connected',connected), patch.object(service,'collection_actor',chosen):
+        from routine_transport_fixture import connection,root
+        names=kwargs.get('properties') or []
+        known=service.catalog()
+        selected=set(kwargs.get('jobs') or [known['properties'][n]['job'] for n in names if n in known['properties']])
+        if len(selected)==1 and not kwargs.get('prepared') and all(n in known['properties'] for n in names):
+            from opsfeast import read_yaml,REPOSITORY_RECIPES
+            for descriptor in (REPOSITORY_RECIPES/'system/inventory').glob('*/recipe.yaml'):
+                metadata=read_yaml(descriptor)
+                if metadata.get('inventory',{}).get('job') in selected:
+                    kwargs.setdefault('reference','system/inventory/'+descriptor.parent.name);break
+        with patch('opsfeast.routine_execution.connected',lambda *args:connection(actor,*args)), patch('root_access.root_actor',root):
             return service.collect_host(self.root,'node',session_class=Actor,**kwargs)
 
     def test_no_store_only_selected_probe_no_files_or_schedule_state(self):

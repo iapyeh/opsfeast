@@ -1,0 +1,35 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "processes": {
+      "title": "Snapshot visible Linux processes"
+    }
+  },
+  "properties": {
+    "processes.snapshot": {
+      "id": "processes.snapshot",
+      "job": "processes",
+      "type": "array",
+      "unit": "",
+      "description": "Snapshot visible Linux processes",
+      "path": [
+        "datasets",
+        "processes",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "processes"
+      ],
+      "time_path": [
+        "datasets",
+        "processes",
+        "observed_at"
+      ],
+      "keys": [
+        "pid",
+        "start_ticks"
+      ]
+    }
+  }
+}

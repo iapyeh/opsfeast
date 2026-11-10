@@ -113,4 +113,14 @@ Replication completion and observation tables use recorded health findings rathe
 than PASS. See [health labels and failure semantics](../../../../../docs/cli.md#replication-completion-health). Preserve the collection status, exit code and
 retention/content failure evidence; UNKNOWN is not healthy.
 
-*Last modified: 2026-10-30 12:17:33*
+
+## Shared profiling projection
+
+The product [profiling service](../../../../../docs/profiling.md) now reads this
+recipe's existing retained contract into Web host 系統全貌 and profiling show.
+The data-only profiling.json declares reviewed paths; producers, saved schemas
+and past observations are unchanged. Collection coverage, original health/policy,
+instance/source times and missing fields remain distinct. This does not discover
+or execute new targets. See [coverage review](../../../../../docs/profiling-coverage.md).
+
+*Last modified: 2026-11-09 12:22:53*

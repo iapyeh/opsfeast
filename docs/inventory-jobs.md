@@ -4,18 +4,18 @@ For agent-assisted discovery and repeat runs, use [execution experience](../skil
 First runs may use explicit finite budget overrides, while later runs reuse
 reviewed recipe methods. Preserve useful host-specific findings through confirmed
 host notes. Direct CLI collection has no automatic note reader or per-host method
-cache. Inventory 0.4.3 adds `lsblk -P` support when `-J` is explicitly unsupported;
+cache. The shared collector preserves inventory 0.4.3 support for `lsblk -P` support when `-J` is explicitly unsupported;
 missing optional values and unavailable PSI remain honest gaps.
 
 
-Linux inventory 0.4.2 supports iproute2 without `-j` through capability-specific
+The shared Linux collector preserves inventory 0.4.2 support for iproute2 without `-j` through capability-specific
 text queries, preserving both attempts and their source times. Missing optional
 fields remain partial. See [supported inputs, limits and verification](../recipes/system/inventory/overview/README.md#linux-iproute2-capabilities-042).
 Execution summaries name incomplete properties; use
 [the saved-result diagnosis workflow](result-diagnostics.md) to inspect causes.
 
 
-System inventory recipe 0.4.3 provides one collection program with independently selectable jobs. Read the [collection table](../recipes/system/inventory/overview/collection-plan.md) for job IDs, contents and starting intervals. The new job observation contract is `inventory-job-observations` 0.1.0; raw job results use schema 0.3.0. Historical whole-snapshot inventory/exchange files remain separate read/replay contracts; new collection has no snapshot execution path. No old-data migration or automatic deletion is performed, and no legacy payload is converted to job samples.
+System inventory now provides eleven independent recipes plus an Overview meal; ten general recipes are enabled by default and sensors are opt-in. They share the reviewed collector, with independently selectable jobs and fields. See [routines and meals](recipe-routines.md). Read the [collection table](../recipes/system/inventory/overview/collection-plan.md) for job IDs, contents and starting intervals. New child observations use `inventory-routine-observations` 0.1.0; original sample/property schemas and frozen historical job records remain readable. Historical whole-snapshot inventory/exchange files remain separate read/replay contracts; new collection has no snapshot execution path. No old-data migration or automatic deletion is performed, and no legacy payload is converted to job samples.
 
 ## Discover before running
 
@@ -25,7 +25,7 @@ python -B tools/opsfeast.py inventory describe --job storage-capacity --json
 python -B tools/opsfeast.py recipes show system/inventory/overview --checkout-only --json
 ```
 
-`describe` needs no profile and performs no connection or writes. It lists human-readable property IDs, job IDs/titles, units, types, entity keys, module namespaces/revisions and exact YANG schema-node paths. `recipes show` exposes the recipe's `collection` declaration, catalog and independent job retention contract. Availability is declared support, not proof that a target probe will succeed.
+`describe` needs no profile and performs no connection or writes. It lists human-readable property IDs, job IDs/titles, units, types, entity keys, module namespaces/revisions and exact YANG schema-node paths. `recipes show` exposes a child's inventory binding or Overview's meal declaration; `inventory describe` exposes the shared property catalog. Availability is declared support, not proof that a target probe will succeed.
 
 ## Query without keeping a record
 
@@ -38,9 +38,9 @@ python -B tools/opsfeast.py inventory query --profile main --host node \
 
 Select one host and one or more `--property` values or `--job` values; do not combine property and job selectors. Table properties return the measured instances, for example every visible filesystem keyed by source and mountpoint. Instance filtering is not implemented. Query only executes the required probes and their prerequisites, such as platform/actor verification. A shared probe can supply several selected properties. Unsupported fields are explicit gaps.
 
-Without `--save`, results go only to stdout/the terminal. There are no raw result, retention, Vault, host-fact cache or scheduler-state writes by this utility. The response still contains actual sample/source times, actor scope, statuses, errors and property definitions. This does not suppress the target OS's SSH/sudo audit mechanisms. Connections and the existing bounded root-selection/user-fallback policy are real operations and require the user's target/privilege authorization. No packages or agents are installed on targets.
+Without `--save`, results go only to stdout/the terminal. There are no raw result, retention, Vault, host-fact cache or scheduler-state writes by this utility. The response still contains actual sample/source times, actor scope, statuses, errors and property definitions. This does not suppress the target OS's SSH/sudo audit mechanisms. Connections and the bounded root phase for protected routines are real operations and require the user's target/privilege authorization. No packages or agents are installed on targets.
 
-Use `--root PATH` instead of `--profile NAME` when selecting an explicit management directory. Existing connection/jump/trust settings are loaded at runtime through Core configuration. Explicit inventory `--host` overrides host/source/recipe enabled gates for that target only, while disabled jump hosts, invalid paths and invalid inputs remain errors; see [execution policy](recipe-sources.md#enabled-flags-and-explicit-targets). Neither utility mode changes them. `--timeout` bounds connection stages/actor checks and default command duration, and `--budget` bounds the collection commands rather than the whole connection lifecycle. Existing declared source/host recipe variables and `--var`/`--vars-file` remain available; arbitrary variable values are not included in provenance; the validated nonsecret Attention policy is intentionally saved in raw/batch evidence. `command_timeout_seconds` and `collection_budget_seconds` set collection command budgets.
+Use `--root PATH` instead of `--profile NAME` when selecting an explicit management directory. Existing connection/jump/trust settings are loaded at runtime through Core configuration. Explicit inventory `--host` overrides host/source/recipe enabled gates for that target only, while disabled jump hosts, invalid paths and invalid inputs remain errors; see [execution policy](recipe-sources.md#enabled-flags-and-explicit-targets). Neither utility mode changes them. `--timeout` bounds connection stages/actor checks and default command duration, and `--budget` bounds each child wall-clock collection window, starting during host setup; waiting for earlier routines consumes that window. Cleanup has separate bounded checks. Existing declared source/host recipe variables and `--var`/`--vars-file` remain available; arbitrary variable values are not included in provenance; the validated nonsecret Attention policy is intentionally saved in raw/batch evidence. `command_timeout_seconds` and `collection_budget_seconds` set collection command budgets.
 
 ## Save an immediate refresh for comparison
 
@@ -56,7 +56,7 @@ python -B tools/opsfeast.py recipes run system/inventory/overview \
 
 `query --save` and `run` use the same raw → registered normalizer → retention → configured-consumer flow as scheduled jobs. `run` defaults to all recipe-enabled job definitions (schedule overrides control automatic dispatch only); explicitly selecting an opt-in job is an intentional immediate request. The general `recipes run` command also selects this job flow for this recipe. All immediate and scheduled inventory execution uses this job collector. The standalone runner and whole-snapshot execution path are removed; use check-access for separate privilege diagnostics.
 
-Saving requires an initialized retention namespace before connection. Each refresh creates independent raw and retained observation IDs, including repeated equal values. Raw JSON is written under `observations/`; authoritative SQLite remains under `retention/`. Failed probes produce null/unavailable values and reasons, never copied old successes. Acquisition failures are recorded without invented values. An optional note is human-supplied context, not proof that cleanup commands actually ran. A note is accepted by `query` only with `--save`.
+Saving requires an initialized retention namespace before connection. Each selected child creates independent raw and retained observation IDs, including repeated equal values. Raw JSON is written under `observations/`; authoritative SQLite remains under `retention/`. Failed probes produce null/unavailable values and reasons, never copied old successes. Acquisition failures are recorded without invented values. An optional note is human-supplied context, not proof that cleanup commands actually ran. A note is accepted by `query` only with `--save`.
 
 Manual refreshes do not advance scheduler timestamps or postpone a scheduled run. They only replace the measured properties in the read-only latest view. Raw save, retention and content updates have separate receipts; inspect all three. Raw retention failures can be investigated/replayed through the existing retention workflow without recollecting. New-format failed job observations can also be replayed; replay never executes the collector or a candidate normalizer.
 
@@ -208,4 +208,28 @@ without changing collected samples. These reference addresses never change
 connection settings. Unlike `inventory latest`, which keeps latest failed attempts
 as gaps, `hosts list/show` deliberately retain the last successful address list.
 
-*Last modified: 2026-11-06 14:01:40*
+## Shared profiling discovery and Web read model
+
+Inventory job discovery now delegates to the product-owned
+[profiling service 0.1.0](profiling.md). `inventory describe` still returns the
+unchanged native job/property definitions; execution, raw/retention contracts,
+permissions and schedule behavior are unchanged. `profiling describe/show --json`
+and Web host 系統全貌 place these properties in a broader capability/gap view.
+Do not confuse a complete declared property with full profiling coverage.
+
+## Web job and sensor selection
+
+The [Recipe menu](web-recipe-menu.md#select-inventory-jobs-and-individual-sensors)
+now exposes the same eleven jobs and 72 property selectors. Expand inventory
+parameters, choose job groups or individual fields, explicitly select sensors,
+review scope and confirm. The existing runner/collector retains actor/source/time,
+partial coverage and independent retention/consumer receipts. This is a manual
+saved collection; no schedule configuration, due-state advancement, retry or
+per-device instance filtering is added.
+
+
+## Independent recipes and Overview meal
+
+Overview now composes eleven independent inventory recipes (ten default members; sensors opt-in) through [routines 0.1.0](recipe-routines.md). CLI query/run, due dispatch and Web share the same host executor. Existing job IDs, intervals and explicit scheduled-host opt-in remain. New data belongs to exact child references and inventory-routine-observations 0.1.0; update exact-reference filters/settings as needed. Root-only routines never fall back to a login actor; earlier data remains saved. No history migration or schedule enabling occurs.
+
+*Last modified: 2026-11-10 16:14:10*

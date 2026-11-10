@@ -1,0 +1,327 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "linux-process-snapshot",
+  "version": "0.1.0",
+  "access_mode": "read",
+  "title": "Snapshot visible Linux processes",
+  "description": "Bounded visible procfs identity/resource snapshot; no argv/environment capture or lifecycle completeness claims.",
+  "runner": {
+    "contract": "python-recipe",
+    "version": "0.1.0",
+    "entrypoint": "main.py"
+  },
+  "platforms": {
+    "implemented": [
+      "linux"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "dependencies": {
+    "controller": [
+      "Python 3.11+",
+      "SSHScript 7.0.1",
+      "OpsFeast Linux profile service 0.1.0"
+    ],
+    "target": [
+      "Linux",
+      "python3 3.8+ on PATH with standard library",
+      "readable /proc in the selected account/PID namespace"
+    ]
+  },
+  "permissions": {
+    "sudo": false,
+    "su": false
+  },
+  "side_effects": [
+    "Runner connects only to selected hosts and executes a fixed read-only Python probe via argv/stdin.",
+    "No packages, target files, account changes, signals or automatic privilege transitions.",
+    "Controller saves raw/portable retained data and dispatches explicitly configured consumers."
+  ],
+  "inputs": {
+    "variables": {
+      "max_items": {
+        "type": "integer",
+        "default": 1000,
+        "minimum": 1,
+        "maximum": 5000
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "default": 20,
+        "minimum": 1,
+        "maximum": 120
+      }
+    }
+  },
+  "retention": {
+    "contract": "linux-process-snapshot",
+    "version": "0.1.0",
+    "mode": "portable",
+    "description": "Snapshot visible Linux processes with per-dataset scope, source time, enumeration completeness and gaps; no secrets.",
+    "data_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "kind",
+        "platform",
+        "started_at",
+        "observed_at",
+        "effective_uid",
+        "datasets",
+        "acquisition"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": "0.1.0"
+        },
+        "kind": {
+          "const": "processes"
+        },
+        "platform": {
+          "const": "linux"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effective_uid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "datasets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "processes"
+          ],
+          "properties": {
+            "processes": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "reason_codes",
+                "attempted_count",
+                "unavailable_count",
+                "boot_id"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "pid",
+                      "start_ticks",
+                      "ppid",
+                      "name",
+                      "state",
+                      "uid_real",
+                      "uid_effective",
+                      "gid_real",
+                      "gid_effective",
+                      "threads",
+                      "rss_bytes",
+                      "virtual_bytes",
+                      "cpu_user_ticks",
+                      "cpu_system_ticks",
+                      "executable",
+                      "executable_state",
+                      "executable_deleted"
+                    ],
+                    "properties": {
+                      "pid": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "start_ticks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "ppid": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "state": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "uid_real": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "uid_effective": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "gid_real": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "gid_effective": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "threads": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "rss_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "virtual_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "cpu_user_ticks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "cpu_system_ticks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "executable": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 4096
+                      },
+                      "executable_state": {
+                        "enum": [
+                          "observed",
+                          "unavailable"
+                        ]
+                      },
+                      "executable_deleted": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 32,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "item_or_time_limit",
+                      "invalid_or_duplicate_rows",
+                      "source_changed_during_read",
+                      "permission_denied",
+                      "source_missing",
+                      "invalid_or_oversized_source",
+                      "source_read_failed",
+                      "boot_id_unavailable",
+                      "process_disappeared",
+                      "invalid_or_changed_process",
+                      "process_read_failed",
+                      "procfs_unavailable",
+                      "output_size_limit"
+                    ]
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "boot_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "acquisition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "started_at",
+            "completed_at",
+            "method"
+          ],
+          "properties": {
+            "started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "method": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "verification": {
+    "synthetic": "tested",
+    "local": "not-tested",
+    "ssh": "not-tested"
+  }
+}
+# Last modified: 2026-11-09 12:12:07

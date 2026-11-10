@@ -1,0 +1,58 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "accounts": {
+      "title": "Inventory Linux local users and groups"
+    }
+  },
+  "properties": {
+    "identity.local_users": {
+      "id": "identity.local_users",
+      "job": "accounts",
+      "type": "array",
+      "unit": "",
+      "description": "Inventory Linux local users and groups",
+      "path": [
+        "datasets",
+        "users",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "users"
+      ],
+      "time_path": [
+        "datasets",
+        "users",
+        "observed_at"
+      ],
+      "keys": [
+        "name"
+      ]
+    },
+    "identity.local_groups": {
+      "id": "identity.local_groups",
+      "job": "accounts",
+      "type": "array",
+      "unit": "",
+      "description": "Inventory Linux local users and groups",
+      "path": [
+        "datasets",
+        "groups",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "groups"
+      ],
+      "time_path": [
+        "datasets",
+        "groups",
+        "observed_at"
+      ],
+      "keys": [
+        "name"
+      ]
+    }
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "inventory-resource-metrics",
+  "version": "0.1.0",
+  "title": "Resource utilization",
+  "description": "Independent resource-metrics observations; partial source/permission coverage remains explicit.",
+  "kind": "collection",
+  "access_mode": "read",
+  "platforms": {
+    "implemented": [
+      "linux",
+      "freebsd",
+      "macos",
+      "esxi"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "runner": {
+    "contract": "python-routines",
+    "version": "0.1.0",
+    "entrypoint": "main.py",
+    "finalizer": "finalize",
+    "routines": [
+      {
+        "id": "collect",
+        "function": "collect",
+        "required_permission": "login",
+        "properties": [
+          "metrics.load_1m",
+          "metrics.load_5m",
+          "metrics.load_15m",
+          "metrics.cpu_utilization_percent",
+          "metrics.memory_available_bytes",
+          "metrics.disk_counters",
+          "metrics.interface_counters",
+          "metrics.memory_pressure",
+          "metrics.interfaces.in_octets",
+          "metrics.interfaces.out_octets",
+          "metrics.interfaces.in_errors",
+          "metrics.interfaces.out_errors",
+          "metrics.interfaces.in_discards",
+          "metrics.interfaces.out_discards"
+        ],
+        "depends_on": [],
+        "platforms": []
+      }
+    ]
+  },
+  "inputs": {
+    "variables": {
+      "attention": {
+        "type": "object",
+        "default": {}
+      },
+      "collection_budget_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true,
+        "default": 90
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true,
+        "default": 30
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "dependencies": {
+    "controller": [
+      "Python >=3.11",
+      "SSHScript ==7.0.1",
+      "OpsFeast routines 0.1.0"
+    ],
+    "target": [
+      "Platform-specific inventory tools; unavailable sources remain gaps"
+    ]
+  },
+  "permissions": {
+    "routines": "login first; explicit root routines last"
+  },
+  "side_effects": [
+    "Read-only selected probes; controller saves raw/retention evidence and configured consumer receipts."
+  ],
+  "inventory": {
+    "version": "0.1.0",
+    "job": "resource-metrics",
+    "properties": [
+      "metrics.load_1m",
+      "metrics.load_5m",
+      "metrics.load_15m",
+      "metrics.cpu_utilization_percent",
+      "metrics.memory_available_bytes",
+      "metrics.disk_counters",
+      "metrics.interface_counters",
+      "metrics.memory_pressure",
+      "metrics.interfaces.in_octets",
+      "metrics.interfaces.out_octets",
+      "metrics.interfaces.in_errors",
+      "metrics.interfaces.out_errors",
+      "metrics.interfaces.in_discards",
+      "metrics.interfaces.out_discards"
+    ]
+  },
+  "retention": {
+    "contract": "inventory-routine-observations",
+    "version": "0.1.0",
+    "description": "Per-recipe inventory with verified per-routine permission evidence and original source times.",
+    "schema": "inventory-routine.schema.json"
+  }
+}

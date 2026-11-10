@@ -471,6 +471,23 @@ class Recipe:
         connection.vars = copy.deepcopy(vars or {})
         return connection
 
+    @contextmanager
+    def child(self, *, vars=None, report=None, timeout=None):
+        """Independent borrowed execution scope; parent owns identity and transport."""
+        self._check()
+        from . import plain_values
+        if vars is not None and not isinstance(vars,dict) or report is not None and not isinstance(report,dict):raise ConfigError('child vars/report must be mappings')
+        plain_values(vars or {},'child variables')
+        child=Recipe._create(self.profile,self._config,self.host_id,self._actor,
+                             self.timeout if timeout is None else _timeout(timeout),
+                             {} if report is None else report,state=self._state,
+                             console=self._console,vars=vars,run_id=self.run_id,owner='borrowed')
+        try:
+            yield child
+        finally:
+            child._active=False
+            self._state.top=self
+
     @property
     def host_info(self):
         """Copied latest usable host-init facts; no probe or session operation."""
@@ -507,6 +524,7 @@ class Recipe:
     @contextmanager
     def execution(self, policy=None):
         """Yield the verified configured actor. Acquisition failure never runs the body."""
+        if self.connection_owner=='borrowed':raise CoreError('privilege_owned_by_executor')
         from .recipe_execution import normalize
         from host_runtime import identity, verify_connection_identity
         selected = normalize(policy)
@@ -553,14 +571,17 @@ class Recipe:
             raise
 
     def sudo(self, user='root', *, get_pty=False):
+        if self.connection_owner=='borrowed':raise CoreError('privilege_owned_by_executor')
         return self._privilege('sudo', user, get_pty=get_pty)
 
     def su(self, user, *, get_pty=False):
+        if self.connection_owner=='borrowed':raise CoreError('privilege_owned_by_executor')
         return self._privilege('su', user, get_pty=get_pty)
 
     @contextmanager
     def root(self):
         """Yield a callable verified root console, or raise before the body runs."""
+        if self.connection_owner=='borrowed':raise CoreError('privilege_owned_by_executor')
         from contextlib import ExitStack
         from host_runtime import identity
         from root_access import root_actor

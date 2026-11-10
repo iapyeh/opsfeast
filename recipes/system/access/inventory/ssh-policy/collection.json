@@ -1,0 +1,35 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "ssh-policy": {
+      "title": "OpenSSH policy projection"
+    }
+  },
+  "properties": {
+    "policy.ssh_policy": {
+      "id": "policy.ssh_policy",
+      "job": "ssh-policy",
+      "type": "array",
+      "unit": "",
+      "description": "OpenSSH policy projection: ssh_policy",
+      "path": [
+        "datasets",
+        "ssh_policy",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "ssh_policy"
+      ],
+      "time_path": [
+        "datasets",
+        "ssh_policy",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    }
+  }
+}

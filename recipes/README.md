@@ -1,6 +1,6 @@
 # Recipe catalog
 
-[system/inventory/overview 0.4.0](system/inventory/overview/README.md#recipe-owned-retention-contract) declares inventory-observations 0.1.0 independently of raw output. The recipe owns its schema and normalization; registered-contract selection and storage remain platform services.
+[System inventory Overview](system/inventory/overview/README.md) is a meal of eleven independently executable inventory recipes, ten enabled by default. Children declare inventory-routine-observations 0.1.0; the meal stores child receipts rather than duplicate data. See [routines and meals](../docs/recipe-routines.md).
 
 
 This catalog lists recipes currently supplied by OpsFeast. To ask your AI agent to create a recipe, share content or acquire someone else's work, start with the [user guide](../docs/recipes.md).
@@ -9,11 +9,13 @@ The bundled [system/account/check/identity](system/account/check/identity/README
 
 The bundled [feast/report/retention-summary](feast/report/retention-summary/README.md) reads declared retention through the offline report reader and produces Markdown/HTML, including cross-recipe selections. Operation recipe creators own their retention declarations; content is a downstream application.
 
-For inventory 0.4.0, use the [collection table](system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](../docs/inventory-jobs.md). New job observations have their own retention declaration under collection; the snapshot declaration above remains separate. `recipes run` uses job collection, while `inventory query` can avoid storage or save an explicit comparison.
+For current inventory, use the [collection table](system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](../docs/inventory-jobs.md). Each child owns its retention declaration; frozen historical formats remain readable. `recipes run` uses job collection, while `inventory query` can avoid storage or save an explicit comparison.
 
 ## Classification
 
 Use [domain/subdomains/action/name](../docs/recipe-taxonomy.md) for new recipes. Paths can have more than two levels. Bundle recipes live here; user-authored recipes normally live under the selected profile's recipes/ and use :references. Shared user repositories use registered source references. Classification-only moves retain IDs and historical evidence; see the guide's relocation table and required configuration/job/consumer updates.
+
+For an evidence-based coverage/gap review, see [profiling coverage](../docs/profiling-coverage.md).
 
 ## Available recipes
 
@@ -21,17 +23,35 @@ Use [domain/subdomains/action/name](../docs/recipe-taxonomy.md) for new recipes.
 | --- | --- | --- | --- | --- | --- |
 | [database/mysql/check/replication](database/mysql/check/replication/README.md) | mysql-replication / 0.1.0 | MySQL/MariaDB replica state across instances/channels, safe query evidence, retention and Vault | Core Recipe, SSHScript 7.0.1, target Python/client | Synthetic/local protocol fixtures and Linux SSH MySQL 8.0.46; MariaDB/TLS native unverified | opsfeast.py recipes run database/mysql/check/replication --host HOST --profile NAME --json |
 | [system/storage/inventory/disks-raid](system/storage/inventory/disks-raid/README.md) | disks-raid / 0.4.0 | All physical disks including spare/standalone, human-purpose count policy, tray state/capacity and separate RAID health/count | Core Recipe, local RACADM preferred; PERC/LSU alternatives; Linux/Proxmox and ESXi | Synthetic plus native ESXi RACADM PERC/BOSS health/capacity/SSH/retention/Vault; Proxmox and PERC CLI unverified | opsfeast.py recipes run system/storage/inventory/disks-raid --host HOST --json |
-| [system/inventory/overview](system/inventory/overview/README.md) | inventory-system / 0.4.0 | Common system facts plus hardware, storage, network, software and services sections | SSHScript 7.0.1; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | opsfeast.py recipes run system/inventory/overview --host HOST |
+| [system/inventory/overview](system/inventory/overview/README.md) | inventory-overview / 0.1.0 | Shared-connection meal of ten default inventory recipes; sensors opt-in | SSHScript 7.0.1; Linux, FreeBSD, macOS, ESXi | Synthetic; historical local macOS evidence does not verify new native access/retention behavior | opsfeast.py recipes run system/inventory/overview --host HOST |
 | [system/network/check/port](system/network/check/port/README.md) | check-port / 0.1.0 | One bounded TCP connection from the selected host | SSHScript Session plus target Python socket; Linux, FreeBSD, macOS | Synthetic; no native target/SSH verification | opsfeast.py recipes run system/network/check/port --host HOST --var port=8888 |
+| [system/account/inventory/local-users](system/account/inventory/local-users/README.md) | linux-local-accounts / 0.1.0 | Local Linux user/group files without hashes or login-eligibility claims | Core Recipe, target Linux/Python 3.8+ | Synthetic filesystem, runner/retention/HTTP tests; native Linux/SSH unverified | opsfeast.py recipes run system/account/inventory/local-users --profile NAME --host HOST --json |
+| [system/process/inventory/snapshot](system/process/inventory/snapshot/README.md) | linux-process-snapshot / 0.1.0 | Visible procfs identity/resource snapshot without argv/environment | Core Recipe, target Linux/Python 3.8+ | Synthetic procfs/race/limits, runner/retention/HTTP tests; native Linux/SSH unverified | opsfeast.py recipes run system/process/inventory/snapshot --profile NAME --host HOST --json |
+| [system/access/inventory/ssh-policy](system/access/inventory/ssh-policy/README.md) | linux-ssh-policy / 0.1.0 | OpenSSH policy projection; scoped projections and explicit gaps | Core Recipe, Linux/Python 3.8+, existing native read tools | Synthetic parser/runner/retention/HTTP tests; native tools/SSH unverified | opsfeast.py recipes run system/access/inventory/ssh-policy --profile NAME --host HOST --json |
+| [system/account/inventory/sudo-policy](system/account/inventory/sudo-policy/README.md) | linux-sudo-policy / 0.1.0 | Selected-actor sudo policy projection; scoped projections and explicit gaps | Core Recipe, Linux/Python 3.8+, existing native read tools | Synthetic parser/runner/retention/HTTP tests; native tools/SSH unverified | opsfeast.py recipes run system/account/inventory/sudo-policy --profile NAME --host HOST --json |
+| [system/network/inventory/firewall-policy](system/network/inventory/firewall-policy/README.md) | linux-firewall-policy / 0.1.0 | Linux firewall policy views; scoped projections and explicit gaps | Core Recipe, Linux/Python 3.8+, existing native read tools | Synthetic parser/runner/retention/HTTP tests; native tools/SSH unverified | opsfeast.py recipes run system/network/inventory/firewall-policy --profile NAME --host HOST --json |
+| [system/time/inventory/synchronization](system/time/inventory/synchronization/README.md) | linux-time-sync / 0.1.0 | Linux time synchronization configuration and state; scoped projections and explicit gaps | Core Recipe, Linux/Python 3.8+, existing native read tools | Synthetic parser/runner/retention/HTTP tests; native tools/SSH unverified | opsfeast.py recipes run system/time/inventory/synchronization --profile NAME --host HOST --json |
+| [system/logging/inventory/configuration](system/logging/inventory/configuration/README.md) | linux-logging-config / 0.1.0 | Linux logging configuration metadata; scoped projections and explicit gaps | Core Recipe, Linux/Python 3.8+, existing native read tools | Synthetic parser/runner/retention/HTTP tests; native tools/SSH unverified | opsfeast.py recipes run system/logging/inventory/configuration --profile NAME --host HOST --json |
 | [system/account/check/identity](system/account/check/identity/README.md) | check-identity / 0.1.0 | Observe the supplied session's effective account without escalation | Core Recipe and SSHScript; Linux, FreeBSD, macOS | Synthetic and earlier local Core evidence; remote applicability unverified | opsfeast.py recipes run system/account/check/identity --host HOST |
-| [feast/report/execution-summary](feast/report/execution-summary/README.md) | report-summary / 0.1.2 | Render selected saved execution results as HTML and JSON | Offline controller Python; python-report 0.1.0 | Synthetic and isolated local report generation | opsfeast.py recipes run feast/report/execution-summary --input RESULT.json |
+| [feast/report/execution-summary](feast/report/execution-summary/README.md) | report-summary / 0.1.3 | Render selected saved execution results as HTML and JSON | Offline controller Python; python-report 0.1.0 | Synthetic and isolated local report generation | opsfeast.py recipes run feast/report/execution-summary --input RESULT.json |
 | [feast/report/retention-summary](feast/report/retention-summary/README.md) | report-retention / 0.1.0 | Combine retained observations as Markdown and HTML | Offline controller Python; python-report 0.1.0 | Synthetic and installed-wheel retention/report tests | opsfeast.py recipes run feast/report/retention-summary --profile NAME --json |
+| [system/inventory/hardware](system/inventory/hardware/README.md) | inventory-hardware / 0.1.0 | Independent hardware-baseline observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/hardware --host HOST --profile NAME --json |
+| [system/inventory/hardware-sensors](system/inventory/hardware-sensors/README.md) | inventory-hardware-sensors / 0.1.0 | Independent hardware-sensors observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/hardware-sensors --host HOST --profile NAME --json |
+| [system/inventory/network-configuration](system/inventory/network-configuration/README.md) | inventory-network-configuration / 0.1.0 | Independent network-configuration observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/network-configuration --host HOST --profile NAME --json |
+| [system/inventory/network-state](system/inventory/network-state/README.md) | inventory-network-state / 0.1.0 | Independent network-state observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/network-state --host HOST --profile NAME --json |
+| [system/inventory/resource-metrics](system/inventory/resource-metrics/README.md) | inventory-resource-metrics / 0.1.0 | Independent resource-metrics observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/resource-metrics --host HOST --profile NAME --json |
+| [system/inventory/services](system/inventory/services/README.md) | inventory-services / 0.1.0 | Independent service-state observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/services --host HOST --profile NAME --json |
+| [system/inventory/software](system/inventory/software/README.md) | inventory-software / 0.1.0 | Independent software-inventory observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/software --host HOST --profile NAME --json |
+| [system/inventory/storage-capacity](system/inventory/storage-capacity/README.md) | inventory-storage-capacity / 0.1.0 | Independent storage-capacity observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/storage-capacity --host HOST --profile NAME --json |
+| [system/inventory/storage-layout](system/inventory/storage-layout/README.md) | inventory-storage-layout / 0.1.0 | Independent storage-layout observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/storage-layout --host HOST --profile NAME --json |
+| [system/inventory/system](system/inventory/system/README.md) | inventory-platform-system / 0.1.0 | Independent system-configuration observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/system --host HOST --profile NAME --json |
+| [system/inventory/system-runtime](system/inventory/system-runtime/README.md) | inventory-system-runtime / 0.1.0 | Independent system-runtime observations; partial source/permission coverage remains explicit. | Core routines; shared collector and guarded login/root phases | Synthetic transports; native applicability unverified | opsfeast.py recipes run system/inventory/system-runtime --host HOST --profile NAME --json |
 
-This checkout ships these seven recipes. Catalog discovery also includes enabled profile and registered external sources; publisher trust, dependencies and host applicability remain separate evidence. No live exchange or automatic third-party installer is implemented. Update this catalog with actual coverage and verification when adding recipes.
+This checkout ships 25 entries (24 recipes and one meal). Catalog discovery also includes enabled profile and registered external sources; publisher trust, dependencies and host applicability remain separate evidence. No live exchange or automatic third-party installer is implemented. Update this catalog with actual coverage and verification when adding recipes.
 
 ## Custom and third-party content
 
-Users may create recipes in their own working directories or repositories without forking Ops. Custom recipes within a management directory can be selected through explicit `./recipes/...` paths. opsfeast.py recipes run supports the inventory-system descriptor/implementation contract and [general Python-session execution](../docs/recipe-execution.md) (descriptor 0.3.0, contract 0.1.0). Reviewed compatible custom recipes use its connection/input/result lifecycle. The [recipe experience](../docs/recipe-experience.md) provides offline python-report 0.1.0, catalog/result/artifact views, explicit-file bundle candidates and saved reruns. An automatic third-party installer and arbitrary operational backend loader are not implemented.
+Users may create recipes in their own working directories or repositories without forking Ops. Custom recipes within a management directory can be selected through explicit `./recipes/...` paths. opsfeast.py recipes run supports the python-routines and recipe-meal 0.1.0 contracts and [general Python-session execution](../docs/recipe-execution.md) (descriptor 0.3.0, contract 0.1.0). Reviewed compatible custom recipes use its connection/input/result lifecycle. The [recipe experience](../docs/recipe-experience.md) provides offline python-report 0.1.0, catalog/result/artifact views, explicit-file bundle candidates and saved reruns. An automatic third-party installer and arbitrary operational backend loader are not implemented.
 
 - [Create a custom recipe](../docs/recipe-authoring.md)
 - [Share one or multiple recipes](../docs/recipe-sharing.md)
@@ -53,6 +73,33 @@ Retained inventory and JSON exchange are implemented through [result-data tools 
 
 ## Profile-local backup-file checks
 
-For daily dated backup presence, configurable expiry lists and unexpected directory entries, reuse the shipped [backup-files-check module and profile recipe procedure](../docs/backup-file-checks.md). The agreed profile path is `recipes/backup/files/check/daily-backups/`, reference `:backup/files/check/daily-backups`. It is user-installed support rather than an additional bundled descriptor; the seven bundled recipes above are separate. Real host bindings stay private. The opt-in [backup-check consumer](../consumers/backup-check/README.md) creates service objects without deleting files.
+For daily dated backup presence, configurable expiry lists and unexpected directory entries, reuse the shipped [backup-files-check module and profile recipe procedure](../docs/backup-file-checks.md). The agreed profile path is `recipes/backup/files/check/daily-backups/`, reference `:backup/files/check/daily-backups`. It is user-installed support rather than an additional bundled descriptor; the bundled recipes above are separate. Real host bindings stay private. The opt-in [backup-check consumer](../consumers/backup-check/README.md) creates service objects without deleting files.
 
-*Last modified: 2026-10-30 12:17:33*
+## Web menu
+
+The **Recipes** page explains these dishes with human-readable purposes,
+limits, prerequisites and suggested combinations. It supports explicit
+multi-host/multi-recipe review and execution through the existing runner, plus
+offline reports. See [Web menu and execution](../docs/web-recipe-menu.md).
+The [profiling blueprint](../docs/system-profiling.md#profiling-scope) is the Bundle
+coverage target; current partial/unintegrated capabilities remain visibly distinct.
+
+Inventory's Web parameters now select jobs or exact fields/sensors. Report tasks
+link to saved artifact previews/downloads, also discoverable from the menu's report
+index. These reuse existing acquisition/result contracts; see
+[Web scope and artifacts](../docs/web-recipe-menu.md).
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](../docs/inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

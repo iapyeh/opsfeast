@@ -83,7 +83,7 @@ Recipe catalog, notification/todo objects, Retention summaries and Recipe/Consol
 history. Skills, textbook and guide pages show local source documents; settings
 shows installed versions. Synthetic records, draft modules and browser-only
 command playback have been removed. Empty, failed and partial reads stay distinct.
-These are read-only views; execution, lifecycle changes and data transfer retain
+Saved-data views remain read-only; the confirmed recipe menu now adds execution. Lifecycle changes and data transfer retain
 their existing Core/CLI authorization boundaries. General logging, issue tracking,
 automatic upgrade and arbitrary Web app hosting remain unavailable.
 
@@ -111,7 +111,7 @@ Agent documentation and skills, together with human guidance for operating OpsFe
 For interactive exploration that should become reusable code, route through [recipes](opsfeast-recipes/SKILL.md) and its [complete workflow](opsfeast-recipes/references/exploration-to-recipe.md): transparent calls, explicit authorization for dangerous effects, config, retention, consumers and repeatable verification. For MySQL/MariaDB replica status use [the bundled database recipe](../recipes/database/mysql/check/replication/README.md), which owns mysql-replication 0.1.0 retention and Vault views; it never connects to the source host or repairs replication.
 
 
-Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; inventory uses descriptor 0.3.0, inventory-jobs 0.1.0 and inventory-job-observations 0.1.0. See [the canonical execution guide](../docs/recipe-execution.md).
+Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; current inventory uses descriptor 0.3.0, python-routines/recipe-meal 0.1.0 and inventory-routine-observations 0.1.0; frozen historical job contracts remain readable. See [the canonical execution guide](../docs/recipe-execution.md).
 
 For exact-reference recipes settings and execution gates, route to [hosts](opsfeast-hosts/SKILL.md), [recipes](opsfeast-recipes/SKILL.md) and [the canonical policy guide](../docs/recipe-sources.md). Batch tables reuse completion results and --status includes retention/content failures; collection states remain independent in view 0.2.0 JSON. For compact batch history, start with `opsfeast.py observation` or `observation latest --status failed` under the original profile/root; see [batch views](../docs/cli.md#revisit-an-observation-batch). For immutable batch membership/Attention evidence or read-only runs()/run(), route to [result-data](opsfeast-result-data/SKILL.md), [Core](opsfeast-core/SKILL.md) and [observation runs](../docs/observation-runs.md). For readable records versus full reports, Mermaid diagrams and current-threshold rebuilds, use [Vault semantics](../docs/host-vault.md) and [Attention settings](../docs/inventory-jobs.md#attention-thresholds). Never infer old batches from close timestamps or reinterpret stored historical findings with current configuration.
 
@@ -236,4 +236,74 @@ For Console blocks 0.2.0 (bounded previews, byte-range content, authenticated hu
 
 For accumulated host experience, route through [hosts](opsfeast-hosts/SKILL.md) and [host notes 0.1.0](../docs/host-notes.md). Shared CLI/Python/API supports search, CRUD and reviewed atomic merges; Web host details provide human review/editing. Console completion includes offering experience extraction, then draft confirmation before saving.
 
-*Last modified: 2026-11-08 23:07:31*
+## System profiling discovery
+
+Read [profiling 0.1.0](../docs/profiling.md), routed through the recipes and
+result-data skills, before inventing a system collector/read model. The shared
+catalog maps inventory's 72 properties to eight domains and exposes integration
+gaps; `profiling describe/show --json` and `opsfeast.profiling` read locally.
+Web host 系統全貌 shows saved values/times. This does not authorize new collection,
+and not-integrated does not mean no specialized bundled tool exists.
+
+
+## Profiling acquisition batch
+
+See [coverage review](../docs/profiling-coverage.md) before inventing a collector.
+The bundle now adds local Linux users/groups and visible process snapshots;
+existing disk/RAID and configured MySQL retention are also integrated. Five
+providers expose 84 properties, with explicit remaining policy/event gaps. Route
+acquisition through recipes skill and saved evidence through result-data skill.
+
+
+## Linux policy/settings collection
+
+The [policy guide](../docs/linux-policy-profiling.md) routes SSH/sudo/firewall/time/
+logging recipes through the recipes skill and retained views through result-data.
+Ten profiling providers now expose 104 properties. Do not treat a native query,
+configuration projection or partial capability as proof of effective host security.
+New reads preserve basis, scope, source time, gaps and safe query evidence.
+
+## Human-selected recipe menu
+
+For explaining available dishes, Web selection or authorized Web execution, route
+through [recipes](opsfeast-recipes/SKILL.md) and the [menu guide](../docs/web-recipe-menu.md).
+The menu is now operational: catalog/preview remain read-only, confirmed execution
+uses the common runner, and history never retries work. Preserve the user's scope,
+configured-versus-observed identity, separate receipts and unknown remote cleanup.
+
+## Inventory choices and report viewing in Web
+
+The [menu guide](../docs/web-recipe-menu.md) now includes actual job/property/sensor
+selectors and declared report artifact viewing/download. Route execution through
+[recipes](opsfeast-recipes/SKILL.md), saved data through
+[result-data](opsfeast-result-data/SKILL.md). Scope changes require a new review;
+report reads remain local/read-only and never replay an execution.
+
+For the current Recipes layout review, start with the [category-first preview](../docs/web-recipe-menu.md#current-category-first-selection-preview-2026-11-10).
+The plate now offers field scope and explicit execution review; history/index
+controls remain separate. Existing API/result readers remain separate.
+
+
+## Recipe library navigation
+
+Route recipe pages, default options, custom classification and saved meal definitions through [recipes](opsfeast-recipes/SKILL.md) and the [canonical menu contract](../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals). Saved historical data stays under result-data; menu metadata stays Profile-local and does not schedule or execute.
+
+
+## Inventory routines and connection sharing
+
+Route [routine/meal execution](../docs/recipe-routines.md) through the recipes skill and retained child/checkpoint interpretation through result-data. The main Recipes plate now offers scope selection, review and confirmed execution. A saved selection is not authorization. Preserve exact references, conditional permission phases and separate collection/retention/consumer outcomes.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](../docs/inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

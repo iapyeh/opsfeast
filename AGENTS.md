@@ -167,7 +167,7 @@ Preserve unrelated files, stage an explicit allowlist and inspect the staged dif
 
 ## Inventory jobs and immediate utility queries
 
-Read [inventory jobs](docs/inventory-jobs.md) and the [collection table](recipes/system/inventory/overview/collection-plan.md) before selecting properties, changing intervals or configuring cron. Recipe 0.4.0 reuses public YANG modules before extensions, with sparse source-timestamped observations. `inventory query` defaults to no OpsFeast writes; `--save` creates manual comparison history without advancing schedules. `inventory configure/dispatch/cron` are implemented with explicit scheduled-host opt-in and no automatic retries or AI wakeups. Preserve partial coverage, failures, actor/identity warnings and original sample times; use retention APIs for trends. These jobs differ from saved recipe invocations and retention-consumer dispatch. Setup/inspection does not authorize host connections or periodic execution.
+Read [inventory jobs](docs/inventory-jobs.md) and the [collection table](recipes/system/inventory/overview/collection-plan.md) before selecting properties, changing intervals or configuring cron. Split inventory recipes reuse public YANG modules before extensions, with sparse source-timestamped observations. Read [routines and meals](docs/recipe-routines.md) for python-routines/recipe-meal 0.1.0, shared host connections, permission phases and independent child retention. `inventory query` defaults to no OpsFeast writes; `--save` creates manual comparison history without advancing schedules. `inventory configure/dispatch/cron` are implemented with explicit scheduled-host opt-in and no automatic retries or AI wakeups. Preserve partial coverage, failures, actor/identity warnings and original sample times; use retention APIs for trends. These jobs differ from saved recipe invocations and retention-consumer dispatch. Setup/inspection does not authorize host connections or periodic execution.
 
 ## Retention and content applications
 
@@ -188,4 +188,4 @@ For dated backup presence, expiry and unexpected-entry lists, use [the shipped b
 
 For sharing/import/archival, read [portability](docs/portability.md), [portable retention authoring](docs/portable-contracts.md) and the recipe/result-data skills. Recipe, observation and retention are independent units. Use transfer plans and expected digests, origin-preserving merge/replace and explicit recipe path-conflict resolution; do not build parallel copy/delete/SQL tools. Archive-plan freezes source-time selection, and apply verifies an external package before source deletion/compaction. Preserve protected operations, shared attachments, recovery receipts, service lifecycle and human notes. No candidate code/consumer/provider runs during data import. Bundle 0.2.0 rejects the old format; no migration or compatibility layer is required.
 
-*Last modified: 2026-11-05 14:16:33*
+*Last modified: 2026-11-10 16:02:29*

@@ -178,4 +178,27 @@ DST/unknown-time handling and verification limits. Source observations are not r
 
 Use [the transfer workflow](portability.md) for current bundle 0.2.0 installation plans, path-conflict resolution, source snapshots and rollback. Pack/unpack alone still does not activate code. Observation and retention packages are independent of recipe bundles, with reviewed merge/replace import and resumable verified archival. Imported datasets can be read without installing their producer. See [portable contracts](portable-contracts.md) instead of adding a registry entry for each user-defined dataset.
 
-*Last modified: 2026-10-30 12:17:33*
+## Web report artifacts
+
+The [Recipe menu viewer](web-recipe-menu.md#view-and-download-report-artifacts)
+reads saved report results and their declared artifacts. Users can revisit old
+reports, select files, read inert text/static HTML, preview raster images and
+download verified originals without the CLI. The shared result/path/hash resolver
+remains authoritative. No report recipe is rerun or artifact rewritten; static
+HTML blocks scripts/navigation/external resources and other formats can be downloaded.
+Individual artifacts have a documented 16 MiB reader limit.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

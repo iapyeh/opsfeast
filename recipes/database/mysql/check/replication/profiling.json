@@ -1,0 +1,44 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "retained": {
+      "title": "Retained mysql-replication"
+    }
+  },
+  "properties": {
+    "mysql.servers": {
+      "id": "mysql.servers",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "Server-reported identity/version for configured instances; not discovery of all database engines.",
+      "path": [
+        "instances"
+      ],
+      "coverage_path": [],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": [
+        "instance"
+      ]
+    },
+    "mysql.replication": {
+      "id": "mysql.replication",
+      "job": "retained",
+      "type": "array",
+      "unit": "",
+      "description": "Replica-side channels, health, reason and credential cleanup; query completeness is independent of health.",
+      "path": [
+        "instances"
+      ],
+      "coverage_path": [],
+      "time_path": [
+        "observed_at"
+      ],
+      "keys": [
+        "instance"
+      ]
+    }
+  }
+}

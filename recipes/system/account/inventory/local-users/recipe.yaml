@@ -1,0 +1,347 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "linux-local-accounts",
+  "version": "0.1.0",
+  "access_mode": "read",
+  "title": "Inventory Linux local users and groups",
+  "description": "Bounded local /etc/passwd and /etc/group projection; no hashes or login eligibility claims.",
+  "runner": {
+    "contract": "python-recipe",
+    "version": "0.1.0",
+    "entrypoint": "main.py"
+  },
+  "platforms": {
+    "implemented": [
+      "linux"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "dependencies": {
+    "controller": [
+      "Python 3.11+",
+      "SSHScript 7.0.1",
+      "OpsFeast Linux profile service 0.1.0"
+    ],
+    "target": [
+      "Linux",
+      "python3 3.8+ on PATH with standard library",
+      "readable /etc/passwd and /etc/group"
+    ]
+  },
+  "permissions": {
+    "sudo": false,
+    "su": false
+  },
+  "side_effects": [
+    "Runner connects only to selected hosts and executes a fixed read-only Python probe via argv/stdin.",
+    "No packages, target files, account changes, signals or automatic privilege transitions.",
+    "Controller saves raw/portable retained data and dispatches explicitly configured consumers."
+  ],
+  "inputs": {
+    "variables": {
+      "max_items": {
+        "type": "integer",
+        "default": 1000,
+        "minimum": 1,
+        "maximum": 5000
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "default": 20,
+        "minimum": 1,
+        "maximum": 120
+      }
+    }
+  },
+  "retention": {
+    "contract": "linux-local-accounts",
+    "version": "0.1.0",
+    "mode": "portable",
+    "description": "Inventory Linux local users and groups with per-dataset scope, source time, enumeration completeness and gaps; no secrets.",
+    "data_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "kind",
+        "platform",
+        "started_at",
+        "observed_at",
+        "effective_uid",
+        "datasets",
+        "acquisition"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": "0.1.0"
+        },
+        "kind": {
+          "const": "accounts"
+        },
+        "platform": {
+          "const": "linux"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effective_uid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "datasets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "users",
+            "groups"
+          ],
+          "properties": {
+            "users": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "reason_codes",
+                "attempted_count",
+                "unavailable_count"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "uid",
+                      "gid",
+                      "home",
+                      "shell",
+                      "shell_hint"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "uid": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "gid": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "home": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "shell": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "shell_hint": {
+                        "enum": [
+                          "shell_configured",
+                          "noninteractive_shell",
+                          "default_shell"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 32,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "item_or_time_limit",
+                      "invalid_or_duplicate_rows",
+                      "source_changed_during_read",
+                      "permission_denied",
+                      "source_missing",
+                      "invalid_or_oversized_source",
+                      "source_read_failed",
+                      "boot_id_unavailable",
+                      "process_disappeared",
+                      "invalid_or_changed_process",
+                      "process_read_failed",
+                      "procfs_unavailable",
+                      "output_size_limit"
+                    ]
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "groups": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "reason_codes",
+                "attempted_count",
+                "unavailable_count"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "gid",
+                      "members"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "gid": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "members": {
+                        "type": "array",
+                        "maxItems": 5000,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      }
+                    }
+                  }
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 32,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "item_or_time_limit",
+                      "invalid_or_duplicate_rows",
+                      "source_changed_during_read",
+                      "permission_denied",
+                      "source_missing",
+                      "invalid_or_oversized_source",
+                      "source_read_failed",
+                      "boot_id_unavailable",
+                      "process_disappeared",
+                      "invalid_or_changed_process",
+                      "process_read_failed",
+                      "procfs_unavailable",
+                      "output_size_limit"
+                    ]
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "acquisition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "started_at",
+            "completed_at",
+            "method"
+          ],
+          "properties": {
+            "started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "method": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "verification": {
+    "synthetic": "tested",
+    "local": "not-tested",
+    "ssh": "not-tested"
+  }
+}
+# Last modified: 2026-11-09 12:12:07

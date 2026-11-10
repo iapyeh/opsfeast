@@ -1,5 +1,10 @@
 For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
 
+For the agreed product boundaries, Host ID/history/deletion decisions and staged
+daemon direction, read [system profiling architecture](system-profiling.md).
+For shipped capability discovery and saved host Web/CLI/Python views, read
+[profiling 0.1.0](profiling.md).
+
 For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
 
 For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
@@ -28,7 +33,6 @@ bundled defaults and planned hosts/recipes/defaults/retention configuration.
 For Web personalization and upgrade-preserved installation identity/site assets,
 read [presentation](site-presentation.md), [persistent storage](installation-storage.md)
 and the [Web preview](../web/README.md). Profile management roots are separate.
-
 
 Use [recipe classification and location](recipe-taxonomy.md) for the current bundled paths, variable-depth domain/action convention, user profile/shared-source placement and relocation effects on configuration, jobs, consumers and historical evidence.
 
@@ -114,4 +118,47 @@ see [version checks](web-updates.md). Settings scope and ownership are described
 
 For incomplete-property causes, Web/CLI inspection and reference-IP recovery, see [result diagnostics](result-diagnostics.md) and [reference addresses](host-reference-ips.md).
 
-*Last modified: 2026-11-05 23:07:10*
+
+For the bundled recipe audit and delivered/remaining profiling acquisition gaps,
+read [coverage review](profiling-coverage.md). New Linux account and process
+snapshots use separate recipes and shared retention/views; see the profiling guide.
+
+
+For SSH/sudo/firewall policy, time synchronization and logging configuration
+collection, read [Linux policy profiling](linux-policy-profiling.md): five independent
+recipes, contexts, native/configured/runtime boundaries, omissions and verification.
+
+## Recipe menu and execution
+
+[Choose dishes and run recipes in Web](web-recipe-menu.md): purposes, suggested
+combinations, the full profiling target, explicit host/identity review, typed
+inputs, confirmation, progress/stop, receipts and shared agent interfaces.
+
+[Web inventory scope and report artifacts](web-recipe-menu.md) now covers the
+complete browser workflow for jobs/individual sensors and saved report viewing,
+including preview/download, provenance and verification limits.
+
+
+## Inventory composition design rationale
+
+The [inventory routine/meal design](inventory-routine-design.md) records the agreed rationale for independent recipes, host-owned connection reuse and verified login/root phases. These are now implemented; use [the current routine contract](recipe-routines.md) for invocation, retention and limits.
+
+
+## Recipe routines and meals
+
+Use [routines and shared-connection meals 0.1.0](recipe-routines.md) for current standalone/composed inventory, permission grouping, scope borrowing, selectors, durable checkpoints, independent retention and Web execution. The original design document remains rationale; it is no longer a proposed-only feature.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 17:31:30*

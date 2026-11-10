@@ -1,7 +1,7 @@
 # OpsFeast local Web workspace
 
 The local website provides administrator login, saved site presentation,
-Profile/host configuration and read-only views of real operational data.
+Profile/host configuration, confirmed recipe execution and saved-data views.
 Read [saved-data workspace 0.1.0](../docs/web-workspace.md) for page behavior,
 HTTP schemas, Profile scope, document access, failures and verification limits.
 UI copy remains Traditional Chinese until English translation is requested.
@@ -23,8 +23,8 @@ The website does not substitute sample results for unavailable or empty sources.
 
 The [first-use guide](../docs/web-administrator.md#first-use-web-guide),
 [site presentation](../docs/site-presentation.md), [host editor](../docs/web-hosts.md)
-and Profile/account settings retain their existing contracts. Data pages are
-read-only; existing Core/CLI execution, service lifecycle and transfer workflows
+and Profile/account settings retain their existing contracts. Saved-data pages are
+read-only; recipe execution now uses the separate confirmed menu. Core/CLI execution, service lifecycle and transfer workflows
 remain available under their own authorization scope.
 
 ## Real interactive Console
@@ -83,7 +83,8 @@ restart recovery exists. Node.js and a frontend build are not needed.
 | `/workspace` | Saved active notifications/todos and configured host count |
 | `/operations` | Host/Console/history entrypoints; no command playback |
 | `/hosts` | Real host configuration; [CRUD/group/backup contract](../docs/web-hosts.md) |
-| `/recipes`, `/recipes/data`, `/retention`, `/work`, `/logs` | Actual Profile-scoped read-only data views |
+| `/recipes` | Purpose-based menu with explicit confirmed execution |
+| `/recipes/data`, `/retention`, `/work`, `/logs` | Actual Profile-scoped read-only data views |
 | `/skills`, `/apps` | Bundled Skill sources; Vault/application guidance |
 | `/learn`, `/docs` | Local public Markdown index/search and inert source readers |
 | `/settings` | Shared settings hub; site/profiles/hosts available, installed version panel; other categories remain planned |
@@ -222,4 +223,65 @@ stop channel, model wakeup or arbitrary HTML/media renderer is provided. The old
 `/interactive` also loads directly with administrator login; its execution gates
 remain separate. Read [the agent skill](../skills/opsfeast-console-records/SKILL.md).
 
-*Last modified: 2026-11-08 23:07:31*
+## System profiling viewer
+
+Host details now include **系統全貌**, backed by authenticated GET
+`/api/v1/profiling/catalog` and `/api/v1/profiling/host`. The shared
+[profiling service](../docs/profiling.md) supplies capability gaps and latest
+retained property attempts/values with original sample times. Browser modules only
+render/escape/paginate; they do not collect, infer freshness/health or own domain
+rules. See `tests/test_profiling_web.py` and `tests/test_profiling.mjs` for synthetic
+HTTP and rendering coverage. New routes need a server reload; preserve its original
+installation data/port/options and active Console work during maintenance.
+
+
+## Policy source basis
+
+The profiling viewer now labels configured/effective/runtime/context evidence and
+shows expandable source scope plus safe native query metadata. It still uses the
+same authenticated read-only shared API; it cannot run a policy query or turn a
+configuration projection into effective host security. The [policy guide](../docs/linux-policy-profiling.md)
+records supported recipes, source semantics, limits and tests.
+
+## Recipe menu and human-confirmed execution
+
+The [recipe menu 0.1.0](../docs/web-recipe-menu.md) now delivers the planned
+Web selection workflow: recipe purpose/limits, suggested combinations, the shared
+39-capability blueprint, exact targets and inputs, review/confirmation, serial
+runner progress/stop and saved receipts. This is separate from read-only saved-data
+and profiling views. Opening a viewer or history never collects or retries work.
+The original profiling blueprint remains the Bundle target, not a claim that all
+current capabilities are complete.
+
+## Inventory scope and report artifacts
+
+The [recipe menu](../docs/web-recipe-menu.md) now supports choosing inventory jobs,
+individual fields and explicit temperature/fan sensors. Confirmation preserves
+exact scope and uses the common collector/retention flow. Completed and historical
+reports have declared-artifact readers, static HTML/inert-text/raster previews and
+verified-original downloads. Preview/download is read-only and Profile scoped;
+no report replay, arbitrary file serving, scripts or external preview resources.
+
+## Category-first recipe layout preview
+
+The [main recipe page](../docs/web-recipe-menu.md#current-category-first-selection-preview-2026-11-10)
+now groups scope summaries and Bundle/User recipes by domain, then shows sets,
+individual/group/All host picks and a two-column plate. Search/history/report-index controls remain outside the main selection layout. Selection synchronizes exact references/host sets locally; the plate offers field scope and explicit review/confirmation before execution. Saved run/report URLs and APIs
+remain available. Host login accounts are omitted from the menu data/view.
+
+
+## Recipe library pages and owner selections
+
+Recipe titles now open their [dedicated page](../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals), including declared collection fields, retained data, report links and editable nonsensitive Profile defaults. User/external recipes support builtin/custom assignments; custom categories can be renamed. Meals expand their members; the plate can be saved as a user meal, edited or deleted. Selection drafts survive same-tab navigation using Profile-scoped sessionStorage. Writes require administrator/owner capability and current revisions; they never start collection.
+
+
+## Field-tree navigation
+
+Recipe links now open separate tabs. Category scopes are directly visible; Bundle/User lists stack vertically and empty User lists are hidden. Dedicated pages present dotted fields as native closed disclosures with exact-name input editors at their field and shared options below. New category forms live only in the menu manager. See the [menu contract](../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) and the implemented [inventory composition contract](../docs/recipe-routines.md).
+
+
+## Executable plate and shared inventory connections
+
+The Recipes plate now offers per-recipe field scopes and explicit review/confirmation. Compatible routine recipes are grouped per host, with conditional login/root permissions visible before start. Progress/stop and independent child result links use the existing owned-worker APIs. User meals additionally save validated nonsecret selectors. Recipe-specific retained pages keep source times and actor/cleanup evidence. See [routines](../docs/recipe-routines.md) and [menu](../docs/web-recipe-menu.md).
+
+*Last modified: 2026-11-10 16:02:29*

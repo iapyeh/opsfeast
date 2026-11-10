@@ -63,9 +63,7 @@ class VaultTests(unittest.TestCase):
         from opsfeast import initialize
         initialize(self.root, quiet=True, profile='first-inventory')
         actor = jobs.Actor()
-        with patch('inventory_jobs.connected', jobs.contextmanager(lambda *args, **kwargs: iter([actor]))), \
-                patch('inventory_jobs.collection_actor', jobs.contextmanager(lambda *args, **kwargs: iter([actor]))):
-            report = jobs.service.collect_host(self.root, 'node', properties=['system.kernel_name'], save=True, session_class=jobs.Actor)
+        report=jobs.InventoryJobTests.acquire(self,actor,properties=['system.kernel_name'],save=True)
         self.assertEqual(report['status'], 'success')
         self.assertEqual(report['retention']['status'], 'stored')
         path = Path(report['result_path'])

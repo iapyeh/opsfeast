@@ -12,7 +12,7 @@ interfaces with their existing authorization rules.
   blocked todos from the selected Profile. Counts are configuration and saved
   service evidence, not online status. The newest five of each service are shown;
   use **查看全部** to read the service list.
-- `/recipes`: the shared static catalog, with Profile/external recipes before
+- `/recipes`: the operational menu (see [execution](web-recipe-menu.md)), using the shared catalog with Profile/external recipes before
   bundled recipes. Search, source status, versions, metadata and inspection errors
   are available. `?recipe=ENCODED_REFERENCE` selects one exact recipe. Inspection
   does not import recipe entrypoints, verify target applicability or grant execution.
@@ -110,4 +110,49 @@ SSH and remote privilege behavior are not established by these tests.
 
 For incomplete-property causes, Web/CLI inspection and reference-IP recovery, see [result diagnostics](result-diagnostics.md) and [reference addresses](host-reference-ips.md).
 
-*Last modified: 2026-11-05 23:07:10*
+## Host system profiling
+
+The host's **系統全貌** tab reads saved inventory values, property-level failed or
+uncollected attempts, original sample times and source record IDs. Eight domains
+also expose partial and missing integrations. It performs no collection. See
+[profiling HTTP/read contract](profiling.md) for authentication, Profile selection,
+preview/pagination limits and unsupported contracts. The running Python server
+needs the updated routes; browser refresh alone cannot load new backend code.
+
+
+## Specialized sources in system profiling
+
+The same host 系統全貌 tab now includes saved disk/RAID, configured MySQL replica,
+local Linux account/group and visible process snapshots. Instance labels and
+source-specific completeness are shown; recipe health is retained as data, not
+converted to collection success. The profiling viewer does not run collectors; explicit menu execution is separate.
+See [coverage and provider limits](profiling.md).
+
+
+## Policy/configuration evidence labels
+
+Policy rows now label configured, context-qualified effective, runtime and operator
+context evidence. Expand 收集範圍與查詢證據 for the source scope and safe query
+argv/timestamps/exit/termination state. Full tool streams and config dumps are not
+rendered. Complete means acquired projection, not secure policy or synchronized
+time; omitted details/missing providers remain visible. See [policy guide](linux-policy-profiling.md).
+
+## Recipe menu and human-confirmed execution
+
+The [recipe menu 0.1.0](web-recipe-menu.md) now delivers the planned
+Web selection workflow: recipe purpose/limits, suggested combinations, the shared
+39-capability blueprint, exact targets and inputs, review/confirmation, serial
+runner progress/stop and saved receipts. This is separate from read-only saved-data
+and profiling views. Opening a viewer or history never collects or retries work.
+The original profiling blueprint remains the Bundle target, not a claim that all
+current capabilities are complete.
+
+## Current recipe layout preview
+
+The [category-first Recipes page](web-recipe-menu.md#current-category-first-selection-preview-2026-11-10)
+is now a selection-only layout review: domain/capability scope, Bundle/User dishes,
+sets, configured host/group/All choices and a two-column plate. Extra controls and
+indexes are hidden on this main page; saved result URLs/APIs are preserved. The
+menu's group membership projection is read-only and exposes no login account.
+
+*Last modified: 2026-11-10 09:29:02*

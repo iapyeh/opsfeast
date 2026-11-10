@@ -1,0 +1,35 @@
+{
+  "contract_version": "0.1.0",
+  "jobs": {
+    "sudo-policy": {
+      "title": "Selected-actor sudo policy projection"
+    }
+  },
+  "properties": {
+    "policy.sudo_policy": {
+      "id": "policy.sudo_policy",
+      "job": "sudo-policy",
+      "type": "array",
+      "unit": "",
+      "description": "Selected-actor sudo policy projection: sudo_policy",
+      "path": [
+        "datasets",
+        "sudo_policy",
+        "items"
+      ],
+      "coverage_path": [
+        "datasets",
+        "sudo_policy"
+      ],
+      "time_path": [
+        "datasets",
+        "sudo_policy",
+        "observed_at"
+      ],
+      "keys": [
+        "source",
+        "name"
+      ]
+    }
+  }
+}

@@ -158,4 +158,22 @@ New user contracts can use [mode: portable with embedded data_schema](portable-c
 
 Retained general envelopes may include `assessment` and `execution_identity`, validated independently of domain data. Their absence in older records is not an inferred healthy result or verified actor. Query/export/import preserves saved metadata without rerunning code. See [results and accounts](recipe-results-and-accounts.md).
 
-*Last modified: 2026-10-26 11:49:24*
+
+## Inventory routine observations 0.1.0
+
+The registered [routine contract](recipe-routines.md#durable-evidence-and-consumers) preserves all existing field definitions and source times while adding independent recipe identity, routine permissions/actors, meal ID, shared capture IDs, saved Attention policy and connection cleanup evidence. Failed observations remain gaps. Incomplete raw checkpoints are not retained as completed data. Meals link child records rather than duplicate observations. Historical contracts remain frozen/readable. Observation-run targets can contain optional children with their exact references, retention IDs/status and per-child Attention findings; consumer receipts remain separate.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

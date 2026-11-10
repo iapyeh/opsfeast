@@ -99,7 +99,7 @@ class CommandOutputDeliveryTests(unittest.TestCase):
         self.assertEqual(probe['stderr'],'')
         record=retention_store.show(self.root,result['retention']['record_id'])
         self.assertEqual(next(p for p in record['data']['probes'] if p['id']==probe['id']),probe)
-        path=next((self.root/'vault').rglob('current-system-inventory.md'))
+        path=next((self.root/'vault').rglob('current-*storage-capacity*.md'))
         page=path.read_text()
         self.assertIn('## Command output',page)
         self.assertIn('<summary>LC_ALL=C df -Pk</summary>',page)

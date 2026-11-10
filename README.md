@@ -17,10 +17,9 @@ opt-in SSHScript execution with exact plan approval, durable SSE events and an
 [Real host configuration](docs/web-hosts.md) is independently available through Web/CLI/API and never starts a Console.
 The [first-use Web guide](docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists.
 
-
 Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and Mermaid diagrams](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
 
-For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). Recipe 0.4.0 supports immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
+For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). The [split recipes and Overview meal](docs/recipe-routines.md) support immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
 
 
 Recipe paths now follow [domain/subdomains/action/name](docs/recipe-taxonomy.md). The bundle uses system/inventory/overview, system/network/check/port, system/account/check/identity and feast/report/{execution-summary,retention-summary}. IDs and data contracts remain stable; old bundle paths are removed. Review the relocation table before updating existing configuration, saved jobs or exact consumer subscriptions. User recipes belong in the selected profile's recipes/ or an explicitly registered shared source.
@@ -80,7 +79,7 @@ Today, that approach is supported by setup and connection tools, agent guides an
 
 Read the [vision and design principles](docs/vision.md) for the shared direction followed by project contributors and recipe authors.
 
-Inventory uses at most two accounts: the login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority; otherwise login sudo is first. Safe login-user fallback is automatic. Use check-access for separate account diagnostics; inventory acquires its own bounded actor during collection. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
+Inventory uses at most two accounts: the login and the first other sudo-enabled users entry in YAML order. An eligible root second candidate gets su priority; otherwise login sudo is first. Login routines run first; only protected root routines request the bounded root phase. If root acquisition is unavailable, protected fields remain unavailable while earlier login observations are preserved. Use check-access for separate account diagnostics. Read [inventory access, six-section results and CSV](docs/inventory-access.md) before execution.
 
 ## Getting started with your AI agent
 
@@ -316,7 +315,7 @@ Complete one workflow for a small set of hosts: collect basic inventory, create 
 
 ## Retained observations and sharing
 
-Inventory execution automatically saves operational success/partial observations in each Feast retention/ annual archives after saving raw JSON in namespace-enabled profiles (legacy profiles use records/observations.sqlite3). Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Identity probes use the verified whole-collection actor; account sudo: false disables that account's sudo, while the ordered second candidate can still provide root. Legacy identity_sudo is compatibility-only. Old raw files are not automatically backfilled.
+Inventory execution automatically saves operational success/partial observations in each Feast retention/ annual archives after saving raw JSON in namespace-enabled profiles (legacy profiles use records/observations.sqlite3). Check both collection and retention status. Use tools/observation_store.py to recover selected raw results, export filtered JSON, validate exchanges or combine A/B exports. Host identity is best-effort and source-scoped fallback warnings must be preserved. Read the [workflow and contracts](docs/result-data.md), [CLI](docs/cli.md#retained-observations-and-exchange) and [result-data skill](skills/opsfeast-result-data/SKILL.md). Recipient analysis storage is independent; no transport or stage-4 importer is bundled. Routine probes retain their own verified actor; account sudo: false disables that account's sudo, while the ordered second candidate can still provide root. identity_sudo is removed; use account sudo policy. Old raw files are not automatically backfilled.
 
 Host identity_key, label and description are now supported. An explicit identity_key takes precedence and is shared across Feasts as user-assigned identity; change it after OS reinstall/replacement and coordinate its namespace. label/description are captured human text, never identity keys, and are preserved through retention/exchange. See [the canonical host configuration](docs/hosts-yaml.md#explicit-host-identity-and-human-readable-metadata) and [identity/metadata rules](docs/result-data.md#explicit-identity-and-display-metadata). MAC is not an automatic key.
 
@@ -347,4 +346,27 @@ settings. See [the reference-IP guide](docs/host-reference-ips.md).
 
 For SSHScript version mismatches or duplicate installation metadata, use [runtime diagnosis and repair](docs/runtime-troubleshooting.md). Run the failing interpreter with `-B tools/check_environment.py --json` before retrying host operations.
 
-*Last modified: 2026-11-05 16:37:09*
+## System profiling
+
+Use `python -B tools/opsfeast.py profiling describe --json` for product coverage and
+integration gaps; `profiling show --profile NAME --host HOST --json` reads saved
+property attempts without connecting. Web **Hosts -> host -> 系統全貌** shows
+retained values/source times and missing integrations. Ten providers now expose 104 properties, including Linux account/process and
+SSH/sudo/firewall/time/logging recipes; this is not complete platform coverage or automatic
+collection planning. See [interfaces and limits](docs/profiling.md) and the
+[architecture/delivery sequence](docs/system-profiling.md).
+
+## Choose recipes in the Web menu
+
+Open **Recipes** to discover the Bundle's dishes, purposes, requirements and limits,
+choose hosts/recipes and typed parameters, review the exact scope, then confirm.
+Suggested combinations and the full static/dynamic profiling blueprint help users
+choose without implying complete coverage. Watch runner progress, stop remaining
+work and inspect independent raw/retention/consumer outcomes. Read the
+[menu and execution guide](docs/web-recipe-menu.md) for authorization and stop limits.
+
+The Web menu also exposes inventory job/field selection and opt-in sensors, plus
+saved report artifact previews/downloads. Users can complete these operations in
+the browser; see the [scope and report guide](docs/web-recipe-menu.md).
+
+*Last modified: 2026-11-10 16:07:57*

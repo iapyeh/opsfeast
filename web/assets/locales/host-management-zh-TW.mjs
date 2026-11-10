@@ -1,4 +1,5 @@
 export default {
+ profiling:'系統全貌',
  accountAdd:'新增帳號宣告', accountEdit:'編輯', accountRemove:'移除宣告', accountSave:'儲存帳號設定',
  accountName:'帳號名稱', accountActions:'操作', accountSudo:'允許此帳號使用 sudo',
  accountScope:'編輯主機「{host}」的本機帳號宣告，不會連線或建立遠端帳號。',

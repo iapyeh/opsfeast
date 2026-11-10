@@ -1,0 +1,120 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "inventory-storage-capacity",
+  "version": "0.1.0",
+  "title": "Storage capacity",
+  "description": "Independent storage-capacity observations; partial source/permission coverage remains explicit.",
+  "kind": "collection",
+  "access_mode": "read",
+  "platforms": {
+    "implemented": [
+      "linux",
+      "freebsd",
+      "macos",
+      "esxi"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "runner": {
+    "contract": "python-routines",
+    "version": "0.1.0",
+    "entrypoint": "main.py",
+    "finalizer": "finalize",
+    "routines": [
+      {
+        "id": "collect",
+        "function": "collect",
+        "required_permission": "login",
+        "properties": [
+          "storage.filesystems.total_bytes",
+          "storage.filesystems.used_bytes",
+          "storage.filesystems.available_bytes",
+          "storage.filesystems.used_percent",
+          "storage.filesystems.total_megabytes",
+          "storage.filesystems.used_megabytes",
+          "storage.filesystems.available_megabytes",
+          "storage.inodes.total",
+          "storage.inodes.used",
+          "storage.inodes.available",
+          "storage.swap.total_bytes",
+          "storage.swap.used_bytes",
+          "storage.swap.available_bytes"
+        ],
+        "depends_on": [],
+        "platforms": []
+      }
+    ]
+  },
+  "inputs": {
+    "variables": {
+      "attention": {
+        "type": "object",
+        "default": {}
+      },
+      "collection_budget_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true,
+        "default": 90
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "minimum": 0,
+        "exclusive_minimum": true,
+        "default": 30
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "dependencies": {
+    "controller": [
+      "Python >=3.11",
+      "SSHScript ==7.0.1",
+      "OpsFeast routines 0.1.0"
+    ],
+    "target": [
+      "Platform-specific inventory tools; unavailable sources remain gaps"
+    ]
+  },
+  "permissions": {
+    "routines": "login first; explicit root routines last"
+  },
+  "side_effects": [
+    "Read-only selected probes; controller saves raw/retention evidence and configured consumer receipts."
+  ],
+  "inventory": {
+    "version": "0.1.0",
+    "job": "storage-capacity",
+    "properties": [
+      "storage.filesystems.total_bytes",
+      "storage.filesystems.used_bytes",
+      "storage.filesystems.available_bytes",
+      "storage.filesystems.used_percent",
+      "storage.filesystems.total_megabytes",
+      "storage.filesystems.used_megabytes",
+      "storage.filesystems.available_megabytes",
+      "storage.inodes.total",
+      "storage.inodes.used",
+      "storage.inodes.available",
+      "storage.swap.total_bytes",
+      "storage.swap.used_bytes",
+      "storage.swap.available_bytes"
+    ]
+  },
+  "retention": {
+    "contract": "inventory-routine-observations",
+    "version": "0.1.0",
+    "description": "Per-recipe inventory with verified per-routine permission evidence and original source times.",
+    "schema": "inventory-routine.schema.json"
+  }
+}

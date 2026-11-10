@@ -13,10 +13,11 @@ export function loginDestination(search) {
     if(target.origin==='http://local.invalid'&&target.pathname==='/hosts'&&
        [...target.searchParams.keys()].every(key=>['profile','host','view','new'].includes(key)))return target.pathname+target.search;
   }
-  if(typeof next==='string'&&(next==='/logs'||next.startsWith('/logs?'))){
+  if(typeof next==='string'&&(next==='/logs'||next.startsWith('/logs?')||next==='/recipes'||next.startsWith('/recipes?'))){
     const target=new URL(next,'http://local.invalid'), keys=[...target.searchParams.keys()];
-    if(target.origin==='http://local.invalid'&&target.pathname==='/logs'&&!target.hash&&
-       keys.every(key=>['profile','entry','result'].includes(key))&&new Set(keys).size===keys.length)return target.pathname+target.search;
+    const allowed=target.pathname==='/recipes'?['profile','recipe','run','q','report','artifact']:['profile','entry','result'];
+    if(target.origin==='http://local.invalid'&&['/logs','/recipes'].includes(target.pathname)&&!target.hash&&
+       keys.every(key=>allowed.includes(key))&&new Set(keys).size===keys.length)return target.pathname+target.search;
   }
   return '/workspace';
 }

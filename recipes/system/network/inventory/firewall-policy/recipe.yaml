@@ -1,0 +1,1030 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "linux-firewall-policy",
+  "version": "0.1.0",
+  "access_mode": "read",
+  "title": "Linux firewall policy views",
+  "description": "Bounded linux firewall policy views; configuration, runtime and context-qualified evidence stay distinct. No automatic privilege acquisition or setting changes.",
+  "runner": {
+    "contract": "python-recipe",
+    "version": "0.1.0",
+    "entrypoint": "main.py"
+  },
+  "platforms": {
+    "implemented": [
+      "linux"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "dependencies": {
+    "controller": [
+      "Python 3.11+",
+      "SSHScript 7.0.1",
+      "OpsFeast Linux profile/policy service 0.1.0"
+    ],
+    "target": [
+      "Linux",
+      "python3 3.8+ on PATH",
+      "Available nft/iptables-save/ip6tables-save/firewall-cmd/ufw tools; kernel-query permissions where required"
+    ]
+  },
+  "permissions": {
+    "sudo": false,
+    "su": false
+  },
+  "side_effects": [
+    "Read-only fixed queries and bounded configuration reads via the supplied execution account; OS/tool audit records may be produced.",
+    "Sudo listing may consult its configured policy/authentication cache; no password, validation request or privileged command is submitted.",
+    "No target installation, setting writes, restart, firewall modification or log-content collection.",
+    "Controller saves raw/portable retention and independently configured consumer results."
+  ],
+  "inputs": {
+    "variables": {
+      "max_items": {
+        "type": "integer",
+        "default": 1000,
+        "minimum": 1,
+        "maximum": 5000
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "default": 30,
+        "minimum": 1,
+        "maximum": 120
+      }
+    }
+  },
+  "retention": {
+    "contract": "linux-firewall-policy",
+    "version": "0.1.0",
+    "mode": "portable",
+    "description": "Linux firewall policy views; selected projections only, source/actor/times/completeness/command cleanup evidence with sensitive fields omitted.",
+    "data_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "kind",
+        "platform",
+        "started_at",
+        "observed_at",
+        "effective_uid",
+        "datasets",
+        "acquisition"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": "0.1.0"
+        },
+        "kind": {
+          "const": "firewall-policy"
+        },
+        "platform": {
+          "const": "linux"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effective_uid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "datasets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "nft_rules",
+            "iptables_rules",
+            "ip6tables_rules",
+            "firewalld_runtime",
+            "firewalld_permanent",
+            "ufw_runtime"
+          ],
+          "properties": {
+            "nft_rules": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "attempted_count",
+                "unavailable_count",
+                "reason_codes",
+                "commands"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "source",
+                      "basis",
+                      "value"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "basis": {
+                        "enum": [
+                          "configured",
+                          "effective",
+                          "runtime",
+                          "context"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "integer",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 64,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "commands": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "argv",
+                      "started_at",
+                      "completed_at",
+                      "exitcode",
+                      "termination_status",
+                      "reason_code"
+                    ],
+                    "properties": {
+                      "argv": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "exitcode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "termination_status": {
+                        "enum": [
+                          "not_started",
+                          "confirmed",
+                          "unknown"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 128
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "iptables_rules": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "attempted_count",
+                "unavailable_count",
+                "reason_codes",
+                "commands"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "source",
+                      "basis",
+                      "value"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "basis": {
+                        "enum": [
+                          "configured",
+                          "effective",
+                          "runtime",
+                          "context"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "integer",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 64,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "commands": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "argv",
+                      "started_at",
+                      "completed_at",
+                      "exitcode",
+                      "termination_status",
+                      "reason_code"
+                    ],
+                    "properties": {
+                      "argv": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "exitcode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "termination_status": {
+                        "enum": [
+                          "not_started",
+                          "confirmed",
+                          "unknown"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 128
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "ip6tables_rules": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "attempted_count",
+                "unavailable_count",
+                "reason_codes",
+                "commands"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "source",
+                      "basis",
+                      "value"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "basis": {
+                        "enum": [
+                          "configured",
+                          "effective",
+                          "runtime",
+                          "context"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "integer",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 64,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "commands": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "argv",
+                      "started_at",
+                      "completed_at",
+                      "exitcode",
+                      "termination_status",
+                      "reason_code"
+                    ],
+                    "properties": {
+                      "argv": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "exitcode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "termination_status": {
+                        "enum": [
+                          "not_started",
+                          "confirmed",
+                          "unknown"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 128
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "firewalld_runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "attempted_count",
+                "unavailable_count",
+                "reason_codes",
+                "commands"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "source",
+                      "basis",
+                      "value"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "basis": {
+                        "enum": [
+                          "configured",
+                          "effective",
+                          "runtime",
+                          "context"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "integer",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 64,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "commands": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "argv",
+                      "started_at",
+                      "completed_at",
+                      "exitcode",
+                      "termination_status",
+                      "reason_code"
+                    ],
+                    "properties": {
+                      "argv": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "exitcode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "termination_status": {
+                        "enum": [
+                          "not_started",
+                          "confirmed",
+                          "unknown"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 128
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "firewalld_permanent": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "attempted_count",
+                "unavailable_count",
+                "reason_codes",
+                "commands"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "source",
+                      "basis",
+                      "value"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "basis": {
+                        "enum": [
+                          "configured",
+                          "effective",
+                          "runtime",
+                          "context"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "integer",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 64,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "commands": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "argv",
+                      "started_at",
+                      "completed_at",
+                      "exitcode",
+                      "termination_status",
+                      "reason_code"
+                    ],
+                    "properties": {
+                      "argv": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "exitcode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "termination_status": {
+                        "enum": [
+                          "not_started",
+                          "confirmed",
+                          "unknown"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 128
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "ufw_runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "scope",
+                "observed_at",
+                "complete",
+                "items",
+                "attempted_count",
+                "unavailable_count",
+                "reason_codes",
+                "commands"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "source",
+                      "basis",
+                      "value"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "basis": {
+                        "enum": [
+                          "configured",
+                          "effective",
+                          "runtime",
+                          "context"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "integer",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "attempted_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unavailable_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason_codes": {
+                  "type": "array",
+                  "maxItems": 64,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "commands": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "argv",
+                      "started_at",
+                      "completed_at",
+                      "exitcode",
+                      "termination_status",
+                      "reason_code"
+                    ],
+                    "properties": {
+                      "argv": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 4096
+                        }
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "exitcode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "termination_status": {
+                        "enum": [
+                          "not_started",
+                          "confirmed",
+                          "unknown"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 128
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "acquisition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "started_at",
+            "completed_at",
+            "method"
+          ],
+          "properties": {
+            "started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "method": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.1.0"
+  },
+  "verification": {
+    "synthetic": "tested",
+    "local": "not-tested",
+    "ssh": "not-tested"
+  }
+}
+# Last modified: 2026-11-09 12:57:04

@@ -10,6 +10,7 @@ INVENTORY_CONTRACT = ('inventory-observations', '0.1.0')
 # Registration is product code reviewed with its owning recipe, not descriptor executable paths.
 STRUCTURED = {INVENTORY_CONTRACT: ('system/inventory/overview', 'retention.py', 'retention.schema.json')}
 STRUCTURED[('inventory-job-observations', '0.1.0')] = ('system/inventory/overview', 'job_retention.py', 'job-retention.schema.json')
+STRUCTURED[('inventory-routine-observations', '0.1.0')] = ('@platform', 'tools/inventory_routine_retention.py', 'schemas/inventory-routine.schema.json')
 STRUCTURED[('mysql-replication', '0.1.0')] = ('database/mysql/check/replication', 'retention.py', 'retention.schema.json')
 STRUCTURED[('backup-files-check', '0.1.0')] = ('@platform', 'tools/backup_retention.py', 'schemas/backup-files-check.schema.json')
 

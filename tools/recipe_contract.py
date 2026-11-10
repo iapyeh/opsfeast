@@ -17,6 +17,9 @@ STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 
 
 def validate(directory, metadata, *, identity_directory=None):
+    if isinstance(metadata.get('runner'),dict) and metadata['runner'].get('contract') in ('python-routines','recipe-meal'):
+        from opsfeast.routine_contract import validate as validate_routines
+        return validate_routines(directory,metadata)
     from recipe_identity import validate as validate_identity
     validate_identity(metadata, identity_directory or directory)
     if metadata.get('access_mode', 'unknown') not in ('read', 'write', 'unknown'):

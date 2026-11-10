@@ -1,0 +1,640 @@
+{
+  "schema_version": "0.1.0",
+  "domains": [
+    {
+      "id": "hardware",
+      "title": "Hardware and environment"
+    },
+    {
+      "id": "storage",
+      "title": "Storage and filesystems"
+    },
+    {
+      "id": "software",
+      "title": "Operating system and software"
+    },
+    {
+      "id": "network",
+      "title": "Network and communication"
+    },
+    {
+      "id": "workloads",
+      "title": "Services and workloads"
+    },
+    {
+      "id": "identity",
+      "title": "Identity and access"
+    },
+    {
+      "id": "observability",
+      "title": "Logging and monitoring"
+    },
+    {
+      "id": "analysis",
+      "title": "Baselines and interpretation"
+    }
+  ],
+  "providers": [
+    {
+      "id": "system-inventory",
+      "kind": "meal",
+      "recipe_reference": "system/inventory/overview",
+      "catalog_path": "opsfeast/inventory/collection.json",
+      "retention_contract": "inventory-routine-observations",
+      "retention_version": "0.1.0",
+      "adapter": "inventory-jobs",
+      "scope_note": "Overview composes independent inventory recipes; field coverage is partial and actual identity is retained per routine. Historical inventory-job observations remain readable without relabeling."
+    },
+    {
+      "id": "disks-raid",
+      "kind": "recipe",
+      "recipe_reference": "system/storage/inventory/disks-raid",
+      "catalog_path": "recipes/system/storage/inventory/disks-raid/profiling.json",
+      "retention_contract": "disks-raid",
+      "retention_version": "0.4.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux/ESXi retained storage evidence; provider-specific completeness and original health stay separate."
+    },
+    {
+      "id": "mysql-replication",
+      "kind": "recipe",
+      "recipe_reference": "database/mysql/check/replication",
+      "catalog_path": "recipes/database/mysql/check/replication/profiling.json",
+      "retention_contract": "mysql-replication",
+      "retention_version": "0.1.0",
+      "adapter": "mysql-replication",
+      "scope_note": "Configured replica instances only; source-side verification is not performed."
+    },
+    {
+      "id": "linux-local-accounts",
+      "kind": "recipe",
+      "recipe_reference": "system/account/inventory/local-users",
+      "catalog_path": "recipes/system/account/inventory/local-users/collection.json",
+      "retention_contract": "linux-local-accounts",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux Python 3.8+ read-only scoped snapshots; no automatic elevation or target installation."
+    },
+    {
+      "id": "linux-process-snapshot",
+      "kind": "recipe",
+      "recipe_reference": "system/process/inventory/snapshot",
+      "catalog_path": "recipes/system/process/inventory/snapshot/collection.json",
+      "retention_contract": "linux-process-snapshot",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux Python 3.8+ read-only scoped snapshots; no automatic elevation or target installation."
+    },
+    {
+      "id": "linux-ssh-policy",
+      "kind": "recipe",
+      "recipe_reference": "system/access/inventory/ssh-policy",
+      "catalog_path": "recipes/system/access/inventory/ssh-policy/collection.json",
+      "retention_contract": "linux-ssh-policy",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux/Python 3.8+; explicit selected actor; bounded queries and configuration projections, not full effective host policy."
+    },
+    {
+      "id": "linux-sudo-policy",
+      "kind": "recipe",
+      "recipe_reference": "system/account/inventory/sudo-policy",
+      "catalog_path": "recipes/system/account/inventory/sudo-policy/collection.json",
+      "retention_contract": "linux-sudo-policy",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux/Python 3.8+; explicit selected actor; bounded queries and configuration projections, not full effective host policy."
+    },
+    {
+      "id": "linux-firewall-policy",
+      "kind": "recipe",
+      "recipe_reference": "system/network/inventory/firewall-policy",
+      "catalog_path": "recipes/system/network/inventory/firewall-policy/collection.json",
+      "retention_contract": "linux-firewall-policy",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux/Python 3.8+; explicit selected actor; bounded queries and configuration projections, not full effective host policy."
+    },
+    {
+      "id": "linux-time-sync",
+      "kind": "recipe",
+      "recipe_reference": "system/time/inventory/synchronization",
+      "catalog_path": "recipes/system/time/inventory/synchronization/collection.json",
+      "retention_contract": "linux-time-sync",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux/Python 3.8+; explicit selected actor; bounded queries and configuration projections, not full effective host policy."
+    },
+    {
+      "id": "linux-logging-config",
+      "kind": "recipe",
+      "recipe_reference": "system/logging/inventory/configuration",
+      "catalog_path": "recipes/system/logging/inventory/configuration/collection.json",
+      "retention_contract": "linux-logging-config",
+      "retention_version": "0.1.0",
+      "adapter": "retained-fields",
+      "scope_note": "Linux/Python 3.8+; explicit selected actor; bounded queries and configuration projections, not full effective host policy."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "hardware.identity",
+      "domain": "hardware",
+      "title": "Machine identity",
+      "observation_kind": "inventory",
+      "scope_note": "Visible machine manufacturer/model/serial/UUID and virtualization; not full component manufacturing inventory.",
+      "properties": {
+        "system-inventory": [
+          "hardware.vendor",
+          "hardware.model",
+          "hardware.serial",
+          "hardware.uuid",
+          "system.virtualization"
+        ]
+      }
+    },
+    {
+      "id": "hardware.cpu",
+      "domain": "hardware",
+      "title": "Processors",
+      "observation_kind": "inventory",
+      "scope_note": "CPU model/logical CPU count/architecture; sockets, microcode and topology need deeper probes.",
+      "properties": {
+        "system-inventory": [
+          "hardware.cpu_model",
+          "hardware.logical_cpus",
+          "system.architecture"
+        ]
+      }
+    },
+    {
+      "id": "hardware.memory",
+      "domain": "hardware",
+      "title": "Memory components",
+      "observation_kind": "inventory",
+      "scope_note": "Total visible RAM only; DIMM identity, slots and ECC are not integrated.",
+      "properties": {
+        "system-inventory": [
+          "hardware.memory_total_bytes"
+        ]
+      }
+    },
+    {
+      "id": "hardware.expansion",
+      "domain": "hardware",
+      "title": "Controllers and attached devices",
+      "observation_kind": "inventory",
+      "scope_note": "PCIe/USB/controllers/enclosures and connection topology are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "hardware.firmware",
+      "domain": "hardware",
+      "title": "Firmware and boot platform",
+      "observation_kind": "configuration",
+      "scope_note": "BIOS/UEFI/BMC/device firmware and Secure Boot are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "hardware.sensors",
+      "domain": "hardware",
+      "title": "Environmental sensors",
+      "observation_kind": "metrics",
+      "scope_note": "Available Linux thermal-zone and hwmon values only; explicit opt-in and source scope apply.",
+      "properties": {
+        "system-inventory": [
+          "sensors.temperatures",
+          "sensors.fans"
+        ]
+      }
+    },
+    {
+      "id": "hardware.health",
+      "domain": "hardware",
+      "title": "Hardware health events",
+      "observation_kind": "events",
+      "scope_note": "ECC, power, throttling and hardware error events are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "storage.devices",
+      "domain": "storage",
+      "title": "Block devices",
+      "observation_kind": "inventory",
+      "scope_note": "Observed block-device columns only; complete serial/controller/path inventory is not implied.",
+      "properties": {
+        "system-inventory": [
+          "storage.block_devices.name",
+          "storage.block_devices.type",
+          "storage.block_devices.size",
+          "storage.block_devices.fstype",
+          "storage.block_devices.mountpoint",
+          "storage.block_devices.model"
+        ],
+        "disks-raid": [
+          "raid.physical_drives"
+        ]
+      }
+    },
+    {
+      "id": "storage.filesystems",
+      "domain": "storage",
+      "title": "Filesystems and mounts",
+      "observation_kind": "configuration",
+      "scope_note": "Observed filesystem sources and mounts, not configured mount policy or full filesystem attributes.",
+      "properties": {
+        "system-inventory": [
+          "storage.filesystems.source",
+          "storage.filesystems.mountpoint"
+        ]
+      }
+    },
+    {
+      "id": "storage.topology",
+      "domain": "storage",
+      "title": "Storage layers and remote sources",
+      "observation_kind": "inventory",
+      "scope_note": "OS/controller/MD/virtual-drive evidence is integrated; no full LVM/ZFS/LUKS/SAN or physical-to-OS mapping.",
+      "properties": {
+        "disks-raid": [
+          "raid.os_disks",
+          "raid.controllers",
+          "raid.virtual_drives",
+          "raid.md_arrays"
+        ]
+      }
+    },
+    {
+      "id": "storage.capacity",
+      "domain": "storage",
+      "title": "Capacity and allocation",
+      "observation_kind": "metrics",
+      "scope_note": "Filesystem space/inodes and swap; no quota/thin-pool/snapshot accounting or growth prediction.",
+      "properties": {
+        "system-inventory": [
+          "storage.filesystems.total_bytes",
+          "storage.filesystems.used_bytes",
+          "storage.filesystems.available_bytes",
+          "storage.filesystems.used_percent",
+          "storage.filesystems.total_megabytes",
+          "storage.filesystems.used_megabytes",
+          "storage.filesystems.available_megabytes",
+          "storage.inodes.total",
+          "storage.inodes.used",
+          "storage.inodes.available",
+          "storage.swap.total_bytes",
+          "storage.swap.used_bytes",
+          "storage.swap.available_bytes"
+        ]
+      }
+    },
+    {
+      "id": "storage.io",
+      "domain": "storage",
+      "title": "Storage I/O",
+      "observation_kind": "metrics",
+      "scope_note": "Linux cumulative disk counters only; no automatic rates, saturation diagnosis or latency baseline.",
+      "properties": {
+        "system-inventory": [
+          "metrics.disk_counters"
+        ]
+      }
+    },
+    {
+      "id": "storage.health",
+      "domain": "storage",
+      "title": "Media and array health",
+      "observation_kind": "state",
+      "scope_note": "Specialized disk/RAID retained health/policy is integrated; not generic SMART or all-controller coverage.",
+      "properties": {
+        "disks-raid": [
+          "raid.summary",
+          "raid.findings"
+        ]
+      }
+    },
+    {
+      "id": "software.os",
+      "domain": "software",
+      "title": "Operating system and kernel",
+      "observation_kind": "configuration",
+      "scope_note": "Visible platform/kernel/distribution identity and timezone abbreviation, not full kernel/configuration inventory.",
+      "properties": {
+        "system-inventory": [
+          "system.hostname",
+          "system.kernel_name",
+          "system.system_version",
+          "system.kernel_release",
+          "system.platform",
+          "system.system_name",
+          "system.timezone",
+          "system.kernel_version"
+        ]
+      }
+    },
+    {
+      "id": "software.packages",
+      "domain": "software",
+      "title": "Installed packages and tools",
+      "observation_kind": "inventory",
+      "scope_note": "Platform package/receipt/VIB snapshot; not universal application coverage or a full SBOM.",
+      "properties": {
+        "system-inventory": [
+          "software.packages"
+        ]
+      }
+    },
+    {
+      "id": "software.environments",
+      "domain": "software",
+      "title": "Language environments and modules",
+      "observation_kind": "inventory",
+      "scope_note": "Per-runtime/per-user/isolated environments and module discovery are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "software.libraries",
+      "domain": "software",
+      "title": "Libraries in use",
+      "observation_kind": "inventory",
+      "scope_note": "Installed versus actively loaded libraries and dependency relationships are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "network.interfaces",
+      "domain": "network",
+      "title": "Interfaces and addresses",
+      "observation_kind": "configuration",
+      "scope_note": "Observed interfaces/MAC/MTU/state/IPv4/IPv6; not full physical or namespace topology.",
+      "properties": {
+        "system-inventory": [
+          "network.interfaces.name",
+          "network.interfaces.mac",
+          "network.interfaces.state",
+          "network.interfaces.mtu",
+          "network.interfaces.address",
+          "network.interfaces.prefix_length",
+          "network.interfaces.kind",
+          "network.ipv4.address",
+          "network.ipv4.prefix_length",
+          "network.ipv6.address",
+          "network.ipv6.prefix_length"
+        ]
+      }
+    },
+    {
+      "id": "network.resolution",
+      "domain": "network",
+      "title": "Name resolution",
+      "observation_kind": "configuration",
+      "scope_note": "Resolver-file nameservers only, not all effective DNS/search/hosts policy.",
+      "properties": {
+        "system-inventory": [
+          "network.dns_servers"
+        ]
+      }
+    },
+    {
+      "id": "network.routing",
+      "domain": "network",
+      "title": "Routing",
+      "observation_kind": "state",
+      "scope_note": "Platform route rows only; complete policy routing is not guaranteed.",
+      "properties": {
+        "system-inventory": [
+          "network.routes"
+        ]
+      }
+    },
+    {
+      "id": "network.listeners",
+      "domain": "network",
+      "title": "Listening endpoints",
+      "observation_kind": "state",
+      "scope_note": "Platform-visible TCP/UDP endpoints; no external reachability claim.",
+      "properties": {
+        "system-inventory": [
+          "network.listening_endpoints"
+        ]
+      }
+    },
+    {
+      "id": "network.policy",
+      "domain": "network",
+      "title": "Firewall and packet policy",
+      "observation_kind": "configuration",
+      "scope_note": "nft JSON, iptables/ip6tables saves and firewalld/UFW native views; runtime and configured frontend scope distinguished, no cross-backend reconciliation or external reachability proof.",
+      "properties": {
+        "linux-firewall-policy": [
+          "policy.nft_rules",
+          "policy.iptables_rules",
+          "policy.ip6tables_rules",
+          "policy.firewalld_runtime",
+          "policy.firewalld_permanent",
+          "policy.ufw_runtime"
+        ]
+      }
+    },
+    {
+      "id": "network.connections",
+      "domain": "network",
+      "title": "Connection activity",
+      "observation_kind": "events",
+      "scope_note": "Inbound/outbound connections, lifecycles and destinations are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "network.traffic",
+      "domain": "network",
+      "title": "Interface traffic and errors",
+      "observation_kind": "metrics",
+      "scope_note": "Cumulative traffic/error/discard counters; no automatic rates or event history.",
+      "properties": {
+        "system-inventory": [
+          "metrics.interface_counters",
+          "metrics.interfaces.in_octets",
+          "metrics.interfaces.out_octets",
+          "metrics.interfaces.in_errors",
+          "metrics.interfaces.out_errors",
+          "metrics.interfaces.in_discards",
+          "metrics.interfaces.out_discards"
+        ]
+      }
+    },
+    {
+      "id": "workloads.services",
+      "domain": "workloads",
+      "title": "Service inventory and state",
+      "observation_kind": "state",
+      "scope_note": "Platform-visible service rows only; application health and dependency discovery are not implied.",
+      "properties": {
+        "system-inventory": [
+          "services.services"
+        ]
+      }
+    },
+    {
+      "id": "workloads.time",
+      "domain": "workloads",
+      "title": "Time synchronization",
+      "observation_kind": "state",
+      "scope_note": "timedatectl, chrony tracking/sources, ntpq state/peers and selected configured time sources; optional tools, permissions, unsupported outputs and clock uncertainty explicit.",
+      "properties": {
+        "linux-time-sync": [
+          "policy.clock_state",
+          "policy.chrony_state",
+          "policy.chrony_sources",
+          "policy.ntp_state",
+          "policy.ntp_peers",
+          "policy.timesyncd_state",
+          "policy.time_configuration"
+        ]
+      }
+    },
+    {
+      "id": "workloads.applications",
+      "domain": "workloads",
+      "title": "Applications and database instances",
+      "observation_kind": "inventory",
+      "scope_note": "Configured MySQL replica identity/channels/health are integrated; automatic application/database discovery remains missing.",
+      "properties": {
+        "mysql-replication": [
+          "mysql.servers",
+          "mysql.replication"
+        ]
+      }
+    },
+    {
+      "id": "workloads.schedules",
+      "domain": "workloads",
+      "title": "Scheduled work",
+      "observation_kind": "configuration",
+      "scope_note": "Cron/timer inventories and execution histories are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "workloads.processes",
+      "domain": "workloads",
+      "title": "Process identity and behavior",
+      "observation_kind": "state",
+      "scope_note": "Visible Linux procfs process identity/resource snapshot is integrated; no complete lifecycle, argv/environment, I/O-rate or network attribution.",
+      "properties": {
+        "linux-process-snapshot": [
+          "processes.snapshot"
+        ]
+      }
+    },
+    {
+      "id": "workloads.resources",
+      "domain": "workloads",
+      "title": "System resource pressure",
+      "observation_kind": "metrics",
+      "scope_note": "CPU/load/available RAM/Linux PSI and uptime; not complete resource accounting or workload attribution.",
+      "properties": {
+        "system-inventory": [
+          "system.uptime_seconds",
+          "system.boot_time",
+          "metrics.load_1m",
+          "metrics.load_5m",
+          "metrics.load_15m",
+          "metrics.cpu_utilization_percent",
+          "metrics.memory_available_bytes",
+          "metrics.memory_pressure"
+        ]
+      }
+    },
+    {
+      "id": "identity.accounts",
+      "domain": "identity",
+      "title": "Users and groups",
+      "observation_kind": "inventory",
+      "scope_note": "Local Linux passwd/group files are integrated; NSS/directory identities, effective login and sudo policy remain missing.",
+      "properties": {
+        "linux-local-accounts": [
+          "identity.local_users",
+          "identity.local_groups"
+        ]
+      }
+    },
+    {
+      "id": "identity.authentication",
+      "domain": "identity",
+      "title": "Authentication and login policy",
+      "observation_kind": "configuration",
+      "scope_note": "OpenSSH -T selected settings; explicit complete Match context optional. No OS/PAM/key inventory, login proof, running-daemon command-line override discovery or complete access policy.",
+      "properties": {
+        "linux-ssh-policy": [
+          "policy.ssh_policy"
+        ]
+      }
+    },
+    {
+      "id": "identity.privileges",
+      "domain": "identity",
+      "title": "Privilege boundaries",
+      "observation_kind": "configuration",
+      "scope_note": "Noninteractive current-actor sudo -ll projection; Defaults and command arguments omitted, unsupported details explicit. No su/PAM/other-actor or complete sudoers analysis.",
+      "properties": {
+        "linux-sudo-policy": [
+          "policy.sudo_policy"
+        ]
+      }
+    },
+    {
+      "id": "identity.activity",
+      "domain": "identity",
+      "title": "Authentication and privilege events",
+      "observation_kind": "events",
+      "scope_note": "Login success/failure, sessions and privilege-use events are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "observability.logs",
+      "domain": "observability",
+      "title": "Logging and audit pipelines",
+      "observation_kind": "configuration",
+      "scope_note": "Selected journald/rsyslog/nginx/MySQL/logrotate directives and journal disk-usage metadata; no log contents, effective inheritance/merge, auditd/syslog-ng or general log-pipeline health proof.",
+      "properties": {
+        "linux-logging-config": [
+          "policy.journald_configuration",
+          "policy.journal_state",
+          "policy.syslog_configuration",
+          "policy.application_logs",
+          "policy.log_rotation"
+        ]
+      }
+    },
+    {
+      "id": "observability.agents",
+      "domain": "observability",
+      "title": "Monitoring agents",
+      "observation_kind": "configuration",
+      "scope_note": "SNMP/other agent capabilities and event destinations are not integrated; secrets are not ordinary profile data.",
+      "properties": {}
+    },
+    {
+      "id": "analysis.configuration",
+      "domain": "analysis",
+      "title": "Configuration drift",
+      "observation_kind": "analysis",
+      "scope_note": "Cross-domain expected configuration and change analysis are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "analysis.performance",
+      "domain": "analysis",
+      "title": "Performance baselines",
+      "observation_kind": "analysis",
+      "scope_note": "Sampling history is available separately; seasonal baselines and anomaly models are not integrated.",
+      "properties": {}
+    },
+    {
+      "id": "analysis.behavior",
+      "domain": "analysis",
+      "title": "Behavior and correlation",
+      "observation_kind": "analysis",
+      "scope_note": "Cross-source process/connection/login baselines and correlation are not integrated.",
+      "properties": {}
+    }
+  ]
+}

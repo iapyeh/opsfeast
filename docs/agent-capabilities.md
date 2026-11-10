@@ -1,5 +1,14 @@
 For login-to-river handoff, use [browser readiness 0.1.0](browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
 
+For system profiling, first use `opsfeast.profiling.catalog()` or
+`opsfeast.py profiling describe --json` to discover partial integrations and gaps.
+Use `inspect_host(profile, host_id)` / `profiling show --profile NAME --host HOST
+--json` for retained values, failures and original times; Web exposes the same read
+model under each host's 系統全貌 tab. These data-only reads do not acquire, install,
+schedule or establish readiness. Recipe authors may reuse `recipe.profile`;
+full datasets still use retention query/show. See [profiling 0.1.0](profiling.md)
+for schemas, pagination, provider extension, prerequisites and verification.
+
 For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
 
 For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
@@ -16,7 +25,7 @@ See [metadata contract and examples](host-notes.md#relate-notes-to-recipes).
 uses existing host-note inspect/mutate and saved-result/retention APIs. Agents
 read applicable experience before work and propose evidence-linked notes after
 new findings; shared verified methods enter recipe code/tests. This is a procedural
-skill, not automatic runtime learning. Inventory 0.4.3 additionally supports
+skill, not automatic runtime learning. The shared inventory collector additionally supports
 old lsblk rejecting JSON through bounded `-P` parsing; see its recipe guide.
 
 
@@ -48,7 +57,7 @@ Recipe catalog, notification/todo objects, Retention summaries and Recipe/Consol
 history. Skills, textbook and guide pages show local source documents; settings
 shows installed versions. Synthetic records, draft modules and browser-only
 command playback have been removed. Empty, failed and partial reads stay distinct.
-These are read-only views; execution, lifecycle changes and data transfer retain
+Saved-data views remain read-only; the confirmed recipe menu now adds execution. Lifecycle changes and data transfer retain
 their existing Core/CLI authorization boundaries. General logging, issue tracking,
 automatic upgrade and arbitrary Web app hosting remain unavailable.
 
@@ -638,4 +647,114 @@ For host-specific advice or diagnosis, use the [accumulated-evidence workflow](h
 
 Reuse `opsfeast.host_notes.inspect/mutate` or `opsfeast.py host-notes` for private host knowledge; do not invent a parallel store or edit generated Vault pages. [Host notes 0.1.0](host-notes.md) defines UUID/source/timestamp, shared Web/CLI/HTTP operations, revision conflicts, atomic merge/delete and confirmation workflows. Read relevant notes before operations and ask after Console work whether to extract a draft; save only after final human confirmation. No automatic semantic merge, history or TUI editor is implemented.
 
-*Last modified: 2026-11-08 23:07:31*
+
+## Linux profiling collection and specialized retained views
+
+Reuse [local-users](../recipes/system/account/inventory/local-users/README.md) and
+[process snapshot](../recipes/system/process/inventory/snapshot/README.md) through
+recipes run after host/read authorization. Both use Python-recipe 0.1.0, controller
+Python 3.11+/SSHScript 7.0.1, target Linux/Python 3.8+, and selected-actor access.
+They do not install or escalate. Product module
+`opsfeast.linux_profile.collect(recipe, kind)` reuses the supplied scope for these
+two acquisition kinds; it is not an arbitrary probe loader. Defaults: max_items
+1000 (1–5000), command timeout 20 seconds (1–120, capped by Recipe timeout).
+Returns ordinary recipe results plus final portable data, per-dataset scope/time/
+completeness/reasons; transport/invalid-response failures remain raw failures.
+
+Profiling now reads disks-raid 0.4.0, mysql-replication 0.1.0 and both Linux portable
+contracts alongside inventory-job-observations 0.1.0. Use the same profiling CLI,
+Python and Web interfaces rather than rebuilding raw parsers. Specialized read
+adapters are reviewed product code; retention/import never imports producers.
+The [coverage review](profiling-coverage.md) and [provider guide](profiling.md)
+record interfaces, extension points, scope/health distinctions and verification.
+
+
+## Linux policy and logging/settings acquisition
+
+Read [policy profiling 0.1.0](linux-policy-profiling.md) before writing SSH/sudo/
+firewall/time/logging probes. Five bundled recipe paths and their scopes are listed
+there; discover via recipes list/show or profiling describe. Use recipes run with
+explicit --profile/--host/--json after the human's target/read authorization.
+Controller Python 3.11+/SSHScript 7.0.1, target Linux/Python 3.8+ and existing
+applicable tools/access are required. No install, escalation, settings writes or
+schedules are implied. Query commands may create native audit/cache effects.
+
+Reuse `opsfeast.linux_profile.collect(recipe, KIND)` for the five new reviewed
+kinds, with the supplied Core Recipe; `linux_profile_schema.schema(KIND)` is the
+portable definition embedded in each descriptor. Inputs are max_items and
+command_timeout_seconds, plus strict optional ssh_context for ssh-policy. Missing
+tools/permission, warning, syntax/parse, include/file/output/time limits are gaps.
+Raw-only outer failures remain in recipe history. Web/CLI read the same retained
+values with explicit basis/source scope and safe command/termination metadata.
+New provider code is not needed for each row: reuse the reviewed retained-fields
+adapter. This product service does not offer arbitrary remote probes or auto policy
+reconciliation. See the guide for exact context/example, sensitive-field omissions,
+limits and synthetic versus native verification.
+
+## Web recipe menu and confirmed execution
+
+Prefer the [menu/execution service 0.1.0](web-recipe-menu.md) for human Web selection
+or an authorized agent using the existing owner controller. Discover with
+`opsfeast.recipe_menu.menu(profile)` or GET `/api/v1/recipe-menu?profile=NAME`;
+POST preview/start only within the user's actual target/effect grant. Exact
+references, typed overrides, configured identity, dependency/effect evidence and
+all 39 blueprint capabilities remain discoverable. The POSIX worker delegates to
+`recipe_cli.execute`, including typed in-memory variables, without a second
+connection/retention implementation. Preview does not connect/write; explicit
+confirmation starts serial work, raw/retention/content receipts remain separate,
+and stopping the local worker cannot prove remote cleanup. The guide documents
+limits, errors, lifecycle, extension points and reproducible synthetic tests.
+
+## Web inventory scope and report artifact readers
+
+Use [Web menu scope/artifacts](web-recipe-menu.md) instead of writing a parallel
+collector or artifact server. inventory_catalog exposes reviewed jobs/properties;
+preview accepts optional inventory_selection jobs or properties, which is resolved,
+fingerprinted and forwarded through the common executor. Hardware sensors are
+explicit opt-in. Checkout recipe_cli.execute / recipe_runner.run/execute_hosts
+accept the same optional selector; no new CLI flags or schedules are introduced.
+Use GET /api/v1/reports and its result/artifact readers, or checkout
+opsfeast.report_view.list_reports/show_report/read_artifact, for saved artifacts.
+Requirements, exact inputs, byte limits, errors, profile/path/hash checks, static
+HTML sandbox and extension rules are in the canonical guide. These are read-only
+consumers; viewing never authorizes collection or consumer redispatch.
+
+## Category-first recipe selection preview
+
+The [current menu layout](web-recipe-menu.md#current-category-first-selection-preview-2026-11-10)
+now presents domain scope summaries, separate Bundle/User selections, suggested
+sets, individual/group/All host selection and a two-column plate. Main-page search/history/report-index controls stay hidden; the plate now has
+scope selection and explicit review/confirmation. Saved run/report URLs and
+existing authenticated APIs remain implemented. GET recipe-menu now returns safe
+resolved groups and omits host login names. Selection is browser-only and grants
+no authority to run; group/All resolves enabled hosts and deduplicates overlap.
+
+
+## Recipe pages, defaults and reusable meals
+
+Use [recipe library services](web-recipe-menu.md#authenticated-service-and-agent-workflow) for exact-reference declarations/history, nonsensitive typed Profile default edits, custom categories and fixed-selection user meals. These checkout facades and authenticated Web routes preserve revisions, private backups, original timestamps and existing default precedence. Do not create a parallel settings store or interpret saving/applying a meal as execution authorization.
+
+
+## Recipe field tree and composition design
+
+The [menu](web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) now opens recipe titles in new tabs, displays scope notes inline, stacks Bundle before nonempty User lists, and nests dotted fields under closed disclosures. Exact-name field inputs appear beside that field; unmatched inputs stay common. Category creation/renaming stays on the menu. The implemented [routine/meal contract](recipe-routines.md) supplies split inventory recipes, shared host connections, guarded permission phases and independent retained child results.
+
+
+## Implemented routine meals
+
+Use [routines 0.1.0](recipe-routines.md), `opsfeast.routine_execution.describe/run_host`, `Recipe.child` and `opsfeast.inventory.service.collect/finalize`. They provide frozen definitions, static planning, guarded borrowing, one host connection, login/root ordering, independent retention and incomplete-run checkpoints. Overview is a meal of eleven child recipes, sensors excluded by default. Use these services instead of recreating connections or copying probes. Old execution tools are not silently batched. Native target applicability is not established by synthetic tests.
+
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

@@ -208,4 +208,17 @@ Vault presents saved recipe assessment and execution-account evidence separately
 
 The independent RAID table preserves controller/volume names, health, level and capacity, with its own expected count. A failed RAID query does not erase known physical disks or their reported health. Unknown role classification can prevent the role baseline comparison while a complete physical total remains known. A Ready spare may be healthy without being Online. Controller, MD, boot mirror and source errors remain separate findings. Source details use narrow per-device tables and collapsed commands. Historical scope/assessment stays historical; current policy does not reinterpret old observations.
 
-*Last modified: 2026-10-30 11:57:14*
+## Inventory child consumers and reports
+
+Use [the inventory dependency map](inventory-consumers.md) for current
+child references, exact report filters, subscription/read-filter updates and
+unchanged historical ownership. Vault already subscribes to all observations;
+backup-check has no inventory dependency. Retention-summary keeps exact filters;
+execution-summary 0.1.3 preserves child/meal outcomes and routine/connection evidence.
+Saved-result collection_user is unknown for mixed/unverified routine actors. Existing
+Overview-only filters are not aliases for children; private configuration and
+historical records are never rewritten automatically. These read/presentation
+interfaces require no host access; explicit report, dispatch or rebuild writes
+need the human's corresponding scope.
+
+*Last modified: 2026-11-10 16:49:25*

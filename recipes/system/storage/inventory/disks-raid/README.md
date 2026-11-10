@@ -94,4 +94,14 @@ Native ESXi 7.0.0 with local RACADM 11.0.0 verifies complete physical and RAID r
 
 Sources: [Dell RACADM storage interface](https://www.dell.com/support/manuals/en-us/idrac9-lifecycle-controller-v5.x-series/idrac9_5.xx_racadm_pub/storage?guid=guid-23586e74-58bd-46af-b1e6-0855a6e43e0c&lang=en-us), [Dell Ready physical-disk example](https://www.dell.com/support/manuals/en-ai/idrac8-with-lc-v2.05.05.05/racadm_idrac_pub-v1/storage?guid=guid-9e3676cb-b71d-420b-8c48-c80add258e03&lang=en-us), [Dell hot-spare status values](https://www.dell.com/support/manuals/en-ed/dell-active-system-manager-v8.2.1/asm%20rest_%20api/hotsparestatus?guid=guid-59a29686-97e0-4d52-9fa0-ba01b6e30022&lang=en-us), [Dell STOR0104 description](https://www.dell.com/support/kbdoc/en-ca/000220599/avamar-gen-5a-storage-controller-failure-eventid-52806).
 
-*Last modified: 2026-10-30 12:17:33*
+
+## Shared profiling projection
+
+The product [profiling service](../../../../../docs/profiling.md) now reads this
+recipe's existing retained contract into Web host 系統全貌 and profiling show.
+The data-only profiling.json declares reviewed paths; producers, saved schemas
+and past observations are unchanged. Collection coverage, original health/policy,
+instance/source times and missing fields remain distinct. This does not discover
+or execute new targets. See [coverage review](../../../../../docs/profiling-coverage.md).
+
+*Last modified: 2026-11-09 12:22:53*

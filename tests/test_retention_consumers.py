@@ -55,7 +55,7 @@ def execute(context):
 
     def test_discovery_is_static_unregistered_never_executes_and_show_relations(self):
         self.enable()
-        self.candidate({'recipe_reference': 'system/inventory/overview', 'contract': 'inventory-job-observations', 'version': '0.1.0'},
+        self.candidate({'recipe_reference': 'system/inventory/hardware', 'contract': 'inventory-routine-observations', 'version': '0.1.0'},
                        code="raise RuntimeError('must not import during discovery')")
         before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         data = consumers.catalog(self.root)
@@ -63,7 +63,7 @@ def execute(context):
         self.assertFalse(counter['registered'])
         self.assertFalse(counter['enabled'])
         self.assertEqual({p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}, before)
-        item = choose(self.root, 'system/inventory/overview')
+        item = choose(self.root, 'system/inventory/hardware')
         self.assertEqual({i['id'] for i in item['consumers']}, {'vault', 'counter'})
         self.assertEqual({i['id'] for i in choose(self.root, 'system/account/check/identity')['consumers']}, {'vault'})
         self.retain()

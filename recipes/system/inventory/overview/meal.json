@@ -1,0 +1,49 @@
+{
+  "schema_version": "0.1.0",
+  "members": [
+    {
+      "reference": "system/inventory/hardware",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/system",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/network-configuration",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/software",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/storage-layout",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/storage-capacity",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/services",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/network-state",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/system-runtime",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/resource-metrics",
+      "enabled": true
+    },
+    {
+      "reference": "system/inventory/hardware-sensors",
+      "enabled": false
+    }
+  ]
+}

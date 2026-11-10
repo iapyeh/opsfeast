@@ -2,7 +2,7 @@
 
 Create a simple offline HTML table and JSON dataset from explicitly selected raw inventory/general execution results. This is a reusable python-report recipe: no LLM, SSHScript Session, SSH, sudo, network access or external renderer is needed. It does not refresh source observations or prove that services are healthy.
 
-Version 0.1.2 displays HTML times in controller local time to seconds while preserving full source timestamps in JSON. It also includes inventory-values 0.1.0 sections and the actual collection mode/UID in report details. Missing values, source times and identity warnings remain visible; raw process logs and credentials are not copied into these new fields. Read [inventory data semantics](../../../../docs/inventory-access.md#separate-results-and-execution-evidence).
+Version 0.1.3 preserves split inventory child/meal references, routine and connection evidence and child receipts in JSON; HTML adds a child-outcomes table. It reads only explicit inputs and does not follow child paths. The existing formatter displays HTML times in controller local time to seconds while preserving full source timestamps in JSON. It also includes inventory-values 0.1.0 sections and the actual collection mode/UID in report details. Missing values, source times and identity warnings remain visible; raw process logs and credentials are not copied into these new fields. Read [inventory data semantics](../../../../docs/inventory-access.md#separate-results-and-execution-evidence).
 
 ## Use
 
@@ -56,4 +56,15 @@ See [the shared display policy](../../../../docs/cli.md#human-time-display-polic
 [public timezone/artifact tests](../../../../tests/test_display_time.py). Tests cover local
 HTML and unchanged JSON with synthetic input; this does not add host or service probes.
 
-_Last modified: 2026-10-19 15:24:36_
+## Split inventory results in 0.1.3
+
+Supply raw child results, meal receipts, or both as explicit `--input` paths.
+Rows retain exact recipe references and source timestamps; new fields are
+recipe_reference, meal_run_id, routine_evidence, connection_evidence, meal_scope, children, retention and content_update. Meal observation end times use the saved observed_at when neither finished_at nor completed_at is present.
+Meal child outcomes remain separate in HTML and JSON, including failure, retention
+and source-result receipts. A result path is provenance, not an instruction to load
+another file. Missing older metadata remains unknown. Original result/retention
+bytes and ownership are unchanged. See [the dependency map](../../../../docs/inventory-consumers.md)
+and [split regressions](../../../../tests/test_inventory_consumers_split.py).
+
+*Last modified: 2026-11-10 16:55:21*

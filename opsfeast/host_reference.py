@@ -119,7 +119,7 @@ def refresh_from_saved(root, host_ids):
     output = []
     for host in host_ids:
         receipt = {'host_id': host, 'status': 'skipped', 'reason_code': 'no_verified_saved_address_source'}
-        candidates = [row for row in listing['results'] if row['host_id'] == host and row['recipe_reference'] == 'system/inventory/overview']
+        candidates = [row for row in listing['results'] if row['host_id'] == host and row['recipe_reference'] in ('system/inventory/overview','system/inventory/network-configuration')]
         candidates.sort(key=lambda row: row.get('started_at') or '', reverse=True)
         for item in candidates:
             try:
@@ -128,7 +128,7 @@ def refresh_from_saved(root, host_ids):
                 if not record_id or raw.get('execution_errors') or raw.get('cleanup_error'): continue
                 retained = show(root, record_id)
                 provenance = retained.get('retention_provenance', {})
-                if (retained['host_id'] != host or retained['recipe_reference'] != 'system/inventory/overview'
+                if (retained['host_id'] != host or retained['recipe_reference'] not in ('system/inventory/overview','system/inventory/network-configuration')
                         or provenance.get('raw_sha256') != raw_digest(raw)
                         or provenance.get('source_observation_id') != raw.get('source_observation_id')): continue
                 candidate = raw.get('reference_ips')

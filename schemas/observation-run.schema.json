@@ -363,6 +363,40 @@
           },
           "execution_identity": {
             "$ref": "recipe-execution-evidence.schema.json"
+          },
+          "children": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "required": [
+                "recipe_reference",
+                "record_id",
+                "status",
+                "retention_status"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "recipe_reference": {
+                  "type": "string"
+                },
+                "record_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "retention_status": {
+                  "type": "string"
+                },
+                "attention": {
+                  "type": "object"
+                }
+              }
+            }
           }
         }
       }
