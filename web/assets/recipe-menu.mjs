@@ -1,3 +1,4 @@
+import {mountRecipeRun,mountRecipeRunHistory} from './recipe-run-view.mjs';
 import {reviewPlate} from './recipe-execution.mjs';
 import {mountMenuLayout} from './recipe-menu-layout.mjs';
 import {mountRecipeDetail} from './recipe-detail.mjs';
@@ -44,18 +45,9 @@ export async function mountRecipeMenu(root,{e,profile=null,profiles=null,search=
     if(query.get('recipe'))return mountRecipeDetail(root,{profile,reference:query.get('recipe'),e,api});
     if(query.get('report')&&!profile)throw new Error(c.failure('explicit_profile_required'));
     if(query.get('report'))return mountReportViewer(root,{e,profile,identifier:query.get('report'),artifact:query.get('artifact'),api});
-    if(query.get('run')) {
-      const runRoot=document.createElement('section');root.replaceChildren(runRoot);
-      const id=query.get('run');
-      const load=async()=>{
-        const record=await api('/api/v1/recipe-runs/'+id+'?'+new URLSearchParams({profile}));
-        runRoot.innerHTML=renderRun(record,e);
-        runRoot.querySelector('#recipe-stop')?.addEventListener('click',async()=>{await api('/api/v1/recipe-runs/'+id+'/stop',{profile});await load();});
-        if(['running','stopping'].includes(record.state))setTimeout(()=>{if(root.isConnected)load().catch(error=>{runRoot.textContent=error.message;});},1000);
-      };
-      await load();return;
-    }
+    if(query.get('history'))return mountRecipeRunHistory(root,{profile,e,api});
+    if(query.get('run'))return mountRecipeRun(root,{profile,id:query.get('run'),e,api});
     const data=await api('/api/v1/recipe-menu'+(profile?'?'+new URLSearchParams({profile}):''));
-    mountMenuLayout(root,{data,profiles,profile,initialRecipe:query.get('recipe'),e,api,onExecute:selection=>reviewPlate(root,{profile,selection,e,api,onEdit:()=>mountRecipeMenu(root,{e,profile,profiles,search,fetchImpl}),onStarted:run=>{location.href=url('/recipes',profile,{run:run.id});}}),onProfile:name=>{location.href=url('/recipes',name);}});
+    mountMenuLayout(root,{data,profiles,profile,initialRecipe:query.get('recipe'),e,api,onExecute:selection=>reviewPlate(root,{profile,selection,e,api,catalog:data,onEdit:()=>mountRecipeMenu(root,{e,profile,profiles,search,fetchImpl}),onStarted:run=>{location.href=url('/recipes',profile,{run:run.id});}}),onProfile:name=>{location.href=url('/recipes',name);}});
   }catch(exc){root.innerHTML=`<p role="alert">${e(exc.message)}</p>`;}
 }

@@ -23,7 +23,7 @@ test('review requires confirmation and explains identity enabled overrides consu
 });
 test('run evidence preserves partial receipts interruptions unknown cleanup and escaped progress',()=>{
  const html=renderRun({id:'id',profile:'main',state:'stopped',remote_cleanup:'unknown',tasks:[{host_id:'node',reference:'ref',state:'partial',progress:'<script>secret</script>',local_termination:'confirmed',result:{retention:{status:'failed'},content_update:{status:'failed'}}}]},e);
- assert.match(html,/部分完成/);assert.match(html,/failed/);assert.match(html,/遠端清理未知/);assert.match(html,/view=profiling/);assert.doesNotMatch(html,/<script>/);assert.doesNotMatch(html,/id="recipe-stop"/);
+ assert.match(html,/部分完成/);assert.match(html,/failed/);assert.match(html,/遠端清理未知/);assert.match(html,/target="_blank" rel="noopener" href="\/hosts\?profile=main&amp;host=node/);assert.doesNotMatch(html,/<script>/);assert.doesNotMatch(html,/id="recipe-stop"/);
 });
 test('login retains the exact recipe selection or saved run without open redirects',()=>{
  assert.equal(loginDestination('?next='+encodeURIComponent('/recipes?profile=main&run=id')),'/recipes?profile=main&run=id');

@@ -381,4 +381,6 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+The [Web execution page](../../docs/web-recipe-menu.md#execution-page-and-return-navigation) identifies incomplete tasks and lazily reads saved result diagnosis for exact missing properties/reasons inside task cards. Reuse GET `/api/v1/results/diagnosis` with exact Profile and result ID; missing evidence remains explicit. The shared progress area is grouped bounded runner output, not another authoritative chronological stream. Recipes → Execution history reads installation-owned run records without retrying or collecting.
+
+*Last modified: 2026-11-11 16:38:05*

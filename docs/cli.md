@@ -1090,4 +1090,12 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+
+
+The Web menu now retains nested meal references and host-free user definitions under preferences 0.2.0. Preview expands current definitions, deduplicates exact recipes per host and unions selected fields. This adds no CLI flags or changes to `recipes run`; see [the menu contract](web-recipe-menu.md).
+
+
+
+For installation-wide Web recipe concurrency, use `python -B -m opsfeast.execution_settings show --installation PATH` and `set --installation PATH --threads N --expected-revision REV`. These JSON commands share the revision-checked Settings service and do not execute recipes. Web defaults use 8 host lanes; per-run overrides are temporary. Existing recipe CLI `--threads` remains independent. See [execution defaults](web-recipe-menu.md#execution-throttle-and-defaults-010).
+
+*Last modified: 2026-11-11 16:11:57*

@@ -9,6 +9,21 @@ from opsfeast.recipe_runs import RecipeRuns, RecipeRunError
 def install(app, *, product, root, require_admin, json_body):
     runs = RecipeRuns(product, root)
     app.state.recipe_runs = runs
+    @app.get('/api/v1/recipe-execution/settings')
+    def execution_defaults(request: Request):
+        require_admin(request)
+        from opsfeast.execution_settings import inspect
+        return inspect(root)
+
+    @app.put('/api/v1/recipe-execution/settings')
+    async def save_execution_defaults(request: Request):
+        require_admin(request)
+        body = await json_body(request, 8192)
+        if set(body) != {'threads', 'expected_revision'}:
+            raise HTTPException(422, 'invalid_execution_settings')
+        from opsfeast.execution_settings import save
+        from starlette.concurrency import run_in_threadpool
+        return await run_in_threadpool(save, root, **body)
     from opsfeast.menu_preferences import MenuError
     @app.exception_handler(MenuError)
     async def menu_error(request,exc):
@@ -126,10 +141,15 @@ def install(app, *, product, root, require_admin, json_body):
     async def start(request: Request):
         require_admin(request)
         body = await json_body(request)
-        if set(body) != {'preview_id', 'confirmed'}:
+        if set(body)-{'threads'} != {'preview_id', 'confirmed'}:
             raise HTTPException(422, 'invalid_recipe_confirmation')
         from starlette.concurrency import run_in_threadpool
-        return await run_in_threadpool(runs.start, body['preview_id'], body['confirmed'])
+        if 'threads' in body:
+            from opsfeast.execution_settings import validate_threads
+            from opsfeast import ConfigError
+            try:validate_threads(body['threads'])
+            except ConfigError:raise RecipeRunError('invalid_recipe_threads') from None
+        return await run_in_threadpool(runs.start, body['preview_id'], body['confirmed'], threads=body.get('threads'))
 
     @app.get('/api/v1/recipe-runs')
     def listing(request: Request, profile: str):

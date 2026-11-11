@@ -8,6 +8,7 @@ import {siteAssetUrl} from "./site-assets.mjs";
 import {loginDestination} from "./login-navigation.mjs";
 import {mountFirstUse} from "./first-use.mjs";
 import {mountVersions} from "./updates.mjs";
+import {mountExecutionSettings} from "./execution-settings.mjs";
 import {mountSettingsHub, renderParameterGuide} from "./settings-hub.mjs";
 import {mountHostManager} from "./host-manager.mjs";
 
@@ -94,6 +95,7 @@ function settingsView() {
   if (!settingsCatalog) return header + `<div class="detail-note" role="status">${e(c.catalogError)}</div>`;
   if(["recipes","bundle-recipes"].includes(settingsCategory))return `<section id="settings-recipe-list"></section>`;
   if(settingsCategory==="hosts")return header+`<section class="panel"><p>${e(m.hostManagement.intro)}</p><a class="button primary" href="${e("/hosts"+location.search)}">${e(m.hostManagement.title)} →</a></section>`;
+  if(settingsCategory==='execution')return header+`<section id="execution-settings"></section>`;
   if(settingsCategory==='parameters'){
     const profile=new URLSearchParams(location.search).get('profile')||profileState?.default_profile;
     const selected=profileState?.profiles.find(row=>row.name===profile);
@@ -134,6 +136,7 @@ if (settingsPage&&!settingsCategory) {
 }
 if (["recipes","bundle-recipes"].includes(settingsCategory)) mountWorkspace(document.getElementById("settings-recipe-list"), {path:"/recipes",e,siteName,search:location.search,profiles:profileState,recipeScope:settingsCategory==="bundle-recipes"?"bundle":"user"});
 if (key === "site") mountSiteSettings(document.getElementById("site-settings"), {m, e, site, siteName, authState});
+if (settingsCategory === "execution") mountExecutionSettings(document.getElementById("execution-settings"),{e});
 if (settingsCategory === "profiles") mountProfiles(document.getElementById("profile-settings"), {m,e,authState});
 window.addEventListener("opsfeast:site-updated", event => {
   site = event.detail;

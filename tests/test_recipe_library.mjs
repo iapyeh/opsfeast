@@ -17,15 +17,18 @@ test('manual classifications override path inference including explicit uncatego
  assert.deepEqual(recipeDomains({...item,category_ids:[]}),['custom']);
  const groups=groupRecipes({...data,items:[{...item,category_ids:['user-a']}]});assert.equal(groups.find(g=>g.id==='user-a').user.length,1);
 });
-test('meal apply filters stale members and deduplicates known selections without executing',()=>{
- const applied=applyUserSet(data,{recipes:[item.reference,item.reference,':gone'],hosts:['node','node','gone']});
- assert.equal(applied.recipes.size,1);assert.equal(applied.hosts.size,1);assert.equal(applied.missing,2);
+test('draft restores direct recipes and preserves meal references separately',()=>{
+ const applied=applyUserSet(data,{recipes:[item.reference,item.reference,':gone'],hosts:['node','node','gone'],meals:['bundle:foundation']});
+ assert.equal(applied.recipes.size,1);assert.equal(applied.hosts.size,1);assert.deepEqual([...applied.meals],['bundle:foundation']);
 });
-test('meal definitions expand their members and expose edit/delete only for user meals',()=>{
- const saved={id:'a',title:'<Meal>',description:'Scope',recipes:[item.reference],hosts:['node']};
- const html=renderSet(saved,data,true,e,'main');assert.match(html,/<details/);assert.match(html,/data-edit-set=/);assert.match(html,/data-delete-set=/);assert.match(html,/&lt;Meal&gt;/);
- const editor=renderSetEditor(data,{...saved,recipes:[':gone',item.reference]},e);assert.match(editor,/:gone/);assert.match(editor,/請移除後儲存/);assert.match(editor,/data-set-host/);
- assert.match(renderSetDelete(saved,e),/套餐/);
+test('meal cards and creation preserve nested references without host or edit controls',()=>{
+ const child={id:'child',title:'Inner',description:'',recipes:[item.reference],meals:[]};
+ const saved={id:'a',title:'<Meal>',description:'Scope',recipes:[],meals:['child'],selections:{}};
+ const catalog={...data,sets:[],user_sets:[child,saved]};
+ const html=renderSet(saved,catalog,true,e,'main');assert.match(html,/<details/);assert.doesNotMatch(html,/data-edit-set=/);assert.match(html,/data-delete-set=/);assert.match(html,/Inner/);assert.match(html,/&lt;Meal&gt;/);
+ const editor=renderSetEditor(catalog,{...saved,recipes:[':gone',item.reference]},e);assert.match(editor,/:gone/);assert.match(editor,/請移除後儲存/);assert.doesNotMatch(editor,/data-set-host/);assert.match(editor,/data-set-meal/);
+ assert.match(renderSetDelete(child,e,catalog),/將同時從以下套餐移除引用：&lt;Meal&gt;/);
+ assert.match(renderSet({...saved,meals:[]},catalog,true,e,'main'),/空套餐/);
 });
 test('default changes parse typed values, keep strings literal, remove overrides and skip protected inputs',()=>{
  const rows=[['count',true,'7'],['text',true,'raw'],['reset',false,'9']].map(([name,checked,value])=>({dataset:{option:name},querySelector:s=>s==='[data-override]'?{checked}:{value}}));

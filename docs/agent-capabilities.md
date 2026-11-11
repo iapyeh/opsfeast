@@ -732,7 +732,7 @@ no authority to run; group/All resolves enabled hosts and deduplicates overlap.
 
 ## Recipe pages, defaults and reusable meals
 
-Use [recipe library services](web-recipe-menu.md#authenticated-service-and-agent-workflow) for exact-reference declarations/history, nonsensitive typed Profile default edits, custom categories and fixed-selection user meals. These checkout facades and authenticated Web routes preserve revisions, private backups, original timestamps and existing default precedence. Do not create a parallel settings store or interpret saving/applying a meal as execution authorization.
+Use [recipe library services](web-recipe-menu.md#authenticated-service-and-agent-workflow) for exact-reference declarations/history, nonsensitive typed Profile default edits, custom categories and nested, host-free user meals. These checkout facades and authenticated Web routes preserve revisions, private backups, original timestamps and existing default precedence. Do not create a parallel settings store or interpret saving/applying a meal as execution authorization.
 
 
 ## Recipe field tree and composition design
@@ -757,4 +757,19 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+
+
+## Nested Web meal selections
+
+Use [the menu contract](web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/deletion are supported, editing is deferred. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
+
+
+Use [execution throttle](web-recipe-menu.md#execution-throttle-and-defaults-010): no fixed host/invocation count cap; default 8 parallel host lanes, sequential within each host. Installation settings and per-run threads are separate.
+
+
+
+Execution defaults are discoverable through Settings → Execution and `opsfeast.execution_settings.inspect/save`, with GET/PUT `/api/v1/recipe-execution/settings` and `python -B -m opsfeast.execution_settings show/set`. Pass a positive integer `threads` with the confirmed start API for a temporary execution override. Default 8 is read without writes, defaults live in external installation data, and per-run overrides do not alter them. Threads changes do not require another preview; the plate confirmation still authorizes only the reviewed targets/recipes. Stop ends active owned workers and leaves queued hosts skipped; synthetic concurrency tests do not prove native SSH or remote cleanup. See [the full service/storage/CLI contract](web-recipe-menu.md#execution-throttle-and-defaults-010).
+
+For human Web run inspection, prefer [the execution page/history](web-recipe-menu.md#execution-page-and-return-navigation): shared bounded progress, closed task cards, explicit incomplete-task/field diagnosis and `/recipes?profile=NAME&history=1`. Reuse GET recipe-runs and saved-result diagnosis; reopening never retries execution.
+
+*Last modified: 2026-11-11 16:38:05*

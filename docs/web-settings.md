@@ -13,8 +13,8 @@ not separate configuration stores or independent interpretations of defaults.
 
 ## Settings hierarchy and availability
 
-The hub has three installation-level peers: **Site**, **Profiles** and **Bundle
-Recipes**. Within Profiles, select the owning Profile to open its Hosts, user
+The hub has four installation-level peers: **Site**, **Profiles**, **Bundle
+Recipes** and **Execution**. Within Profiles, select the owning Profile to open its Hosts, user
 Recipes, parameters and Retention policies. Selection changes the displayed scope,
 not the default Profile. The Profiles management page also nests these links under
 each registered Profile, preserving the exact name in the destination URL.
@@ -25,6 +25,7 @@ each registered Profile, preserving the exact name in the destination URL.
 | `/settings/site` | Installation | Presentation and administrator configuration |
 | `/settings/profiles` | Installation | Profile status/create/attach/default switch, with owned child links |
 | `/settings/bundle-recipes` | Installation | Read-only checkout Bundle catalog, independent of a selected Profile |
+| `/settings/execution` | Installation | Default recipe execution threads (8), with revision-checked saving |
 | `/settings/hosts?profile=NAME` | Selected Profile | Entry to the real host editor, retaining Profile scope |
 | `/settings/recipes?profile=NAME` | Selected Profile | Read-only custom/registered external Recipe catalog, excluding Bundle recipes |
 | `/settings/parameters?profile=NAME` | Selected Profile | Parameter/policy guidance; Web writer remains planned |
@@ -157,4 +158,10 @@ covers bundled defaults and persistent custom references. Web tests cover the sh
 catalog, category routes, and absent write endpoints for planned domains. Existing
 site/storage tests own image normalization, protected edits and upgrade persistence.
 
-*Last modified: 2026-11-06 09:23:54*
+
+
+## Recipe execution defaults
+
+Use [execution throttle 0.1.0](web-recipe-menu.md#execution-throttle-and-defaults-010) for the implemented `/settings/execution` page, shared `opsfeast.execution_settings.inspect/save` facade, JSON CLI and GET/PUT `/api/v1/recipe-execution/settings`. The default is 8 concurrent host lanes; temporary per-run threads are sent with confirmed Start, need no new preview and do not save defaults. Selected host counts are not capped. Same-host recipes remain serial. Storage uses versioned installation data, never bundled code or private hosts.yaml. Invalid/stale saves fail; reads/saves do not execute work.
+
+*Last modified: 2026-11-11 16:11:57*

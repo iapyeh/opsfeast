@@ -12,18 +12,18 @@ Read [bundle coverage](profiling-coverage.md), [execution](recipe-execution.md),
 The main `/recipes` page is currently a layout/selection preview, following the
 owner's requested order. It presents these sections, with scope/execution review available from the plate:
 
-1. Domain-first panels: hardware/environment, storage/filesystems, OS/software,
-   network, workloads, identity, observability and analysis. Each panel starts
-   with its capability summaries (inventory/configuration/state/metrics/events,
+1. Initially closed, independently expandable domain panels: hardware/environment, storage/filesystems, OS/software,
+   network, workloads, identity, observability and analysis. Each expanded panel starts
+   with a **Scopes** heading at the same level as **Bundle recipes** and **User recipes**, followed by capability summaries (inventory/configuration/state/metrics/events,
    partial/not-integrated labels) and directly visible scope descriptions, then
    **Bundle recipes** above **User recipes**, each with selectable rows. Empty
    User sections are omitted. Reports
    and uncategorized recipes get additional panels when present. Empty domains and
    empty Bundle lists remain explicit rather than hiding missing capability.
-2. Suggested combinations, which add their reviewed references to the plate.
+2. Suggested combinations, which add a meal reference to the plate without flattening it.
 3. Host selection: individual configured hosts, resolved groups and All. The login
    account is not displayed. Profile selection, when needed, belongs in this area.
-4. A plate with two columns: selected hosts and selected recipes, with counts.
+4. A plate with two columns: selected hosts and selected recipes/meals, with counts.
 
 Recipes spanning several capability domains appear in each relevant category;
 all checkboxes for the same exact reference stay synchronized, and the plate
@@ -103,41 +103,30 @@ on the menu creates a category or edits its title/description while preserving i
 ID and memberships. Creation/renaming belongs only on the Recipes page. Recipe pages contain assignment
 controls plus a link to the menu manager, without a category-creation form.
 
-Suggested and user meals expand/collapse to show their exact recipe members;
-user meals also show fixed Host IDs. **Save plate as user meal** opens an editor
-for title, description, recipes and hosts. **Modify** edits those fields; **Delete**
-asks for confirmation and deletes only that meal definition. Applying a user meal
-replaces the plate; suggested meals add recipes. Unavailable members are reported
-when applying and remain visible in the editor until explicitly removed. Saving
-requires known runnable recipe references and known Host IDs. Group/All selections
-are saved as the resolved IDs, never a future dynamic group expansion. Meals do not
-store variables, identities, credentials, jobs, schedules or execution authority.
-Saving defaults/meals/categories never starts or changes a running operation.
+Suggested and user meals expand/collapse to show recipes and nested meals. **Join this meal** adds the meal itself to the plate and preserves existing recipes, meals and host selections. The plate displays each selected meal with expandable contents and a remove-from-plate button. It does not replace selections or copy a meal's recipes into direct selections. Empty user meals remain labelled and cannot be added alone for execution. Missing recipe/meal references remain visible; preview fails instead of silently executing only the available subset. Rendering is bounded to 200 meal nodes per tree; the execution review shows the fully resolved distinct recipes.
 
-### Profile-local menu preferences 0.1.0
+**Save plate as user meal** creates a definition with a name, description, direct recipes, nested meal IDs and direct recipe field scopes. It saves no hosts, groups, variables, credentials, identities, jobs, schedules or execution authority. Host choices belong to this run's tab-local draft only. The creation form allows reviewing members and their fields; saved meals offer **Delete**, with no update action. To revise a meal, create a new one with a new ID. Names are display labels, never reference identities.
 
-`recipe-menu.json` is a versioned Profile-local document, separate from recipe
-code, retention and installation-level execution history:
+Meals reference current definitions, not snapshots: Bundle updates change the effective contents of outer meals. User IDs are UUIDs; product-owned IDs have a `bundle:` prefix. Validate the complete graph on reads and writes and before preview; reject cycles and unknown IDs. Deleting a user meal atomically removes its incoming references from every user meal. Confirmation lists directly affected parents; transitive outer meals naturally see the resulting contents. Empty parents are retained, never cascade-deleted. Historical execution records and recipe/retention data are unchanged. Stale revisions fail with 409, including when another tab changes parents before deletion.
+
+Execution preview resolves nested references on the server and executes each exact recipe reference once per selected host (reports once locally). Explicit property scopes, job scopes and recipe default scopes resolve to property sets whose union is collected. A default scope contributes its actual default fields, not every optional field. Different references remain distinct even if they collect related data. Conflicting variables/report inputs for the same reference are rejected rather than arbitrarily selected. Empty resolved selections and unavailable recipes fail. The 32-distinct-recipe limit applies after expansion; there is no separate host or invocation count cap. Review displays the effective fields and target/permission plan before confirmation. Meal definitions are fingerprinted; changed definitions require a new review before starting. Once started, the confirmed expanded work remains fixed.
+
+### Profile-local menu preferences 0.2.0
+
+`recipe-menu.json` is a versioned Profile-local document, separate from recipe code, retention and installation-level execution history:
 
 ```json
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.2.0",
   "categories": [{"id": "user-UUID", "title": "Owner checks", "description": "Scope"}],
   "assignments": {":system/network/check/local": ["network", "user-UUID"]},
-  "sets": [{"id": "UUID", "title": "Daily checks", "description": "Scope", "recipes": [":system/network/check/local"], "hosts": ["node"]}]
+  "sets": [{"id": "UUID", "title": "Daily checks", "description": "Scope", "recipes": [":system/network/check/local"], "meals": ["bundle:inventory-overview"], "selections": {}}]
 }
 ```
 
-Builtin IDs: hardware, storage, software, network, workloads, identity,
-observability, analysis, reports, custom (Other). Reference keys must be exact:
-bare Bundle path, `:path` for Profile recipes, or `source:path` for registered
-external sources. Limits: 64 custom categories, 1,000 assignments, 100 meals,
-100 recipes/1,000 hosts per meal, 1 MiB document. An empty assignment is explicit
-Other; deleting an assignment restores inference. Symlinks, malformed documents,
-unknown versions and duplicate IDs are refused, never silently overwritten.
-Writes are locked, revision checked and atomic; prior bytes are retained privately
-in `.recipe-menu-backups/UUID.json`. Backups have no automatic expiry. No legacy
-migration or cross-Profile import is implemented.
+Every meal requires exactly `id`, `title`, `description`, `recipes`, `meals`, `selections`. `selections` maps direct exact recipe references to either `{"properties":["FIELD"]}` or `{"jobs":["JOB"]}`. Omission of a recipe key uses that recipe's defaults. Creation requires at least one direct recipe or meal reference; deletion may leave an empty existing definition. All member IDs are unique within each list. Builtin category IDs: hardware, storage, software, network, workloads, identity, observability, analysis, reports, custom (Other). Reference keys must be exact: bare Bundle path, `:path` for Profile recipes, or `source:path` for registered external sources. Limits: 64 custom categories, 1,000 assignments, 100 user meals, 100 direct recipes and 100 meal references per meal, 1 MiB document. An empty assignment is explicit Other; deleting an assignment restores inference. Symlinks, malformed documents, unknown versions and duplicate IDs are refused, never silently overwritten. Writes are locked, revision checked and atomic; prior bytes remain privately in `.recipe-menu-backups/UUID.json` without automatic expiry.
+
+**Incompatible change:** preferences 0.1.0 (flat recipes plus hosts) and old tab drafts are not loaded or automatically migrated. Existing files are preserved. If an old `recipe-menu.json` exists, preserve it separately and deliberately recreate categories/assignments/meals under 0.2.0; remove host membership from recreated meals. Do not delete private files automatically. There is no migration/import command. CLI execution and historical observations retain their existing contracts.
 
 ### Authenticated service and agent workflow
 
@@ -155,11 +144,15 @@ do not scrape UI data or invent a separate settings store.
 - POST `/api/v1/recipe-menu/preferences` with exact keys `profile`, `expected_revision`,
   `action`, `changes`. Actions: category.create/update (title, description; update
   includes id), recipe.categories (reference, categories list or null to reset),
-  set.create/update (title, description, recipes, hosts; update includes id),
+  set.create (title, description, recipes, meals, selections),
   set.delete (id only). Successful writes return the new preferences/revision.
 
 Checkout facades are `opsfeast.recipe_detail.inspect/record`,
-`opsfeast.recipe_defaults.inspect/update`, and `opsfeast.menu_preferences.inspect/mutate`.
+`opsfeast.recipe_defaults.inspect/update`, and `opsfeast.menu_preferences.inspect/mutate/expand`. `expand(profile, recipes, meals)`
+returns `(deduplicated_choices, definition_digest)` without writes or connections.
+Each direct choice has reference, vars, inputs and optional inventory_selection.
+POST `/api/v1/recipe-runs/preview` accepts profile, hosts, recipes, timeout and
+optional meals (meal-ID list); an empty recipes list is valid with nonempty meals.
 They are checkout-level services, not a separately versioned Core API promise.
 Read first, explain exact Profile/reference/host scope and consequences, reuse human
 authorization, then write with the returned revision. On conflict reread and ask
@@ -248,8 +241,7 @@ Configured consumers may write content or send messages after retention. Review
 those private effects before approving; read-only target queries do not imply
 that all downstream operations are side-effect-free.
 
-One Web service process owns one serial selection at a time (maximum 16 hosts,
-20 distinct recipes and 64 invocations). Previews expire after ten minutes; at
+One Web service process owns one confirmed selection at a time, with bounded parallel host lanes (8 by default). There is no fixed host/invocation count cap; previews retain the 64 KiB request-body limit and 32-distinct-recipe limit. Previews expire after ten minutes; at
 most 32 pending previews are held in memory. A repeated confirmed start with the
 same preview returns the original run, without retrying it. Recipe Python,
 descriptor, loaded host documents, effective inputs, selected identity, feast.yaml,
@@ -296,7 +288,7 @@ and explicit archival/deletion of execution records remain later work.
 ## Interfaces for agents and product contributors
 
 `opsfeast.recipe_menu.menu(profile=None)` is static/read-only and returns schema
-0.1.0, actual items, three suggested sets, safe source status and the shared
+0.1.0, actual items, four suggested sets, safe source status and the shared
 profiling blueprint. `opsfeast.recipe_runs.RecipeRuns(product, data_root)` supplies
 preview/start/show/list/stop/close in the running Web process. These are checkout
 services, not an installed plugin API or a second scheduler. Do not instantiate a
@@ -305,8 +297,8 @@ new service to take over active workers; use the owning authenticated HTTP API.
 | Method and path | Inputs / output |
 | --- | --- |
 | GET /api/v1/recipe-menu | Optional explicit profile; catalog/blueprint, configured host IDs/labels/enabled states and resolved groups (id/title/host_ids); no login account names. No profile lists Bundle only. |
-| POST /api/v1/recipe-runs/preview | Exactly profile, hosts (distinct IDs), recipes, timeout; returns preview_id, pairs, overrides, expiry, scope/visibility limits. Each recipe has reference, vars (typed object), inputs (result-ID array), and optional inventory_selection (see below). |
-| POST /api/v1/recipe-runs | Exactly preview_id and confirmed:true; returns the saved run. No editable command/argv or arbitrary program endpoint. |
+| POST /api/v1/recipe-runs/preview | Required profile, hosts (distinct IDs), recipes, timeout; optional meals (distinct meal IDs); returns preview_id, pairs, overrides, expiry, scope/visibility limits. Each recipe has reference, vars (typed object), inputs (result-ID array), and optional inventory_selection (see below). |
+| POST /api/v1/recipe-runs | Required preview_id and confirmed:true, optional threads (positive integer); returns the saved run. No editable command/argv or arbitrary program endpoint. |
 | GET /api/v1/recipe-runs?profile=NAME | At most 100 newest summaries with total count; no automatic history deletion. |
 | GET /api/v1/recipe-runs/UUID?profile=NAME | Profile-scoped task states, progress, receipts, local-termination and remote-cleanup evidence. |
 | POST /api/v1/recipe-runs/UUID/stop | Exactly profile; returns acknowledgment. Poll the saved run for the final state. |
@@ -435,7 +427,9 @@ checkout/interpreter/data/8741/agent-control options were restored. Authenticate
 menu and main-page/layout assets returned HTTP 200.
 
 
-## Recipe library verification (2026-11-10)
+## Earlier recipe library verification (2026-11-10)
+
+This records the earlier flat-meal iteration; current nested-meal verification is below.
 
 - Full local regression passed: 1,381 Python and 100 JavaScript tests. The first
   restricted run had ten loopback-bind permission errors; the complete suite passed
@@ -484,17 +478,17 @@ menu and main-page/layout assets returned HTTP 200.
 
 ## Executable plate and inventory meals
 
-The plate now offers **Review and execute**, restoring an explicit confirmation path. Select a recipe field scope from its plate row; saving a user meal preserves nonsecret selectors in optional `sets[].selections` (reference -> jobs/properties selector). Missing selectors fail review rather than widening scope. Suggested Overview now adds ten independent recipes; sensors remain separate opt-in. Compatible routine recipes share one owned worker/connection per host and run login before root. Other tools remain independent. Review shows groups, conditional permissions, fields and fingerprints. Saved run views link each child result and show independent retention/consumer outcomes. The metadata version remains 0.1.0 with optional selections; reads do not rewrite old documents. The preferences API validates selectors against the current exact recipe catalog. See [routines](recipe-routines.md) for limits and unchanged human authorization.
+The plate now offers **Review and execute**, restoring an explicit confirmation path. Select a recipe field scope from its plate row; saving a user meal preserves nonsecret selectors in `sets[].selections` (reference -> jobs/properties selector). Missing selectors fail review rather than widening scope. Suggested Overview now adds a meal reference resolving to ten independent recipes; sensors remain separate opt-in. Compatible routine recipes share one owned worker/connection per host and run login before root. Other tools remain independent. Review shows groups, conditional permissions, fields and fingerprints. Saved run views link each child result and show independent retention/consumer outcomes. The metadata version remains 0.1.0 with optional selections; reads do not rewrite old documents. The preferences API validates selectors against the current exact recipe catalog. See [routines](recipe-routines.md) for limits and unchanged human authorization.
 
 ## Use the split inventory from the Web
 
 1. Open **Recipes** in the intended Profile. Choose independent inventory dishes,
-   or expand **系統全貌盤點套餐** and add its ten general members. Sensors are separate.
+   or expand **系統全貌盤點套餐** and add the meal reference. Sensors are separate.
 2. Select individual hosts, a group or All. In the plate, open **採集欄位** for each
    inventory recipe. Keep its defaults or choose exact properties, such as
    `system.hostname` or `sensors.fans`; an empty explicit selection is rejected.
-3. Optionally save the plate as a user meal. Applying that meal restores its fixed
-   hosts, exact recipe references and field selections; it never executes.
+3. Optionally save the plate as a user meal. Adding that meal preserves nested
+   references and field selections, without changing selected hosts or executing.
 4. Choose **檢閱並執行餐盤**. Review exact scope, enabled overrides, host connection
    groups, conditional login/root requirements and configured consumer effects.
    Confirm explicitly to start. Shared routines use one worker/connection per host;
@@ -510,4 +504,53 @@ including saved scopes and independent retained fan/hostname results. Public fro
 checks passed 109 tests and the complete Python suite passed 1,395. Native host access
 and assistive-technology verification are separate; this was not real-host QA.
 
-*Last modified: 2026-11-10 16:17:50*
+
+
+## Nested meal verification (2026-11-10)
+
+Public Python/JavaScript tests cover closed domain disclosures and Scopes headings, additive meal references, nested rendering, immutable creation, host-free storage, cycle/unknown-ID rejection, Bundle-definition changes, direct/indirect deletion effects, retained empty meals, stale revisions, field/job/default union, recipe deduplication, conflicting inputs, HTTP preview and changed-definition refusal before worker start. The installed wheel test also creates and expands a nested meal without checkout imports. These are synthetic/local checks; browser automation was unavailable in this session, so rendered desktop/mobile/assistive behavior and real SSH collection are not claimed. The existing Web listener was preserved.
+
+
+## Concise execution review preview
+
+The confirmation page groups each exact recipe into one row across its selected hosts. It shows friendly recipe labels, collection field counts, operation type and the existing command timeout. The common host list appears once above the table, rather than repeated in each recipe row. Targets and field scopes remain read-only here: return to the plate to change them. The threads control is a one-time execution option sent only with Start; changing it does not require another preview. Account details, original invocation, overrides, exact field IDs and routine/connection plans remain inside a closed technical disclosure. Permission and configured downstream-effect notes remain visible. The checkbox and start request still authorize only the server-reviewed preview. The concise layout retains the confirmation boundary; focused front-end rendering and confirmation tests cover this iteration. Browser visual verification is not claimed.
+
+
+Batch previews retain the exact All/Group selection minus individual exclusions. There is no fixed host/invocation count cap; execution concurrency uses the threads setting described below.
+
+
+
+## Execution throttle and defaults 0.1.0
+
+**Settings → Execution** (`/settings/execution`) edits the installation-wide Web recipe default. It is 8 threads when no settings file exists. Each execution review offers a temporary threads value. Editing threads does not change the plate, invalidate confirmation or request another preview. Start validates the supplied value and records it for that run only. It is absent from plate/meal definitions and preview requests/plans. Once a run has started its threads value is fixed; changing the installation default does not alter running work. No settings file is written by an invocation override or a read.
+
+Threads is a positive integer. It limits concurrently active host lanes, not the number of selected hosts. Same-host recipes remain sequential; compatible routine recipes still share one worker/connection with login/root phases. Local reports form one separate sequential lane and share the same concurrency budget. The controller creates at most `min(threads, number_of_lanes)` pool threads, queues remaining lanes, and starts the next lane when a slot becomes free. There is no fixed host-count limit. The HTTP request-size limit, 32-recipe limit, per-command timeout, per-worker wall deadline and bounded output remain; this is not a measured unlimited-capacity claim. Existing CLI `recipes run --threads` behavior is unchanged by this Web default.
+
+Ordinary recipe failure does not prevent independent hosts or following recipes from running. Stop prevents queued hosts/recipes from starting and requests termination of every active owned worker process; original remote-cleanup uncertainty remains. Unexpected controller/profile-binding failure stops active lanes and marks unfinished tasks explicitly. Collection, retention and consumer receipts remain separate. Saving defaults never connects or executes.
+
+The persisted contract is [`recipe-execution-settings.schema.json`](../schemas/recipe-execution-settings.schema.json). Installation data contains `recipe-execution-settings.json` with exactly `{"schema_version":"0.1.0","threads":8}`. It is outside replaceable product code and separate from profiles, hosts.yaml, credentials and menu meals. Absence uses 8 without writing; malformed/unknown-version/symlink files fail explicitly. Saving is locked, atomic and revision-checked; stale updates return 409. Settings have no automatic legacy conversion.
+
+Shared checkout facade: `opsfeast.execution_settings.inspect(data_root)` returns schema_version, threads and a content revision; `save(data_root, threads=N, expected_revision=REV)` saves and returns the new state. Authenticated administrator/owner routes are GET/PUT `/api/v1/recipe-execution/settings`; PUT accepts exactly threads and expected_revision, with existing same-origin protection. Read with GET, explain scope, reuse the human grant, and save using the returned revision. No extra approval is required for previously authorized changes. Presentation-only edit tokens cannot use these routes.
+
+```sh
+python -B -m opsfeast.execution_settings show --installation /path/to/opsfeast
+python -B -m opsfeast.execution_settings set --installation /path/to/opsfeast --threads 8 --expected-revision REV
+```
+
+POST `/api/v1/recipe-runs/preview` accepts the plate selection without threads. POST `/api/v1/recipe-runs` accepts preview_id, confirmed:true and optional threads. Omission uses the installation default at Start; supplied threads overrides it for this run only. The saved execution record exposes the actual threads, while plate drafts, meals and preview plans do not contain it. Invalid zero/negative/fractional/Boolean/null HTTP thread values fail before starting work. Repeated Start for an already-started preview returns its original run without changing threads. Scope/fingerprint validation and explicit execution confirmation remain intact. Synthetic tests verify runtime/default isolation, concurrency, stop, authentication and revision conflicts; no managed-host connections or fleet capacity claims are established.
+
+
+The review page immediately renders a provisional summary from the current plate/catalog while server validation runs in the background. Pending scopes are labelled unverified, technical details wait for the real plan, and confirmation/start remain disabled. Users can edit threads or return to the plate without waiting. Typed runtime thread values survive the incoming plan without requesting another preview; late responses cannot overwrite a returned/replaced page. This improves initial UI responsiveness without claiming that server validation itself has become faster.
+
+
+The threads input displays 8 immediately rather than an empty inheritance placeholder. Saved execution defaults are fetched independently of the full preview and replace that initial value when available. A manually entered per-run value is never overwritten by a late defaults response; the authoritative preview still controls confirmation.
+
+## Execution page and return navigation
+
+The saved execution page `/recipes?profile=NAME&run=UUID` now shows one sticky shared progress area above independently expandable task cards. Cards start closed; their summaries retain live indicators and completion/partial/failure labels. Host names link to their exact host page in a new tab (`target=_blank`, `rel=noopener`); the three repeated host/log/retention footer links are removed. Report artifacts also open separately. The common progress area groups existing bounded runner output by host/task and deduplicates identical shared-worker output. It is a sampled grouped view, not a new chronological Console stream; the display retains at most 128 Ki characters and marks truncation. Polling preserves expanded cards and the river's scroll position when the reader has scrolled up.
+
+An explicit unfinished-task summary identifies task/host/recipe and separates collection status, retention failures and downstream consumer failures. Clicking an item expands its task. Incomplete fields and reasons reuse saved `collection_gaps` or lazily GET `/api/v1/results/diagnosis?profile=NAME&result_id=ID&limit=50` when the task opens. These reads do not connect or collect. Missing/failed diagnosis stays explicit; absent evidence is not invented, and omitted groups remain labelled. Existing status and historical data are not rewritten.
+
+On Recipes, **Execution history** opens `/recipes?profile=NAME&history=1`, backed by GET `/api/v1/recipe-runs?profile=NAME`. It lists up to the 100 newest saved selections, including running selections, with exact links back to their execution pages. The normal browser address can be bookmarked for older records. Closing the browser does not stop workers while Web remains running; reopening the history/page only reads and reattaches polling. Restarting Web instead preserves the existing interrupted/no-automatic-retry semantics. No execution is started by opening history, a task or a diagnosis.
+
+*Last modified: 2026-11-11 16:38:05*

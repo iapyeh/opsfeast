@@ -64,6 +64,20 @@ class RecipeRunTests(unittest.TestCase):
         bad = self.selection(); bad['recipes'][0]['reference'] = 'linux-local-accounts'
         with self.assertRaises(ConfigError): self.service.preview(bad)
 
+    def test_all_hosts_minus_localhost_has_no_host_or_invocation_count_limit(self):
+        hosts=['localhost']+['node-'+str(i) for i in range(160)]
+        self.hosts.write_text(json.dumps({'hosts':{h:{'connection':{'local':True}} for h in hosts}}))
+        def pair(root,reference,host,variables,inputs,selection=None):
+            return {'reference':reference,'host_id':host,'invocation':[],'composition':None},{}
+        with patch('opsfeast.recipe_runs.prepare_pair',side_effect=pair),patch('recipe_catalog.choose',return_value={'kind':'operation'}):
+            body=self.selection(hosts=hosts[1:])
+            body['recipes']=[{'reference':'synthetic-'+str(i),'vars':{},'inputs':[]} for i in range(32)]
+            plan=self.service.preview(body)
+        self.assertEqual(len(plan['pairs']),5120)
+        self.assertNotIn('threads',plan)
+        self.assertNotIn('localhost',{p['host_id'] for p in plan['pairs']})
+        self.assertFalse(self.service.directory.exists())
+
     def test_confirmation_expiry_changed_configuration_and_descriptor_fail_closed(self):
         preview = self.service.preview(self.selection())
         for confirmed in (False, 1, 'true'):
@@ -74,6 +88,36 @@ class RecipeRunTests(unittest.TestCase):
         self.service.plans[preview['preview_id']]['expires'] = 0
         with self.assertRaisesRegex(ConfigError, 'expired'): self.service.start(preview['preview_id'], True)
         with self.assertRaises(ConfigError): self.service.show('../outside', 'main')
+
+    def test_nested_meal_preview_unions_fields_and_rejects_changed_definition_before_start(self):
+        from opsfeast.menu_preferences import inspect,mutate
+        ref='system/inventory/hardware-sensors'
+        def save(fields):
+            return mutate(self.root,profile='main',expected_revision=inspect(self.profile)['revision'],action='set.create',changes={'title':'Sensors','description':'','recipes':[ref],'meals':[],'selections':{ref:{'properties':fields}}})['sets'][-1]['id']
+        a=save(['sensors.fans']);b=save(['sensors.temperatures'])
+        selection={'profile':'main','hosts':['node','other'],'recipes':[],'meals':[a,b],'timeout':30}
+        plan=self.service.preview(selection)
+        self.assertEqual(len(plan['pairs']),2)
+        for pair in plan['pairs']:
+            self.assertEqual(set(pair['inventory_selection']['properties']),{'sensors.fans','sensors.temperatures'})
+        mutate(self.root,profile='main',expected_revision=inspect(self.profile)['revision'],action='set.delete',changes={'id':a})
+        with patch('subprocess.Popen',side_effect=AssertionError('must not start')):
+            with self.assertRaises(ConfigError):self.service.start(plan['preview_id'],True)
+        self.assertFalse(self.service.directory.exists())
+
+    def test_nested_offline_report_worker_runs_duplicate_recipe_only_once(self):
+        from opsfeast.menu_preferences import inspect,mutate
+        ids=[]
+        for title in ('Inner A','Inner B'):
+            state=mutate(self.root,profile='main',expected_revision=inspect(self.profile)['revision'],action='set.create',changes={'title':title,'description':'','recipes':['feast/report/retention-summary'],'meals':[],'selections':{}})
+            ids.append(state['sets'][-1]['id'])
+        plan=self.service.preview({'profile':'main','hosts':[],'recipes':[],'meals':ids,'timeout':30})
+        self.assertEqual(len(plan['pairs']),1)
+        record=self.wait(self.service.start(plan['preview_id'],True)['id'])
+        self.assertEqual(record['state'],'completed',record)
+        self.assertEqual(len(record['tasks']),1)
+        self.assertEqual(record['selected_meals'],ids)
+        self.assertTrue(record['tasks'][0]['result']['artifacts'])
 
     def test_real_offline_report_worker_and_saved_artifact_no_host(self):
         selection = self.selection('feast/report/retention-summary', variables={'title': 'Synthetic feast'}, hosts=[])
@@ -180,7 +224,7 @@ class RecipeRunTests(unittest.TestCase):
         def launch(argv, **kwargs):
             return real([sys.executable, '-u', '-c', 'import sys,time; sys.stdin.read(); print("synthetic-progress",file=sys.stderr,flush=True); time.sleep(30)'], **kwargs)
         with patch('opsfeast.recipe_runs.subprocess.Popen', side_effect=launch):
-            started = self.service.start(preview['preview_id'], True)
+            started = self.service.start(preview['preview_id'], True, threads=1)
             deadline = time.monotonic() + 3
             while not self.service.show(started['id'], 'main')['tasks'][0]['progress'] and time.monotonic() < deadline: time.sleep(.02)
             with self.assertRaisesRegex(ConfigError, 'already_running'):

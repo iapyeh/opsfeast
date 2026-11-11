@@ -91,6 +91,7 @@ restart recovery exists. Node.js and a frontend build are not needed.
 | `/settings/hosts` | Link to real host settings in `/hosts` |
 | `/settings/recipes?profile=NAME` | Read-only user/external Recipe catalog within the owning Profile |
 | `/settings/bundle-recipes` | Independent read-only Bundle Recipe catalog |
+| `/settings/execution` | Installation recipe concurrency default; 8 host lanes, with temporary per-run overrides |
 | `/settings/parameters`, `/settings/retention` | Profile-scoped guidance; Web writers remain planned |
 | `/api/v1/settings/catalog` | Static settings availability, shared with module/CLI |
 | `/settings/site` | Site presentation plus private administrator setup/change; see the account guide |
@@ -284,4 +285,4 @@ Recipe links now open separate tabs. Category scopes are directly visible; Bundl
 
 The Recipes plate now offers per-recipe field scopes and explicit review/confirmation. Compatible routine recipes are grouped per host, with conditional login/root permissions visible before start. Progress/stop and independent child result links use the existing owned-worker APIs. User meals additionally save validated nonsecret selectors. Recipe-specific retained pages keep source times and actor/cleanup evidence. See [routines](../docs/recipe-routines.md) and [menu](../docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-10 16:02:29*
+*Last modified: 2026-11-11 15:55:36*

@@ -157,4 +157,14 @@ See [inventory capability details](../../../recipes/system/inventory/overview/RE
 [host evidence lookup](../../../docs/host-notes.md#answer-host-questions-from-accumulated-evidence)
 and [exploration to reusable operations](exploration-to-recipe.md).
 
-*Last modified: 2026-11-06 14:16:59*
+
+
+## Nested Web meal selections
+
+Use [the menu contract](../../../docs/web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/deletion are supported, editing is deferred. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
+
+
+
+For Web batch work, use [execution throttle/defaults](../../../docs/web-recipe-menu.md#execution-throttle-and-defaults-010), rather than splitting targets merely to bypass a host-count cap. The installation default is 8 host lanes; pass threads with the confirmed start request for a one-time execution override. Same-host work stays sequential. Changing the default does not change saved meals, previews or running work. Saving grants no execution authority; preserve independent results and stop/cleanup evidence.
+
+*Last modified: 2026-11-11 16:11:57*

@@ -46,7 +46,7 @@ test('interactive choices synchronize duplicate recipe rows and update the plate
  dishes[1].checked=true;dishes[1].events.change();assert.ok(dishes.every(i=>i.checked));
  group.checked=true;group.events.change();assert.match(plate.innerHTML,/主機 <span>2/);
  dishes[0].checked=false;dishes[0].events.change();assert.ok(dishes.every(i=>!i.checked));
- set.events.click();set.events.click();assert.match(plate.innerHTML,/Recipes <span>1/);
+ set.events.click();set.events.click();assert.match(plate.innerHTML,/Recipes <span>0/);assert.match(plate.innerHTML,/套餐 <span>1/);assert.match(plate.innerHTML,/<summary><strong>套餐/);
 });
 
 test('source lists stack Bundle above User and omit empty User sections',()=>{
@@ -56,4 +56,11 @@ test('source lists stack Bundle above User and omit empty User sections',()=>{
  const network=html.slice(html.indexOf('data-domain="network"'),html.indexOf('data-domain="workloads"'));
  assert.ok(network.indexOf('Bundle recipes')<network.indexOf('User recipes'));
  assert.match(network,/<p class="menu-capability-scope">No event source<\/p>/);
+});
+
+test('domain disclosures start closed and Scopes is a peer of recipe source headings',()=>{
+ const html=renderLayout(data,groupRecipes(data),profiles,'main',e);
+ assert.match(html,/<details class="panel menu-domain" data-domain="hardware"><summary><h2>硬體與環境/);
+ assert.doesNotMatch(html,/<details class="panel menu-domain"[^>]* open/);
+ assert.match(html,/<h3>Scopes<\/h3>/);
 });

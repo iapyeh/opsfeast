@@ -68,32 +68,60 @@ groups:
         with self.assertRaises(preferences.MenuError):self.change('recipe.categories',{'reference':'system/network/check/port','categories':['hardware']})
         with self.assertRaises(preferences.MenuError):self.change('category.create',{'title':'硬體與環境','description':''})
 
-    def test_user_meals_save_exact_plate_edit_delete_and_do_not_schedule(self):
-        snapshot={'title':'我的檢查套餐','description':'Synthetic only','recipes':[self.reference,'system/account/inventory/local-users'],'hosts':['node','other']}
-        before_hosts=self.entry.read_bytes()
-        state=self.change('set.create',snapshot);saved=state['sets'][0]
-        reloaded=preferences.inspect(Instance.open(self.product).profile('main'))
-        self.assertEqual(reloaded['sets'][0]['hosts'],['node','other'])
-        state=self.change('set.update',{**saved,'title':'修改後套餐','hosts':['other'],'recipes':[self.reference]})
-        self.assertEqual(state['sets'][0]['hosts'],['other'])
-        self.change('set.delete',{'id':saved['id']})
-        self.assertFalse(preferences.inspect(self.profile)['sets'])
-        self.assertEqual(before_hosts,self.entry.read_bytes())
-        self.assertFalse((self.root/'inventory.yaml').exists())
-        self.assertTrue(list((self.root/'.recipe-menu-backups').glob('*.json')))
+    def meal(self, recipes=None, meals=None, selections=None):
+        return {'title':'Synthetic meal','description':'','recipes':recipes or [],'meals':meals or [],'selections':selections or {}}
 
-    def test_user_meal_roundtrips_validated_inventory_scopes_and_rejects_unknown_fields(self):
-        reference='system/inventory/hardware-sensors'
-        meal={'title':'Fan only','description':'Synthetic','recipes':[reference],'hosts':['node'],'selections':{reference:{'properties':['sensors.fans']}}}
-        state=self.change('set.create',meal)
-        saved=state['sets'][0]
-        self.assertEqual(preferences.inspect(self.profile)['sets'][0]['selections'],meal['selections'])
-        for selection in ({'properties':[]},{'properties':['sensors.absent']},{'jobs':['missing']},{'properties':['system.hostname']}):
-            with self.assertRaises(ConfigError):self.change('set.update',{**saved,'selections':{reference:selection}})
-        self.assertEqual(preferences.inspect(self.profile)['sets'][0]['selections'],meal['selections'])
-        self.change('set.update',{**saved,'selections':{reference:{'properties':['sensors.temperatures']}}})
-        self.assertEqual(preferences.inspect(self.profile)['sets'][0]['selections'][reference]['properties'],['sensors.temperatures'])
+    def test_nested_meals_are_immutable_host_free_and_delete_cleans_parents(self):
+        before_hosts=self.entry.read_bytes()
+        child=self.change('set.create',self.meal([self.reference]))['sets'][0]
+        parent=self.change('set.create',self.meal(meals=[child['id']]))['sets'][1]
+        grand=self.change('set.create',self.meal(meals=[parent['id']]))['sets'][2]
+        with self.assertRaises(ConfigError):self.change('set.update',child)
+        with self.assertRaises(ConfigError):self.change('set.create',{**self.meal([self.reference]),'hosts':['node']})
+        self.assertNotIn('hosts',child)
+        state=self.change('set.delete',{'id':child['id']})
+        self.assertEqual(state['sets'][0]['meals'],[])
+        self.assertEqual(state['sets'][1]['meals'],[parent['id']])
+        with self.assertRaisesRegex(ConfigError,'empty_meal'):preferences.expand(self.profile,[],[grand['id']])
+        self.assertEqual(before_hosts,self.entry.read_bytes())
+        self.assertTrue(list((self.root/'.recipe-menu-backups').glob('*.json')))
         self.assertFalse((self.root/'inventory.yaml').exists())
+
+    def test_user_meal_scopes_union_defaults_jobs_and_deduplicate(self):
+        reference='system/inventory/hardware-sensors'
+        fans=self.change('set.create',self.meal([reference],selections={reference:{'properties':['sensors.fans']}}))['sets'][-1]
+        temperatures=self.change('set.create',self.meal([reference],selections={reference:{'properties':['sensors.temperatures']}}))['sets'][-1]
+        outer=self.change('set.create',self.meal(meals=[fans['id'],temperatures['id']]))['sets'][-1]
+        choices,_=preferences.expand(self.profile,[],[outer['id'],fans['id']])
+        self.assertEqual(len(choices),1)
+        self.assertEqual(set(choices[0]['inventory_selection']['properties']),{'sensors.fans','sensors.temperatures'})
+        for selection in ({'properties':[]},{'properties':['sensors.absent']},{'jobs':['missing']},{'properties':['system.hostname']}):
+            with self.assertRaises(ConfigError):self.change('set.create',self.meal([reference],selections={reference:selection}))
+        default=self.change('set.create',self.meal(['system/inventory/hardware']))['sets'][-1]
+        choices,_=preferences.expand(self.profile,[{'reference':'system/inventory/hardware','vars':{},'inputs':[],'inventory_selection':{'jobs':['hardware-baseline']}}],[default['id']])
+        self.assertEqual(len(choices),1)
+        self.assertTrue(choices[0]['inventory_selection']['properties'])
+        self.assertFalse((self.root/'inventory.yaml').exists())
+
+    def test_graph_cycles_unknown_references_and_bundle_changes(self):
+        a={'id':'a',**self.meal(meals=['b'])};b={'id':'b',**self.meal(meals=['a'])}
+        with self.assertRaisesRegex(ConfigError,'cyclic'):preferences.validate_graph([a,b])
+        with self.assertRaisesRegex(ConfigError,'unknown'):self.change('set.create',self.meal(meals=['absent']))
+        from opsfeast.recipe_menu import bundle_sets
+        bundle=bundle_sets()[0]
+        saved=self.change('set.create',self.meal(meals=[bundle['id']]))['sets'][0]
+        choices,binding=preferences.expand(self.profile,[],[saved['id']])
+        self.assertEqual(len(choices),10)
+        changed={**bundle,'recipes':['system/account/inventory/local-users']}
+        with patch('opsfeast.recipe_menu.bundle_sets',return_value=[changed]):
+            choices,updated=preferences.expand(self.profile,[],[saved['id']])
+        self.assertEqual([c['reference'] for c in choices],changed['recipes'])
+        self.assertNotEqual(binding,updated)
+        path=self.root/preferences.FILENAME
+        data=json.loads(path.read_text());data['sets']=[a,b];path.write_text(json.dumps(data))
+        before=path.read_bytes()
+        with self.assertRaisesRegex(ConfigError,'cyclic'):preferences.inspect(self.profile)
+        self.assertEqual(path.read_bytes(),before)
 
     def test_stale_revision_malformed_assignments_and_unknown_meal_targets_fail_closed(self):
         old=preferences.inspect(self.profile)['revision']
@@ -101,7 +129,7 @@ groups:
         with self.assertRaises(SiteConflict):self.change('category.create',{'title':'B','description':''},old)
         for changes in ({'reference':self.reference,'categories':['absent']},{'reference':self.reference,'categories':['network','network']}):
             with self.assertRaises(ConfigError):self.change('recipe.categories',changes)
-        for changes in ({'title':'Bad','description':'','recipes':[self.reference],'hosts':['absent']},{'title':'Bad','description':'','recipes':[':missing'],'hosts':[]}):
+        for changes in (self.meal([':missing']),self.meal(),self.meal(meals=['absent']),self.meal(meals=['bundle:foundation','bundle:foundation'])):
             with self.assertRaises(ConfigError):self.change('set.create',changes)
         self.assertEqual(len(preferences.inspect(self.profile)['categories']),1)
 
@@ -162,6 +190,17 @@ groups:
         self.assertEqual(before,{str(p):p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
         self.assertNotIn('SYNTHETIC_HASH_NEVER_EMIT',json.dumps(detail))
 
+    def test_old_preferences_are_preserved_and_conflicting_options_rejected(self):
+        path=self.root/preferences.FILENAME
+        old={'schema_version':'0.1.0','categories':[],'assignments':{},'sets':[]}
+        path.write_text(json.dumps(old));before=path.read_bytes()
+        with self.assertRaises(ConfigError):preferences.inspect(self.profile)
+        self.assertEqual(path.read_bytes(),before)
+        path.unlink()
+        saved=self.change('set.create',self.meal([self.reference]))['sets'][0]
+        with self.assertRaisesRegex(ConfigError,'conflicting'):
+            preferences.expand(self.profile,[{'reference':self.reference,'vars':{'port':123},'inputs':[]}],[saved['id']])
+
     def test_preferences_symlink_and_corrupt_state_are_not_overwritten(self):
         path=self.root/preferences.FILENAME
         path.symlink_to(self.entry)
@@ -205,3 +244,10 @@ class RecipeLibraryHTTPTests(unittest.IsolatedAsyncioTestCase):
         status,_,body=await self.request('/api/v1/recipe-detail/defaults','POST',body=json.dumps(update).encode(),headers=json_headers,app=app)
         self.assertEqual(status,200);self.assertEqual(next(v for v in json.loads(body)['variables'] if v['name']=='max_items')['value'],123)
         self.assertEqual((await self.request(path+'&limit=21',headers=auth,app=app))[0],422)
+        ref='system/inventory/hardware-sensors'
+        saved=self.fixture.change('set.create',self.fixture.meal([ref],selections={ref:{'properties':['sensors.fans']}}))['sets'][0]
+        selection={'profile':'main','hosts':['node'],'recipes':[],'meals':[saved['id']],'timeout':30}
+        status,_,body=await self.request('/api/v1/recipe-runs/preview','POST',body=json.dumps(selection).encode(),headers=json_headers,app=app)
+        self.assertEqual(status,200)
+        self.assertEqual(json.loads(body)['pairs'][0]['inventory_selection']['properties'],['sensors.fans'])
+        self.assertFalse(app.state.recipe_runs.directory.exists())

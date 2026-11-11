@@ -790,7 +790,7 @@ include a visibly disabled host. Cross-domain recipe duplicates stay synchronize
 
 ## Recipe-specific pages and saved meals
 
-Use [recipe pages/defaults/menu preferences](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) for declared fields, saved records, typed Profile defaults, user/external category assignments and reusable meal CRUD. Defaults use the existing hosts.yaml precedence; categories/meals use Profile-local recipe-menu.json 0.1.0. Read exact references and revisions before authorized writes; a meal is a fixed host/recipe selection, not a job, schedule or execution grant.
+Use [recipe pages/defaults/menu preferences](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) for declared fields, saved records, typed Profile defaults, user/external category assignments and reusable nested meals (create/delete). Defaults use the existing hosts.yaml precedence; categories/meals use Profile-local recipe-menu.json 0.2.0. Read exact references and revisions before authorized writes; meals store recipe/meal references and field scopes. Hosts and threads belong to a particular execution. Saving does not grant execution authority.
 
 
 ## Field navigation and inventory split
@@ -815,4 +815,19 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+
+
+## Nested Web meal selections
+
+Use [the menu contract](../../docs/web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/deletion are supported, editing is deferred. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
+
+
+Use [execution throttle](../../docs/web-recipe-menu.md#execution-throttle-and-defaults-010): no fixed host/invocation count cap; default 8 parallel host lanes, sequential within each host. Installation settings and per-run threads are separate.
+
+
+
+Execution defaults are discoverable through Settings → Execution and `opsfeast.execution_settings.inspect/save`, with GET/PUT `/api/v1/recipe-execution/settings` and `python -B -m opsfeast.execution_settings show/set`. Pass a positive integer `threads` with the confirmed start API for a temporary execution override. Default 8 is read without writes, defaults live in external installation data, and per-run overrides do not alter them. Threads changes do not require another preview; the plate confirmation still authorizes only the reviewed targets/recipes. Stop ends active owned workers and leaves queued hosts skipped; synthetic concurrency tests do not prove native SSH or remote cleanup. See [the full service/storage/CLI contract](../../docs/web-recipe-menu.md#execution-throttle-and-defaults-010).
+
+For finding or inspecting an existing Web selection, use [execution pages and history](../../docs/web-recipe-menu.md#execution-page-and-return-navigation). Recipes → Execution history opens saved running/completed selections; exact profile/run URLs can be bookmarked. Use existing recipe-runs reads and saved-result diagnosis for missing fields. Collection, retention and downstream failures remain distinct; reopening/history/diagnosis does not execute or reconnect.
+
+*Last modified: 2026-11-11 21:54:08*

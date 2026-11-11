@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recipe execution settings 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "threads"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "threads": {"type": "integer", "minimum": 1, "default": 8}
+  }
+}

@@ -47,6 +47,7 @@ export default {
     parametersExample: "範例：設定 Bundle Recipe 的 Profile 預設參數（不會啟用或執行 Recipe）", parametersYaml: "default:\n  recipes:\n    system/network/check/port:\n      vars:\n        port: 443", parametersPrecedence: "同一 Recipe 的值依主機覆寫、群組覆寫、Profile 預設及 Recipe 預設值套用；單次執行的 --var／--vars-file 只影響該次執行。完整合併規則請見指南。", parametersGuide: "閱讀參數與繼承規則", parametersChooseProfile: "選擇或管理 Profiles",
     readOnly: "唯讀檢閱", profileHierarchy: "每個 Profile 擁有自己的主機、使用者 Recipes、預設參數與資料政策。", ownedBy: "隸屬於 Profile：{profile}",
     categories: {
+      execution: {title:"執行設定",text:"設定 Recipes 的預設同時執行數；每次執行也能臨時調整。",detail:"預設 8 threads，主機台數不限；同一主機內依序執行。",rules:["儲存設定不會執行工作。"]},
       "bundle-recipes": {title: "Bundle Recipes", text: "獨立檢閱隨 OpsFeast 提供的內建 Recipes、版本及契約。", detail: "內建程式隨產品更新；各 Profile 的執行啟用與參數仍在該 Profile 管理。", rules: []},
       profiles: {title: "Profiles", text: "查看目前預設 profile、環境狀態，建立或切換管理環境。", detail: "沿用 Core 的 profile 管理，現有管理目錄保持原處。", rules: ["不連線、不採集、不執行 recipe。"]},
       site: {title: "站台設定", text: "網站名稱、標語、Logo、代表角色與管理帳號。", detail: "屬於整個 installation，保存在產品目錄外。公開內容會出現在未登入頁。", rules: ["保留原有 UUID、name 與 namespace。", "可換上自己的圖片，也能恢復預設圖案。"]},

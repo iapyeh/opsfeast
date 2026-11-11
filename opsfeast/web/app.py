@@ -15,7 +15,7 @@ from opsfeast import site, admin
 from .security import Sessions, LIFETIME, EditingSessions, EDIT_LIFETIME, AgentCapability, cookie_names, login_destination
 
 WEB_ROOT = REPOSITORY_ROOT / 'web'
-PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/bundle-recipes', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
+PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/bundle-recipes', '/settings/execution', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
 
 
 def create_app(installation=None, *, data_root=None, agent_token=None, edit_token=None, interactive_options=None, console_options=None) -> FastAPI:

@@ -4,6 +4,7 @@ Private variables stay in memory/stdin, never in argv or execution records.
 Owned local worker termination is distinct from remote command cleanup.
 """
 import copy
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -25,6 +26,7 @@ VERSION = '0.1.0'
 MAX_STDOUT = 4 * 1024 * 1024
 MAX_PROGRESS = 65536
 WORKER_DEADLINE = 600
+MAX_RECIPES = 32
 
 
 class RecipeRunError(ConfigError):
@@ -136,18 +138,19 @@ def prepare_pair(root, reference, host, variables, inputs, selection=None):
 
 
 class RecipeRuns:
-    """One serial selection at a time per Web process; previews expire in 10 min.
+    """One confirmed selection at a time, with throttled host lanes per Web process; previews expire in 10 min.
 
     Records survive process restarts. Recovery never signals a saved PID or retries
     an interrupted recipe. There is no scheduler or remote termination guarantee.
     """
     def __init__(self, product, data_root):
         self.product = Path(product).resolve()
+        self.data_root = Path(data_root)
         self.directory = Path(data_root) / 'recipe-runs'
         self.lock = threading.RLock()
         self.plans = {}
         self.active = None
-        self.process = None
+        self.processes = {}
         self.stopping = threading.Event()
         self.thread = None
 
@@ -158,13 +161,13 @@ class RecipeRuns:
         return _digest({'root': str(profile.root), 'namespace': data['namespace'] if data else None})
 
     def preview(self, body):
-        if not isinstance(body, dict) or set(body) != {'profile', 'hosts', 'recipes', 'timeout'}:
+        if not isinstance(body, dict) or set(body)-{'meals'} != {'profile', 'hosts', 'recipes', 'timeout'}:
             raise RecipeRunError('invalid_recipe_selection')
         if not isinstance(body['profile'], str) or not body['profile']:
             raise RecipeRunError('explicit_profile_required')
         hosts, recipes, timeout = body['hosts'], body['recipes'], body['timeout']
-        if (not isinstance(hosts, list) or len(hosts) > 16 or any(not isinstance(h, str) or not h for h in hosts)
-                or len(set(hosts)) != len(hosts) or not isinstance(recipes, list) or not 1 <= len(recipes) <= 32
+        if (not isinstance(hosts, list) or any(not isinstance(h, str) or not h for h in hosts)
+                or len(set(hosts)) != len(hosts) or not isinstance(recipes, list) or not (0 if body.get('meals') else 1) <= len(recipes) <= MAX_RECIPES
                 or type(timeout) not in (int, float) or not 1 <= timeout <= 120):
             raise RecipeRunError('invalid_recipe_selection')
         profile = Instance.open(self.product).profile(body['profile'])
@@ -180,20 +183,22 @@ class RecipeRuns:
                     or choice['reference'] in seen):
                 raise RecipeRunError('invalid_recipe_choice')
             seen.add(choice['reference'])
+        meal_binding=None
+        original_recipes=copy.deepcopy(recipes)
+        if 'meals' in body:
+            from .menu_preferences import expand
+            recipes,meal_binding=expand(profile,recipes,body['meals'])
+        for choice in recipes:
             from recipe_catalog import choose
             item = choose(profile.root, choice['reference'])
             targets = [None] if item['kind'] == 'report' else hosts
             if not targets:
                 raise RecipeRunError('select_hosts_for_operations')
-            if len(pairs) + len(targets) > 64:
-                raise RecipeRunError('selection_exceeds_64_invocations')
             for host in targets:
                 pair, _ = prepare_pair(profile.root, choice['reference'], host, choice['vars'], choice['inputs'], choice.get('inventory_selection'))
                 pair['invocation'].extend(['--profile', profile.name, '--timeout', str(timeout)])
                 pairs.append(pair)
                 private.append(copy.deepcopy(choice))
-        if len(pairs) > 64:
-            raise RecipeRunError('selection_exceeds_64_invocations')
         connection_groups=[]
         for host in hosts:
             group=[choice for pair,choice in zip(pairs,private) if pair['host_id']==host and pair.get('composition')]
@@ -214,7 +219,8 @@ class RecipeRuns:
             if len(self.plans) >= 32:
                 raise RecipeRunError('too_many_recipe_previews')
             self.plans[token] = {'expires': time.monotonic() + 600, 'public': public,
-                                 'root': profile.root, 'private': private, 'started': None}
+                                 'root': profile.root, 'private': private, 'started': None,
+                                 'meal_binding':meal_binding,'meal_choices':original_recipes,'meals':body.get('meals',[])}
         return {**copy.deepcopy(public), 'preview_id': token}
 
     def _path(self, identifier):
@@ -271,7 +277,7 @@ class RecipeRuns:
         records.sort(key=lambda r: r['created_at'], reverse=True)
         return {'items': records[:100], 'total': len(records)}
 
-    def start(self, preview_id, confirmed):
+    def start(self, preview_id, confirmed, threads=None):
         if os.name != 'posix':
             raise RecipeRunError('recipe_workers_require_posix_controller')
         if confirmed is not True:
@@ -286,6 +292,14 @@ class RecipeRuns:
                 raise RecipeRunError('recipe_selection_already_running')
             if self._profile_binding(plan['public']['profile']) != plan['public']['profile_binding']:
                 raise RecipeRunError('recipe_preview_changed_review_again')
+            if plan.get('meal_binding'):
+                from .menu_preferences import expand
+                _,binding=expand(Instance.open(self.product).profile(plan['public']['profile']),plan['meal_choices'],plan['meals'])
+                if binding!=plan['meal_binding']:raise RecipeRunError('recipe_preview_changed_review_again')
+            from .execution_settings import inspect as execution_defaults, validate_threads
+            if threads is None:threads=execution_defaults(self.data_root)['threads']
+            try:validate_threads(threads)
+            except ConfigError:raise RecipeRunError('invalid_recipe_threads') from None
             # Check every pair again before creating any worker.
             for pair, choice in zip(plan['public']['pairs'], plan['private']):
                 current, _ = prepare_pair(plan['root'], pair['reference'], pair['host_id'], choice['vars'], choice['inputs'], choice.get('inventory_selection'))
@@ -295,7 +309,8 @@ class RecipeRuns:
                       'profile_binding': plan['public']['profile_binding'],
                       'created_at': now(), 'completed_at': None, 'state': 'running', 'remote_cleanup': 'not_applicable',
                       'confirmation': 'explicit_selection_confirmed',
-                      'timeout': plan['public']['timeout'],
+                      'selected_meals':plan.get('meals',[]),
+                      'timeout': plan['public']['timeout'], 'threads':threads,
                       'tasks': [{**p, 'state': 'queued', 'progress': '', 'progress_truncated': False,
                                  'result': None, 'local_termination': None} for p in plan['public']['pairs']]}
             self._save(record)
@@ -322,25 +337,66 @@ class RecipeRuns:
             self.thread.join(timeout=5)
 
     def _work(self, record, plan):
+        lanes={}
+        for index,task in enumerate(record['tasks']):
+            lanes.setdefault(task['host_id'],[]).append(index)
         try:
-            consumed=set()
-            for index,(task,choice) in enumerate(zip(record['tasks'],plan['private'])):
-                if index in consumed:continue
-                if self.stopping.is_set():
-                    task['state'] = 'skipped'; continue
-                if self._profile_binding(record['profile']) != record['profile_binding']:
-                    raise RecipeRunError('recipe_profile_binding_changed')
-                task['state'] = 'running'; task['started_at'] = now()
+            remaining=iter(lanes.values())
+            with ThreadPoolExecutor(max_workers=min(record['threads'],len(lanes))) as pool:
+                pending=set()
+                def fill():
+                    while not self.stopping.is_set() and len(pending)<record['threads']:
+                        indices=next(remaining,None)
+                        if indices is None:break
+                        pending.add(pool.submit(self._run_lane,record,plan,indices))
+                fill()
+                while pending:
+                    done,pending=wait(pending,return_when=FIRST_COMPLETED)
+                    for future in done:
+                        try:future.result()
+                        except Exception:
+                            self.stopping.set()
+                            raise
+                    fill()
+            record['state']='stopped' if self.stopping.is_set() else ('completed' if all(t['state']=='success' for t in record['tasks']) else 'completed_with_gaps')
+        except Exception as exc:
+            record.update(state='failed',error_type=type(exc).__name__)
+        finally:
+            with self.lock:
+                for task in record['tasks']:
+                    if task['state']=='queued':task['state']='skipped'
+                    elif task['state']=='running':task.update(state='failed',local_termination='unknown')
+                record['completed_at']=now()
+                if any(t['local_termination'] for t in record['tasks']):record['remote_cleanup']='unknown'
                 with self.lock:
-                    self._save(record)
-                spec = {'root': str(plan['root']), 'reference': task['reference'], 'host': task['host_id'],
-                        'vars': choice['vars'], 'inputs': choice['inputs'], 'fingerprint': task['fingerprint'],
-                        'timeout': record['timeout'], 'inventory_selection': choice.get('inventory_selection')}
-                group=[i for i,(other,pair) in enumerate(zip(record['tasks'],plan['public']['pairs'])) if i not in consumed and other['host_id']==task['host_id'] and pair.get('composition')] if task.get('composition') else []
-                if len(group)>1:
-                    spec['batch']=[{'reference':record['tasks'][i]['reference'],'vars':plan['private'][i]['vars'],'inputs':plan['private'][i]['inputs'],'inventory_selection':plan['private'][i].get('inventory_selection'),'fingerprint':record['tasks'][i]['fingerprint']} for i in group]
+                    try:self._save(record)
+                    finally:
+                        self.active=None
+                        self.processes.clear()
+                        plan['private']=[]
+
+    def _run_lane(self, record, plan, indices):
+        consumed=set()
+        for index in indices:
+            task,choice=record['tasks'][index],plan['private'][index]
+            if index in consumed:continue
+            if self.stopping.is_set():
+                task['state'] = 'skipped'; continue
+            if self._profile_binding(record['profile']) != record['profile_binding']:
+                raise RecipeRunError('recipe_profile_binding_changed')
+            with self.lock:
+                task['state'] = 'running'; task['started_at'] = now()
+                self._save(record)
+            spec = {'root': str(plan['root']), 'reference': task['reference'], 'host': task['host_id'],
+                    'vars': choice['vars'], 'inputs': choice['inputs'], 'fingerprint': task['fingerprint'],
+                    'timeout': record['timeout'], 'inventory_selection': choice.get('inventory_selection')}
+            group=[i for i,(other,pair) in enumerate(zip(record['tasks'],plan['public']['pairs'])) if i not in consumed and other['host_id']==task['host_id'] and pair.get('composition')] if task.get('composition') else []
+            if len(group)>1:
+                spec['batch']=[{'reference':record['tasks'][i]['reference'],'vars':plan['private'][i]['vars'],'inputs':plan['private'][i]['inputs'],'inventory_selection':plan['private'][i].get('inventory_selection'),'fingerprint':record['tasks'][i]['fingerprint']} for i in group]
+                with self.lock:
                     for i in group:record['tasks'][i].update(state='running',started_at=task['started_at'])
-                self._invoke(task, spec, record)
+            self._invoke(task, spec, record)
+            with self.lock:
                 if len(group)>1:
                     children=(task.get('result') or {}).get('children',[])
                     for i in group:
@@ -356,33 +412,21 @@ class RecipeRuns:
                 task['completed_at'] = now()
                 with self.lock:
                     self._save(record)
-            record['state'] = 'stopped' if self.stopping.is_set() else ('completed' if all(t['state'] == 'success' for t in record['tasks']) else 'completed_with_gaps')
-        except Exception as exc:
-            record.update(state='failed', error_type=type(exc).__name__)
-            for task in record['tasks']:
-                if task['state'] == 'running':
-                    task.update(state='failed', local_termination='unknown')
-                elif task['state'] == 'queued':
-                    task['state'] = 'skipped'
-        finally:
-            record['completed_at'] = now()
-            if any(t['local_termination'] for t in record['tasks']):
-                record['remote_cleanup'] = 'unknown'
-            with self.lock:
-                try:
-                    self._save(record)
-                finally:
-                    self.active = None
-                    self.process = None
-                    plan['private'] = []
 
     def _invoke(self, task, spec, record):
+        if self.stopping.is_set():
+            task['state']='skipped'
+            return
         argv = [sys.executable, '-B', '-u', '-m', 'opsfeast.recipe_run_worker']
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTHONUNBUFFERED='1')
         env.pop('OPSFEAST_TUI_EVENTS', None)
-        process = subprocess.Popen(argv, cwd=Path(__file__).resolve().parents[1], env=env, stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
-        self.process = process
+        with self.lock:
+            if self.stopping.is_set():
+                task['state']='skipped'
+                return
+            process = subprocess.Popen(argv, cwd=Path(__file__).resolve().parents[1], env=env, stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+            self.processes[process.pid] = process
         output = bytearray(); overflow = False; forced = False; deadline = time.monotonic() + WORKER_DEADLINE
         try:
             process.stdin.write(json.dumps(spec).encode()); process.stdin.close()
@@ -403,9 +447,10 @@ class RecipeRuns:
                             output.extend(block[:space]); overflow |= len(block) > space
                         else:
                             text = block.decode('utf-8', errors='replace')
-                            combined = task['progress'] + text
-                            task['progress_truncated'] |= len(combined) > MAX_PROGRESS
-                            task['progress'] = combined[-MAX_PROGRESS:]; changed = True
+                            with self.lock:
+                                combined = task['progress'] + text
+                                task['progress_truncated'] |= len(combined) > MAX_PROGRESS
+                                task['progress'] = combined[-MAX_PROGRESS:]; changed = True
                     if changed:
                         with self.lock:
                             if self.stopping.is_set(): record['state'] = 'stopping'
@@ -424,25 +469,26 @@ class RecipeRuns:
                     except ProcessLookupError: pass
                     process.wait(timeout=2)
             for stream in (process.stdout, process.stderr): stream.close()
-            self.process = None
-        task['exitcode'] = process.returncode
-        if forced:
-            task.update(state='stopped' if self.stopping.is_set() else 'failed', local_termination='confirmed',
-                        reason_code='stop_requested' if self.stopping.is_set() else 'worker_deadline')
-            return
-        task['state'] = 'success' if process.returncode == 0 else 'failed'
-        try:
-            if overflow: raise ValueError()
-            result = json.loads(output)
-            # Results already live in raw/retention. Keep receipts and identity here,
-            # not a second copy of potentially large recipe-owned data.
-            keys = ('status', 'reason_code', 'result_path', 'result_id', 'observation_run_id', 'retention',
-                    'content_update', 'execution_identity', 'identity_evidence', 'collection_gaps', 'artifacts', 'children', 'meal_run_id', 'connection_evidence')
-            task['result'] = {key: result[key] for key in keys if key in result}
-            if len(json.dumps(task['result'])) > 65536:
-                task['result'] = {key: result[key] for key in ('status', 'reason_code', 'result_path', 'result_id', 'observation_run_id') if key in result}
-                task['result']['receipt_preview_truncated'] = True
-            if result.get('status') in ('partial', 'unsupported', 'skipped'):
-                task['state'] = result['status']
-        except (ValueError, TypeError):
-            task.update(state='failed', reason_code='worker_output_limit' if overflow else 'invalid_worker_output')
+            with self.lock:self.processes.pop(process.pid,None)
+        with self.lock:
+            task['exitcode'] = process.returncode
+            if forced:
+                task.update(state='stopped' if self.stopping.is_set() else 'failed', local_termination='confirmed',
+                            reason_code='stop_requested' if self.stopping.is_set() else 'worker_deadline')
+                return
+            task['state'] = 'success' if process.returncode == 0 else 'failed'
+            try:
+                if overflow: raise ValueError()
+                result = json.loads(output)
+                # Results already live in raw/retention. Keep receipts and identity here,
+                # not a second copy of potentially large recipe-owned data.
+                keys = ('status', 'reason_code', 'result_path', 'result_id', 'observation_run_id', 'retention',
+                        'content_update', 'execution_identity', 'identity_evidence', 'collection_gaps', 'artifacts', 'children', 'meal_run_id', 'connection_evidence')
+                task['result'] = {key: result[key] for key in keys if key in result}
+                if len(json.dumps(task['result'])) > 65536:
+                    task['result'] = {key: result[key] for key in ('status', 'reason_code', 'result_path', 'result_id', 'observation_run_id') if key in result}
+                    task['result']['receipt_preview_truncated'] = True
+                if result.get('status') in ('partial', 'unsupported', 'skipped'):
+                    task['state'] = result['status']
+            except (ValueError, TypeError):
+                task.update(state='failed', reason_code='worker_output_limit' if overflow else 'invalid_worker_output')

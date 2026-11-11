@@ -19,14 +19,14 @@ class SettingsTests(unittest.TestCase):
 
     def test_catalog_marks_unsupported_config_writes_as_planned(self):
         value=catalog()
-        self.assertEqual([x['id'] for x in value['categories']],['site','profiles','bundle-recipes','hosts','recipes','parameters','retention'])
-        self.assertEqual([x['id'] for x in value['categories'] if x['status']=='available'],['site','profiles','bundle-recipes','hosts','recipes'])
+        self.assertEqual([x['id'] for x in value['categories']],['site','profiles','bundle-recipes','execution','hosts','recipes','parameters','retention'])
+        self.assertEqual([x['id'] for x in value['categories'] if x['status']=='available'],['site','profiles','bundle-recipes','execution','hosts','recipes'])
         for category in [x for x in value['categories'] if x['status']=='planned']:
             self.assertEqual(category['apis'],[])
             self.assertEqual(category['cli'],[])
             self.assertEqual(category['scope'],'profile')
         self.assertEqual(value['schema_version'],'0.2.0')
-        self.assertEqual([x['id'] for x in value['categories'] if x['parent'] is None],['site','profiles','bundle-recipes'])
+        self.assertEqual([x['id'] for x in value['categories'] if x['parent'] is None],['site','profiles','bundle-recipes','execution'])
         self.assertTrue(all(x['parent']=='profiles' for x in value['categories'] if x['scope']=='profile'))
         value['categories'][0]['status']='corrupted'
         self.assertEqual(catalog()['categories'][0]['status'],'available')

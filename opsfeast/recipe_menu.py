@@ -68,16 +68,21 @@ def menu(profile=None):
     order = {ref: i for i, ref in enumerate(GUIDANCE)}
     items.sort(key=lambda i: (i['source'] == 'repository', i['kind'] == 'report', order.get(i['reference'], len(order)), i['reference']))
     from .menu_preferences import inspect as preferences
-    saved=preferences(profile) if profile else {'schema_version':'0.1.0','revision':None,'categories':[],'assignments':{},'sets':[]}
+    saved=preferences(profile) if profile else {'schema_version':'0.2.0','revision':None,'categories':[],'assignments':{},'sets':[]}
     for item in items:
         if item['reference'] in saved['assignments']:item['category_ids']=saved['assignments'][item['reference']]
+    sets=bundle_sets()
+    return {'schema_version': VERSION, 'profile': profile.name if profile else None,
+            'items': items, 'sets': sets, 'sources': [{key: s[key] for key in ('name', 'enabled', 'status')} for s in data['sources']],
+            'status': data['status'], 'blueprint': blueprint,'preferences':saved,
+            'custom_categories':saved['categories'],'user_sets':saved['sets']}
+
+
+def bundle_sets():
     from .routine_contract import validate as meal_definition
     from . import REPOSITORY_RECIPES,read_yaml
     members=meal_definition(REPOSITORY_RECIPES/'system/inventory/overview',read_yaml(REPOSITORY_RECIPES/'system/inventory/overview/recipe.yaml'))['members']
     general=[m['reference'] for m in members if m['enabled']]
     sets=[{'id':'inventory-overview','title':'系統全貌盤點套餐','description':'十道獨立盤點 recipes；同一主機共用連線，先一般權限、後 root。感測另行選擇。','references':general}]
     sets += [{**s,'references':[ref for reference in s['references'] for ref in (general if reference=='system/inventory/overview' else [reference])]} for s in SETS]
-    return {'schema_version': VERSION, 'profile': profile.name if profile else None,
-            'items': items, 'sets': sets, 'sources': [{key: s[key] for key in ('name', 'enabled', 'status')} for s in data['sources']],
-            'status': data['status'], 'blueprint': blueprint,'preferences':saved,
-            'custom_categories':saved['categories'],'user_sets':saved['sets']}
+    return [{**s, 'id':'bundle:'+s['id'], 'recipes':s['references'], 'meals':[], 'selections':{}} for s in sets]

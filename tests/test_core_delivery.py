@@ -298,6 +298,14 @@ assert record['retention_definition']['contract'] == 'inventory-observations'
 assert record['data']['inventory']['hardware']['memory_total_bytes'] is not None
 assert inspect_one(REPOSITORY_RECIPES/'system/inventory/hardware', [])['retention']['schema_path'].endswith('inventory-routine.schema.json')
 assert inspect_one(REPOSITORY_RECIPES/'system/inventory/overview', [])['runner_contract']=='valid-recipe-meal'
+from opsfeast.menu_preferences import inspect as menu_preferences, mutate as menu_mutate, expand as menu_expand
+state=menu_preferences(profile)
+assert state['schema_version']=='0.2.0'
+state=menu_mutate(root,profile='smoke',expected_revision=state['revision'],action='set.create',changes={'title':'Installed nested meal','description':'','recipes':[],'meals':['bundle:inventory-overview'],'selections':{}})
+expanded,_=menu_expand(profile,[],[state['sets'][0]['id']])
+assert len(expanded)==10
+assert 'hosts' not in state['sets'][0]
+
 from retention_consumers import catalog, dispatch, inspect_deliveries
 installed_consumers = {c['id']: c for c in catalog(profile.root)['consumers']}
 assert installed_consumers['vault']['source'] == 'builtin:vault'
