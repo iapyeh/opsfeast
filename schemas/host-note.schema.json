@@ -61,7 +61,14 @@
         "minLength": 1,
         "maxLength": 64
       }
+    },
+    "attachments": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "host-note-document-bundle.schema.json#/$defs/reference"
+      }
     }
   },
-  "$comment": "Syntax/canonical-reference, tag lowercase and text-control rules are enforced by opsfeast.host_notes. Last modified: 2026-11-06 14:13:32"
+  "$comment": "Canonical text, reference, tag and immutable attachment rules are enforced by shared services. Last modified: 2026-11-12 12:30:01"
 }

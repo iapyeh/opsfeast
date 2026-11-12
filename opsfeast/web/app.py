@@ -31,7 +31,15 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     SETUP_COOKIE=EDIT_COOKIE+'_setup'
     agent_capability = AgentCapability(agent_token)
     del agent_token
-    app = FastAPI(title='OpsFeast Web preview', docs_url=None, redoc_url=None, openapi_url=None)
+    from contextlib import asynccontextmanager
+    @asynccontextmanager
+    async def lifespan(application):
+        try:yield
+        finally:
+            from starlette.concurrency import run_in_threadpool
+            preview=getattr(application.state,'note_bundle_preview',None)
+            if preview is not None:await run_in_threadpool(preview.close)
+    app = FastAPI(title='OpsFeast Web preview', docs_url=None, redoc_url=None, openapi_url=None,lifespan=lifespan)
     from .browser_events import BrowserEvents
     app.state.browser_events=BrowserEvents()
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', '[::1]'])
@@ -148,6 +156,12 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
 
     from .host_api import install as install_hosts
     install_hosts(app,product=product,require_admin=require_admin,json_body=json_body)
+
+    from .note_bundle_preview import BundlePreview
+    app.state.note_bundle_preview=BundlePreview(product)
+    from .note_bundle_api import install as install_note_bundles
+    install_note_bundles(app,product=product,require_admin=require_admin,json_body=json_body,
+                        bounded_body=bounded_body,authenticated=authenticated,preview=app.state.note_bundle_preview)
 
     from .workspace_api import install as install_workspace
     install_workspace(app, product=product, require_admin=require_admin)

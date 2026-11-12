@@ -8,6 +8,10 @@ export function loginDestination(search) {
     if(keys.every(key=>['profile','host_id'].includes(key))&&new Set(keys).size===keys.length)return next;
   }
   if(next==='/interactive'||(typeof next==='string'&&new RegExp('^/interactive\\?work='+uuid+'$').test(next)))return next;
+  if(typeof next==='string'&&next.startsWith('/note-attachments?')){
+    const target=new URL(next,'http://local.invalid'),keys=[...target.searchParams.keys()];
+    if(!target.hash&&target.origin==='http://local.invalid'&&target.pathname==='/note-attachments'&&keys.length===4&&new Set(keys).size===4&&keys.every(key=>['profile','host_id','note_uuid','bundle_uuid'].includes(key)))return next;
+  }
   if(typeof next==='string'&&next.startsWith('/hosts?')){
     const target=new URL(next,'http://local.invalid');
     if(target.origin==='http://local.invalid'&&target.pathname==='/hosts'&&

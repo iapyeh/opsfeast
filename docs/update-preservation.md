@@ -125,4 +125,6 @@ effective contents can change as designed; report material changes without rewri
 user definitions. Unknown schemas or incompatible overrides require a concrete
 follow-up decision, not automatic reinitialization or silent conversion.
 
-*Last modified: 2026-11-11 22:35:58*
+Preserve Profile `.host-note-attachments/` together with `.host-notes.json`; [document bundle](host-note-attachments.md) UUIDs, manifests, original file bytes and note relationships must stay unchanged. They are private Profile data, not replaceable product assets. Never reconstruct attachments from report examples or repeat an uncertain upload on update. Preview grants/auxiliary ports are transient and are recreated on demand; they are not installation identity or the main Web port.
+
+*Last modified: 2026-11-12 12:30:01*

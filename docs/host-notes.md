@@ -10,7 +10,7 @@ notes nor writes lessons automatically. The existing private store is extended w
 
 Host notes accumulate installation-specific knowledge for humans and their agents.
 The host's **主機筆記** tab under `/hosts?profile=NAME&host=HOST&view=notes`
-reads real private data, supports title/content search, and lets an administrator
+reads real private data, supports title/content and attachment-name search, and lets an administrator
 add, review, edit and delete notes. Notes are plain text, never executable HTML. The Web view preserves line breaks,
 spaces and indentation through the shared stylesheet, and wraps long lines to fit
 the note panel.
@@ -102,6 +102,7 @@ Each note has the following fields (metadata lists are optional in existing stor
 
 | Field | Meaning |
 | --- | --- |
+| `attachments` | Read-only document-bundle references; empty when absent; use the bundle service to add/remove |
 | `uuid` | Canonical UUID generated on creation; unchanged by edits |
 | `host_id` | Exact host ID within this profile |
 | `title` | Nonblank plain text, up to 200 Unicode code points |
@@ -332,4 +333,8 @@ escaped rendering, timestamp formatting and actual create/edit/delete event hand
 including draft preservation on conflicts. These synthetic tests do not connect to
 any host or prove arbitrary filesystem-writer isolation.
 
-*Last modified: 2026-11-12 11:52:01*
+## Document bundles
+
+Host notes now support [immutable document bundles](host-note-attachments.md): Markdown with local images and explicitly opened, isolated HTML/three.js previews. Plain note edits preserve attachments; merges union them; note deletion removes their references and reports physical cleanup. Preserve `.host-note-attachments/` alongside `.host-notes.json` on update. Use the shared bundle service for file copy/validation rather than injecting paths into notes. Reader/search/export/limits and scoped preview authorization are documented in that guide.
+
+*Last modified: 2026-11-12 12:30:01*

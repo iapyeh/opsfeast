@@ -43,3 +43,7 @@
 # Local binding to persistent installation data (not distributed).
 /.opsfeast-storage.json
 /.opsfeast-storage.lock
+
+# Private host notes and immutable document bundles at a management root.
+/.host-notes.json
+/.host-note-attachments/

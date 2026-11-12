@@ -166,4 +166,6 @@ need the human's corresponding scope.
 
 For code replacement or agent-led upgrades, start with [installation and user-setting preservation](update-preservation.md). This covers external Web port/admin data, Profile menu/defaults/recipes, the one-time port transfer and saved-versus-browser-draft limits.
 
-*Last modified: 2026-11-11 22:35:58*
+For host-specific analysis reports with images or interactive visualizations, use [host-note document bundles](host-note-attachments.md): private immutable file packages, safe Markdown reading, isolated HTML/three.js, shared local APIs and preservation.
+
+*Last modified: 2026-11-12 12:30:01*

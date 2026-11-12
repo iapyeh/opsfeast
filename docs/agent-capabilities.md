@@ -787,4 +787,8 @@ For normal first-use installation, deliver [a verified running Web workspace](ge
 
 For authorized updates, follow [preserve installation state](update-preservation.md). Reuse external `web-server.json` (endpoint 0.2.0), the same administrator/identity/data root and every resolved Profile root; do not run init or replace menu/default/user-recipe files. Use `opsfeast.web_settings.read_port/configure_port/bind_server` with the resolved data root; `migrate_port` / `python -B -m opsfeast.web_settings migrate-port` is the explicit, backed-up old-registry port transfer only. Compare private before/after state, restore the same Web origin and keep service running. Saved categories, assignments, nested meals and field scopes remain unchanged; unsaved browser plates retain their tab/origin/root lifetime limits.
 
-*Last modified: 2026-11-12 10:55:28*
+## Host-note document bundles 0.1.0
+
+Reuse checkout module `opsfeast.note_bundles.create/inspect/read_file/export/delete` and its JSON module CLI for reviewed Profile-local Markdown/HTML report packages. The [canonical guide](host-note-attachments.md) covers stable IDs, revision/cleanup receipts, immutable copied assets, 65 MiB ZIP/64 MiB expanded bounds, safe Markdown images, scoped sandbox HTML/three.js preview and limitations. Browser preview serves local resources through a transient separate port; no uploaded program executes on the server, and no host or Recipe authorization is implied. Discover note summaries first and retrieve only necessary attachment files.
+
+*Last modified: 2026-11-12 12:30:01*

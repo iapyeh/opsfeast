@@ -1,3 +1,4 @@
+import {bundleAttachmentMarkup,mountBundleUpload} from './note-bundles.mjs';
 // Plain-text host notes: no Markdown/HTML execution or remote operations.
 export function formatNoteTimestamp(value) {
   const date=new Date(value);
@@ -8,12 +9,12 @@ export function formatNoteTimestamp(value) {
 export function noteMatches(note,{query='',recipe='',tags=[],includeGeneral=false}={}) {
   const canonical=value=>value.startsWith('bundle:')?value.slice(7):value;
   const refs=note.recipe_references||[],labels=note.tags||[];
-  return (!query||(note.title+'\n'+note.content+'\n'+refs.join('\n')+'\n'+labels.join('\n')).toLocaleLowerCase().includes(query.toLocaleLowerCase())) &&
+  return (!query||(note.title+'\n'+note.content+'\n'+refs.join('\n')+'\n'+labels.join('\n')+'\n'+(note.attachments||[]).map(item=>item.title+' '+item.entry).join('\n')).toLocaleLowerCase().includes(query.toLocaleLowerCase())) &&
     (!recipe||refs.includes(canonical(recipe))||(includeGeneral&&!refs.length)) &&
     tags.every(tag=>labels.includes(tag.toLocaleLowerCase()));
 }
-export function noteMarkup(note,e) {
-  return `<article class="panel roadmap-section"><h3>${e(note.title)}</h3><p class="field-hint">來源：${e(note.source)} · ${e(formatNoteTimestamp(note.timestamp))}</p><p class="field-hint">Recipes：${(note.recipe_references||[]).map(e).join('、')||'未指定（一般主機經驗）'}</p><p class="field-hint">Tags：${(note.tags||[]).map(e).join('、')||'無'}</p><div class="host-note-content">${e(note.content)}</div><details><summary>紀錄識別</summary><code>${e(note.uuid)}</code></details><div class="setup-actions"><button type="button" class="button" data-note-edit="${e(note.uuid)}">編輯</button><button type="button" class="button danger" data-note-delete="${e(note.uuid)}">刪除</button></div></article>`;
+export function noteMarkup(note,e,scope={}) {
+  return `<article class="panel roadmap-section"><h3>${e(note.title)}</h3><p class="field-hint">來源：${e(note.source)} · ${e(formatNoteTimestamp(note.timestamp))}</p><p class="field-hint">Recipes：${(note.recipe_references||[]).map(e).join('、')||'未指定（一般主機經驗）'}</p><p class="field-hint">Tags：${(note.tags||[]).map(e).join('、')||'無'}</p><div class="host-note-content">${e(note.content)}</div>${bundleAttachmentMarkup(note,e,scope)}<details><summary>紀錄識別</summary><code>${e(note.uuid)}</code></details><div class="setup-actions"><button type="button" class="button" data-note-edit="${e(note.uuid)}">編輯</button><button type="button" class="button danger" data-note-delete="${e(note.uuid)}">刪除</button></div></article>`;
 }
 export async function mountHostNotes(root,{profile,host_id,e,request}) {
   let snapshot,busy=false;
@@ -26,12 +27,25 @@ export async function mountHostNotes(root,{profile,host_id,e,request}) {
     catch{root.innerHTML='<p role="status">無法讀取主機筆記。</p><button class="button" id="notes-retry">重新載入</button>';root.querySelector('#notes-retry').onclick=load;}
   }
   function render(){
-    root.innerHTML=`<section class="panel managed-host-form"><div class="panel-heading"><h2>主機筆記</h2><button class="button primary" id="note-add">新增筆記</button></div><p>累積這台主機的經驗與注意事項。每次儲存取代原內容，不保留編輯歷程；刪除無法復原。</p><label>搜尋筆記<input type="search" id="note-search"></label><label>Recipe reference（完整比對）<input id="note-recipe-filter" placeholder="system/inventory/overview"></label><label>Tags（全部符合，以逗號分隔）<input id="note-tags-filter"></label><label><input type="checkbox" id="note-general-filter" checked> 同時顯示未關聯 Recipe 的一般主機經驗</label></section><div id="note-editor"></div><div id="notes-list"></div><dialog id="note-delete-dialog" class="host-confirm-dialog"><form id="note-delete-form"><h2>刪除主機筆記</h2><p id="note-delete-title"></p><p>刪除後無法復原。</p><p role="status" id="note-delete-status"></p><div class="setup-actions"><button class="button danger" type="submit">確定刪除</button><button class="button" type="button" id="note-delete-cancel">取消</button></div></form></dialog>`;
+    root.innerHTML=`<section class="panel managed-host-form"><div class="panel-heading"><h2>主機筆記</h2><button class="button primary" id="note-add">新增筆記</button></div><p>累積這台主機的經驗與注意事項。每次儲存取代原內容，不保留編輯歷程；刪除無法復原。</p><label>搜尋筆記<input type="search" id="note-search"></label><label>Recipe reference（完整比對）<input id="note-recipe-filter" placeholder="system/inventory/overview"></label><label>Tags（全部符合，以逗號分隔）<input id="note-tags-filter"></label><label><input type="checkbox" id="note-general-filter" checked> 同時顯示未關聯 Recipe 的一般主機經驗</label></section><div id="note-editor"></div><div id="notes-list"></div><dialog id="note-delete-dialog" class="host-confirm-dialog"><form id="note-delete-form"><h2>刪除主機筆記</h2><p id="note-delete-title"></p><p>筆記與其文件包附件將一併刪除，無法復原。</p><p role="status" id="note-delete-status"></p><div class="setup-actions"><button class="button danger" type="submit">確定刪除</button><button class="button" type="button" id="note-delete-cancel">取消</button></div></form></dialog>`;
     const list=root.querySelector('#notes-list');
     function show(){
       const needle=root.querySelector('#note-search').value.trim().toLocaleLowerCase();
       const notes=snapshot.notes.filter(n=>noteMatches(n,{query:needle,recipe:root.querySelector('#note-recipe-filter').value.trim(),tags:root.querySelector('#note-tags-filter').value.split(',').map(x=>x.trim()).filter(Boolean),includeGeneral:root.querySelector('#note-general-filter').checked}));
-      list.innerHTML=notes.length?notes.map(n=>noteMarkup(n,e)).join(''):'<p>目前沒有符合條件的筆記。</p>';
+      list.innerHTML=notes.length?notes.map(n=>noteMarkup(n,e,scope)).join(''):'<p>目前沒有符合條件的筆記。</p>';
+      list.querySelectorAll('[data-note-attach]').forEach(button=>button.onclick=()=>{
+        if(busy)return;const target=root.querySelector('#note-editor');
+        mountBundleUpload(target,{scope,note:snapshot.notes.find(n=>n.uuid===button.dataset.noteAttach),revision:snapshot.revision,e,request,onSaved:load,onCancel:()=>target.innerHTML='',onBusy:value=>busy=value});
+      });
+      list.querySelectorAll('[data-bundle-delete]').forEach(button=>button.onclick=async()=>{
+        if(busy)return;const note=snapshot.notes.find(n=>n.uuid===button.dataset.bundleNote),bundle=note.attachments.find(item=>item.uuid===button.dataset.bundleDelete);
+        if(!globalThis.confirm('刪除附件「'+bundle.title+'」及其全部檔案？此操作無法復原。'))return;
+        busy=true;
+        try{
+          const result=await request('/api/v1/note-bundles',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({...scope,note_uuid:note.uuid,bundle_uuid:bundle.uuid,expected_revision:snapshot.revision,confirmation:bundle.uuid})});
+          busy=false;await load();if(result.cleanup?.failed?.length)root.querySelector('#note-editor').textContent='附件關聯已移除，但檔案清理未完成；請交由管理者檢查。';
+        }catch(error){busy=false;root.querySelector('#note-editor').textContent=errorText(error);}
+      });
       list.querySelectorAll('[data-note-edit]').forEach(button=>button.onclick=()=>edit(snapshot.notes.find(n=>n.uuid===button.dataset.noteEdit)));
       list.querySelectorAll('[data-note-delete]').forEach(button=>button.onclick=()=>remove(snapshot.notes.find(n=>n.uuid===button.dataset.noteDelete)));
     }
@@ -61,7 +75,7 @@ export async function mountHostNotes(root,{profile,host_id,e,request}) {
     dialog.oncancel=event=>{if(busy)event.preventDefault();};dialog.showModal();
     form.onsubmit=async event=>{
       event.preventDefault();if(busy)return;busy=true;form.querySelectorAll('button').forEach(b=>b.disabled=true);
-      try{await request(endpoint,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({...scope,note_uuid:note.uuid,expected_revision:snapshot.revision,confirmation:note.uuid})});dialog.close();busy=false;await load();}
+      try{const result=await request(endpoint,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({...scope,note_uuid:note.uuid,expected_revision:snapshot.revision,confirmation:note.uuid})});dialog.close();busy=false;await load();if(result?.attachment_cleanup?.failed?.length)root.querySelector('#note-editor').textContent='筆記已刪除，但部分附件檔案清理未完成；請交由管理者檢查。';}
       catch(error){root.querySelector('#note-delete-status').textContent=errorText(error);busy=false;form.querySelectorAll('button').forEach(b=>b.disabled=false);}
     };
   }

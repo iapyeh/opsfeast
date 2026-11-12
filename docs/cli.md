@@ -1098,4 +1098,8 @@ The Web menu now retains nested meal references and host-free user definitions u
 
 For installation-wide Web recipe concurrency, use `python -B -m opsfeast.execution_settings show --installation PATH` and `set --installation PATH --threads N --expected-revision REV`. These JSON commands share the revision-checked Settings service and do not execute recipes. Web defaults use 8 host lanes; per-run overrides are temporary. Existing recipe CLI `--threads` remains independent. See [execution defaults](web-recipe-menu.md#execution-throttle-and-defaults-010).
 
-*Last modified: 2026-11-11 16:11:57*
+## Host-note document bundles
+
+Use `python -B -m opsfeast.note_bundles --installation PRODUCT --profile NAME --host HOST --note NOTE_UUID add|show|export|delete`. Read [document bundles 0.1.0](host-note-attachments.md#shared-python-and-cli-interfaces) for exact source/entry/revision/confirmation options and JSON receipts. Inputs are reviewed local ZIP/directory files, never code execution. Export refuses existing destinations; note/bundle scope and hashes are verified on reads. Browser preview is separately authorized by the authenticated reader, with no host connection or server-side execution.
+
+*Last modified: 2026-11-12 12:30:01*

@@ -73,4 +73,6 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [recipe-assessment.schema.json](recipe-assessment.schema.json) defines optional label, severity and summary separately from fixed execution status. [recipe-execution.schema.json](recipe-execution.schema.json) describes partial operator policy; effective inherited su/sudo policies require an explicit target. [recipe-execution-evidence.schema.json](recipe-execution-evidence.schema.json) preserves verified login/actual identities and restoration evidence. Retained envelopes, batch targets and compact observation views reference the applicable metadata contracts. Read [results and accounts](../docs/recipe-results-and-accounts.md) for configuration, failure precedence and verification limits.
 
-*Last modified: 2026-11-12 10:55:28*
+[Host-note document bundles 0.1.0](host-note-document-bundle.schema.json) defines immutable copied-file manifests and note attachment references. [Storage/API/preview semantics](../docs/host-note-attachments.md) enforce path, revision, byte-limit and isolation rules beyond schema validation. Existing notes gain an optional attachment list; reads do not rewrite absent lists.
+
+*Last modified: 2026-11-12 12:30:01*

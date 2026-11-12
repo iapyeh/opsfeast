@@ -33,6 +33,8 @@ def login_destination(next_url):
     if re.fullmatch(r'/console/' + uuid + r'(?:/history)?(?:/blocks/' + uuid + r')?', target.path):
         if len(keys) == len(set(keys)) and set(keys) <= {'profile', 'host_id'}:
             return next_url
+    if target.path == '/note-attachments' and len(keys)==len(set(keys)) and set(keys)=={'profile','host_id','note_uuid','bundle_uuid'}:
+        return next_url
     if target.path == '/hosts' and set(keys) <= {'profile', 'host', 'view', 'new'}:
         return next_url
     if target.path == '/logs' and len(keys) == len(set(keys)) and set(keys) <= {'profile', 'entry', 'result'}:

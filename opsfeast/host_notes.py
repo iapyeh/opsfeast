@@ -112,9 +112,9 @@ def _read(selected):
             if not isinstance(data, dict) or set(data) != {'schema_version', 'revision', 'notes'} or data['schema_version'] != VERSION or not isinstance(data['notes'], list):
                 raise ValueError()
             _uuid(data['revision'])
-            seen = set()
+            seen = set();seen_attachments=set()
             for note in data['notes']:
-                if not isinstance(note, dict) or not {'uuid','host_id','title','content','source','timestamp'} <= set(note) or set(note)-{'uuid','host_id','title','content','source','timestamp','recipe_references','tags'}:
+                if not isinstance(note, dict) or not {'uuid','host_id','title','content','source','timestamp'} <= set(note) or set(note)-{'uuid','host_id','title','content','source','timestamp','recipe_references','tags','attachments'}:
                     raise ValueError()
                 _uuid(note['uuid'])
                 if note['uuid'] in seen:
@@ -123,15 +123,29 @@ def _read(selected):
                 _text(note['host_id'], 200)
                 metadata=_content({k:note[k] for k in ('title','content','source','recipe_references','tags') if k in note})
                 note.update({key:metadata.get(key,[]) for key in ('recipe_references','tags')})
+                from .note_bundles import validate_references
+                note['attachments']=validate_references(note.get('attachments',[]))
+                for attachment in note['attachments']:
+                    if attachment['uuid'] in seen_attachments:raise ValueError()
+                    seen_attachments.add(attachment['uuid'])
                 stamp = datetime.fromisoformat(note['timestamp'])
                 if stamp.utcoffset() is None or stamp.isoformat(timespec='seconds') != note['timestamp']:
                     raise ValueError()
-        except (ValueError, TypeError, KeyError, HostNotesError):
+        except (ValueError, TypeError, KeyError, ConfigError):
             _fail('note_storage_invalid')
     # Opaque content revision includes a nonce so deleting/recreating identical notes
     # cannot accidentally accept a stale edit. No old revisions are retained.
     revision = hashlib.sha256(str(selected.root).encode() + b'\0' + raw).hexdigest()
     return data, revision
+
+
+def _save(selected,data,revision):
+    data['revision']=str(uuid4())
+    raw=(json.dumps(data,ensure_ascii=False,indent=2)+'\n').encode('utf-8')
+    if len(raw)>MAX_BYTES:_fail('note_storage_full')
+    if _read(selected)[1]!=revision:_fail('note_revision_conflict')
+    _atomic(_path(selected),raw)
+    return hashlib.sha256(str(selected.root).encode()+b'\0'+raw).hexdigest()
 
 
 def inspect(installation, *, profile, host_id, query='', recipe_reference=None, tags=None, include_general=False):
@@ -146,7 +160,7 @@ def inspect(installation, *, profile, host_id, query='', recipe_reference=None, 
     data, revision = _read(selected)
     needle = query.casefold()
     notes = [n for n in data['notes'] if n['host_id'] == host_id and
-             (not needle or needle in (n['title'] + '\n' + n['content']+'\n'+'\n'.join(n['recipe_references']+n['tags'])).casefold()) and
+             (not needle or needle in (n['title'] + '\n' + n['content']+'\n'+'\n'.join(n['recipe_references']+n['tags'])+'\n'+'\n'.join(r['title']+' '+r['entry'] for r in n.get('attachments',[]))).casefold()) and
              (recipe_reference is None or recipe_reference in n['recipe_references'] or (include_general and not n['recipe_references'])) and
              set(tags)<=set(n['tags'])]
     return {'schema_version': VERSION, 'profile': profile, 'host_id': host_id,
@@ -193,6 +207,7 @@ def mutate(installation, *, profile, host_id, action, expected_revision,
             required = ([note_uuid] if action != 'create' else []) + (remove or [])
             if any(identifier not in rows for identifier in required):
                 _fail('note_not_found')
+            old_attachments=[r for n in rows.values() for r in n.get('attachments',[])]
             deleted = [note_uuid] if action == 'delete' else (remove or [])
             data['notes'] = [n for n in data['notes'] if n['uuid'] not in deleted]
             note = None
@@ -203,20 +218,20 @@ def mutate(installation, *, profile, host_id, action, expected_revision,
                 for key in ('recipe_references','tags'):
                     if key not in changes:
                         changes[key]=_labels(sorted({v for old in related for v in old[key]}),key)
-                note = {'uuid': identifier, 'host_id': host_id, **changes,
+                attachments={r['uuid']:r for old in related for r in old.get('attachments',[])}
+                if len(attachments)>32:_fail('note_attachment_limit')
+                note = {'uuid': identifier, 'host_id': host_id, **changes,'attachments':list(attachments.values()),
                         'timestamp': datetime.now(timezone.utc).isoformat(timespec='seconds')}
                 data['notes'] = [n for n in data['notes'] if n['uuid'] != identifier] + [note]
-            data['revision'] = str(uuid4())
-            raw = (json.dumps(data, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
-            if len(raw) > MAX_BYTES:
-                _fail('note_storage_full')
-            # Recheck even non-cooperating edits before atomic replacement.
-            if _read(selected)[1] != revision:
-                _fail('note_revision_conflict')
-            _atomic(_path(selected), raw)
-            return {'schema_version': VERSION, 'profile': profile, 'host_id': host_id,
-                    'action': action, 'note': note, 'deleted': deleted,
-                    'revision': hashlib.sha256(str(selected.root).encode() + b'\0' + raw).hexdigest()}
+            new_revision=_save(selected,data,revision)
+            remaining={r['uuid'] for n in data['notes'] for r in n.get('attachments',[])}
+            removed={r['uuid']:r for r in old_attachments if r['uuid'] not in remaining}
+            result={'schema_version': VERSION, 'profile': profile, 'host_id': host_id,
+                    'action': action, 'note': note, 'deleted': deleted,'revision':new_revision}
+            if removed:
+                from .note_bundles import cleanup
+                result['attachment_cleanup']=cleanup(selected,list(removed.values()))
+            return result
 
 
 def main(argv=None):

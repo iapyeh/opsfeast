@@ -383,4 +383,8 @@ need the human's corresponding scope.
 
 The [Web execution page](../../docs/web-recipe-menu.md#execution-page-and-return-navigation) identifies incomplete tasks and lazily reads saved result diagnosis for exact missing properties/reasons inside task cards. Reuse GET `/api/v1/results/diagnosis` with exact Profile and result ID; missing evidence remains explicit. The shared progress area is grouped bounded runner output, not another authoritative chronological stream. Recipes → Execution history reads installation-owned run records without retrying or collecting.
 
-*Last modified: 2026-11-11 16:38:05*
+## Host-note document bundles
+
+For a host report with images/scripts/data, use [document bundles 0.1.0](../../docs/host-note-attachments.md). Read `host_notes.inspect` to select exact Profile/host/note UUID, then reuse checkout `opsfeast.note_bundles.inspect/read_file/export` instead of filesystem guesses; retrieve necessary files after reading summaries. Attachment titles/entry names join note search, not package full text. Report evidence age and missing/digest-failed content. Reviewed local writes use `create(..., source=reviewed_directory_or_zip, entry="index.md", expected_revision=..., title=...)` or the documented JSON module CLI; human-authorized saves do not grant execution. Preserve the note index and `.host-note-attachments/` together; reread conflicts/uncertain writes and report cleanup receipts without automatic retries/garbage collection. Web supports safe Markdown images and explicit opaque-sandbox HTML/three.js; external CDN/API and workers are unsupported. The canonical guide owns versions, dependencies, byte limits, API examples and browser verification scope.
+
+*Last modified: 2026-11-12 12:36:44*

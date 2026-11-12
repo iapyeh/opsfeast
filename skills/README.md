@@ -312,4 +312,6 @@ need the human's corresponding scope.
 
 For authorized updates, follow [preserve installation state](../docs/update-preservation.md). Reuse external `web-server.json` (endpoint 0.2.0), the same administrator/identity/data root and every resolved Profile root; do not run init or replace menu/default/user-recipe files. Use `opsfeast.web_settings.read_port/configure_port/bind_server` with the resolved data root; `migrate_port` / `python -B -m opsfeast.web_settings migrate-port` is the explicit, backed-up old-registry port transfer only. Compare private before/after state, restore the same Web origin and keep service running. Saved categories, assignments, nested meals and field scopes remain unchanged; unsaved browser plates retain their tab/origin/root lifetime limits.
 
-*Last modified: 2026-11-12 10:55:28*
+For preserving host analysis reports and their images/scripts/data, use [host-note document bundles 0.1.0](../docs/host-note-attachments.md), routed through hosts, result-data and recipes skills. Reuse `opsfeast.note_bundles` and its JSON CLI for reviewed local file packages, with revision/hash preservation. Web supports safe Markdown images and explicit isolated HTML/three.js; no host connection, remote execution or automatic library acquisition is implied.
+
+*Last modified: 2026-11-12 12:30:01*
