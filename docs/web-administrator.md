@@ -24,32 +24,90 @@ This is loopback-only single-administrator login plus an independent
 [agent owner capability](agent-owner.md), not multi-user RBAC or public hosting.
 The human administrator owns decisions; the agent can perform all Web operations
 with its memory-only capability only within the human's instructions and consent.
-There are no default credentials. The human may provide a password in the agent
-conversation or ask for generation; do not invent a change or save secrets in argv,
+There are no default credentials. Use the private first-account Web form by default; do not ask for credentials
+in the agent conversation. Explicit agent reset/generation remains available when
+the human specifically requests that workflow; do not invent a change or save secrets in argv,
 river records, scripts or repository files.
 
 ## First-use Web guide
 
+For agent-led installation, immediately issue the private Web form after readiness,
+using the retained controller. The human enters credentials in the browser; the
+agent reads only completion status. Do not wait for a copied prompt, ask for secrets
+in chat, or reset existing accounts. Follow the procedure below.
+
+
+If an unconfigured installation was launched without agent control, onboarding
+shows a copyable recovery instruction and tells the human to send it in the
+original agent chat, then return and recheck after completion. Copying does not
+contact an agent or restart anything. Follow [Web startup verification](getting-started.md#include-and-launch-the-web-workspace):
+preserve the existing data/port, reconcile active work, and verify agent control
+before inviting the human to configure an account. Failed status requests retain
+the generic retry message rather than claiming a known launch problem.
+
+
+The normal [first-use setup plan](getting-started.md#include-and-launch-the-web-workspace)
+already includes selecting the installation's loopback port, starting Web, verifying
+HTTP and providing the actual URL. This browser guide handles the remaining account
+choices; it does not replace that agent startup/handoff responsibility. Preserve
+an existing administrator; startup alone never grants a password reset.
+
 When no administrator exists, `/` and `/login` show the first-use guide; `/setup`
-is its stable route. It explains how to ask the launching agent to create the
-administrator, provides a copyable prompt with the website origin, and offers a
-progress recheck button. It never asks for a token file or displays the owner token.
-After the agent confirms the saved account, the human logs in, then optionally sets
-appearance. Reload derives progress from `GET /api/v1/setup` and its
-[Boolean schema](../schemas/setup-status.schema.json), including
-agent_control_available. Unknown progress never counts as success. No recipe,
-managed-host connection or profile is created by this guide.
+is its stable route. A dedicated link opens the account form. A plain visit explains
+how to obtain that link, with a copyable instruction only for interrupted setup.
+After creation, the human logs in and optionally sets appearance. Reload derives
+progress from `GET /api/v1/setup` and its [Boolean schema](../schemas/setup-status.schema.json).
+No managed-host operation or Profile creation occurs.
+
+## Private first-account form 0.1.0
+
+1. After authorized first-use startup, send the retained controller:
+   `{"op":"admin.setup-form","request_id":"setup-form-1","authorization":"Human approved first-use Web setup"}`.
+   This calls owner-only `POST /api/v1/agent/setup-form` with `{}` and returns
+   `{schema_version:"0.1.0",url,expires_in:600}`. Present that exact link to the human;
+   the narrow setup secret is distinct from the owner capability. Treat the link
+   as private first-account authority, not a public share link. Existing accounts
+   return 409 and must be preserved.
+2. The link uses `/setup#setup-token=...`. Fragments are not sent in HTTP requests;
+   Web removes it from the current history entry before claiming it via same-origin
+   JSON `POST /api/v1/setup/claim` with `{token}`. Successful claim consumes the link,
+   sets an installation-scoped HttpOnly SameSite=Strict cookie and returns a CSRF
+   value kept only in this page's memory. The grant expires ten minutes after issue;
+   claiming does not extend it. Reissue revokes the old link and browser grant.
+3. The form sends `{username,password,csrf}` to `POST /api/v1/setup/administrator`.
+   Both the browser cookie and CSRF value plus an exact Origin are required. The
+   server atomically creates revision 1 using `admin.configure(expected_revision=0)`;
+   a successful response is only `{configured:true}`. Password confirmation stays
+   browser-side. No account/password is returned to the agent, Console, browser
+   storage or URL, and only salted scrypt metadata is saved in installation-data.
+   The first-account API cannot reset an existing account. This is the local Web
+   security boundary, not protection against compromised same-origin code or OS.
+4. Validation errors allow correction within the remaining lifetime; password fields
+   are cleared after failed submissions. Success consumes the grant and clears
+   fields; the human signs in normally. Invalid/missing/replayed/expired grants
+   return 401, foreign/missing Origin 403, malformed requests 422 (or 415 for
+   non-JSON), existing accounts 409. Concurrent success is bounded by both the
+   grant lock and administrator revision check. Errors never echo credentials.
+5. Agent reads `GET /api/v1/setup` for `admin_configured: true`; it does not retrieve
+   credentials. Pending human input is not failure and does not authorize creating
+   an account in chat. Reloading/closing the form, expiration or restarting Web can
+   require a fresh `admin.setup-form`; never reinitialize data as recovery. All grants
+   are bounded to one outstanding form per server and exist only in memory.
+
+See [transient grant responses](../schemas/setup-form.schema.json),
+[controller interface](agent-owner.md) and `tests/test_setup_forms.py` plus
+`tests/test_first_use.mjs`. Tests use synthetic credentials, not the user's account.
 
 ## Account lifecycle and recovery
 
 1. Start the existing installation with `python -B -u -m opsfeast.web --agent-control`.
    Keep its private stdin/controller alive; see [controls](agent-owner.md).
-2. The human asks the agent to set the administrator username/password, supplying
-   the password or requesting generation. The agent uses admin.password; no old
-   password is needed by its independently authenticated owner identity.
-3. Passwords accept exact nonempty Unicode strings, with no character-count or
-   composition requirement; normal request-size bounds still apply. Username stays
-   3–64 ASCII letters/digits/dot/hyphen/underscore. Password hashing is unchanged.
+2. For an absent administrator, issue `admin.setup-form` and use the private Web
+   workflow above. Do not ask for passwords in chat. Existing accounts are preserved.
+3. Explicitly requested agent resets/generation can still use `admin.password`;
+   this alternate path involves the agent channel and is not private Web entry.
+   Account usernames require 3–64 ASCII letters/digits/dot/hyphen/underscore.
+   Passwords must be nonempty; salted scrypt storage is unchanged.
 4. The human logs in at `/login`. Account settings on `/settings/site` still allow
    human changes with the current password and current revision.
 5. For a forgotten password, ask the launching agent to set a new one. The owner
@@ -205,4 +263,4 @@ public-network readiness.
 Implementation references: [Python hashlib](https://docs.python.org/3/library/hashlib.html#hashlib.scrypt)
 and [Starlette response cookies](https://starlette.dev/responses/#set-cookie).
 
-*Last modified: 2026-11-05 16:06:59*
+*Last modified: 2026-11-12 10:57:17*

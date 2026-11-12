@@ -5,7 +5,7 @@ daemon direction, read [system profiling architecture](system-profiling.md).
 For shipped capability discovery and saved host Web/CLI/Python views, read
 [profiling 0.1.0](profiling.md).
 
-For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.2.0](web-server.md): External installation-data `web-server.json` stores the port; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
 
 For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
 
@@ -33,6 +33,7 @@ bundled defaults and planned hosts/recipes/defaults/retention configuration.
 For Web personalization and upgrade-preserved installation identity/site assets,
 read [presentation](site-presentation.md), [persistent storage](installation-storage.md)
 and the [Web preview](../web/README.md). Profile management roots are separate.
+
 
 Use [recipe classification and location](recipe-taxonomy.md) for the current bundled paths, variable-depth domain/action convention, user profile/shared-source placement and relocation effects on configuration, jobs, consumers and historical evidence.
 
@@ -161,4 +162,8 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 17:31:30*
+
+
+For code replacement or agent-led upgrades, start with [installation and user-setting preservation](update-preservation.md). This covers external Web port/admin data, Profile menu/defaults/recipes, the one-time port transfer and saved-versus-browser-draft limits.
+
+*Last modified: 2026-11-11 22:35:58*

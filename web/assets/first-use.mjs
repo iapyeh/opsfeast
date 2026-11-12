@@ -9,9 +9,16 @@ export function setupProgress(l,phase,e) {
   const active={verify:0,account:1,appearance:2,done:3,login:2,unavailable:0}[phase];
   return `<ol class="setup-progress" aria-label="${e(l.title)}">${l.steps.map((name,index)=>`<li${index===active?' aria-current="step"':''} class="${index<active?'complete':''}"><span>${index<active?'✓':index+1}</span><div>${e(name)}${index===2?`<small>${e(l.optional)}</small>`:''}</div></li>`).join('')}</ol>`;
 }
+export function takeSetupToken(location=globalThis.location,history=globalThis.history){
+  const token=new URLSearchParams((location?.hash||'').replace(/^#/,'')).get('setup-token');
+  if(token)history.replaceState(null,'',location.pathname+location.search);
+  return token;
+}
 export async function mountFirstUse(container,{m,e,origin,port}) {
   const l=m.firstUse;
   let context;
+  let setupToken=takeSetupToken();
+  let formCsrf=null;
   const request=async(path,options={})=>{
     const response=await fetch(path,options);
     if(!response.ok){const error=new Error('setup_request_failed');error.status=response.status;throw error;}
@@ -26,7 +33,7 @@ export async function mountFirstUse(container,{m,e,origin,port}) {
   async function appearance(){
     panel('appearance',l.appearanceTitle,l.appearanceIntro,'<div id="setup-appearance"></div>'+`<div class="setup-actions"><button id="setup-skip" class="button" type="button">${e(l.skip)}</button><button id="setup-reverify" class="text-button" type="button">${e(l.reverify)}</button></div>`);
     container.querySelector('#setup-skip').addEventListener('click',finish);
-    container.querySelector('#setup-reverify').addEventListener('click',verify);
+    container.querySelector('#setup-reverify').addEventListener('click',()=>verify());
     try{
       const site=await request('/api/v1/site');
       const editor=container.querySelector('#setup-appearance');
@@ -35,9 +42,34 @@ export async function mountFirstUse(container,{m,e,origin,port}) {
       editor.querySelector('.site-save-bar .field-hint').textContent=l.appearanceSaveHint;
     }catch{panel('unavailable',l.unavailable,'',`<button id="setup-retry" class="button" type="button">${e(l.retry)}</button>`);container.querySelector('#setup-retry').addEventListener('click',start);}
   }
-  function verify(){
-    const prompt=l.agentPrompt.replace('{origin}',origin);
-    panel('verify',l.verifyTitle,l.verifyIntro,`<div class="setup-help"><h3>${e(l.agentTitle)}</h3><p>${e(l.agentHint)}</p><textarea id="setup-agent-prompt" readonly aria-label="${e(l.copy)}">${e(prompt)}</textarea><button id="setup-copy" class="button" type="button">${e(l.copy)}</button><p id="setup-copy-status" role="status"></p></div><button id="setup-recheck" class="button primary" type="button">${e(l.reverify)}</button>`);
+  async function account(){
+    try{
+      const token=setupToken;setupToken=null;
+      const grant=await request('/api/v1/setup/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+      formCsrf=grant.csrf;
+    }catch{verify();container.querySelector('#setup-copy-status').textContent=l.expired;return;}
+    panel('account',l.accountTitle,l.accountIntro,`<form id="setup-account"><label>${e(l.username)}<input id="setup-username" name="username" autocomplete="username" pattern="[A-Za-z0-9_.\\-]{3,64}" minlength="3" maxlength="64" required></label><p>${e(l.usernameHint)}</p><label>${e(l.password)}<input id="setup-password" name="password" type="password" autocomplete="new-password" required></label><label>${e(l.confirmPassword)}<input id="setup-confirm" name="confirmation" type="password" autocomplete="new-password" required></label><p id="setup-account-status" role="status" tabindex="-1"></p><button class="button primary" type="submit">${e(l.createAccount)}</button></form><button id="setup-recheck" class="text-button" type="button">${e(l.retry)}</button>`);
+    container.querySelector('#setup-recheck').addEventListener('click',start);
+    container.querySelector('#setup-account').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const form=container.querySelector('#setup-account'),password=container.querySelector('#setup-password'),confirmation=container.querySelector('#setup-confirm');
+      const message=container.querySelector('#setup-account-status');
+      if(password.value!==confirmation.value){status(message,l.passwordMismatch);return;}
+      const button=form.querySelector('button');button.disabled=true;
+      try{
+        await request('/api/v1/setup/administrator',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:container.querySelector('#setup-username').value,password:password.value,csrf:formCsrf})});
+        form.reset();formCsrf=null;await start();
+      }catch(error){
+        password.value='';confirmation.value='';
+        if(error.status===401){formCsrf=null;verify();container.querySelector('#setup-copy-status').textContent=l.expired;}
+        else if(error.status===409){formCsrf=null;await start();}
+        else status(message,l.accountFailed);
+      }finally{button.disabled=false;}
+    });
+  }
+  function verify(recovery=false){
+    const prompt=(recovery?l.recoveryPrompt:l.agentPrompt).replace('{origin}',origin);
+    panel('verify',recovery?l.noUnlock:l.verifyTitle,recovery?l.recoveryIntro:l.verifyIntro,`<div class="setup-help"><h3>${e(l.agentTitle)}</h3><p>${e(l.agentHint)}</p><textarea id="setup-agent-prompt" readonly aria-label="${e(l.copy)}">${e(prompt)}</textarea><button id="setup-copy" class="button" type="button">${e(l.copy)}</button><p id="setup-copy-status" role="status"></p></div><button id="setup-recheck" class="button primary" type="button">${e(l.reverify)}</button>`);
     container.querySelector('#setup-copy').addEventListener('click',async()=>{
       try{await navigator.clipboard.writeText(prompt);container.querySelector('#setup-copy-status').textContent=l.copied;}
       catch{container.querySelector('#setup-agent-prompt').select();container.querySelector('#setup-copy-status').textContent=l.copyFailed;}
@@ -48,12 +80,15 @@ export async function mountFirstUse(container,{m,e,origin,port}) {
     try{
       context=await request('/api/v1/setup');
       const phase=setupPhase(context);
-      if(phase==='verify')verify();
+      if(context.admin_configured){setupToken=null;formCsrf=null;}
+      if(phase==='verify'&&setupToken)await account();
+      else if(phase==='verify')verify();
       else if(phase==='appearance')await appearance();
       else if(phase==='login')panel('login',l.loginTitle,l.loginIntro,`<a class="button primary" href="/login?next=%2Fsetup">${e(l.loginContinue)} →</a>`);
+      else if(context?.agent_control_available===false&&context?.admin_configured===false)verify(true);
       else throw new Error('setup_unavailable');
     }catch{
-      panel('unavailable',context?.agent_control_available===false&&!context?.admin_configured?l.noUnlock:l.unavailable,'',`<button id="setup-retry" class="button" type="button">${e(l.retry)}</button>`);
+      panel('unavailable',l.unavailable,'',`<button id="setup-retry" class="button" type="button">${e(l.retry)}</button>`);
       container.querySelector('#setup-retry').addEventListener('click',start);
     }
   }

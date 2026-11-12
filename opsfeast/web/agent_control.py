@@ -105,6 +105,10 @@ class Controller:
             raw=None
             if 'body_base64' in body:raw=(base64.b64decode(body['body_base64'],validate=True),body.get('content_type','application/octet-stream'))
             return self.request(body.get('method','GET'),body['path'],body.get('body'),raw=raw)
+        if op=='admin.setup-form':
+            if set(body)-{'op','request_id','authorization'}:raise ValueError('invalid_setup_fields')
+            self.authorization(body)
+            return self.request('POST','/api/v1/agent/setup-form',{})
         if op=='admin.password':
             if set(body)-{'op','request_id','username','password','generate','authorization'}:raise ValueError('invalid_password_fields')
             self.authorization(body)

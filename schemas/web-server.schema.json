@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Installation-data Web endpoint 0.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "port"],
+  "properties": {
+    "schema_version": {"const": "0.2.0"},
+    "port": {"type": "integer", "minimum": 1024, "maximum": 65535}
+  }
+}

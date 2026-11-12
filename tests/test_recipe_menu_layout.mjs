@@ -64,3 +64,20 @@ test('domain disclosures start closed and Scopes is a peer of recipe source head
  assert.doesNotMatch(html,/<details class="panel menu-domain"[^>]* open/);
  assert.match(html,/<h3>Scopes<\/h3>/);
 });
+
+test('an unchanged Profile and browser origin retain the plate across product checkout updates',()=>{
+ const values=new Map(),key='opsfeast-menu-draft-v2:same-profile-root';
+ values.set(key,JSON.stringify({recipes:['inventory'],hosts:['a'],meals:['base'],scopes:{}}));
+ const storage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
+ const initial=JSON.parse(values.get(key));
+ const makeRoot=()=>{
+  const plate={innerHTML:''},all={};
+  return {plate,innerHTML:'',querySelector:s=>s==='#recipe-plate-content'?plate:s==='[data-all-hosts]'?all:null,querySelectorAll:()=>[]};
+ };
+ for(const productVersion of ['old-checkout','new-checkout']){
+  const root=makeRoot();
+  mountMenuLayout(root,{data:{...data,preferences:{scope_id:'same-profile-root'},items:data.items.map(item=>({...item,version:productVersion}))},profiles,profile:'main',e,storage,onProfile(){}});
+  assert.match(root.plate.innerHTML,/主機 <span>1/);assert.match(root.plate.innerHTML,/Recipes <span>1/);assert.match(root.plate.innerHTML,/套餐 <span>1/);
+  assert.deepEqual(JSON.parse(values.get(key)),initial);
+ }
+});

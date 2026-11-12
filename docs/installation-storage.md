@@ -19,6 +19,9 @@ installation-data/           independently preserved sibling or external directo
   .opsfeast-site.json        authoritative site presentation
   .opsfeast-site-assets/     user-uploaded logo/avatar images
   .opsfeast-admin.json       private single-administrator credentials
+  web-server.json           saved Web endpoint port (0.2.0)
+  recipe-execution-settings.json  default execution concurrency
+  recipe-runs/              saved Web execution records
   profiles/                 default location for newly Web-created profiles
 ```
 
@@ -88,7 +91,7 @@ IDs, namespace or operational records.
 ## Upgrade or use a fresh product checkout
 
 For an in-place normal source update, the ignored binding still selects the same
-data. For a fresh checkout, attach the existing data **before initializing a new
+data. For a fresh checkout, follow [update preservation](update-preservation.md), including any explicit port transfer from the old registry. Attach the existing data **before initializing a new
 identity or starting Web**:
 
 ```sh
@@ -169,4 +172,8 @@ remote storage suitability or compatibility with future releases.
 Web startup credentials use the [memory-only owner controller](agent-owner.md);
 new launches create no token files. Saved administrator hashes remain persistent.
 
-*Last modified: 2026-11-04 23:35:05*
+
+
+The port now lives with installation data and administrator credentials. Preserve the old checkout/profile registry as well: custom categories, assignments, meals and field selections live in each Profile `recipe-menu.json`; defaults/user recipes remain in Profile configuration/code. Replacement must retain the same resolved Profile roots, not initialize new ones. Unsaved browser plates are tab-local and depend on unchanged origin/root. The [update checklist](update-preservation.md) defines exact scope, verification and remaining draft-lifetime limits.
+
+*Last modified: 2026-11-11 22:35:58*

@@ -31,6 +31,9 @@ test('new-release confirmation gives an exact, scoped Agent handoff without clai
   assert.match(prompt,/7.0.1/);assert.match(prompt,/7.1.0/);
   assert.match(prompt,/docs\/skill-updates.md/);assert.match(prompt,/不得覆寫/);
   assert.match(prompt,/不授權 commit\/push/);
+  assert.match(prompt,/docs\/update-preservation.md/);
+  assert.match(prompt,/migrate-port/);
+  assert.match(prompt,/installation-data/);
 });
 
 test('Bundle parameters guide identifies the selected Profile file and its current editing limits',()=>{

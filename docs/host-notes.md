@@ -11,7 +11,9 @@ notes nor writes lessons automatically. The existing private store is extended w
 Host notes accumulate installation-specific knowledge for humans and their agents.
 The host's **主機筆記** tab under `/hosts?profile=NAME&host=HOST&view=notes`
 reads real private data, supports title/content search, and lets an administrator
-add, review, edit and delete notes. Notes are plain text, never executable HTML.
+add, review, edit and delete notes. Notes are plain text, never executable HTML. The Web view preserves line breaks,
+spaces and indentation through the shared stylesheet, and wraps long lines to fit
+the note panel.
 The page displays source and last modification time, for example
 `2026-11-03 19:43:01+08:00` (Asia/Taipei). UUID is available under record details.
 A delete confirmation names the note and explains that deletion cannot be undone.
@@ -330,4 +332,4 @@ escaped rendering, timestamp formatting and actual create/edit/delete event hand
 including draft preservation on conflicts. These synthetic tests do not connect to
 any host or prove arbitrary filesystem-writer isolation.
 
-*Last modified: 2026-11-06 14:16:59*
+*Last modified: 2026-11-12 11:52:01*

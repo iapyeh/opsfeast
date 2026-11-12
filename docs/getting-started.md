@@ -72,6 +72,7 @@ Dependency lists for the selected setup scope:
 | --- | --- |
 | `requirements-init.txt` | PyYAML 6.0.3 and tabulate[widechars] 0.10.0 (including wcwidth), for base commands, access tables and tests |
 | `requirements.txt` | 上述依賴加 SSHScript 7.0.1，供完整 Ops 工具使用 |
+| `requirements-web.txt` | Local Web workspace/server and settings dependencies; include with the selected base requirements in the normal first-use Web plan |
 | `requirements-tui.txt` | Optional Textual 8.2.8 for the interactive Home/recipes interface; install alongside the chosen base requirements only within the approved plan |
 
 版本固定為本專案目前驗證的環境；這不是所有傳遞依賴的 lockfile。既有環境使用不同版本時先回報，不自行升級、降級或覆寫共用 venv。使用者只要求初始化時，可以只安裝精簡清單；要準備連線與 runner 時再選完整清單。
@@ -86,7 +87,7 @@ Agent 應先提出具體方案：選用哪個 Python、是否建立 `.venv/`、�
 
 ```sh
 python3 -B -m venv .venv
-.venv/bin/python -B -m pip install -r requirements.txt
+.venv/bin/python -B -m pip install -r requirements.txt -r requirements-web.txt
 .venv/bin/python -B tools/check_environment.py
 ```
 
@@ -111,6 +112,115 @@ New init establishes retention/ storage plus vault/ content and saves namespace 
 
 For complete tool syntax, defaults, behavior, output and exit codes, see the [CLI reference](cli.md). It covers tools/opsfeast.py and its recipe/inventory subcommands for administrators and agents.
 
+## Include and launch the Web workspace
+
+For a normal first installation, include a running local Web workspace in the
+concrete setup proposal. Downloading/cloning alone still authorizes only acquisition
+and inspection. After the human agrees to a plan containing Web setup, carry out
+its startup, port selection and readiness checks without requesting the same
+approval again. An explicit CLI-only, no-Web or narrower setup choice takes
+precedence; report Web as omitted rather than claiming full Web setup.
+
+### Put the complete Web scope in the setup proposal
+
+Specify the actual checkout and selected interpreter, the chosen base requirements
+plus `requirements-web.txt`, and any missing dependencies. The ordinary environment
+check is not a Web dependency check: verify the Web requirements in that interpreter
+before declaring readiness. Preserve a working environment; do not upgrade it or
+install unrelated OS packages simply to make a generic plan match.
+
+Include a persistent installation-data directory outside the replaceable checkout,
+its existing binding/identity/admin state or proposed new location, the loopback
+port policy, and the long-lived process facility the agent will use. Explain that
+this starts a local browser interface and writes only the approved local setup
+state; it does not connect to managed hosts, enable Console targets, collect data,
+run recipes, change passwords or install an OS startup service.
+
+### Complete the approved local plan
+
+1. Install only the approved requirements into the selected interpreter. Reuse and
+   validate an existing installation-data binding with `opsfeast.storage show`.
+   For a new installation, initialize the agreed absent external destination;
+   for existing marked data, attach it. Follow [installation storage](installation-storage.md)
+   for the exact preservation rules. Do not regenerate identity, overwrite an
+   existing directory or relocate registered Profile roots.
+2. Inspect the external `web-server.json` port and any existing listener/server before launching a duplicate.
+   Reuse a verified matching healthy service. Otherwise use the saved port, or let
+   the first launch allocate an available loopback port and save it atomically.
+   A user-selected port can be supplied with `--port N` (1024–65535). Never assume
+   8740/8741 or copy a port from another installation. A listening-port probe is
+   only a hint; the launcher's actual bind determines availability. For conflicts,
+   follow [endpoint ownership](web-server.md#existing-server-and-agent-ownership);
+   do not stop an unidentified process. Select another port within the approved
+   setup scope or report a genuine ownership/scope blocker.
+3. From the actual checkout, launch the selected interpreter with
+   `-B -u -m opsfeast.web --agent-control` in a persistent interactive process.
+   Keep its stdin open and preserve the returned controller handle. Follow
+   [agent ownership and lifetime](agent-owner.md#launch-and-lifetime). Do not pipe
+   `/dev/null` to an agent-controlled server: EOF stops it. Use an existing
+   `--data-root` only when the plan explicitly selected that installation data.
+4. Read the controller's `ready.url`; do not construct a URL from a guessed port.
+   Using that exact origin, verify HTTP readiness with a successful GET `/` and
+   GET `/api/v1/setup` (200 and the documented JSON response). The initial homepage
+   may show administrator onboarding; a protected page's expected login redirect
+   is not a failed server. Readiness checks must not create accounts, run recipes,
+   open host connections or reset credentials. An existing healthy browser-only
+   service can be checked through these same public reads without claiming its
+   owner capability. When no administrator exists, HTTP 200 alone is insufficient:
+   require `agent_control_available: true` before handing off account setup. A
+   browser-only launch cannot complete this onboarding path. The Web recovery
+   panel gives the human a copyable instruction for the original agent chat;
+   reconcile active work and preserve the original data/port when correcting
+   that launch. Do not initialize or reset accounts as a recovery shortcut.
+5. Give the human a clickable actual URL, selected interpreter, saved port,
+   installation-data location, HTTP verification result and process/lifetime
+   information. If no administrator exists, immediately use the retained controller
+   `admin.setup-form` with the existing first-use setup authorization, then give the
+   human its short-lived `/setup#setup-token=...` link. Do not ask for credentials
+   in chat or wait for a copied Web prompt. The human fills username/password only
+   in Web; the server stores the salted password hash directly. The agent checks
+   `GET /api/v1/setup` for `admin_configured: true` without reading credentials.
+   Link issuance alone is not completion; say that account setup is awaiting human
+   input until configured. Expired/claimed/restarted links require a new form grant,
+   not an account reset. Preserve an existing administrator and provide login.
+   Follow [private first-account forms](web-administrator.md#private-first-account-form-010).
+
+6. Leave the verified service running after the setup reply and across subsequent
+   turns. Retain the controller handle; do not send shutdown, close its input,
+   terminate it during Git work or replay host commands. Browser closure does not
+   itself stop a running Web process. Do not claim that a controller-backed process
+   survives termination of the agent app or its process host.
+
+If the execution facility cannot keep a process alive across replies, identify
+that limitation while proposing the plan. Agree on an available persistence method
+instead of starting a process that will immediately disappear. For an already
+configured administrator, an approved browser-only background launch is an option;
+see [persistent launch choices](web-server.md#persistent-launch-choices). Installing
+systemd/launchd services or enabling start-at-login remains a separate setup choice,
+not an automatic consequence of cloning. Report an actual lifetime/access blocker
+rather than silently dropping Web from the handoff.
+
+The setup handoff is complete when the Web URL is reachable and its agreed process
+remains alive, or the report explicitly identifies an authorized exclusion or an
+unresolved blocker. Also provide CLI commands and optional TUI next steps; they do
+not substitute for the Web deliverable in the normal approved plan.
+
+Example commands (substitute the actual selected paths in the human handoff):
+
+```sh
+# Local data setup; choose only the action appropriate to the existing state.
+"/absolute/path/to/selected/python" -B -m opsfeast.storage show
+"/absolute/path/to/selected/python" -B -m opsfeast.storage init --data-root /absolute/path/to/new-installation-data
+# Existing marked installation data uses attach, not init.
+"/absolute/path/to/selected/python" -B -m opsfeast.storage attach --data-root /absolute/path/to/existing-installation-data
+# Run from the trusted checkout in an agent-owned persistent interactive process.
+"/absolute/path/to/selected/python" -B -u -m opsfeast.web --agent-control
+```
+
+These are alternative data actions, not a script that runs init and attach in
+sequence. Stop on validation/startup failure, preserve existing data, explain the
+specific error and continue only within the already approved scope.
+
 ## Recipe next steps
 
 Use [recipes list/show/run](recipe-experience.md) to explore bundled/Feast/external recipes, run reviewed operations, generate offline reports and reuse saved jobs. Fresh clones can inspect with recipes list --checkout-only. The same catalog JSON supports agent-selected presentation; basic HTML exports and feast/report/execution-summary provide plain default views.
@@ -131,7 +241,7 @@ Route beginners to [Connect your first host](first-host.md) before the complete 
 
 At setup and configuration completion, provide both copyable terminal commands and copyable agent prompts. Substitute the actual quoted checkout path, selected interpreter, profile and chosen host ID; do not leave generic python or HOST placeholders when values are known. If no host is selected, provide the local check and ask for that selection before preparing a connection command. Each step must state its purpose, effects, expected result and where to stop on failure. Distinguish ready commands from executed actions; providing commands does not authorize executing them. Link to the first-host guide and CLI for result details.
 
-At every successful setup/configuration handoff, explicitly mention both the CLI and the interactive Textual Home. Check Textual availability in the actual selected interpreter before describing the TUI as ready; `check_environment.py` readiness does not check this optional dependency. If unavailable, explain `requirements-tui.txt` and offer installation within an approved plan rather than silently installing or claiming readiness. A TUI-oriented setup plan can include it alongside the base requirements when the user agrees.
+At normal first-use completion, deliver the verified running Web URL following [Web setup](#include-and-launch-the-web-workspace), as well as CLI commands and the optional interactive Textual Home. At later configuration handoffs preserve the existing Web service and mention the CLI and interactive Textual Home. Check Textual availability in the actual selected interpreter before describing the TUI as ready; `check_environment.py` readiness does not check this optional dependency. If unavailable, explain `requirements-tui.txt` and offer installation within an approved plan rather than silently installing or claiming readiness. A TUI-oriented setup plan can include it alongside the base requirements when the user agrees.
 
 For a checkout `.venv` and Bash/Zsh terminal, provide the actual checkout `cd` command, `source tools/activate.sh`, and `python -B tools/opsfeast.py` as the TUI entrypoint. The helper must be sourced in the user's current shell: `sh tools/activate.sh` cannot activate its parent shell. If the environment is elsewhere, supply its actual interpreter/activation command instead of assuming checkout .venv exists. Include a direct selected-interpreter command as an alternative that requires no activation. Starting Home browses local configuration/results; it does not test hosts or run recipes automatically. For a configured host, offer Hosts → select host → Enter → test-connection as the UI counterpart of the scoped CLI command. Explain that choosing the action connects to that host; opening Home alone does not. Link [the terminal interface guide](terminal-ui.md).
 
@@ -166,4 +276,8 @@ If proxy behavior differs between terminals, agents or scheduled processes, insp
 normalization, explicit per-connection overrides and sanitized hop evidence. It
 does not install proxy tools, modify global environment or authorize host connections.
 
-*Last modified: 2026-10-31 13:04:53*
+
+
+For updates or an existing installation, use [update preservation](update-preservation.md) instead of repeating first-use initialization. Reattach the same external data, retain every Profile root, and reuse its saved port, credentials and menu definitions. Old registry ports require the explicit transfer before startup; never allocate new defaults to hide missing update data.
+
+*Last modified: 2026-11-12 10:55:28*

@@ -26,6 +26,9 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     COOKIE,EDIT_COOKIE=cookie_names(root)
     sessions = Sessions()
     editing_sessions = EditingSessions()
+    from .setup_forms import SetupForms, InvalidSetupGrant, LIFETIME as SETUP_LIFETIME
+    setup_forms=SetupForms()
+    SETUP_COOKIE=EDIT_COOKIE+'_setup'
     agent_capability = AgentCapability(agent_token)
     del agent_token
     app = FastAPI(title='OpsFeast Web preview', docs_url=None, redoc_url=None, openapi_url=None)
@@ -193,6 +196,47 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
         return {'schema_version':'0.1.0','admin_configured':admin.status(root)['configured'],
                 'authenticated':human_authenticated(request),'edit_unlocked':local_capability(request),
                 'local_unlock_available':bool(edit_token), 'agent_control_available':agent_capability.digest is not None}
+
+    @app.post('/api/v1/agent/setup-form')
+    async def issue_setup_form(request: Request):
+        check_origin(request)
+        if not agent_authorized(request):raise HTTPException(401,'agent_capability_required')
+        if admin.status(root)['configured']:raise HTTPException(409,'administrator_already_configured')
+        if await json_body(request)!={}:raise HTTPException(422,'invalid_setup_request')
+        token=setup_forms.issue()
+        return {'schema_version':'0.1.0','url':str(request.base_url).rstrip('/')+'/setup#setup-token='+token,'expires_in':SETUP_LIFETIME}
+
+    def setup_origin(request):
+        check_origin(request)
+        if request.headers.get('origin')!=str(request.base_url).rstrip('/'):
+            raise HTTPException(403,'same_origin_required')
+
+    @app.post('/api/v1/setup/claim')
+    async def claim_setup_form(request: Request):
+        setup_origin(request)
+        if admin.status(root)['configured']:raise HTTPException(409,'administrator_already_configured')
+        body=await json_body(request)
+        if set(body)!={'token'}:raise HTTPException(422,'invalid_setup_request')
+        try:browser,csrf,remaining=setup_forms.claim(body['token'])
+        except (InvalidSetupGrant,UnicodeError):raise HTTPException(401,'invalid_setup_grant') from None
+        response=JSONResponse({'schema_version':'0.1.0','csrf':csrf,'expires_in':remaining})
+        response.set_cookie(SETUP_COOKIE,browser,httponly=True,samesite='strict',secure=request.url.scheme=='https',max_age=remaining,path='/api/v1/setup')
+        return response
+
+    @app.post('/api/v1/setup/administrator')
+    async def submit_setup_form(request: Request):
+        setup_origin(request)
+        if admin.status(root)['configured']:raise HTTPException(409,'administrator_already_configured')
+        body=await json_body(request)
+        if set(body)!={'username','password','csrf'}:raise HTTPException(422,'invalid_setup_request')
+        from starlette.concurrency import run_in_threadpool
+        try:
+            await run_in_threadpool(setup_forms.complete,request.cookies.get(SETUP_COOKIE),body['csrf'],
+                lambda:admin.configure(root,username=body['username'],password=body['password'],expected_revision=0))
+        except (InvalidSetupGrant,UnicodeError):raise HTTPException(401,'invalid_setup_grant') from None
+        response=JSONResponse({'configured':True})
+        response.delete_cookie(SETUP_COOKIE,path='/api/v1/setup')
+        return response
 
     @app.put('/api/v1/agent/administrator')
     async def agent_administrator(request: Request):

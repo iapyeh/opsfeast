@@ -107,6 +107,15 @@ class ControllerBoundaryTests(unittest.TestCase):
         with self.assertRaises(ValueError):controller.dispatch(body)
         controller.request.assert_called_once()
 
+    def test_setup_form_control_requires_grant_and_has_no_credentials(self):
+        from opsfeast.web.agent_control import Controller
+        controller=Controller('http://127.0.0.1:8740','synthetic-owner-token-with-32-characters',lambda event:None)
+        controller.request=Mock(return_value={'status':200,'body':{'url':'http://127.0.0.1:8740/setup#setup-token=synthetic'}})
+        with self.assertRaises(ValueError):controller.dispatch(dict(op='admin.setup-form',request_id='missing'))
+        result=controller.dispatch(dict(op='admin.setup-form',request_id='grant',authorization='Human requested private first-account form'))
+        self.assertEqual(result['status'],200)
+        controller.request.assert_called_once_with('POST','/api/v1/agent/setup-form',{})
+
     def test_owner_exact_plan_actor_stays_distinct(self):
         from opsfeast.interactive import Service,InteractiveError
         with tempfile.TemporaryDirectory() as directory:
@@ -135,7 +144,20 @@ class MemoryLaunchTests(unittest.TestCase):
             try:
                 ready=json.loads(process.stdout.readline());self.assertEqual(ready['type'],'ready')
                 from opsfeast.web_settings import read_port
-                self.assertEqual(read_port(product),port)
+                self.assertEqual(read_port(product,data_root=root),port)
+                process.stdin.write(json.dumps(dict(op='admin.setup-form',request_id='private-form',authorization='Synthetic first-account setup'))+'\n');process.stdin.flush()
+                issued=json.loads(process.stdout.readline());self.assertEqual(issued['status'],200)
+                from urllib.request import Request,build_opener,ProxyHandler,HTTPCookieProcessor
+                from http.cookiejar import CookieJar
+                browser=build_opener(ProxyHandler({}),HTTPCookieProcessor(CookieJar()))
+                def browser_post(path,body):
+                    request=Request(ready['url']+path,data=json.dumps(body).encode(),headers={'Content-Type':'application/json','Origin':ready['url']})
+                    with browser.open(request,timeout=5) as response:return json.load(response)
+                csrf=browser_post('/api/v1/setup/claim',{'token':issued['body']['url'].split('setup-token=')[1]})['csrf']
+                self.assertEqual(browser_post('/api/v1/setup/administrator',dict(username='synthetic-private',password='private-browser-only',csrf=csrf)),{'configured':True})
+                process.stdin.write(json.dumps(dict(op='request',request_id='private-status',path='/api/v1/setup'))+'\n');process.stdin.flush()
+                status_line=process.stdout.readline();self.assertTrue(json.loads(status_line)['body']['admin_configured'])
+                self.assertNotIn('private-browser-only',status_line);self.assertNotIn('synthetic-private',status_line)
                 process.stdin.write(json.dumps(dict(op='admin.password',request_id='set-1',username='synthetic',password='1',authorization='Synthetic owner requested reset'))+'\n');process.stdin.flush()
                 result=json.loads(process.stdout.readline());self.assertEqual(result['status'],200,result)
                 self.assertNotIn('password',result['body']);self.assertTrue(admin.verify(root,'synthetic','1'))

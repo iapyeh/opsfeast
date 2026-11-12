@@ -5,7 +5,7 @@ description: Operate a persistent SSHScript shell with a human through chat and 
 
 For login-to-river handoff, use [browser readiness 0.1.0](../../docs/browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
 
-For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](../../docs/web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.2.0](../../docs/web-server.md): External installation-data `web-server.json` stores the port; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
 
 For an investigation involving several hosts in one visible river, follow [shared task river 0.1.0](../../docs/shared-console.md). Predeclare exact profile/host/icon participants, attach each independent worker with controller `session` or worker `--session UUID`, and reuse the one reader for that session. Host buttons independently toggle their own blocks open/closed, and 全部 opens all; dark always means all applicable blocks are open, while light means some or all are closed; individual block toggles preserve chronological slots. Time leads every source row; a far-right ↓/↑ toggle opens/closes each block; only open blocks show ↗ immediately to its left. Waiting live forms and private-input controls remain open. Keep command routing, accounts, authorization, activity and cleanup scoped to each worker; serialize private input requests across the river.
 
@@ -207,4 +207,8 @@ merely to validate a prose correction. Preserve unrelated work and report the
 updated source; do not claim installed or cached copies were refreshed unless
 that separate action was actually authorized and completed.
 
-*Last modified: 2026-11-06 15:10:22*
+
+
+For authorized updates, follow [preserve installation state](../../docs/update-preservation.md). Reuse external `web-server.json` (endpoint 0.2.0), the same administrator/identity/data root and every resolved Profile root; do not run init or replace menu/default/user-recipe files. Use `opsfeast.web_settings.read_port/configure_port/bind_server` with the resolved data root; `migrate_port` / `python -B -m opsfeast.web_settings migrate-port` is the explicit, backed-up old-registry port transfer only. Compare private before/after state, restore the same Web origin and keep service running. Saved categories, assignments, nested meals and field scopes remain unchanged; unsaved browser plates retain their tab/origin/root lifetime limits.
+
+*Last modified: 2026-11-11 22:35:58*

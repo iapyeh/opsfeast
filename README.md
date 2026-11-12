@@ -16,7 +16,6 @@ opt-in SSHScript execution with exact plan approval, durable SSE events and an
 [agent skill](skills/opsfeast-interactive/SKILL.md). No target is enabled by default;
 [Real host configuration](docs/web-hosts.md) is independently available through Web/CLI/API and never starts a Console.
 The [first-use Web guide](docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists.
-
 Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and Mermaid diagrams](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
 
 For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). The [split recipes and Overview meal](docs/recipe-routines.md) support immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
@@ -98,7 +97,7 @@ Paste this unchanged. “This project's directory” means the active workspace;
 ```text
 Help me get started with OpsFeast in this project's directory. I authorize cloning https://github.com/iapyeh/opsfeast.git here; use an opsfeast subdirectory if the current directory is not empty, and preserve existing files. Reuse an existing OpsFeast checkout if present.
 
-Read the checkout's README.md, AGENTS.md and docs/getting-started.md, then follow their first-use guidance. Check prerequisites without making changes, propose a local setup you can perform for me, and ask for my approval. Do not install software, create environments or initialize profiles until I agree.
+Read the checkout's README.md, AGENTS.md and docs/getting-started.md, then follow their first-use guidance. Check prerequisites without making changes, propose a local setup you can perform for me, and ask for my approval. Include the Web requirements, persistent installation data, an available local port, Web startup, HTTP verification, its URL and keeping the service running. Do not install software, create environments, initialize data/profiles or start Web until I agree.
 ```
 
 The agent clones into an empty workspace, or into a new `opsfeast/` subdirectory when the workspace already contains files. It verifies and reuses an existing OpsFeast checkout rather than cloning again, preserving its changes and configuration. It uses the actual checkout as its working directory; you do not need to reopen the project just because the checkout is a subdirectory. A conflicting destination, missing Git, denied access or failed download is reported with the specific help needed; the agent does not overwrite files or install software to resolve those blockers without approval.
@@ -113,7 +112,7 @@ After cloning and reading the project guidance, expect a setup proposal identify
 
 For your first host, follow the [first-host guide](docs/first-host.md): minimal settings, validation, connection testing and practical SSH/su/sudo cases before the full reference.
 
-After authorized setup, the agent should tell you where to configure host addresses, login accounts, authentication and recipes, and offer both CLI and Textual Home next steps. For a checkout .venv in Bash/Zsh, it should provide `source tools/activate.sh` and `python -B tools/opsfeast.py` with the actual checkout path. Textual readiness must be checked separately; if missing, the agent can propose installing `requirements-tui.txt`. See [the interface handoff](docs/first-use.md#use-the-cli-or-try-the-interactive-home).
+After authorized setup, the agent should deliver a verified, running Web URL using an available installation-specific port and preserve the service after its reply. It should also tell you where to configure host addresses, login accounts, authentication and recipes, and offer CLI and optional Textual Home next steps. See [the complete Web setup handoff](docs/getting-started.md#include-and-launch-the-web-workspace). For a checkout .venv in Bash/Zsh, it should provide `source tools/activate.sh` and `python -B tools/opsfeast.py` with the actual checkout path. Textual readiness must be checked separately; if missing, the agent can propose installing `requirements-tui.txt`. See [the interface handoff](docs/first-use.md#use-the-cli-or-try-the-interactive-home).
 
 **[First-use walkthrough](docs/first-use.md)** explains the single-prompt setup handoff, optional explicit instructions and skill update checks, expected results, and an optional isolated trial. The [getting-started guide](docs/getting-started.md) contains the detailed setup procedure for agents. The same Markdown workflow applies across agents; automatic skill discovery is optional.
 
@@ -164,7 +163,9 @@ After an applicable fast-forward pull, record the new VERSION and commit, then e
 
 Inspect known official skill copies or bindings used by your agent. Where the existing integration is supported, unmodified and traceable to this checkout, refresh complete copies/references and source/version records, preserving valid links, then use the platform's supported reload mechanism and verify the active source. For local edits, duplicate/conflicting sources or a required new integration method, preserve the files and ask only for that unresolved choice. If reload is unavailable, read the updated Markdown directly for this conversation and report that limitation; do not claim installed skills or future conversations were refreshed merely because you read files.
 
-Use the existing selected Python environment to run the documented read-only environment checks and any locally applicable update validation. Do not install/upgrade packages, recreate environments, migrate private data, connect to hosts, test sudo, execute operational recipes, commit/push or create schedules under this update authorization. Report any concrete dependency or compatibility work still needed.
+Follow docs/update-preservation.md before and after applying the update: preserve the external installation-data, original Web origin/port, administrator credentials, every resolved Profile root, custom categories, saved meals, recipe defaults/code and records. Do not initialize replacement data or reset the administrator. If required by Web endpoint 0.2.0, I authorize only the documented backed-up transfer of the existing registry port to installation-data using opsfeast.web_settings migrate-port, preserving the same value and all other settings.
+
+Use the existing selected Python environment to run the documented read-only environment checks and any locally applicable update validation. Do not install/upgrade packages, recreate environments, perform other private-data migrations, connect to hosts, test sudo, execute operational recipes, commit/push or create schedules under this update authorization. Report any concrete dependency or compatibility work still needed.
 
 Finish with a concise report to me: update/no-update/blocked status; release versus branch evidence; old/new VERSION and commits; important new features and behavior/migration changes; newly learned or changed skills with practical examples of what you can now help me do; skill sources actually read and copies reloaded versus still pending; validation results, limitations and any action I need to take. Distinguish planned features, implemented interfaces and verified behavior. Do not expose secrets.
 ```
@@ -369,4 +370,4 @@ The Web menu also exposes inventory job/field selection and opt-in sensors, plus
 saved report artifact previews/downloads. Users can complete these operations in
 the browser; see the [scope and report guide](docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-10 16:07:57*
+*Last modified: 2026-11-11 22:35:58*

@@ -1,5 +1,6 @@
 # Schemas
 
+- [Private first-account form responses](setup-form.schema.json): transient, one-use Web setup grants; see [the lifecycle](../docs/web-administrator.md#private-first-account-form-010).
 - [First-use status](setup-status.schema.json) and [host settings](host-settings.schema.json): versioned Web progress and private host configuration read/receipt projections.
 
 ## Interactive events
@@ -17,6 +18,10 @@ storage, not a public response; see [account/profile interfaces](../docs/web-adm
 [Settings catalog 0.1.0](settings-catalog.schema.json) describes current versus
 planned configuration interfaces; see [the shared settings guide](../docs/web-settings.md).
 
+
+[Web endpoint 0.2.0](web-server.schema.json) stores the installation port outside
+replaceable code. Follow [endpoint configuration](../docs/web-server.md) and
+[update preservation](../docs/update-preservation.md) for explicit old-port transfer.
 
 Installation Web data uses [site presentation 0.1.0](site-presentation.schema.json),
 [storage binding 0.1.0](installation-storage.schema.json) and
@@ -68,4 +73,4 @@ See the [result-data workflow](../docs/result-data.md) for stage separation, SQL
 
 [recipe-assessment.schema.json](recipe-assessment.schema.json) defines optional label, severity and summary separately from fixed execution status. [recipe-execution.schema.json](recipe-execution.schema.json) describes partial operator policy; effective inherited su/sudo policies require an explicit target. [recipe-execution-evidence.schema.json](recipe-execution-evidence.schema.json) preserves verified login/actual identities and restoration evidence. Retained envelopes, batch targets and compact observation views reference the applicable metadata contracts. Read [results and accounts](../docs/recipe-results-and-accounts.md) for configuration, failure precedence and verification limits.
 
-*Last modified: 2026-11-01 23:27:07*
+*Last modified: 2026-11-12 10:55:28*

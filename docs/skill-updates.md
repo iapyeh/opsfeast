@@ -16,6 +16,19 @@ The complete 7.0.1 bundle is generated from the official release source; the web
 
 For an existing user who wants the agent to check releases, apply an applicable fast-forward update and learn/report the new skills, use the complete [update prompt](../README.md#update-opsfeast-and-refresh-your-agents-skills). That human prompt explicitly authorizes its stated application scope; a check-only request still does not authorize replacement. For a colleague's transferred instance, start with [handover orientation](../README.md#take-over-an-existing-opsfeast-instance) instead; it performs no update or init.
 
+## Preserve installation state before applying an update
+
+Follow [update preservation](update-preservation.md) before code changes or replacement.
+Capture the existing external data/identity, port, administrator metadata, every
+resolved Profile root and the exact category/meal/default settings. Reuse and verify
+them after the update. Never replace them with product defaults or call init to
+reconnect existing data. Old registry Web ports have one explicit, backed-up transfer
+to external `web-server.json`; this is the only narrow metadata move covered when
+the update instruction authorizes it. Keep broader data/schema conversions separate.
+Reopen the same origin and preserve browser storage/tab drafts; record their lifetime
+limits rather than promising durable unsaved plates. Restore necessarily paused Web
+and do not replay host operations.
+
 ## Update SSHScript with one prompt
 
 Users can paste the [short README prompt](../README.md#update-sshscript-and-learn-its-new-skill) into their existing OpsFeast project. It authorizes the local package/complete-skill update described here, including staging, backups and credential-free checks; carry out those steps without asking for the same approval again. A check-only request authorizes inspection only. This is an agent procedure using existing tools, not an automatic updater or scheduler.
@@ -41,7 +54,7 @@ Read the actual updated checkout or its complete installed documentation, not re
 
 - [Host configuration](hosts-yaml.md): host fields, connection variants, accounts, credentials, includes and selectors. This guide is authoritative even though no standalone host JSON Schema is currently provided.
 - [Local administrator and profile settings](web-administrator.md): private credentials, sessions, bootstrap scope and profile configuration APIs.
-- [Installation storage](installation-storage.md) and [site presentation](site-presentation.md): data-root binding/marker, preserved identity, settings/assets, public visibility and explicit upgrade attachment.
+- [Update preservation](update-preservation.md), [Web endpoint 0.2.0](web-server.md), [endpoint schema](../schemas/web-server.schema.json), [installation storage](installation-storage.md) and [site presentation](site-presentation.md): data-root binding/marker, preserved identity, settings/assets, public visibility and explicit upgrade attachment.
 - [Core API](core-api.md) and [profiles](profiles.md): installation identity/metadata, profile selection, host snapshots, Recipe/session objects, ownership and inspection results.
 - [Recipe execution](recipe-execution.md) and [recipe experience contracts](recipe-experience.md): descriptors, inputs/contexts, execution results, reports/artifacts, bundles and saved jobs.
 - [Schema index](../schemas/README.md) and its implemented schemas, [result-data contracts](result-data.md) and [inventory access/data semantics](inventory-access.md): inventory values, raw/retained/exchange structures, identity and failure/partial/unknown interpretation.
@@ -136,4 +149,4 @@ For a release with portability changes, reread [portability](portability.md), [p
 
 After an update providing these services, include [recipe assessments/accounts](recipe-results-and-accounts.md) and its linked assessment, execution-policy and evidence schemas in the mandatory data-contract reread. Existing SSHScript snapshot provenance remains unchanged; this is an OpsFeast service, not a new SSHScript release.
 
-*Last modified: 2026-11-01 13:20:29*
+*Last modified: 2026-11-11 22:35:58*

@@ -13,7 +13,7 @@ export function noteMatches(note,{query='',recipe='',tags=[],includeGeneral=fals
     tags.every(tag=>labels.includes(tag.toLocaleLowerCase()));
 }
 export function noteMarkup(note,e) {
-  return `<article class="panel roadmap-section"><h3>${e(note.title)}</h3><p class="field-hint">來源：${e(note.source)} · ${e(formatNoteTimestamp(note.timestamp))}</p><p class="field-hint">Recipes：${(note.recipe_references||[]).map(e).join('、')||'未指定（一般主機經驗）'}</p><p class="field-hint">Tags：${(note.tags||[]).map(e).join('、')||'無'}</p><div class="host-note-content" style="white-space:pre-wrap;overflow-wrap:anywhere">${e(note.content)}</div><details><summary>紀錄識別</summary><code>${e(note.uuid)}</code></details><div class="setup-actions"><button type="button" class="button" data-note-edit="${e(note.uuid)}">編輯</button><button type="button" class="button danger" data-note-delete="${e(note.uuid)}">刪除</button></div></article>`;
+  return `<article class="panel roadmap-section"><h3>${e(note.title)}</h3><p class="field-hint">來源：${e(note.source)} · ${e(formatNoteTimestamp(note.timestamp))}</p><p class="field-hint">Recipes：${(note.recipe_references||[]).map(e).join('、')||'未指定（一般主機經驗）'}</p><p class="field-hint">Tags：${(note.tags||[]).map(e).join('、')||'無'}</p><div class="host-note-content">${e(note.content)}</div><details><summary>紀錄識別</summary><code>${e(note.uuid)}</code></details><div class="setup-actions"><button type="button" class="button" data-note-edit="${e(note.uuid)}">編輯</button><button type="button" class="button danger" data-note-delete="${e(note.uuid)}">刪除</button></div></article>`;
 }
 export async function mountHostNotes(root,{profile,host_id,e,request}) {
   let snapshot,busy=false;

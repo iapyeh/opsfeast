@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Transient private first-account form responses 0.1.0",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "url",
+        "expires_in"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "/setup#setup-token=[A-Za-z0-9_-]+$"
+        },
+        "expires_in": {
+          "const": 600
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "csrf",
+        "expires_in"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "csrf": {
+          "type": "string",
+          "minLength": 32
+        },
+        "expires_in": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        }
+      }
+    }
+  ],
+  "$comment": "Last modified: 2026-11-12 10:56:16"
+}

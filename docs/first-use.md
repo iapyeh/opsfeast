@@ -42,7 +42,7 @@ Paste this unchanged into the new conversation:
 ```text
 Help me get started with OpsFeast in this project's directory. I authorize cloning https://github.com/iapyeh/opsfeast.git here; use an opsfeast subdirectory if the current directory is not empty, and preserve existing files. Reuse an existing OpsFeast checkout if present.
 
-Read the checkout's README.md, AGENTS.md and docs/getting-started.md, then follow their first-use guidance. Check prerequisites without making changes, propose a local setup you can perform for me, and ask for my approval. Do not install software, create environments or initialize profiles until I agree.
+Read the checkout's README.md, AGENTS.md and docs/getting-started.md, then follow their first-use guidance. Check prerequisites without making changes, propose a local setup you can perform for me, and ask for my approval. Include the Web requirements, persistent installation data, an available local port, Web startup, HTTP verification, its URL and keeping the service running. Do not install software, create environments, initialize data/profiles or start Web until I agree.
 ```
 
 The agent first performs the authorized clone: directly into an empty directory, or into a new `opsfeast/` subdirectory if the workspace is nonempty. A verified existing checkout is reused without pulling, resetting or overwriting it. A conflicting destination or missing Git/access is a blocker to explain, not permission to delete files or install software. After acquisition, the agent explicitly reads the checkout's guidance, including its reply-language and setup-approval rules; automatic reloading of newly cloned instructions is not assumed. It uses the checkout for subsequent commands and environment placement even if the workspace is its parent. See [the bootstrap procedure](getting-started.md#agent-led-checkout-bootstrap).
@@ -54,6 +54,7 @@ The agent should find the project guidance, explain the Python 3.11+ requirement
 - The complete public skill snapshot is included in Git and can be read directly. A fresh download is usually unnecessary for first use.
 - The project can initialize and validate configuration, query settings, test a specified host connection, and run the currently supported inventory-system recipe.
 - Which Python interpreter it will use, whether it will create an environment, which dependencies it will install, and where management data will be stored.
+- The Web requirements, external installation-data location, saved/available loopback port and persistent process method. The normal approved plan includes starting Web, checking HTTP readiness, giving you its actual URL and keeping it running.
 
 The proposal should prefer an existing working Python and distinguish OpsFeast packages from the chosen Python distribution's system dependencies. An extra system package needs a concrete error or official distribution/OS dependency evidence, with an explanation of what requires it; a generic list such as “install expat first” is insufficient. Normal package-manager dependency resolution should not be duplicated as speculative manual installation steps. See [dependency evidence](getting-started.md#dependency-evidence-and-python-reuse).
 
@@ -69,7 +70,7 @@ If the concrete plan is suitable, replying `I agree` (or its equivalent in your 
 
 No second prompt is required for the normal flow. As an optional alternative, if you want to specify a separate Python environment inside the checkout explicitly, paste:
 
-> Create an isolated `.venv` at the confirmed OpsFeast repository root, install the full dependencies, read the included skill, and run the default init and check commands. Do not connect to remote hosts or execute recipes. When finished, tell me what to configure next.
+> Create an isolated `.venv` at the confirmed OpsFeast repository root, install the full and Web dependencies, read the included skills, and complete local profile/data initialization and checks. Include external persistent Web data, select an available local port, start Web, verify HTTP, provide its actual URL and keep the service running. Preserve existing installation data. Do not connect to remote hosts or execute recipes. When finished, tell me what to configure next.
 
 If you already have a Python environment, provide its interpreter path instead. Ask the agent to reuse it and report missing dependencies first. The [getting-started guide](getting-started.md) defines the installation procedure.
 
@@ -78,7 +79,8 @@ After successful setup, the layout should include:
 ```text
 opsfeast/
 ├── .venv/
-├── .opsfeast.yaml
+├── .opsfeast.yaml          # Profile registrations
+├── .opsfeast-storage.json  # Binding to the external installation-data directory
 ├── recipes/
 └── feasts/
     └── main/
@@ -90,11 +92,32 @@ opsfeast/
         └── runs/
 ```
 
-`.venv/` exists only if you chose to create a new environment. `feasts/` and `recipes/` are siblings. `.opsfeast.yaml` records profiles and the default environment, allowing later commands to omit the directory argument. The agent should report the actual interpreter, package and documentation versions, initialization/check results, and the full path to `hosts.yaml`.
+Web identity, site settings and administrator data live in the separately selected installation-data directory, outside this product tree. Keep that directory and the existing Profile roots across checkout replacements. `.venv/` exists only if you chose to create a new environment. `feasts/` and `recipes/` are siblings. `.opsfeast.yaml` records profiles and the default environment, allowing later commands to omit the directory argument. The Web port is saved separately in external installation-data `web-server.json`, alongside the administrator and site data. The agent should report the actual interpreter, package and documentation versions, initialization/check results, and the full path to `hosts.yaml`.
+
+### Open your Web workspace
+
+The agent should complete [the approved Web setup](getting-started.md#include-and-launch-the-web-workspace)
+and provide a clickable address that it has actually checked. It should reuse the
+installation's saved port or let the first launch select an available one; no fixed
+port or path substitution is required from you. Expect the interpreter, data-root,
+HTTP result and process lifetime to be reported along with the URL. The service
+stays running after the setup response. If the agent cannot maintain that lifetime,
+it should explain the concrete blocker or agreed alternative, not leave you with
+only a startup command or a server that has already stopped.
+
+After starting Web, the agent immediately provides a short-lived account setup link.
+Open that link and enter your username/password in Web, without putting credentials
+in the agent conversation. The server stores the salted password hash and the
+agent checks completion status only. Then use the login link and optionally set
+workspace appearance. An expired link can be reissued without resetting data.
+The homepage copyable instruction is recovery for interrupted setup; existing
+administrator credentials and data are preserved. A local setup grant does not authorize host connections or recipes.
+Closing the browser does not stop Web while its process remains running; closing
+the agent/process host may, depending on the persistence method the agent reported.
 
 ### Use the CLI or try the interactive Home
 
-The agent should finish setup by offering both interfaces with your actual checkout/interpreter paths. For Bash/Zsh with a checkout `.venv`, run these in the checkout's terminal:
+Alongside the running Web URL, the agent should offer these terminal interfaces with your actual checkout/interpreter paths. For Bash/Zsh with a checkout `.venv`, run these in the checkout's terminal:
 
 ```sh
 source tools/activate.sh
@@ -177,4 +200,4 @@ git clone "/absolute/path/to/opsfeast" "/absolute/path/to/opsfeast-trial"
 
 A local clone includes committed content only. To compare another agent's experience, start a fresh conversation and trial directory so it uses the repository documentation for setup. Check whether it finds the getting-started guide, reads the included skill correctly, and clearly reports the next steps.
 
-_Last modified: 2026-10-20 11:22:14_
+*Last modified: 2026-11-12 10:55:28*

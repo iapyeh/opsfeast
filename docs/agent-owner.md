@@ -13,8 +13,17 @@ applicable consent; do not invent approval or broaden authorized effects.
 
 ## Launch and lifetime
 
-Follow [per-installation Web endpoints](web-server.md): use saved `web.port` in
-`.opsfeast.yaml`, or let the first launch allocate and persist one. `--port N`
+For normal first-use installation, include this launch/lifetime scope in the
+[approved setup plan](getting-started.md#include-and-launch-the-web-workspace).
+After approval the agent starts and HTTP-verifies Web, supplies its actual URL and
+keeps this controller/process handle open after the reply. Do not leave startup
+as homework or request the same startup approval again. Explain an actual process-
+persistence limitation while planning; no controller lifetime across tool/app exit
+is implied. See [persistent alternatives](web-server.md#persistent-launch-choices)
+for an explicitly selected browser-only service after administrator setup.
+
+Follow [per-installation Web endpoints](web-server.md): use the saved port in
+external installation-data `web-server.json`, or let the first launch allocate and persist one. `--port N`
 persists an explicit choice; `ready.url` is authoritative, never a hard-coded port.
 
 Use the approved checkout/interpreter with requirements-web.txt installed:
@@ -82,6 +91,14 @@ record range/feedback endpoints for bounded reading, not an endless SSE request.
 No automatic HTTP mutation retry occurs. On an uncertain result, read current
 revision/evidence before deciding whether another operation is authorized.
 
+`admin.setup-form` requires a nonempty `authorization` and no credentials. It issues
+an owner-authorized ten-minute, single-use browser form via POST
+`/api/v1/agent/setup-form`. Use this as the default first-account workflow and
+present the returned exact private link immediately after startup. Only status
+returns to the agent; do not ask for passwords in chat or read browser fields.
+See [private form lifecycle and failures](web-administrator.md#private-first-account-form-010).
+This narrow link goes to the browser; the owner capability stays in the controller.
+
 `admin.password` accepts either `password` supplied by the human or `generate:true`.
 Username can be omitted when an administrator exists; initial creation requires it.
 The controller reads the current administrator revision and calls the agent-only
@@ -139,4 +156,8 @@ synthetic evidence, not protection against a hostile process controlling this OS
 account, process memory or server code. No email recovery, external identity system
 or multi-administrator management is implemented.
 
-*Last modified: 2026-11-05 14:16:33*
+
+
+Before updating/replacing a checkout, follow [update preservation](update-preservation.md): preserve the same external port/admin/data root and every Profile root. A necessary restart uses the saved external endpoint, never a fresh initialization or a guessed port. The one-time old-registry port transfer is explicit; do not reset credentials, rewrite menu preferences or replay host work.
+
+*Last modified: 2026-11-12 10:55:28*

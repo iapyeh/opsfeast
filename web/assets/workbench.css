@@ -1489,3 +1489,6 @@ footer { color:var(--ui-muted); border-color:var(--ui-border); gap:16px; flex-wr
 .recipe-run-history li { padding:.7rem; border-bottom:1px solid var(--ui-border); }
 @keyframes recipe-task-spin { to { transform:rotate(360deg); } }
 @media(prefers-reduced-motion:reduce) { .recipe-task-spinner { animation:none; } }
+
+/* Plain-text notes preserve layout under the shared no-inline-style CSP. */
+.host-note-content { white-space: pre-wrap; overflow-wrap: anywhere; }

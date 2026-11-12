@@ -9,7 +9,7 @@ schedule or establish readiness. Recipe authors may reuse `recipe.profile`;
 full datasets still use retention query/show. See [profiling 0.1.0](profiling.md)
 for schemas, pagination, provider extension, prerequisites and verification.
 
-For per-installation Web ports and agent ownership, follow [Web endpoint 0.1.0](web-server.md): `.opsfeast.yaml` stores `web.port`; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
+For per-installation Web ports and agent ownership, follow [Web endpoint 0.2.0](web-server.md): External installation-data `web-server.json` stores the port; first launch allocates it, `--port N` persists an explicit choice, and the returned URL is authoritative. Reuse `opsfeast.web_settings.read_port/configure_port/bind_server` for checkout-level operations; occupied ports never authorize stopping an unidentified process.
 
 For agent website operations, use the [memory-only owner controller](agent-owner.md): independent highest Web capability, administrator/password setup, API requests and Console workers without token files. Human authorization remains required.
 
@@ -44,6 +44,11 @@ root or connect to hosts. See [Profile description contract](profiles.md#profile
 
 
 For one task involving multiple hosts, use [shared task river 0.1.0](shared-console.md): create declared targets through the existing record API, attach separate workers with `session` / `--session`, and preserve each block's target_id. The reader offers 全部/host TABs, independently toggles each host’s blocks open/closed without reordering (dark consistently means all applicable blocks are open, including 全部), and places time first in both states. A far-right ↓/↑ toggle opens/closes each block; open blocks show ↗ full-content links immediately to its left. Per-target activity and exact host-history membership are implemented; source metadata grants no execution permission.
+
+For first-use recovery, an installation with no administrator and no agent control
+provides a copyable instruction for the original chat. Follow
+[Web startup verification](getting-started.md#include-and-launch-the-web-workspace);
+HTTP availability alone is insufficient for administrator onboarding. After startup, call controller `admin.setup-form` (owner-only POST `/api/v1/agent/setup-form`) and present the private short-lived link; the human enters credentials only in Web. Browser-only claim/submit APIs validate one-use authority, browser cookie and CSRF. Check setup completion without retrieving credentials. See [private first-account forms 0.1.0](web-administrator.md#private-first-account-form-010); existing accounts remain unchanged.
 
 The [first-use Web guide](web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists. [Real host configuration](web-hosts.md) now provides administrator-only host creation, basic settings/group autocomplete and confirmed deletion through shared CLI/Python/HTTP interfaces. The old host draft helpers are test fixtures, not the active `/hosts` route.
 
@@ -772,4 +777,14 @@ Execution defaults are discoverable through Settings → Execution and `opsfeast
 
 For human Web run inspection, prefer [the execution page/history](web-recipe-menu.md#execution-page-and-return-navigation): shared bounded progress, closed task cards, explicit incomplete-task/field diagnosis and `/recipes?profile=NAME&history=1`. Reuse GET recipe-runs and saved-result diagnosis; reopening never retries execution.
 
-*Last modified: 2026-11-11 16:38:05*
+
+
+## Agent-led Web setup and handoff
+
+For normal first-use installation, deliver [a verified running Web workspace](getting-started.md#include-and-launch-the-web-workspace) alongside CLI/optional TUI guidance. Reuse `opsfeast.storage` init/attach/show, `opsfeast.web_settings` port selection and `python -B -u -m opsfeast.web --agent-control`; these are existing services, not a new installer or daemon API. Plan Web dependencies, external data and process persistence before the single setup approval; then launch, verify GET `/` and `/api/v1/setup`, report `ready.url` and keep the controller alive. Preserve existing installation identity, credentials, Profiles and other listeners. No managed-host operation or OS service installation is implied; explicit no-Web scope and actual persistence blockers remain visible.
+
+
+
+For authorized updates, follow [preserve installation state](update-preservation.md). Reuse external `web-server.json` (endpoint 0.2.0), the same administrator/identity/data root and every resolved Profile root; do not run init or replace menu/default/user-recipe files. Use `opsfeast.web_settings.read_port/configure_port/bind_server` with the resolved data root; `migrate_port` / `python -B -m opsfeast.web_settings migrate-port` is the explicit, backed-up old-registry port transfer only. Compare private before/after state, restore the same Web origin and keep service running. Saved categories, assignments, nested meals and field scopes remain unchanged; unsaved browser plates retain their tab/origin/root lifetime limits.
+
+*Last modified: 2026-11-12 10:55:28*

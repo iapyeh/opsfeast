@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {formatNoteTimestamp,noteMarkup,mountHostNotes} from '../web/assets/host-notes.mjs';
 const escape=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 test('notes display Taipei timestamps to seconds and escape every data field',()=>{
  assert.equal(formatNoteTimestamp('2026-11-03T11:43:01+00:00'),'2026-11-03 19:43:01+08:00');
  assert.equal(formatNoteTimestamp('2026-11-03T16:00:01Z'),'2026-11-04 00:00:01+08:00');
- const html=noteMarkup({title:'<img>',content:'<script>alert(1)</script>\nnotes',uuid:'" onfocus="x',source:'user',timestamp:'2026-11-03T11:43:01Z'},escape);
+ const html=noteMarkup({title:'<img>',content:'<script>alert(1)</script>\n  indented  notes\n\n\tlast line',uuid:'" onfocus="x',source:'user',timestamp:'2026-11-03T11:43:01Z'},escape);
  assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<img>'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('19:43:01+08:00'));
+ assert.ok(html.includes('\n  indented  notes\n\n\tlast line'));
+ assert.doesNotMatch(html,/style=/);
+ const css=readFileSync(new URL('../web/assets/workbench.css',import.meta.url),'utf8');
+ assert.match(css,/\.host-note-content\s*\{[^}]*white-space:\s*pre-wrap;[^}]*overflow-wrap:\s*anywhere/s);
 });
 // Small semantic DOM fake exercises actual event handlers and HTTP payloads.
 function element(){return {innerHTML:'',textContent:'',value:'',disabled:false,focus(){},showModal(){this.open=true;},close(){this.open=false;},querySelectorAll(){return []}};}

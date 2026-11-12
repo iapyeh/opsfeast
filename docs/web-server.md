@@ -1,89 +1,111 @@
-# Per-installation Web endpoint 0.1.0
+# Installation-data Web endpoint 0.2.0
 
-The Web workspace belongs to the launching user agent's OpsFeast installation.
-Its loopback port is saved in that checkout's private `.opsfeast.yaml`, separately
-from profile selection and external installation data. Two independent checkouts
-can therefore run at the same time without sharing a hard-coded port.
+The Web endpoint belongs to an installation, alongside its administrator and site
+settings in external installation-data. The checkout keeps only the data-root
+binding and Profile registry. A replacement checkout attached to the same data uses
+the same saved port; independent installations have separate data roots and ports.
 
 ## Configuration and launch
 
-```yaml
-schema_version: 2
-default_profile: main
-profiles:
-  main:
-    root: feasts/main
-web:
-  port: 18741
+`<installation-data>/web-server.json` follows [the endpoint schema](../schemas/web-server.schema.json):
+
+```json
+{"schema_version":"0.2.0","port":18741}
 ```
 
-`web` is optional and accepts exactly `port`, an integer from 1024 through 65535
-(Boolean values are invalid). Existing profile operations preserve it. Configuration
-reads do not allocate ports or write files. Malformed values fail without repair.
+The port must be an integer from 1024 through 65535; Boolean values are invalid.
+Reads do not initialize storage or allocate ports. Unknown/malformed/symlinked files
+fail without repair. Web uses the same resolved installation-data for its endpoint,
+identity, credentials and site, including an explicitly selected `--data-root`.
 
 ```sh
 .venv/bin/python -B -u -m opsfeast.web --agent-control
-# Explicitly select and persist a different port for this checkout:
+# An explicit human-selected change persists in installation-data:
 .venv/bin/python -B -u -m opsfeast.web --agent-control --port 18741
 ```
 
-At launch, an explicit --port takes precedence; otherwise the saved port is used.
-On first launch without either, the OS allocates an available loopback port. The
-launcher binds/listens before atomically saving the selected port under the shared
-profile-registry lock, and passes that same socket to Uvicorn without releasing
-its reservation. It preserves registrations and the default profile. Failed binds
-do not replace the saved setting. The controller's ready.url (or the browser-only
-startup message) is authoritative: open that URL and use it for reader/worker
-clients rather than assuming 8740. Direct scoped worker/client tools still accept
---url; their standalone defaults are not installation endpoint discovery.
+An explicit `--port` takes precedence; otherwise use the saved external port.
+Only a new installation with no saved endpoint/old registry port gets an automatic
+available loopback port. Existing administrator data without a saved endpoint
+requires explicit recovery of the original port; startup refuses to allocate a
+replacement. The launcher binds/listens before atomically saving it
+under a data-root lock, then passes that reserved socket to Uvicorn. Failed binds
+preserve existing settings. Profile operations do not read or rewrite the port file.
+Use `ready.url` or the browser-only startup message rather than assuming 8740/8741.
 
---data-root selects existing external site data; it does not select a different
-checkout or move web.port into that data directory. A copied checkout containing
-.opsfeast.yaml also copies the saved port: when both copies are used on one
-computer, explicitly configure an available different port in the new copy.
-There is no machine-wide port registry or uniqueness guarantee for copied settings.
+## First-use setup obligation
+
+Normal first-use plans include [Web dependencies, persistent data, startup, HTTP
+verification and the running URL](getting-started.md#include-and-launch-the-web-workspace).
+An approved concrete setup plan covers those local actions without a second routine
+startup approval. Cloning alone does not start a listener. A CLI-only/no-Web choice
+remains an explicit narrower scope.
 
 ## Existing server and agent ownership
 
-An occupied saved port is a conflict, not permission to stop any process listening
-there. Do not silently allocate another port, borrow another agent's token, or
-fall back to another installation. Inspect the process PID, launch command,
-checkout and selected installation data. A different PID or invalid owner token
-alone does not prove identity or establish that remote work has ended.
+An occupied saved port is a conflict, not permission to stop an unidentified listener
+or silently choose another endpoint. Establish the process, checkout, installation
+data and active work first. Reuse a verified matching healthy service. For authorized
+reclaim/restart, reconcile active Console/recipe work, stop only the identified
+service and restore its original data/port. A different PID or invalid owner token
+alone does not establish identity or prove remote cleanup. Report genuine uncertainty.
 
-When the human has authorized the user agent to manage this installation, the
-agent can reclaim its Web workspace from an obsolete controller without asking
-again solely because another agent launched it. First verify the exact installation
-and reconcile active Console work; preserve uncertain remote cleanup evidence.
-Stop only the identified server through its controller or a reviewed process-stop
-operation, then relaunch on its saved port and verify HTTP availability. An explicit
-human instruction to preserve or stop a particular service takes precedence.
-If ownership cannot be established or active work requires a decision, report the
-specific uncertainty and ask for that decision. Other installations remain outside
-this takeover scope.
+No automatic PID-killer, cross-agent ownership discovery, token sharing or active-work
+arbitration is implemented. Retain the [owner controller](agent-owner.md) handle and
+keep the Web service running after handoff. Independent copied installations require
+independent data/identity; attaching two checkouts to one data root represents the
+same installation and same saved endpoint, not independent Web workspaces.
 
-This is an actionable user-agent workflow, not an implemented automatic PID-killer
-or inter-agent lock. OpsFeast currently has no public ownership-discovery endpoint,
-automatic controller handoff or cross-agent active-work arbitration. Keep the
-[controller handle](agent-owner.md) and restore necessarily paused services before
-handoff. A restart replaces capabilities/cookies and does not restore workers or
-replay host commands.
+## Updates and explicit port transfer
 
-## Checkout-level Python interfaces and verification
+Follow [update preservation](update-preservation.md). Do not initialize another data
+root or administrator when updating. For old checkout-local `.opsfeast.yaml web.port`,
+run the one-time explicit transfer while the old checkout/registry still exists:
 
-`opsfeast.web_settings.read_port(checkout)` reads without writing;
-`configure_port(checkout, port)` validates and atomically saves without binding;
-`bind_server(checkout, port=None)` returns a caller-owned listening socket and
-saves only after successful reservation. Close that socket in all exit paths.
-These are bundled checkout-level interfaces, not a new Core versioned API.
-They require the existing Python/PyYAML environment and local registry write access;
-no software installation or host connection is performed.
+```sh
+.venv/bin/python -B -m opsfeast.web_settings migrate-port
+.venv/bin/python -B -m opsfeast.web_settings show
+```
 
-Tests cover independent first allocations, persistent reuse, occupied ports with
-unchanged settings, invalid/unknown fields, profile preservation and actual
-controller startup with an explicit saved port in a temporary installation. They
-do not establish safe takeover of arbitrary external processes. Existing launchers
-that assume 8740 must use the returned URL or read the saved port; no compatibility
-listener is created on the old default.
+The operation preserves a private registry backup and removes only the old Web
+entry. Conflicts, malformed data or missing dependencies fail. Normal startup
+refuses an outstanding old entry; it has no legacy read fallback or automatic data
+migration. Saved administrator, site, Profile, recipe/category/meal and result data
+are unchanged. See the complete guide for replacement checkouts and browser drafts.
 
-*Last modified: 2026-11-05 13:49:41*
+## Shared interfaces
+
+Checkout facades:
+
+- `read_port(installation, data_root=None)` returns the saved integer or None.
+- `configure_port(installation, port, data_root=None)` saves an explicit selection.
+- `bind_server(installation, port=None, data_root=None)` reserves and returns the
+  listening socket; it never takes over another listener.
+- `migrate_port(installation, data_root=None)` performs the one-time transfer and
+  returns port, data_root, status and private backup path.
+
+The `data_root` argument is keyword-only. Paths resolve through the existing marked
+storage contract. The JSON CLI `python -B -m opsfeast.web_settings` provides `show`,
+`set --port N` and `migrate-port`, with optional `--installation` and `--data-root`.
+Reads/configuration/transfer do not connect to managed hosts or execute recipes.
+
+## Persistent launch choices
+
+First-use agent control requires a persistent interactive process with open stdin.
+Closing stdin stops workers and Web, so `--agent-control < /dev/null` is not a
+background launch method. See [controller lifetime](agent-owner.md#launch-and-lifetime).
+Do not claim survival across agent/tool-host exit without an actual persistence
+facility. Installing systemd/launchd or start-at-login is a separately chosen scope.
+
+An already configured administrator can use an approved browser-only POSIX launch
+from the trusted checkout, preserving the data binding and saved external port:
+
+```sh
+nohup "/absolute/path/to/selected/python" -B -u -m opsfeast.web > "/absolute/path/to/installation-data/web.log" 2>&1 < /dev/null &
+```
+
+Capture the PID/startup URL and verify HTTP before handoff. This mode has no owner
+controller for initial administrator setup/reset. `nohup` is not an OpsFeast daemon
+flag or a reboot guarantee. Use the approved available facility on other systems.
+
+*Last modified: 2026-11-11 22:41:14*

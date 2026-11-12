@@ -7,7 +7,7 @@ import secrets
 def main():
     parser = argparse.ArgumentParser(description='Run the local OpsFeast Web server. '
                                      'Real Console access requires explicit interactive profile and host options.')
-    parser.add_argument('--port', type=int, help='Persist this installation Web port (1024-65535); default: saved port or automatic first allocation.')
+    parser.add_argument('--port', type=int, help='Persist this Web port in installation-data (1024-65535); default: saved port or automatic first allocation.')
     parser.add_argument('--agent-control', action='store_true', help='Memory-only agent owner capability and JSON-lines control on private stdin/stdout.')
     parser.add_argument('--data-root', type=Path, help='Existing external installation data root; otherwise use the checkout binding.')
     parser.add_argument('--interactive-profile', help='Explicit profile for the optional real Console service.')
@@ -30,7 +30,7 @@ def main():
         parser.exit(1, f'Cannot select installation data: {exc}\n')
     from opsfeast.web_settings import bind_server
     try:
-        listener=bind_server(WEB_ROOT.parent,args.port)
+        listener=bind_server(WEB_ROOT.parent,args.port,data_root=data_root)
     except (ConfigError,OSError) as exc:
         parser.exit(1,f'Cannot reserve installation Web port: {exc}\n')
     port=listener.getsockname()[1]

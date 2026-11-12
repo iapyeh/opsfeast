@@ -21,7 +21,7 @@ authorization. The feature requires the optional Web environment, including
    source and check time, and routes the Agent to the existing update procedure.
    The website does not dispatch messages, wake an Agent or run an installer.
 5. The Agent rechecks the actual environment, applicability and authorization,
-   preserves edits and private data, follows [the update guide](skill-updates.md),
+   preserves edits and private data, follows [update preservation](update-preservation.md) and [the skill update guide](skill-updates.md),
    applies only an applicable update, learns matching contracts/Skills and reports
    verification. An unsupported target requires product support; it is not
    permission to bypass the execution guard. Any required service restart must
@@ -91,4 +91,8 @@ invalid evidence, source failures, authorization/origin boundaries, escaped UI
 results and exact handoff content. Remote responses in public tests are synthetic;
 real-source checks do not prove that an update can be safely applied.
 
-*Last modified: 2026-11-05 17:18:10*
+
+
+Update instructions must retain the existing installation-data UUID, Web port, administrator credentials and resolved Profile roots. Saved categories/assignments/meals and recipe defaults are not regenerated. Apply the one-time registry-port transfer only when required by Web endpoint 0.2.0; no general private-data migration or new initialization is implied. Compare before/after state and restore the same Web origin before reporting success. See [the canonical procedure](update-preservation.md), including browser draft limits.
+
+*Last modified: 2026-11-11 22:35:58*
