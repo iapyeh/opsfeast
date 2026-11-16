@@ -148,11 +148,14 @@ class Profiles:
             save_profiles(data, self.instance.root)
         return self.instance.profile(name)
 
-    def detach(self, name):
+    def detach(self, name, *, expected_revision=None):
         from .identity import _locked
         if name == 'main':
             raise ConfigError('main cannot be detached')
         with _locked(self.instance.root / '.opsfeast-profiles.json'):
+            if expected_revision is not None:
+                from .profile_settings import check_revision
+                check_revision(self.instance.root, expected_revision)
             data = load_profiles(self.instance.root)
             if name not in data['profiles']:
                 raise ConfigError('unknown profile')

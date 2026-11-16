@@ -76,3 +76,9 @@ def update(installation, *, name, description, expected_revision):
     check_revision(installation,expected_revision)
     Instance.open(installation).profiles.set_description(name,description,expected_revision=expected_revision)
     return inspect(installation)
+
+
+def detach(installation, *, name, expected_revision):
+    from .core import Instance
+    Instance.open(installation).profiles.detach(name,expected_revision=expected_revision)
+    return inspect(installation)

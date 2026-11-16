@@ -217,8 +217,7 @@ transaction: a late conflict or failure can leave a new candidate directory;
 inspect it before retrying, and never delete it automatically. Attach preserves
 existing files and existing name/root conflict rules. Switching defaults affects
 later CLI/default selections, not a running job or explicitly selected profile.
-No profile rename, root relocation, namespace rewrite, detach or deletion is added
-to Web. Existing [profile CLI](profiles.md) remains available.
+[Profile lifecycle 0.1.0](profile-management.md) adds Web detach, recoverable deletion and private ZIP backup/import. Rename, arbitrary root relocation and Namespace rewrite remain unavailable. Existing explicit [profile CLI](profiles.md) remains available.
 
 Existing registry locations and existing management roots remain unchanged. New
 Web-created roots are external to product code, but the profile registry is still
@@ -263,4 +262,4 @@ public-network readiness.
 Implementation references: [Python hashlib](https://docs.python.org/3/library/hashlib.html#hashlib.scrypt)
 and [Starlette response cookies](https://starlette.dev/responses/#set-cookie).
 
-*Last modified: 2026-11-12 10:57:17*
+*Last modified: 2026-11-13 15:53:30*

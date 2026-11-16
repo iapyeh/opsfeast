@@ -7,6 +7,8 @@ For questions about a named host's condition, performance, incidents or remedies
 
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
+For authoring or revising consumer Vault figures, follow [the shared figure style](../../docs/figure-style.md): Mermaid, outer frame, fit to prose width, external left-aligned `附圖：`/`Figure:` caption close to and aligned with the border, and whitespace around the whole figure. Reuse the approved reference/assets and verify the actual reader output. Existing consumer figures are not automatically restyled; change reusable renderer/templates and preserve generated-output ownership.
+
 
 Use `opsfeast.py` as the public execution entrypoint: recipes run for reviewed operations/reports, inventory query/run for selective collection. The internal recipe_runner module owns shared execution/storage helpers and requires an explicit recipe. The standalone runner and snapshot inventory execution path are removed; current inventory uses descriptor 0.3.0, python-routines/recipe-meal 0.1.0 and inventory-routine-observations 0.1.0; frozen historical contracts remain readable. See [the canonical execution guide](../../docs/recipe-execution.md).
 
@@ -387,4 +389,50 @@ The [Web execution page](../../docs/web-recipe-menu.md#execution-page-and-return
 
 For a host report with images/scripts/data, use [document bundles 0.1.0](../../docs/host-note-attachments.md). Read `host_notes.inspect` to select exact Profile/host/note UUID, then reuse checkout `opsfeast.note_bundles.inspect/read_file/export` instead of filesystem guesses; retrieve necessary files after reading summaries. Attachment titles/entry names join note search, not package full text. Report evidence age and missing/digest-failed content. Reviewed local writes use `create(..., source=reviewed_directory_or_zip, entry="index.md", expected_revision=..., title=...)` or the documented JSON module CLI; human-authorized saves do not grant execution. Preserve the note index and `.host-note-attachments/` together; reread conflicts/uncertain writes and report cleanup receipts without automatic retries/garbage collection. Web supports safe Markdown images and explicit opaque-sandbox HTML/three.js; external CDN/API and workers are unsupported. The canonical guide owns versions, dependencies, byte limits, API examples and browser verification scope.
 
-*Last modified: 2026-11-12 12:36:44*
+## OS package security evidence
+
+Read [OS package security 0.3.0](../../docs/os-package-security.md) for the new portable inventory shape, immutable vendor snapshots and report artifacts. Prefer explicit raw `os-package-inventory` results plus `vendor-advisories` inputs to `feast/report/package-security`. Do not reinterpret old basic software properties, arbitrary retention envelopes or inferred latest observations. Check collection/retention receipts independently, preserve hashes/source times and final unknown reasons, and distinguish affected findings from report-generation success. Offline reanalysis never authorizes recollection, feed download or patching.
+
+## Full Profile backups versus retained-data transfer
+
+[Profile backup 0.1.0](../../docs/profile-management.md) copies private configuration, notes/attachments, observations, retained data and generated content together. It is different from portable observation/recipe transfer and may contain host credentials. Reuse `opsfeast.profile_transfer` and the documented authenticated Web endpoints, not a new tar/SQL script. Imported history remains history; no consumer/host actions are replayed. External dependencies are not bundled. Recoverable Profile deletion does not permanently purge data. Daily Web reads follow the default Profile; explicit agent reads remain scoped.
+
+## Package security workflow evidence
+
+[Workflow 0.1.0](../../docs/package-security-meal.md) produces portable `os-package-security-run` data with full `package_snapshot`, per-stage receipts and saved report IDs. CLI `data_is_summary: true` means `data` is intentionally bounded, not a truncated inventory; read the saved raw/retained data for package rows. `reports` references normal saved artifacts, whose source digests bind exact inventory and advisory snapshots. Acquisition gaps keep assessment incomplete, and independent content delivery failure does not erase successful collection/report evidence. Reanalysis alone never authorizes host/network acquisition.
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](../../docs/os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](../../docs/native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+For [Recipe activity names](../../docs/web-workspace.md#recipe-activity-names), reuse the workspace logs API and
+`opsfeast.recipe_activity` presentation helpers. Display saved picker/meal titles
+with the exact recipe reference as secondary evidence. New Web runs snapshot
+names; existing history is resolved read-only and never replayed or rewritten.
+
+Activity summaries separate host completion, collection/advisory/report stages and
+retention/downstream receipts. The list uses saved run metadata; selecting an entry
+reads at most six incomplete-host result files and shows at most 20 incomplete hosts
+with explicit omission counts. Missing raw evidence stays unknown. JSON remains in
+the closed advanced disclosure. Reuse `recipe_activity.activity_summary` and the
+existing workspace logs API; reads never reconnect, retry or rewrite observations.
+Web date/time rendering uses the shared `formatDateTime`/`formatTime` helpers with
+Asia/Taipei, seconds and the 00–23 hour cycle, including execution and Console views.
+
+
+*Last modified: 2026-11-14 17:19:41*

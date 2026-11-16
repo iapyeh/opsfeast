@@ -40,6 +40,10 @@ existing data root on upgrade; never regenerate identity for a replacement
 checkout. The current separation does not relocate profile registries or their
 management roots; preserve those independently before destructive replacement.
 
+## Figures in textbooks and consumer Vaults
+
+When adding or revising textbook or consumer-generated Vault figures, read [the shared figure style](docs/figure-style.md). Use Mermaid, a clear outer frame, a width that fits the prose column, and an external left-aligned caption prefixed `附圖：` (Traditional Chinese) or `Figure:` (English). Keep the caption close to the border, aligned with its actual inset, and leave more space around the whole figure. Reuse the approved overview/CSS and verify the rendered result. This is a design requirement, not a claim that every existing consumer figure already implements it.
+
 ## First-use conversations
 
 The single first-use prompt authorizes cloning OpsFeast into “this project's directory,” then reading guidance and checking prerequisites. Resolve the active workspace from context. An empty workspace can become the checkout; a nonempty workspace uses an opsfeast/ child, preserving existing files. Verify repository identity and checkout markers before reusing an existing clone; do not pull, reset or overwrite it. Report missing Git/access, download failures and destination conflicts rather than installing software or deleting files under clone-only authorization. Follow [agent-led checkout bootstrap](docs/getting-started.md#agent-led-checkout-bootstrap) for selection and failure handling. Explicitly read newly cloned instructions; automatic discovery is not assumed. Use the actual checkout for commands and a later approved .venv even when the workspace is its parent, without requiring a new conversation or project reopening.
@@ -194,4 +198,4 @@ For sharing/import/archival, read [portability](docs/portability.md), [portable 
 
 For authorized updates, follow [preserve installation state](docs/update-preservation.md). Reuse external `web-server.json` (endpoint 0.2.0), the same administrator/identity/data root and every resolved Profile root; do not run init or replace menu/default/user-recipe files. Use `opsfeast.web_settings.read_port/configure_port/bind_server` with the resolved data root; `migrate_port` / `python -B -m opsfeast.web_settings migrate-port` is the explicit, backed-up old-registry port transfer only. Compare private before/after state, restore the same Web origin and keep service running. Saved categories, assignments, nested meals and field scopes remain unchanged; unsaved browser plates retain their tab/origin/root lifetime limits.
 
-*Last modified: 2026-11-12 11:55:28*
+*Last modified: 2026-11-16 15:17:19*

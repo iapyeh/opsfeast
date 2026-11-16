@@ -1102,4 +1102,47 @@ For installation-wide Web recipe concurrency, use `python -B -m opsfeast.executi
 
 Use `python -B -m opsfeast.note_bundles --installation PRODUCT --profile NAME --host HOST --note NOTE_UUID add|show|export|delete`. Read [document bundles 0.1.0](host-note-attachments.md#shared-python-and-cli-interfaces) for exact source/entry/revision/confirmation options and JSON receipts. Inputs are reviewed local ZIP/directory files, never code execution. Export refuses existing destinations; note/bundle scope and hashes are verified on reads. Browser preview is separately authorized by the authenticated reader, with no host connection or server-side execution.
 
-*Last modified: 2026-11-12 12:30:01*
+## OS package security
+
+`python -B -m opsfeast.package_security fetch|import|assess` is the JSON module CLI for explicit official-vendor snapshots and offline report generation. Fetch/import require vendor, release and a new output path; import also requires original source URL/retrieval time. Assess requires explicit inventory/advisory files and a new output directory. Exit 0 means generation/acquisition completed, not absence of vulnerabilities; invalid input/I/O returns exit 1 with sanitized JSON stderr. Use `recipes run system/software/inventory/os-packages` for authorized host collection and `recipes run feast/report/package-security --input INVENTORY --input ADVISORIES` for normal report history/artifacts. Read [all arguments, native matching, freshness and limitations](os-package-security.md) before selecting these commands. No new top-level `security` command or automatic feed refresh exists.
+
+## Profile lifecycle services and Web
+
+Use [Settings → Profiles and checkout APIs](profile-management.md) for private full-Profile ZIP export/import and recoverable deletion. Existing `attach`, `detach`, `use`, `init` and `profiles` CLI commands retain their explicit-profile semantics. There are no new `profiles export/import/delete/vacuum` CLI subcommands; do not invent them. Core `instance.profiles.detach(name, expected_revision=REV)` is available for revision-checked agent programs. Daily Web selection is default-only; this does not remove CLI overrides.
+
+## End-to-end OS package security
+
+`recipes run system/software/check/package-security --profile NAME --host HOST --json` performs the host-selected three-stage workflow. See [the meal guide](package-security-meal.md) for input defaults, separate controller HTTPS scope, cache freshness, partial/unknown behavior and saved report links. Operational results with an explicit bounded `summary` emit it as CLI `data` with `data_is_summary: true`; the full raw/retained result remains authoritative. Optional `reports` contains validated Profile-relative saved report IDs/status. No new top-level security command is added.
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+## Manual Web shell startup
+
+Use `./tools/start_web.sh [WEB_OPTIONS]` from the checkout root, or its absolute
+path from another directory. It selects the checkout `.venv/bin/python`, with an
+optional absolute `OPSFEAST_PYTHON` override, and forwards ordinary Web options.
+See [manual startup and PID semantics](web-server.md#manual-shell-launcher-and-pid-marker)
+for foreground/nohup/controller usage and external `web-server.pid`. All new Web
+CLI launches refuse existing live/stale/invalid markers; live/inaccessible PIDs
+exit 2, stale/invalid markers exit 1, and orderly exit cleans only its own marker.
+A marker is not HTTP readiness or agent authentication. Existing port/admin/Profile
+state is preserved; no host operation or automatic stale-file cleanup occurs.
+
+*Last modified: 2026-11-16 14:50:01*

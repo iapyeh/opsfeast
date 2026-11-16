@@ -28,6 +28,18 @@ def main():
         data_root = resolve_data_root(WEB_ROOT.parent, data_root=args.data_root, required=True)
     except (ConfigError, OSError) as exc:
         parser.exit(1, f'Cannot select installation data: {exc}\n')
+    from .process import claim, ProcessMarkerError
+    try:
+        with claim(data_root):
+            serve(args, data_root, parser, uvicorn, create_app, WEB_ROOT)
+    except ProcessMarkerError as exc:
+        parser.exit(exc.exit_code, str(exc) + '\n')
+    except OSError as exc:
+        parser.exit(1, f'Cannot start Web: {exc}\n')
+
+
+def serve(args, data_root, parser, uvicorn, create_app, WEB_ROOT):
+    from opsfeast import ConfigError
     from opsfeast.web_settings import bind_server
     try:
         listener=bind_server(WEB_ROOT.parent,args.port,data_root=data_root)

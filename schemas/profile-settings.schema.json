@@ -3,28 +3,97 @@
   "title": "Profile settings status 0.1.0",
   "type": "object",
   "additionalProperties": false,
-  "required": ["revision", "default_profile", "profiles", "connectivity_verified"],
+  "required": [
+    "revision",
+    "default_profile",
+    "profiles",
+    "connectivity_verified"
+  ],
   "properties": {
-    "revision": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "default_profile": {"type": ["string", "null"]},
-    "connectivity_verified": {"const": false},
+    "revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "default_profile": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "connectivity_verified": {
+      "const": false
+    },
     "profiles": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "root", "status", "active", "namespace", "definition_status", "description"],
+        "required": [
+          "name",
+          "root",
+          "status",
+          "active",
+          "namespace",
+          "definition_status",
+          "description"
+        ],
         "properties": {
-          "name": {"type": "string"},
-          "root": {"type": "string"},
-          "status": {"enum": ["available", "unavailable"]},
-          "active": {"type": "boolean"},
-          "namespace": {"type": ["string", "null"]},
-          "definition_status": {"enum": ["present", "missing", "invalid", "unknown"]},
-          "description": {"type": "string", "maxLength": 1000}
+          "name": {
+            "type": "string"
+          },
+          "root": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "unavailable"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "definition_status": {
+            "enum": [
+              "present",
+              "missing",
+              "invalid",
+              "unknown"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "deleted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "recovery_root",
+        "permanently_removed"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "recovery_root": {
+          "type": "string"
+        },
+        "permanently_removed": {
+          "const": false
         }
       }
     }
   },
-  "$comment": "Last modified: 2026-11-06 09:26:10"
+  "$comment": "Last modified: 2026-11-13 15:53:30"
 }

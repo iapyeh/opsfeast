@@ -8,6 +8,8 @@ Requirements are Python 3.11+, OpsFeast initialization dependencies, a namespace
 
 ## Figure authoring
 
+When adding or revising diagrams, follow [the shared figure style](../../docs/figure-style.md) for Mermaid, outer borders, prose-column width, external caption prefix/alignment and spacing. Reuse its working reference/assets, change the renderer rather than generated pages, and verify the actual presentation. The full textbook layout is the target convention; current Mermaid consumer output is not automatically upgraded by that guidance.
+
 ## Reader assets
 
 Every full bundled rebuild also performs [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). The shipped template installs into `.obsidian/snippets/`, initially enables its name in `appearance.json`, and records CSS ownership in `.reader-assets.json`. Other settings/snippets remain intact; later disabling is respected. Reader collisions, invalid preferences and symlink paths fail this consumer without changing retained evidence. Reopen an already-open Vault to load new settings. This does not install Obsidian or retrofit all frame/caption rules.
@@ -69,4 +71,4 @@ host/origin namespace. It starts with saved effective policy, then applies any
 current exact-child Attention override; source IDs/references/times stay visible.
 Historical records/events are not relabeled. See [dependencies and adoption](../../docs/inventory-consumers.md).
 
-*Last modified: 2026-11-10 16:49:25*
+*Last modified: 2026-11-16 15:17:19*

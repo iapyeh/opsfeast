@@ -40,7 +40,7 @@ interfaces with their existing authorization rules.
 
 Empty sources show an empty state. Read failures show an error, never a fabricated
 zero count. Overview service failures are independent; available sources remain
-visible with `status: partial`. Data pages have explicit Profile selection,
+visible with `status: partial`. Daily data pages use only the persisted default Profile, with
 server-side search and **載入更多** pagination. Times are displayed in Asia/Taipei
 with seconds; reading a page does not change source observation times.
 
@@ -96,7 +96,7 @@ filesystem paths are not used as storage-error messages.
 Synthetic roadmap modules, host drafts and browser-only playback were removed from
 the served assets. Old synthetic recipe/log IDs no longer resolve. No saved user
 data is deleted or migrated. Recipe execution, service lifecycle mutations,
-transfer/archive/import/delete, automatic upgrade and arbitrary Web app hosting
+generic service transfer/archive/import/delete, automatic upgrade and arbitrary Web app hosting
 are outside this read-only adapter. Existing Core/CLI capabilities retain their
 own scope; use their canonical workflows rather than inventing browser writes.
 
@@ -155,4 +155,30 @@ sets, configured host/group/All choices and a two-column plate. Extra controls a
 indexes are hidden on this main page; saved result URLs/APIs are preserved. The
 menu's group membership projection is read-only and exposes no login account.
 
-*Last modified: 2026-11-10 09:29:02*
+## Recipe activity names
+
+Activity entries prefer the same human-facing titles used in the Recipes picker.
+Web-selected meals appear alongside their executed recipe titles; the original
+`recipe_reference` remains secondary text and is still searchable. New confirmed
+Web runs snapshot per-task `title` and `meal_titles`, so subsequent recipe/meal
+renames or deletion do not relabel those runs. Existing runs resolve currently
+available recipe/meal metadata without rewriting saved evidence; unavailable
+recipes fall back to the exact reference. Console titles/history links are unchanged.
+
+`GET /api/v1/workspace/logs` returns `title`, `recipe_title`, `meal_titles` and
+`recipe_reference` on recipe entries. `opsfeast.recipe_activity.history_labels`
+uses the existing Profile and RecipeRuns read interfaces; `meal_labels` follows
+nested membership without executing recipes or exposing private variables.
+These are checkout-level presentation helpers, not a new retained-data schema.
+
+Activity summaries separate host completion, collection/advisory/report stages and
+retention/downstream receipts. The list uses saved run metadata; selecting an entry
+reads at most six incomplete-host result files and shows at most 20 incomplete hosts
+with explicit omission counts. Missing raw evidence stays unknown. JSON remains in
+the closed advanced disclosure. Reuse `recipe_activity.activity_summary` and the
+existing workspace logs API; reads never reconnect, retry or rewrite observations.
+Web date/time rendering uses the shared `formatDateTime`/`formatTime` helpers with
+Asia/Taipei, seconds and the 00–23 hour cycle, including execution and Console views.
+
+
+*Last modified: 2026-11-14 17:19:41*

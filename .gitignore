@@ -47,3 +47,7 @@
 # Private host notes and immutable document bundles at a management root.
 /.host-notes.json
 /.host-note-attachments/
+
+# Python execution caches are local generated artifacts.
+__pycache__/
+*.py[cod]

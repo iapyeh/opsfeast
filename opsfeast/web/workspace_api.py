@@ -160,9 +160,13 @@ def install(app, *, product, require_admin):
                     from recipe_reports import results
                     saved = results(selected.root, kind='operation')
                     if saved['errors']: errors.append('some_saved_results_invalid')
+                    from opsfeast.recipe_activity import history_labels
+                    titles, labels = history_labels(selected, app.state.recipe_runs)
                     for run in selected.retention.runs():
+                        reference = run['recipe_reference']
+                        naming = labels.get(run['run_id'], {'title': titles.get(reference, reference), 'recipe_title': titles.get(reference, reference), 'meal_titles': []})
                         items.append({'id': run['run_id'], 'source': 'recipe', 'time': run['started_at'],
-                                      'title': run['recipe_reference'], 'status': run['status'], 'details': run,
+                                      **naming, 'recipe_reference': reference, 'status': run['status'], 'details': run,
                                       'result_links':[{key: row[key] for key in ('host_id','status','result_id','short_id')}
                                                       for row in saved['results'] if row.get('observation_run_id') == run['run_id']]})
                 except (ConfigError, OSError, sqlite3.Error):
@@ -181,7 +185,26 @@ def install(app, *, product, require_admin):
                                   'url': '/console/' + item['session_id'] + '/history', 'details': item})
                 items.sort(key=lambda item: (item['time'], item['id']), reverse=True)
                 if item_id is not None: items = [item for item in items if item['id'] == item_id]
-                result.update(selected_page(items), errors=errors, status='partial' if errors else 'success')
+                selected_items = selected_page(items)
+                from opsfeast.recipe_activity import activity_summary
+                from recipe_reports import show_result
+                for entry in selected_items['items']:
+                    if entry['source'] != 'recipe':
+                        continue
+                    raw_results = []
+                    bad_hosts = {row.get('host_id') for row in entry['details'].get('targets', []) if row.get('status') != 'success' or row.get('retention_status') in ('failed', 'error')}
+                    detail_candidates = [link for link in entry['result_links'] if link['host_id'] in bad_hosts or link['status'] != 'success']
+                    if item_id is not None:
+                        for link in detail_candidates[:6]:
+                            try:
+                                raw_results.append({'result_id': link['result_id'], 'host_id': link['host_id'],
+                                                    'raw': show_result(selected.root, link['result_id'], kind='operation')})
+                            except (ConfigError, OSError, ValueError):
+                                errors.append('some_result_details_unavailable')
+                    entry['summary'] = activity_summary(entry['details'], raw_results)
+                    entry['summary']['omitted_result_details'] = max(0, len(detail_candidates) - 6) if item_id is not None else 0
+                    entry['expanded'] = item_id is not None
+                result.update(selected_items, errors=sorted(set(errors)), status='partial' if errors else 'success')
         except (OSError, sqlite3.Error):
             raise HTTPException(503, 'workspace_storage_unavailable') from None
         return result

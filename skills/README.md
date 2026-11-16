@@ -106,6 +106,10 @@ and recipes skills. This is separate from account login or an extension SDK.
 It includes signed-out/login/workspace layouts and a Traditional Chinese authoring
 catalog; English translation is deferred until explicitly requested.
 
+For teaching a human how to operate OpsFeast with their own agent, use [the textbook](../docs/textbook/README.md): ordered concepts, workflow chapters, copyable interaction examples, a complete backup-check case and symptom-based recovery. Keep exact CLI/schema details in the canonical references and continue using the task-specific skills below. The entrypoint lists English (`docs/textbook/en/`) and Traditional Chinese (`docs/textbook/zh-TW/`) teaching vaults, separate from profile operational Vaults. Before editing, committing or pushing textbook work, follow [the bilingual maintenance procedure and synchronization status](../docs/textbook/MAINTAINING.md): discuss/revise in Chinese, synchronize English before a requested commit, and deliver both editions together when push is authorized.
+
+For textbook figures or consumer-generated Vault diagrams, read [the shared figure style](../docs/figure-style.md). It defines Mermaid, the outer frame, prose-column width, external `附圖：`/`Figure:` caption, border alignment, close caption spacing and surrounding whitespace. Content authors also use the recipes/result-data skills and Vault ownership rules.
+
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
 Agent documentation and skills, together with human guidance for operating OpsFeast through AI agents, are [core product priorities](../docs/vision.md#treat-agent-guidance-and-human-agent-operation-as-core-product-work). They are especially important while TUI coverage remains incomplete. Every development agent must preserve this priority and follow [the contributor handoff checklist](../docs/agent-guidance.md#carry-the-product-priority-across-development-agents); operational agents should use the task routing below. TUI's goal is independent human operation, and its fuller manual workflows follow completed, verified TUI updates.
@@ -314,4 +318,47 @@ For authorized updates, follow [preserve installation state](../docs/update-pres
 
 For preserving host analysis reports and their images/scripts/data, use [host-note document bundles 0.1.0](../docs/host-note-attachments.md), routed through hosts, result-data and recipes skills. Reuse `opsfeast.note_bundles` and its JSON CLI for reviewed local file packages, with revision/hash preservation. Web supports safe Markdown images and explicit isolated HTML/three.js; no host connection, remote execution or automatic library acquisition is implied.
 
-*Last modified: 2026-11-12 12:30:01*
+## OS package security
+
+Route OS-managed package weakness reports through [the recipes skill](opsfeast-recipes/SKILL.md#os-package-security-030) and [the canonical workflow](../docs/os-package-security.md). Reuse the new collector, vendor-data module CLI and offline report recipe. This differs from the basic software overview; do not guess vendor versions or equate missing advisories with safety.
+
+## Profile lifecycle and default Web scope
+
+Route lifecycle, private backup/restore and recoverable delete through [Core skill](opsfeast-core/SKILL.md#profile-management-010) and [Profile management 0.1.0](../docs/profile-management.md). Settings owns all default switching; daily Web pages use the persisted default. Distinguish detach (data stays in place) from delete (recovery rename), keep backup credentials private and external dependencies separate, and never infer host execution or vacuum authorization.
+
+## End-to-end package security meal
+
+For selected-host collection through vulnerability reports, route to [the recipe skill](opsfeast-recipes/SKILL.md#os-package-security-meal-030) and [workflow 0.3.0](../docs/package-security-meal.md). Prefer the existing meal/orchestrator over generated glue. Its scope includes controller HTTPS and local artifacts; it never authorizes remediation.
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](../docs/os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](../docs/native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+For manual Web startup/process discovery, reuse `tools/start_web.sh` (foreground,
+checkout `.venv` or absolute `OPSFEAST_PYTHON`) and read [the PID lifecycle and
+recovery guide](../docs/web-server.md#manual-shell-launcher-and-pid-marker).
+New Web CLI/controller launches share external `web-server.pid`; a live PID warns
+and refuses startup, while a dead/invalid marker stays for explicit agent recovery.
+Orderly exit cleans only the owned marker; SIGKILL can leave it stale. Resolve the
+actual installation data, inspect PID/endpoint/work state and HTTP before action;
+do not automatically kill, overwrite or reset data. PID liveness does not grant
+agent-control authority. Keep private stdin open for `--agent-control`; use default
+browser-only manual mode for an already configured administrator. No connections,
+recipes, software installation or reboot persistence are authorized by this helper.
+
+*Last modified: 2026-11-16 14:50:01*

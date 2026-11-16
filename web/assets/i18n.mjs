@@ -33,7 +33,7 @@ export function formatNumber(value, locale = defaultLocale, options = {}) {
 
 export function formatDateTime(value, locale = defaultLocale, timeZone = "Asia/Taipei") {
   return new Intl.DateTimeFormat(resolveLocale([locale]), {
-    dateStyle: "medium", timeStyle: "medium", timeZone
+    dateStyle: "medium", timeStyle: "medium", timeZone, hourCycle: "h23"
   }).format(new Date(value));
 }
 
@@ -46,4 +46,8 @@ export function readLocale(storage, browserLanguages = []) {
 export function saveLocale(storage, locale) {
   if (!supportedLocales.includes(locale)) throw new Error(`Unsupported locale: ${locale}`);
   try { storage?.setItem("opsfeast.ui.locale", locale); } catch { /* Rendering still works. */ }
+}
+
+export function formatTime(value, locale = defaultLocale, timeZone = "Asia/Taipei") {
+  return new Intl.DateTimeFormat(resolveLocale([locale]), {timeStyle:"medium",timeZone,hourCycle:"h23"}).format(new Date(value));
 }

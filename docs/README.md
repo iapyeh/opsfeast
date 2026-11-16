@@ -35,6 +35,10 @@ read [presentation](site-presentation.md), [persistent storage](installation-sto
 and the [Web preview](../web/README.md). Profile management roots are separate.
 
 
+Start with [the OpsFeast textbook](textbook/README.md) for a book-length learning path: concepts and architecture, human-agent interaction, setup, daily operations, data interpretation, services, reports, portability, a complete backup case and troubleshooting. The entrypoint lists standalone English (`textbook/en/`) and Traditional Chinese (`textbook/zh-TW/`) Markdown reading vaults, with links to the canonical references below. Exact contracts remain in those references. Textbook contributors follow [the bilingual review and synchronization procedure](textbook/MAINTAINING.md).
+
+For textbook and consumer-Vault figure authors, use [the shared figure style](figure-style.md) for the approved Mermaid, framing, width, caption and spacing rules, reference assets and visual verification.
+
 Use [recipe classification and location](recipe-taxonomy.md) for the current bundled paths, variable-depth domain/action convention, user profile/shared-source placement and relocation effects on configuration, jobs, consumers and historical evidence.
 
 For agents operating OpsFeast or developing Python integrations, start with [the existing tool/module capability map](agent-capabilities.md) and [skill index](../skills/README.md). Reuse suitable capabilities before creating new implementations.
@@ -168,4 +172,30 @@ For code replacement or agent-led upgrades, start with [installation and user-se
 
 For host-specific analysis reports with images or interactive visualizations, use [host-note document bundles](host-note-attachments.md): private immutable file packages, safe Markdown reading, isolated HTML/three.js, shared local APIs and preservation.
 
-*Last modified: 2026-11-12 12:30:01*
+## OS package security
+
+Use [OS package security 0.3.0](os-package-security.md) for full native package snapshots, explicit official vendor data and offline HTML/Markdown/JSON vulnerability reports. Missing evidence remains unknown; this is the first OS-package phase, not a complete application SBOM.
+
+## Profile lifecycle in Settings
+
+Use [Profile management 0.1.0](profile-management.md) for create, attach/detach, private ZIP export/import, recoverable delete and set-default. Daily Web pages operate on the default Profile; other owners are managed in Settings. Vacuum is deferred.
+
+## Host-selected package security meal
+
+[OS package security meal 0.3.0](package-security-meal.md) integrates full collection, matching official advisory acquisition/cache and linked saved reports after selecting hosts. Read its network authorization, RHEL scope and partial-failure limits.
+
+[Native package platform support](os-package-platforms.md) covers ESXi, FreeBSD base/kernel and Proxmox VE identity, partial evidence and inventory 0.2.0 recollection requirements.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+*Last modified: 2026-11-13 23:25:46*

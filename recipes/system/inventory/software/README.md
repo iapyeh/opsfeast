@@ -52,4 +52,8 @@ See [routine contract and execution](../../../../docs/recipe-routines.md),
 [inventory jobs/schedules](../../../../docs/inventory-jobs.md),
 [retention](../../../../docs/retention.md) and [Web selection](../../../../docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-10 12:27:11*
+## Security analysis requires the new package snapshot
+
+For version-based vulnerability reporting, use [the full OS package collector](../../software/inventory/os-packages/README.md) and [the vendor assessment workflow](../../../../docs/os-package-security.md). This basic overview property does not provide the required full source/binary identities and completeness evidence; it is not silently upgraded or converted.
+
+*Last modified: 2026-11-13 15:17:58*

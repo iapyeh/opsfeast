@@ -108,4 +108,80 @@ Capture the PID/startup URL and verify HTTP before handoff. This mode has no own
 controller for initial administrator setup/reset. `nohup` is not an OpsFeast daemon
 flag or a reboot guarantee. Use the approved available facility on other systems.
 
-*Last modified: 2026-11-11 22:41:14*
+## Manual shell launcher and PID marker
+
+From the checkout root, run:
+
+```sh
+./tools/start_web.sh
+# Forward an explicitly chosen endpoint change to the ordinary CLI:
+./tools/start_web.sh --port 18741
+# Reuse a different existing interpreter (absolute executable path):
+OPSFEAST_PYTHON=/absolute/path/to/python ./tools/start_web.sh
+```
+
+The POSIX shell launcher locates its own checkout, changes into it and `exec`s
+`python -B -u -m opsfeast.web` using `<checkout>/.venv/bin/python` unless
+`OPSFEAST_PYTHON` is supplied. It works from another current directory when invoked
+by its full path, including paths containing spaces. Arguments are forwarded
+without evaluation. It never creates/updates a venv, installs packages, initializes
+installation data or resets an administrator/Profile. Saved external port/data
+selection remains authoritative; `--port` and `--data-root` retain ordinary CLI
+semantics. `--help` prints CLI usage without reserving a PID or starting Web.
+
+The default is foreground browser-only Web for an existing administrator. Keep the
+terminal open; Ctrl+C performs an orderly shutdown. An approved persistent launch
+can use `nohup /absolute/path/to/ops/tools/start_web.sh > /absolute/path/to/installation-data/web.log 2>&1 < /dev/null &`.
+This does not provide reboot/start-at-login integration. For first-use setup or
+agent owner operations, retain a private interactive controller with
+`./tools/start_web.sh --agent-control`; keep stdin open and do not redirect it to
+`/dev/null`. A PID is process discovery, not an owner capability or administrator
+credential. A new agent cannot recover another controller's in-memory authority
+from a PID file.
+
+Every new `python -m opsfeast.web` launch (including this script and agent-control)
+reserves `<installation-data>/web-server.pid`. It contains only the positive decimal
+PID followed by a newline, mode 0600, and names the actual Python Web process,
+not a shell wrapper. Exclusive creation prevents concurrent launches for one data
+root, even when different ports/checkouts are requested. The marker is written
+before port reservation; it is not evidence that HTTP startup has completed.
+Use the existing storage resolver or `python -B -m opsfeast.web_settings show` to
+find the resolved external data root and saved port, then verify the returned URL
+with HTTP. No secrets are stored in the PID file.
+
+| Existing marker | Startup result |
+| --- | --- |
+| Valid PID still exists | Warning, exit 2; no second server or port change |
+| PID exists but process inspection is denied | Refuse with exit 2; no takeover |
+| PID has exited | Stale-file error, exit 1; preserve the marker for agent recovery |
+| Empty, malformed, symlinked or otherwise unreadable marker | Refuse with exit 1; preserve it for inspection |
+| No marker | Reserve actual PID; attempt normal Web startup |
+
+Normal exit, Ctrl+C, SIGTERM, controller shutdown/EOF and handled startup failure
+remove only the marker created by that launch. SIGTERM and ordinary SIGHUP are
+handled during startup too; an inherited SIGHUP-ignore disposition (nohup) stays
+ignored. Cleanup does not remove a replacement inode or modified marker. SIGKILL,
+power failure, filesystem failure or another abrupt termination can leave a stale
+file. There is no automatic stale-file repair, PID killer, port reassignment or
+host-command replay. Servers already running from older code do not acquire a
+marker retroactively; they remain running until an authorized normal restart.
+
+For agent recovery: read the exact resolved data root/marker, validate the numeric
+PID, inspect liveness and check the saved endpoint, actual process identity,
+checkout and active Console/recipe work. `kill -0 PID` alone proves neither Web
+identity nor HTTP health; PID reuse can point at an unrelated live process. Never
+kill a PID merely because it appears in this file. A confirmed stale marker may be
+preserved/removed within the human's requested recovery scope, followed by one
+normal launch and HTTP verification. Ambiguous ownership, malformed data or an
+unrelated listener requires investigation; do not silently overwrite the file or
+repeat startup. Do not request approval again for already-authorized recovery.
+
+Checkout support is `opsfeast.web.process.claim(data_root)` and
+`ProcessMarkerError.exit_code`. The Web CLI owns this lifecycle; recipes should not
+reimplement PID management or use this context to grant themselves execution
+scope. Public focused tests in `tests/test_web_process.py` cover actual child PIDs,
+concurrent refusal, live/dead/inaccessible/invalid markers, normal/signal/forced
+termination, replacement preservation, shell quoting and isolated HTTP startup.
+They do not qualify systemd/launchd, reboot persistence or managed-host execution.
+
+*Last modified: 2026-11-16 14:50:01*

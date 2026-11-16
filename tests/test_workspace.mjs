@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mountVersions} from '../web/assets/updates.mjs';
 import {readFileSync, existsSync} from 'node:fs';
-import {renderData, mountWorkspace, workspaceUrl, renderDiagnosis} from '../web/assets/workspace.mjs';
+import {renderData, mountWorkspace, workspaceUrl, renderDiagnosis, renderActivitySummary} from '../web/assets/workspace.mjs';
 const e=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const options={e,profile:'fixture&profile'};
 class Element {
@@ -96,4 +96,21 @@ test('library cards search titles as well as paths and keep titles inert',async(
   assert.match(list.innerHTML,/docs%2Fguide.md/);assert.match(list.innerHTML,/Scope &lt;img src=x&gt;/);
   assert.doesNotMatch(list.innerHTML,/<img|docs%2Fother/);
   query.value='not found';query.events.input();assert.match(list.innerHTML,/目前沒有資料/);
+});
+
+test('activity shows picker names and preserves escaped recipe paths as secondary text',()=>{
+  const html=renderData('/logs',{status:'success',items:[{id:'saved',source:'recipe',time:'2026-11-01T00:00:00Z',title:'套餐 <one> · Recipe title',recipe_reference:':check/<path>',status:'success',details:{}}]},options);
+  assert.match(html,/套餐 &lt;one&gt; · Recipe title/);
+  assert.match(html,/<code>:check\/&lt;path&gt;<\/code>/);
+  assert.doesNotMatch(html,/<one>|<path>/);
+  assert.match(html,/entry=saved/);
+});
+
+test('activity partial summary explains stages and keeps JSON behind advanced disclosure',()=>{
+  const item={id:'run',source:'recipe',title:'Meal',status:'partial',expanded:true,details:{secret:'raw-only'},summary:{total_hosts:1,completed_hosts:0,incomplete_hosts:1,issues:[{host_id:'<host>',status:'partial',stages:[{stage:'collection',status:'partial',reason_code:'os_package_inventory_incomplete'},{stage:'advisories',status:'failed',reason_code:'vendor_distribution_unsupported_or_unidentified'},{stage:'report',status:'partial',reason_code:'package_security_report_incomplete'}],packages:{collected_count:0,complete:false},gaps:['esxi_xml_unparseable:system version get'],receipts:{retention:'stored',content_update:'success'}}]}};
+  const html=renderData('/logs',{status:'success',items:[item]},options);
+  assert.match(html,/完成 0 ／ 未完成 1 ／ 共 1 台/);assert.match(html,/套件採集/);assert.match(html,/廠商公告/);assert.match(html,/弱點報告/);
+  assert.match(html,/XML 無法解析（system version get）/);assert.match(html,/資料保存：已保存/);assert.match(html,/&lt;host&gt;/);
+  assert.match(html,/<details><summary>原始資料（進階）/);assert.match(html,/<details open>/);
+  assert.ok(html.indexOf('套件採集')<html.indexOf('raw-only'));
 });

@@ -203,6 +203,8 @@ Use [consumer contract 0.1.0](retention-consumers.md) before authoring another r
 
 Checkout `retention_consumers.catalog/related/inspect_deliveries/dispatch` are documented module interfaces, not Core SDK methods. Shared retention writes commit events in the annual transaction; dispatch runs after writes and records each consumer independently in content_update.consumers. Creation dedup, deletion tombstones, disabled backlog and at-least-once idempotency requirements apply. Prior eventless history needs explicit application rebuilds. See the [bundled Vault implementation](../consumers/vault/README.md) for installed requirements, output ownership and extension points. Synthetic tests and installed-wheel checks do not prove native connections or external delivery.
 
+For textbook or consumer-Vault figure presentation, reuse [the approved figure convention and reference assets](figure-style.md) before designing new styling. This is authoring guidance, not a new Core API or automatic reader-style installer.
+
 Bundled Vault initialization/full rebuild also performs [Obsidian reader setup](host-vault.md#automatic-obsidian-reader-setup): owned CSS publication and initial enablement, preserving other appearance preferences and later disabling. Reuse `vault rebuild`; there is no separate Core reader-installer API. Static inspect and group refresh do not configure reader assets. Validate the content receipt independently of retention.
 
 ## Recipe retention and content applications
@@ -791,4 +793,62 @@ For authorized updates, follow [preserve installation state](update-preservation
 
 Reuse checkout module `opsfeast.note_bundles.create/inspect/read_file/export/delete` and its JSON module CLI for reviewed Profile-local Markdown/HTML report packages. The [canonical guide](host-note-attachments.md) covers stable IDs, revision/cleanup receipts, immutable copied assets, 65 MiB ZIP/64 MiB expanded bounds, safe Markdown images, scoped sandbox HTML/three.js preview and limitations. Browser preview serves local resources through a transient separate port; no uploaded program executes on the server, and no host or Recipe authorization is implied. Discover note summaries first and retrieve only necessary attachment files.
 
-*Last modified: 2026-11-12 12:30:01*
+## OS package security 0.3.0
+
+Reuse `system/software/inventory/os-packages`, `feast/report/package-security` and checkout service `opsfeast.package_security` before creating package scanners. The [canonical workflow](os-package-security.md) documents `collect(recipe)`, explicit `fetch/import_local/load`, offline `assess/generate/render` and the JSON module CLI. Collection needs selected-host authorization and SSHScript 7.0.1; vendor download and offline reporting are separate scopes. Debian/Ubuntu native source-version and declared-stream RHEL RPM analysis are implemented; Red Hat fetch is selected RHSA only. FreeBSD, Proxmox VE and ESXi have official native advisory comparison; unsupported distributions, stale/missing/partial data remain unknown. Preserve original sources, hashes, candidate/final status and limitations. No patching, compliance exporter or implicit latest-data lookup.
+
+## Profile lifecycle and backups 0.1.0
+
+Reuse `opsfeast.profile_settings.inspect/create/attach/detach/use/update` and `opsfeast.profile_transfer.export/import_archive/delete` with explicit registry revision and human scope. The [canonical contract](profile-management.md) documents the private ZIP manifest, bounds, SQLite transaction snapshots, external-reference limits, owned-candidate cleanup and recoverable delete. The Web adds authenticated lifecycle endpoints, idle-recipe guard and default-only daily navigation; explicit Core/CLI scopes remain. No vacuum, permanent purge, external-source acquisition or host execution is implied.
+
+## Host-selected package security workflow 0.3.0
+
+Prefer the bundled `bundle:package-security` menu meal / `system/software/check/package-security` operation when the human wants collection through report generation. Reuse checkout `opsfeast.package_security.pipeline.execute(recipe)` and [the canonical workflow](package-security-meal.md), not three disconnected invocations. It borrows one supplied host session, acquires/caches official controller-side advisories and invokes the existing offline report runner. Full inventory/stage evidence is retained; bounded CLI summaries and validated saved-report links keep transport small. RHEL optionally reads only existing DNF cache; stream/freshness/selection gaps remain explicit, never proof of safety. No patching, target metadata refresh or native-platform qualification is implied.
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+For [Recipe activity names](web-workspace.md#recipe-activity-names), reuse the workspace logs API and
+`opsfeast.recipe_activity` presentation helpers. Display saved picker/meal titles
+with the exact recipe reference as secondary evidence. New Web runs snapshot
+names; existing history is resolved read-only and never replayed or rewritten.
+
+Activity summaries separate host completion, collection/advisory/report stages and
+retention/downstream receipts. The list uses saved run metadata; selecting an entry
+reads at most six incomplete-host result files and shows at most 20 incomplete hosts
+with explicit omission counts. Missing raw evidence stays unknown. JSON remains in
+the closed advanced disclosure. Reuse `recipe_activity.activity_summary` and the
+existing workspace logs API; reads never reconnect, retry or rewrite observations.
+Web date/time rendering uses the shared `formatDateTime`/`formatTime` helpers with
+Asia/Taipei, seconds and the 00–23 hour cycle, including execution and Console views.
+
+## Manual Web launch and process discovery
+
+Reuse `tools/start_web.sh` and the ordinary `opsfeast.web` CLI for an authorized
+local Web start. The shell helper selects the checkout `.venv` or absolute
+`OPSFEAST_PYTHON`, forwards arguments and execs the actual server. CLI-owned
+`opsfeast.web.process.claim(data_root)` exclusively reserves external
+`web-server.pid` (plain PID, mode 0600), refuses live/dead/invalid existing markers
+and removes only its own marker on orderly exit. See [launch/PID contract and
+recovery](web-server.md#manual-shell-launcher-and-pid-marker). Verify process identity
+and HTTP separately; never infer ownership, health or controller authority from a
+PID or automatically kill/reinitialize. SIGKILL can leave a stale marker for
+human-authorized agent recovery. This does not add a daemon installer or scheduler.
+
+*Last modified: 2026-11-16 14:50:01*

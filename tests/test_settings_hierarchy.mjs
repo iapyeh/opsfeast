@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {renderSettingsTree,profileChildren,renderParameterGuide} from '../web/assets/settings-hub.mjs';
+import {renderSettingsTree,mountSettingsHub,profileChildren,renderParameterGuide} from '../web/assets/settings-hub.mjs';
 import {updateResult,updatePrompt} from '../web/assets/updates.mjs';
 import {getMessages} from '../web/assets/i18n.mjs';
 const e=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const m=getMessages('zh-TW');
 const catalog={categories:[...['site','profiles','bundle-recipes'].map(id=>({id,parent:null,route:'/settings/'+id,status:'available'})),...['hosts','recipes','parameters','retention'].map(id=>({id,parent:'profiles',route:'/settings/'+id,status:id==='hosts'?'available':'planned'}))]};
 test('settings exposes three peer roots with Profile-owned children and exact scoped links',()=>{
-  const html=renderSettingsTree(catalog,{profiles:[{name:'qa&profile'}]},{m,e,profile:'qa&profile'});
+  const html=renderSettingsTree(catalog,{default_profile:'qa&profile',profiles:[{name:'qa&profile'}]},{m,e,profile:'qa&profile'});
   assert.equal((html.match(/class="panel settings-root/g)||[]).length,3);
   assert.match(html,/profile-settings-children/);
   assert.match(html,/\/settings\/recipes\?profile=qa%26profile/);
@@ -43,4 +43,21 @@ test('Bundle parameters guide identifies the selected Profile file and its curre
   assert.match(html,/system\/network\/check\/port/);
   assert.match(html,/default:/);assert.match(html,/port: 443/);
   assert.doesNotMatch(html,/enabled: true|<fixture>/);
+});
+
+test('Settings home always displays saved default and ignores an alternate Profile URL',()=>{
+  const profiles={default_profile:'main<&',profiles:[{name:'main<&'},{name:'other'}]};
+  const root={innerHTML:'',querySelector(){throw new Error('no selector listener should be registered');}};
+  mountSettingsHub(root,{m,e,catalog,profiles,search:'?profile=other'});
+  assert.match(root.innerHTML,/目前預設 profile：main&lt;&amp;/);
+  assert.match(root.innerHTML,/settings\/recipes\?profile=main%3C%26/);
+  assert.match(root.innerHTML,/href="\/settings\/profiles"/);
+  assert.doesNotMatch(root.innerHTML,/<select|<option|settings-profile|other/);
+  mountSettingsHub(root,{m,e,catalog,profiles,search:'?profile=unknown'});
+  assert.match(root.innerHTML,/main&lt;&amp;/);
+});
+test('Settings home without a default never silently selects the first registered Profile',()=>{
+  const html=renderSettingsTree(catalog,{default_profile:null,profiles:[{name:'not-default'}]},{m,e});
+  assert.match(html,new RegExp(m.profiles.empty));assert.doesNotMatch(html,/not-default|profile-settings-children|<select/);
+  assert.match(renderSettingsTree(catalog,null,{m,e}),new RegExp(m.profiles.loginRequired));
 });

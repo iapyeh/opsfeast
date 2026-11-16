@@ -89,6 +89,11 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     def require_admin(request):
         check_origin(request)
         if not authenticated(request): raise HTTPException(401,'administrator_login_required')
+        expected=request.headers.get('x-opsfeast-default-profile')
+        if expected is not None:
+            from opsfeast import load_profiles
+            from urllib.parse import unquote
+            if unquote(expected)!=load_profiles(product)['default_profile']:raise HTTPException(409,'default_profile_changed_reload')
 
     def authorize(request):
         check_origin(request)
@@ -364,6 +369,9 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
         from opsfeast.profile_settings import attach
         from starlette.concurrency import run_in_threadpool
         return await run_in_threadpool(attach,product,**body)
+
+    from .profile_api import install as install_profile_lifecycle
+    install_profile_lifecycle(app,product=product,root=root,require_admin=require_admin,json_body=json_body)
 
     @app.get('/api/v1/settings/catalog')
     def settings_catalog():

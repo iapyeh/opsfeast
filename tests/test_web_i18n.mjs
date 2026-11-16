@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {defaultLocale, supportedLocales, resolveLocale, getMessages, translate, readLocale,
-  saveLocale, formatNumber, formatDateTime} from "../web/assets/i18n.mjs";
+  saveLocale, formatNumber, formatDateTime, formatTime} from "../web/assets/i18n.mjs";
 
 test("only approved authoring locale is available; unsupported browser languages fall back", () => {
   assert.deepEqual(supportedLocales, ["zh-TW"]);
@@ -37,5 +37,13 @@ test('every settings card has its own readable title and description',()=>{
     assert.equal(typeof category.title,'string');
     assert.equal(typeof category.text,'string');
     assert.ok(category.text.length>0);
+  }
+});
+
+test('shared clocks use Taipei and 24 hours including midnight and seconds',()=>{
+  for(const [instant,hour] of [['2026-11-13T16:00:03Z','00:00:03'],['2026-11-14T05:04:09Z','13:04:09']]){
+    const shown=formatDateTime(instant);
+    assert.match(shown,new RegExp(hour));assert.doesNotMatch(shown,/上午|下午|AM|PM/);
+    assert.equal(formatTime(instant),hour);
   }
 });

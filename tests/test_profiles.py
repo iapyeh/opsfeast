@@ -13,6 +13,10 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import opsfeast as ops
 import recipe_runner as run_recipe
+# Bind shipped consumer resources before each test substitutes a synthetic checkout.
+import retention_consumers
+from opsfeast import profiling, routine_execution
+import retention_contracts
 
 
 class Terminal(io.StringIO):

@@ -53,3 +53,10 @@ test('polling preserves expanded task cards and does not follow progress when sc
  assert.equal(nodes['#recipe-task-0'].open,true);assert.equal(nodes['#recipe-shared-progress'].scrollTop,10);
  root.isConnected=false;
 });
+
+test('operation workflows link their generated saved reports without exposing paths or HTML',()=>{
+ const result={status:'partial',reports:[{result_id:'reports/11111111111111111111111111111111/result.json',status:'partial'}],retention:{status:'success'}};
+ const html=renderRun({profile:'main',state:'completed_with_gaps',tasks:[{host_id:'node',reference:'system/software/check/package-security',state:'partial',result}]},e);
+ assert.match(html,/開啟產生的報告/);assert.match(html,/report=reports%2F11111111111111111111111111111111%2Fresult.json/);
+ assert.match(html,/target="_blank" rel="noopener"/);
+});

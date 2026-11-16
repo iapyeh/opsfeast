@@ -41,7 +41,7 @@ export async function mountRecipeMenu(root,{e,profile=null,profiles=null,search=
   root.innerHTML=`<p role="status">${e(c.loading)}</p>`;
   try {
     if(!profiles)profiles=await api('/api/v1/profiles');
-    profile=query.get('profile')||profile||profiles.default_profile;
+    profile=profiles.default_profile;
     if(query.get('recipe'))return mountRecipeDetail(root,{profile,reference:query.get('recipe'),e,api});
     if(query.get('report')&&!profile)throw new Error(c.failure('explicit_profile_required'));
     if(query.get('report'))return mountReportViewer(root,{e,profile,identifier:query.get('report'),artifact:query.get('artifact'),api});

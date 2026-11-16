@@ -553,4 +553,8 @@ An explicit unfinished-task summary identifies task/host/recipe and separates co
 
 On Recipes, **Execution history** opens `/recipes?profile=NAME&history=1`, backed by GET `/api/v1/recipe-runs?profile=NAME`. It lists up to the 100 newest saved selections, including running selections, with exact links back to their execution pages. The normal browser address can be bookmarked for older records. Closing the browser does not stop workers while Web remains running; reopening the history/page only reads and reattaches polling. Restarting Web instead preserves the existing interrupted/no-automatic-retry semantics. No execution is started by opening history, a task or a diagnosis.
 
-*Last modified: 2026-11-11 16:38:05*
+## OS package vulnerability meal
+
+Add **OS 套件弱點分析套餐**, select default-Profile hosts and review/confirm. The [three-stage workflow](package-security-meal.md) collects native identities, acquires matching official advisories on the controller and generates linked HTML/Markdown/JSON reports. The review calls out outbound controller HTTPS. Expand a completed host task and choose **開啟產生的報告**. Missing feeds/scope remain partial/unknown; affected findings can occur in a successful run. The menu meal wraps one dependency-aware operation, not independent collection/report entries with manually copied inputs.
+
+*Last modified: 2026-11-13 17:25:52*

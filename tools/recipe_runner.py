@@ -257,7 +257,13 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
             else:
                 result = selected['execute'](session, context=context, timeout=timeout)
             stage = 'result_validation'
-            report.update(recipe_contract.validate_result(result))
+            validated=recipe_contract.validate_result(result)
+            if validated.get('reports'):
+                from recipe_reports import show_result
+                for linked in validated['reports']:
+                    saved=show_result(config.root,linked['result_id'],kind='report')
+                    if saved['status']!=linked['status']:raise ConfigError('linked report status mismatch')
+            report.update(validated)
     except (Exception, SystemExit) as exc:
         report.update(status='failed', reason_code='invalid_result' if stage == 'result_validation' else 'execution_failed',
                       message='Recipe result is invalid.' if stage == 'result_validation' else 'Recipe execution failed.')
@@ -491,7 +497,9 @@ def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, invent
     summaries = []
     from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
-        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity','children','meal_run_id','connection_evidence') if key in report}
+        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity','children','meal_run_id','connection_evidence','reports') if key in report}
+        if 'summary' in report:
+            summary['data']=report['summary'];summary['data_is_summary']=True
         if isinstance(report.get('error'), dict) and 'environment' in report['error']:
             summary['error'] = report['error']
         # The compact summary omits recipe/connection metadata used by the role

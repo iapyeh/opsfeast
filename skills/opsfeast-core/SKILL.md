@@ -322,4 +322,22 @@ Core session acquisition uses the shared pre-Session runtime guard. `RuntimeEnvi
 
 For authorized updates, follow [preserve installation state](../../docs/update-preservation.md). Reuse external `web-server.json` (endpoint 0.2.0), the same administrator/identity/data root and every resolved Profile root; do not run init or replace menu/default/user-recipe files. Use `opsfeast.web_settings.read_port/configure_port/bind_server` with the resolved data root; `migrate_port` / `python -B -m opsfeast.web_settings migrate-port` is the explicit, backed-up old-registry port transfer only. Compare private before/after state, restore the same Web origin and keep service running. Saved categories, assignments, nested meals and field scopes remain unchanged; unsaved browser plates retain their tab/origin/root lifetime limits.
 
-*Last modified: 2026-11-12 10:55:28*
+## Profile management 0.1.0
+
+Read [the canonical lifecycle/backup guide](../../docs/profile-management.md) before managing Profiles. Reuse `opsfeast.profile_settings` inspect/create/attach/detach/use/update and `opsfeast.profile_transfer` export/import_archive/delete, preserving revision checks and explicit human scope. Core `instance.profiles.detach(name, expected_revision=REV)` provides the same optimistic guard. Export returns private ZIP bytes; store them outside replaceable product code with owner-only access, not in chat or public recipe artifacts. Import accepts only the verified manifest contract and a fresh name/directory; no merge, overwrite, external source/key acquisition or automatic execution. Keep Namespace/history unchanged. Delete requires exact confirmation and a non-main/nondefault root and moves data to recovery storage; report its recovery receipt. Vacuum/permanent purge are not implemented.
+
+Establish that writers/Console workers are idle before direct API transfer/deletion. Web only guards its own recipe-run controller; file-set checks and per-SQLite transaction backup are not a global snapshot. Read limits and archive failure rules before using the module. Daily human Web pages are pinned to default and stale pages require reload without retry; Settings may inspect other owners, while CLI/Core explicit Profile selection remains supported. Setup or Profile import never grants host access.
+
+For manual Web startup/process discovery, reuse `tools/start_web.sh` (foreground,
+checkout `.venv` or absolute `OPSFEAST_PYTHON`) and read [the PID lifecycle and
+recovery guide](../../docs/web-server.md#manual-shell-launcher-and-pid-marker).
+New Web CLI/controller launches share external `web-server.pid`; a live PID warns
+and refuses startup, while a dead/invalid marker stays for explicit agent recovery.
+Orderly exit cleans only the owned marker; SIGKILL can leave it stale. Resolve the
+actual installation data, inspect PID/endpoint/work state and HTTP before action;
+do not automatically kill, overwrite or reset data. PID liveness does not grant
+agent-control authority. Keep private stdin open for `--agent-control`; use default
+browser-only manual mode for an already configured administrator. No connections,
+recipes, software installation or reboot persistence are authorized by this helper.
+
+*Last modified: 2026-11-16 14:50:01*

@@ -396,4 +396,31 @@ Use [document bundles 0.1.0](../../docs/host-note-attachments.md) when preservin
 
 Markdown preview needs the selected interpreter's `requirements-web.txt` (including markdown-it-py 4.2.0/Pillow); the local storage CLI needs the normal Core environment. Authenticated Web upload/download and the explicit isolated preview are documented in the guide. HTML/three.js uses a transient separate loopback port, opaque iframe/CSP and one-bundle 15-minute capability, never an owner token or main login authority. Self-contained ES modules/WebGL/local JSON are supported; external CDN/API, workers and arbitrary server execution are not. Missing/external resource hints are bounded static analysis, not proof of full behavior. Preserve manifests/file hashes and `.host-note-attachments/` with notes on backup/update. Plain edits preserve bundles, merges union them, and deletions report cleanup failures. Reread after conflicts/uncertain writes instead of retrying or recreating. Preserve original sources and report partial cleanup; do not garbage-collect unreferenced files automatically.
 
-*Last modified: 2026-11-12 12:30:01*
+## OS-managed package questions
+
+For weakness/SBOM questions, first read accumulated notes and saved evidence. The [package-security workflow](../../docs/os-package-security.md) provides new full native snapshots and vendor comparison; basic software overview data is insufficient. Route through the [recipes skill](../opsfeast-recipes/SKILL.md#os-package-security-030), obtain actual missing collection scope if needed, and preserve unknown/stale/partial states. Reading host history does not authorize connections, download or remediation.
+
+## Default Profile in human Web operations
+
+The daily Hosts/Recipes/data pages use the persisted default only; change it in Settings → Profiles. [Profile lifecycle](../../docs/profile-management.md) supplies private backups, new-name imports and recoverable deletion. Explicit agent CLI/Core scope remains supported and must still be verified before connection. An old foreign-Profile URL clears host/result selections rather than carrying same-named hosts into default. A default-change 409 requires reload/review, never automatic retry or another Profile fallback.
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](../../docs/os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](../../docs/native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+*Last modified: 2026-11-13 23:25:46*

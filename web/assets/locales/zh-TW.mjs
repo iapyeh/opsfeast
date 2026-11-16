@@ -14,7 +14,7 @@ export default {
     user: "尚未登入", guest: "尚未登入", local: "本機工作空間",
     server: "每套安裝獨立連接埠", language: "介面語言",
     languageHint: "目前僅有繁體中文；英文版將於內容確認後翻譯。",
-    notice: "資料依目前選定的 Profile 顯示；開啟頁面不會連線主機或執行工作。",
+    notice: "日常操作一律使用預設 Profile；請到設定管理與切換環境。開啟頁面不會連線主機或執行工作。",
     previewNumber: "本機工作空間", back: "回到總覽", planned: "設計方向 · 尚未接入",
     plannedShort: "規劃中", footer: "看得見、停得下來、查得到發生過什麼事。",
     localPreview: "本機工作空間", modified: "最後修改：{time}", guestLink: "查看未登入畫面",
@@ -81,7 +81,7 @@ export default {
     manageEnvironments: "建立或登記管理環境", manageHint: "這些操作會增加 Profile 登記，不屬於上面任何一個既有 Profile。",
     attachExplanation: "將磁碟上已存在的 Feast 管理目錄登記成 Profile，沿用其中的主機設定、Recipes、保存資料與 Vault。適合登記既有環境，或重新接回原有資料；目前已列出的 Profiles 不需要再附加。",
     attachHint: "請指定含 hosts.yaml 的既有管理目錄。只驗證並登記，不複製、搬移、重建或覆寫其資料。", statusHint: "此狀態只代表本機設定可用性，不代表已驗證主機連線。",
-    boundary: "建立、附加與切換不會連線、採集或執行 recipe。現有 profile 與 namespace 保持原處；目前未提供更名或刪除。",
+    boundary: "建立、附加與切換不會連線、採集或執行 recipe。掛接與卸離保留原有資料；刪除移至回收目錄。Main 保留，vacuum 暫不提供。",
     saving: "正在保存 profile 設定…", saved: "Profile 設定已保存。", conflict: "Profile 設定已被更新，請重新載入後再操作。",
     failed: "Profile 操作失敗，請檢查名稱、namespace 與目錄。若建立途中失敗，可能保留新目錄，請先檢查再重試。",
     loginRequired: "請先設定管理帳號並登入，才能查看或變更 profiles。", empty: "尚未註冊任何 profile。", unknown: "未知"

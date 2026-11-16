@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Profile private backup manifest 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "version",
+    "profile",
+    "description",
+    "created_at",
+    "consistency",
+    "external_references",
+    "files"
+  ],
+  "properties": {
+    "kind": {
+      "const": "opsfeast-profile-backup"
+    },
+    "version": {
+      "const": "0.1.0"
+    },
+    "profile": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "consistency": {
+      "type": "string"
+    },
+    "external_references": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "maxItems": 25000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "size",
+          "sha256",
+          "executable"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 134217728
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "executable": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-11-13 15:53:30"
+}

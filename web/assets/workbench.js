@@ -1,4 +1,5 @@
 "use strict";
+import {operationalSearch,pinnedFetch} from "./default-profile.mjs";
 import {uiIcon} from "./ui-icons.mjs";
 import {getMessages, readLocale, saveLocale, supportedLocales, translate} from "./i18n.mjs";
 import {mountSiteSettings} from "./site-settings.mjs";
@@ -42,6 +43,25 @@ let siteName = site.site_name || m.site.defaultName;
 let siteSlogan = site.slogan || m.site.defaultSlogan;
 const logo = () => `<img class="site-logo" src="${siteAssetUrl(site, "logo")}" width="36" height="36" alt="${e(m.site.logoAlt)}">`;
 const path = location.pathname;
+if(path==='/settings'){
+  const query=new URLSearchParams(location.search);
+  if(query.has('profile')){query.delete('profile');history.replaceState(null,'',path+(query.size?'?'+query:'')+location.hash);}
+}
+let profileLinkReset=false;
+if(!path.startsWith('/settings')&&profileState?.default_profile){
+  const normalized=operationalSearch(path,location.search,profileState.default_profile);
+  profileLinkReset=Boolean(new URLSearchParams(location.search).get('profile')&&normalized==='');
+  if(normalized!==location.search)history.replaceState(null,'',path+normalized+location.hash);
+  window.fetch=pinnedFetch(window.fetch.bind(window),profileState.default_profile,{origin:location.origin,onChanged:()=>{
+    if(document.querySelector('#profile-changed-warning'))return;
+    document.querySelectorAll('button,input,select,textarea').forEach(node=>node.disabled=true);
+    const warning=document.createElement('p');warning.id='profile-changed-warning';warning.role='alert';warning.className='notice';
+    warning.textContent='預設 Profile 已變更。為避免操作到不同環境，請重新載入頁面；本次操作不會自動重試。 ';
+    const reload=document.createElement('a');reload.href=path;reload.textContent='重新載入';warning.append(reload);
+    document.querySelector('main')?.prepend(warning);
+  }});
+}
+
 const key = path === "/workspace" ? "home" : path === "/settings/site" ? "site" : path.slice(1);
 const settingsPage = path === "/settings" || path.startsWith("/settings/");
 const settingsCategory = path.startsWith("/settings/") ? path.split("/")[2] : null;
@@ -71,7 +91,7 @@ function footer() {
   return `<footer><span><img class="product-attribution" src="/assets/mark.svg" width="14" height="14" alt=""><span class="product-credit">${e(m.site.poweredBy)}</span> <span class="footer-dot">·</span> ${e(siteSlogan)}</span><span>${e(s.localPreview)} <span class="footer-dot">/</span> <time>${e(t("shell.modified", {time:modified}))}</time></span></footer>`;
 }
 function notice() {
-  return `<div class="notice"><span class="notice-mark">i</span><span>${e(siteLoadFailed ? m.site.loadError : s.notice)}</span><span class="notice-label">${e(s.previewNumber)}</span></div>`;
+  return `<div class="notice"><span class="notice-mark">i</span><span>${e(profileLinkReset ? '連結所屬的 Profile 不是目前預設環境；已返回預設 Profile，未沿用主機或執行項目的選擇。' : siteLoadFailed ? m.site.loadError : s.notice)}</span><span class="notice-label">${e(s.previewNumber)}</span></div>`;
 }
 function publicView() {
   const login = path === "/login";

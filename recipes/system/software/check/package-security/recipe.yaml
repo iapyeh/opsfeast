@@ -1,0 +1,438 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "id": "os-package-security-pipeline",
+  "version": "0.3.0",
+  "access_mode": "read",
+  "title": "Collect packages, acquire vendor advisories and generate a vulnerability report",
+  "description": "Host-selected three-stage workflow. Controller downloads official vendor data, reuses fresh Profile snapshots, and saves linked evidence reports. No remediation. FreeBSD VuXML/base SA, Proxmox VE PSA and ESXi VMSA native comparison; unsupported scope remains unknown.",
+  "runner": {
+    "contract": "python-recipe",
+    "version": "0.1.0",
+    "entrypoint": "main.py"
+  },
+  "platforms": {
+    "implemented": [
+      "linux",
+      "freebsd",
+      "esxi"
+    ],
+    "tested": [],
+    "planned": []
+  },
+  "dependencies": {
+    "controller": [
+      "Python 3.11+",
+      "SSHScript 7.0.1",
+      "OpsFeast package-security 0.3.0",
+      "HTTPS access to official Debian/Canonical/Red Hat/FreeBSD/Proxmox/Broadcom endpoints"
+    ],
+    "target": [
+      "uname; readable native package/platform metadata",
+      "Linux/FreeBSD: python3 3.8+ with dpkg-query/rpm/pkg",
+      "FreeBSD: freebsd-version; Proxmox VE: pveversion",
+      "ESXi 7+: esxcli XML formatter; no target Python required"
+    ]
+  },
+  "permissions": {
+    "sudo": false,
+    "su": false,
+    "controller_https": true
+  },
+  "side_effects": [
+    "Read-only native package queries on selected hosts; no reconnect or privilege changes.",
+    "RHEL may read local dnf security metadata with --cacheonly --noplugins; no target network or metadata refresh.",
+    "Controller downloads official vendor HTTPS data when no fresh matching Profile cache exists; no network retries.",
+    "Controller writes inventory/advisory snapshots, portable retention and HTML/Markdown/JSON report artifacts; no patching."
+  ],
+  "inputs": {
+    "variables": {
+      "collection_budget_seconds": {
+        "type": "number",
+        "default": 180,
+        "minimum": 1,
+        "maximum": 240
+      },
+      "command_timeout_seconds": {
+        "type": "number",
+        "default": 30,
+        "minimum": 1,
+        "maximum": 120
+      },
+      "page_size": {
+        "type": "integer",
+        "default": 200,
+        "minimum": 1,
+        "maximum": 500
+      },
+      "declared_ecosystems": {
+        "type": "array",
+        "default": []
+      },
+      "advisory_cache_hours": {
+        "type": "number",
+        "default": 24,
+        "minimum": 0,
+        "maximum": 168
+      },
+      "advisory_budget_seconds": {
+        "type": "number",
+        "default": 180,
+        "minimum": 1,
+        "maximum": 240
+      },
+      "redhat_advisory_ids": {
+        "type": "array",
+        "default": []
+      },
+      "vendor_advisory_urls": {
+        "type": "array",
+        "default": [],
+        "required": false
+      }
+    }
+  },
+  "output": {
+    "schema_version": "0.3.0"
+  },
+  "retention": {
+    "contract": "os-package-security-run",
+    "version": "0.3.0",
+    "mode": "portable",
+    "description": "Full OS package inventory plus acquisition-stage and saved vulnerability-report evidence.",
+    "data_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "schema_version",
+        "package_snapshot",
+        "stages",
+        "gaps",
+        "report"
+      ],
+      "properties": {
+        "kind": {
+          "const": "os-package-security-run"
+        },
+        "schema_version": {
+          "const": "0.3.0"
+        },
+        "stages": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object"
+          }
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "report": {
+          "type": "object"
+        },
+        "package_snapshot": {
+          "title": "OS package inventory 0.2.0",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema_version",
+            "kind",
+            "host_id",
+            "declared_ecosystems",
+            "scope",
+            "os",
+            "manager",
+            "packages",
+            "complete",
+            "expected_count",
+            "collected_count",
+            "excluded_states",
+            "snapshot_sha256",
+            "acquisition",
+            "gaps",
+            "platform_details",
+            "packages_complete"
+          ],
+          "properties": {
+            "schema_version": {
+              "const": "0.2.0"
+            },
+            "kind": {
+              "const": "os-package-inventory"
+            },
+            "host_id": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "declared_ecosystems": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "scope": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "os": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "manager": {
+              "enum": [
+                "dpkg",
+                "rpm",
+                "pkg",
+                null,
+                "esxcli"
+              ]
+            },
+            "packages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "version",
+                  "architecture",
+                  "installation_state",
+                  "package_kind"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "version": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "architecture": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "installation_state": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "provenance_status": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "source_name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "source_version": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "producer": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "release": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "source_rpm": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "ports_origin": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "purl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "repository_origin": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 4096
+                  },
+                  "epoch": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "package_kind": {
+                    "enum": [
+                      "package",
+                      "vib",
+                      "component"
+                    ]
+                  },
+                  "native_fields": {
+                    "type": "object"
+                  },
+                  "architecture_source": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "expected_count": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "collected_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "excluded_states": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "snapshot_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 4096
+            },
+            "acquisition": {
+              "type": "object",
+              "required": [
+                "started_at",
+                "completed_at",
+                "pages"
+              ],
+              "properties": {
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "completed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            },
+            "gaps": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "packages_complete": {
+              "type": "boolean"
+            },
+            "platform_details": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "status",
+                "facts",
+                "sources",
+                "gaps",
+                "package_database_status"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "status": {
+                  "enum": [
+                    "complete",
+                    "partial"
+                  ]
+                },
+                "facts": {
+                  "type": "object"
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "gaps": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 4096
+                  }
+                },
+                "package_database_status": {
+                  "enum": [
+                    "complete",
+                    "failed"
+                  ]
+                }
+              }
+            }
+          },
+          "$comment": "Last modified: 2026-11-13 22:27:23"
+        }
+      },
+      "$comment": "Last modified: 2026-11-13 23:21:58"
+    }
+  },
+  "verification": {
+    "synthetic": "tested",
+    "local": "not-tested",
+    "ssh": "not-tested"
+  }
+}
+# Last modified: 2026-11-13 23:21:58

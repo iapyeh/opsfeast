@@ -1,0 +1,285 @@
+{
+  "title": "OS package inventory 0.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "host_id",
+    "declared_ecosystems",
+    "scope",
+    "os",
+    "manager",
+    "packages",
+    "complete",
+    "expected_count",
+    "collected_count",
+    "excluded_states",
+    "snapshot_sha256",
+    "acquisition",
+    "gaps",
+    "platform_details",
+    "packages_complete"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "kind": {
+      "const": "os-package-inventory"
+    },
+    "host_id": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "declared_ecosystems": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "maxLength": 4096
+      }
+    },
+    "scope": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "os": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 4096
+      }
+    },
+    "manager": {
+      "enum": [
+        "dpkg",
+        "rpm",
+        "pkg",
+        null,
+        "esxcli"
+      ]
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "architecture",
+          "installation_state",
+          "package_kind"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "architecture": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "installation_state": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "provenance_status": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "source_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "source_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "producer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "release": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "source_rpm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "ports_origin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "purl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "repository_origin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "epoch": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "package_kind": {
+            "enum": [
+              "package",
+              "vib",
+              "component"
+            ]
+          },
+          "native_fields": {
+            "type": "object"
+          },
+          "architecture_source": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "expected_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "collected_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "excluded_states": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "snapshot_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 4096
+    },
+    "acquisition": {
+      "type": "object",
+      "required": [
+        "started_at",
+        "completed_at",
+        "pages"
+      ],
+      "properties": {
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 4096
+      }
+    },
+    "packages_complete": {
+      "type": "boolean"
+    },
+    "platform_details": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "status",
+        "facts",
+        "sources",
+        "gaps",
+        "package_database_status"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "facts": {
+          "type": "object"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 4096
+          }
+        },
+        "package_database_status": {
+          "enum": [
+            "complete",
+            "failed"
+          ]
+        }
+      }
+    }
+  },
+  "$comment": "Last modified: 2026-11-13 22:27:23"
+}

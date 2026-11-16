@@ -2,6 +2,10 @@
 
 Vault is the bundled content application over [recipe retention](retention.md). Structured retention remains authoritative; generated Markdown and human notes live in `vault/`. The platform owns paths and publication, while the bundled author chooses readable views. Other reviewed content applications can consume the same data without Vault.
 
+## Figure design for content authors
+
+New or revised consumer figures follow [the shared textbook/Vault figure style](figure-style.md): Mermaid, a visible frame, width fitting the prose, and an external left-aligned caption close to the border. The approved overview and CSS are reusable references; this convention does not imply that all existing generated figures already implement the complete layout. Apply changes through the owning renderer/assets and verify the actual reader presentation.
+
 ## Identity and configuration
 
 Open `<profile-root>/vault/` in Obsidian or another Markdown reader. Reading tables requires no model, connection or plugin. The generated `mermaid` fences use Obsidian’s [built-in Mermaid support](https://obsidian.md/help/advanced-syntax#Diagram). No Diagrammo plugin or MCP server is required. Other readers need Mermaid support, including XY charts; tables remain available when diagrams are unsupported. `feast.yaml` accepts `vault: {auto_refresh: false}` to disable automatic publication; it does not disable retention or change recipe selection.
@@ -21,6 +25,8 @@ The default enabled Vault consumer during initialization, subsequent full consum
 Invalid JSON, non-object appearance settings, a non-string-list `enabledCssSnippets`, malformed ownership metadata and symlink paths fail publication. Preflight runs before reader writes and generated page publication; files are replaced atomically one at a time, not as a whole Vault transaction. A first setup interrupted between asset/settings/manifest writes can be retried through full rebuild. Preserve the reported content failure separately from successfully retained data.
 
 `vault inspect` and `vault groups` do not install or activate reader assets. Disabling automatic Vault publication prevents that publication path; explicit full rebuild still prepares reader assets. If the Vault is already open in Obsidian, reopen it to load newly written reader settings; filesystem preparation does not prove that a running reader has loaded them. User-created Vaults, including a first opening of the textbook folder, need an agent-assisted copy/enable step using the supplied asset and existing settings. No community-plugin installation, model, host connection or new collection is involved.
+
+The reader style supplies width/caption layout; it does not retrofit missing diagram frames or captions in existing consumer output. Follow [the figure convention](figure-style.md) when authoring those renderer changes.
 
 Public reader-setup tests cover settings preservation/opt-out, collisions, invalid input, symlink rejection, interrupted retry, initialization, asset packaging and exclusion of local reader settings. See [the reproducible tests and review evidence](../tests/README.md#vault-reader-and-storage-review). File preparation does not assert live reload in an already-running Obsidian instance.
 
@@ -221,4 +227,4 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+*Last modified: 2026-11-16 15:17:19*

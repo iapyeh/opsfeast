@@ -21,6 +21,9 @@ import retention_store as store
 import test_host_vault as vault_fixtures
 
 BUNDLED = {
+    'system/software/inventory/os-packages': ('os-package-inventory', '0.2.0'),
+    'system/software/check/package-security': ('os-package-security-pipeline', '0.3.0'),
+    'feast/report/package-security': ('os-package-security-report', '0.3.0'),
     'system/access/inventory/ssh-policy': ('linux-ssh-policy', '0.1.0'),
     'system/account/inventory/sudo-policy': ('linux-sudo-policy', '0.1.0'),
     'system/network/inventory/firewall-policy': ('linux-firewall-policy', '0.1.0'),

@@ -41,7 +41,8 @@ class RecipeRunTests(unittest.TestCase):
         from opsfeast.recipe_menu import menu
         with patch('subprocess.Popen', side_effect=AssertionError('no execution during discovery')):
             data = menu(self.profile)
-        self.assertEqual(len(data['items']), 25)
+        from recipe_identity import BUNDLED
+        self.assertEqual({item['reference'] for item in data['items']},set(BUNDLED))
         self.assertEqual(len(data['blueprint']['capabilities']), 39)
         self.assertEqual(sum(c['integration'] == 'partial' for c in data['blueprint']['capabilities']), 27)
         ssh = next(i for i in data['items'] if i['reference'].endswith('/ssh-policy'))
@@ -117,6 +118,8 @@ class RecipeRunTests(unittest.TestCase):
         self.assertEqual(record['state'],'completed',record)
         self.assertEqual(len(record['tasks']),1)
         self.assertEqual(record['selected_meals'],ids)
+        self.assertEqual(record['tasks'][0]['meal_titles'],['Inner A','Inner B'])
+        self.assertTrue(record['tasks'][0]['title'])
         self.assertTrue(record['tasks'][0]['result']['artifacts'])
 
     def test_real_offline_report_worker_and_saved_artifact_no_host(self):
@@ -284,7 +287,8 @@ class RecipeRunWebTests(unittest.IsolatedAsyncioTestCase):
         content = [(b'content-type', b'application/json')]
         self.assertEqual((await self.request('/api/v1/recipe-menu', app=app))[0], 401)
         status, _, raw = await self.request('/api/v1/recipe-menu?profile=main', headers=auth, app=app)
-        self.assertEqual(status, 200); self.assertEqual(len(json.loads(raw)['items']), 25)
+        from recipe_identity import BUNDLED
+        self.assertEqual(status, 200); self.assertEqual({item['reference'] for item in json.loads(raw)['items']},set(BUNDLED))
         self.assertEqual(json.loads(raw)['groups'],[{'id':'web','title':'Web servers','host_ids':['node']}])
         self.assertNotIn('login_user',json.loads(raw)['hosts'][0])
         body = json.dumps({'profile':'main','hosts':['node'],'recipes':[{'reference':'system/account/inventory/local-users','vars':{},'inputs':[]}],'timeout':30}).encode()

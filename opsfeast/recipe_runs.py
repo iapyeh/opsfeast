@@ -120,10 +120,12 @@ def prepare_pair(root, reference, host, variables, inputs, selection=None):
         composition=describe(root,host,[{'reference':reference,'vars':variables,'inventory_selection':selection}])
     fingerprint = _digest({'composition':composition,'root': str(root), 'files': files, 'recipe': digest, 'descriptor': item['descriptor'],
                            'vars': values, 'identity': identity, 'inventory_selection': selected_inventory})
-    public = {'reference': reference, 'version': item['version'], 'host_id': host,
+    from .recipe_menu import display_title
+    public = {'reference': reference, 'title': display_title(reference, item.get('title')), 'version': item['version'], 'host_id': host,
               'kind': item['kind'], 'identity': identity,
               'access_mode': item['descriptor'].get('access_mode', 'not_declared'),
               'side_effects': item['descriptor'].get('side_effects', []),
+              'permissions': item['descriptor'].get('permissions', {}),
               'variable_names': sorted(values), 'input_ids': inputs, 'inventory_selection': selected_inventory,
               'fingerprint': fingerprint,'composition':composition,
               'invocation': ['opsfeast.py', 'recipes', 'run', reference,
@@ -213,6 +215,8 @@ class RecipeRuns:
                   'explicit_host_override': True, 'expires_in': 600,
                   'stop_scope': 'withhold_remaining_and_terminate_owned_local_worker; remote_cleanup_unknown',
                   'visibility': 'runner progress; final structured receipts; not a per-command terminal transcript'}
+        from .recipe_activity import meal_labels
+        activity_meals = meal_labels(profile, body.get('meals', []))
         token = secrets.token_urlsafe(32)
         with self.lock:
             self.plans = {k: v for k, v in self.plans.items() if v['expires'] > time.monotonic()}
@@ -220,7 +224,7 @@ class RecipeRuns:
                 raise RecipeRunError('too_many_recipe_previews')
             self.plans[token] = {'expires': time.monotonic() + 600, 'public': public,
                                  'root': profile.root, 'private': private, 'started': None,
-                                 'meal_binding':meal_binding,'meal_choices':original_recipes,'meals':body.get('meals',[])}
+                                 'activity_meals':activity_meals,'meal_binding':meal_binding,'meal_choices':original_recipes,'meals':body.get('meals',[])}
         return {**copy.deepcopy(public), 'preview_id': token}
 
     def _path(self, identifier):
@@ -311,7 +315,7 @@ class RecipeRuns:
                       'confirmation': 'explicit_selection_confirmed',
                       'selected_meals':plan.get('meals',[]),
                       'timeout': plan['public']['timeout'], 'threads':threads,
-                      'tasks': [{**p, 'state': 'queued', 'progress': '', 'progress_truncated': False,
+                      'tasks': [{**p, 'meal_titles':plan['activity_meals'].get(p['reference'], []), 'state': 'queued', 'progress': '', 'progress_truncated': False,
                                  'result': None, 'local_termination': None} for p in plan['public']['pairs']]}
             self._save(record)
             self.active = record['id']
@@ -483,7 +487,7 @@ class RecipeRuns:
                 # Results already live in raw/retention. Keep receipts and identity here,
                 # not a second copy of potentially large recipe-owned data.
                 keys = ('status', 'reason_code', 'result_path', 'result_id', 'observation_run_id', 'retention',
-                        'content_update', 'execution_identity', 'identity_evidence', 'collection_gaps', 'artifacts', 'children', 'meal_run_id', 'connection_evidence')
+                        'content_update', 'execution_identity', 'identity_evidence', 'collection_gaps', 'artifacts', 'children', 'meal_run_id', 'connection_evidence', 'reports')
                 task['result'] = {key: result[key] for key in keys if key in result}
                 if len(json.dumps(task['result'])) > 65536:
                     task['result'] = {key: result[key] for key in ('status', 'reason_code', 'result_path', 'result_id', 'observation_run_id') if key in result}

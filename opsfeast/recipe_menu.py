@@ -9,6 +9,9 @@ VERSION = '0.1.0'
 
 # Guidance is product-owned; execution metadata always comes from the descriptor.
 GUIDANCE = {
+    'system/software/check/package-security': ('OS 套件弱點分析流程', 'software', '依序採集完整套件、取得對應廠商公告、產生可開啟的弱點報告。', '管理端會連線官方 HTTPS；RHEL 來源分支／快取不足仍待確認，不會修補套件。'),
+    'system/software/inventory/os-packages': ('OS 套件完整快照', 'software', '原生版本、來源套件、架構與完整性證據，供廠商弱點比對。', 'Linux／Proxmox、FreeBSD pkg／base／核心、ESXi VIB／component；不涵蓋應用依賴、容器或二進位完整性驗證。'),
+    'feast/report/package-security': ('OS 套件弱點報告', 'reports', '以明確選取的套件及廠商公告快照產生有依據的弱點報告。', '離線；支援 Debian、Ubuntu、RHEL、FreeBSD、Proxmox、ESXi 的已實作公告／分支。待確認不是安全判定。'),
     'system/inventory/overview': ('系統全貌基礎盤點', 'hardware', '主機規格、OS、套件、儲存、網路、服務及資源指標。', '預設十組工作；展開參數可自選工作／欄位與溫度／風扇。不是完整硬體清冊或應用探索。'),
     'system/inventory/hardware': ('硬體與製造資訊', 'hardware', 'CPU、記憶體規格、製造商、型號、序號與 UUID。', 'Linux 序號與 UUID 使用 root routine；權限或工具不足會留下缺口。'),
     'system/inventory/system': ('作業系統與主機識別', 'software', '主機名稱、核心、OS 與時區。', '依平台可用來源觀測；不代表完整套件或服務清冊。'),
@@ -37,10 +40,16 @@ GUIDANCE = {
 }
 
 SETS = [
+    {'id':'package-security','title':'OS 套件弱點分析套餐','description':'選擇主機後，採集套件、在管理端取得對應廠商公告並產生報告。缺口保留為待確認；不安裝或修補套件。','references':['system/software/check/package-security']},
     {'id': 'foundation', 'title': '基礎盤點', 'description': '先取得共通系統事實，再補上本機帳號與行程。', 'references': ['system/inventory/overview', 'system/account/inventory/local-users', 'system/process/inventory/snapshot']},
     {'id': 'policies', 'title': '存取、時間與日誌', 'description': '選定範圍的政策與設定；不是完整安全稽核。', 'references': ['system/access/inventory/ssh-policy', 'system/account/inventory/sudo-policy', 'system/network/inventory/firewall-policy', 'system/time/inventory/synchronization', 'system/logging/inventory/configuration']},
     {'id': 'linux-profile', 'title': 'Linux 現有採集組合', 'description': '基礎盤點加上存取、時間與日誌設定；感測、磁碟控制器與資料庫需另行選擇。不代表原始藍圖已全數完成。', 'references': ['system/inventory/overview', 'system/account/inventory/local-users', 'system/process/inventory/snapshot', 'system/access/inventory/ssh-policy', 'system/account/inventory/sudo-policy', 'system/network/inventory/firewall-policy', 'system/time/inventory/synchronization', 'system/logging/inventory/configuration']},
 ]
+
+
+def display_title(reference, title=None):
+    """The same human-facing title used by the Recipes picker."""
+    return GUIDANCE[reference][0] if reference in GUIDANCE else title or reference
 
 
 def menu(profile=None):

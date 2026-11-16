@@ -12,7 +12,7 @@ _CATEGORIES = [
      'cli': ['python -B -m opsfeast.settings site show', 'python -B -m opsfeast.settings site update'],
      'guide': 'docs/site-presentation.md'},
     {'id': 'profiles', 'scope': 'installation', 'status': 'available', 'route': '/settings/profiles',
-     'apis': ['GET /api/v1/profiles', 'POST /api/v1/profiles', 'PATCH /api/v1/profiles', 'PUT /api/v1/profiles/default', 'POST /api/v1/profiles/attach'],
+     'apis': ['GET /api/v1/profiles', 'POST /api/v1/profiles', 'PATCH /api/v1/profiles', 'PUT /api/v1/profiles/default', 'POST /api/v1/profiles/attach', 'POST /api/v1/profiles/detach', 'POST /api/v1/profiles/export', 'POST /api/v1/profiles/import', 'POST /api/v1/profiles/delete'],
      'cli': ['python -B tools/opsfeast.py profiles --json', 'python -B tools/opsfeast.py profiles show --json', 'python -B tools/opsfeast.py profiles set-description', 'python -B tools/opsfeast.py init', 'python -B tools/opsfeast.py attach', 'python -B tools/opsfeast.py use'],
      'guide': 'docs/profiles.md'},
     {'id': 'bundle-recipes', 'scope': 'installation', 'status': 'available', 'route': '/settings/bundle-recipes',

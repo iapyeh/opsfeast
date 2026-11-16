@@ -16,6 +16,10 @@ opt-in SSHScript execution with exact plan approval, durable SSE events and an
 [agent skill](skills/opsfeast-interactive/SKILL.md). No target is enabled by default;
 [Real host configuration](docs/web-hosts.md) is independently available through Web/CLI/API and never starts a Console.
 The [first-use Web guide](docs/web-administrator.md#first-use-web-guide) opens directly on the homepage before an administrator exists.
+
+
+**[Read the OpsFeast textbook](docs/textbook/README.md)** for an organized learning path through concepts, agent collaboration, daily workflows, evidence, recovery and a complete backup-check case. Choose English or Traditional Chinese at that entrypoint and open `docs/textbook/en/` or `docs/textbook/zh-TW/` as the corresponding Markdown reading vault; profile operational Vaults remain separate.
+
 Recipe policy now uses [exact-reference settings with default/group/host inheritance](docs/recipe-sources.md): recipes default disabled, new init enables bundled inventory, and explicit recipe --host execution overrides enabled gates for that target. [Observation runs](docs/observation-runs.md) preserve batch membership and historical Attention evidence. Vault separates [readable current records, complete reports and Mermaid diagrams](docs/host-vault.md); configure thresholds through recipe vars and rebuild locally without recollection.
 
 For system inventory, start with the [collection groups and intervals](recipes/system/inventory/overview/collection-plan.md) and [job/utility/scheduling guide](docs/inventory-jobs.md). The [split recipes and Overview meal](docs/recipe-routines.md) support immediate no-store property queries, optional saved comparison samples, per-host interval overrides and opt-in minute dispatch through current-user cron. It reuses public YANG modules before extensions and preserves each sample's time/source; no AI call is required for routine collection. Scheduling starts only for explicitly enabled hosts.
@@ -370,4 +374,13 @@ The Web menu also exposes inventory job/field selection and opt-in sensors, plus
 saved report artifact previews/downloads. Users can complete these operations in
 the browser; see the [scope and report guide](docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-11 22:35:58*
+### Start the existing Web workspace manually
+
+After installation/setup, run `./tools/start_web.sh` from this checkout. It reuses
+`.venv`, installation-data and the saved port, prints the URL and runs in the
+foreground. Ctrl+C stops Web and removes its external PID file. Duplicate or stale
+PID markers refuse startup; ask your agent to inspect exceptions. See [manual
+startup and agent PID recovery](docs/web-server.md#manual-shell-launcher-and-pid-marker)
+for interpreter selection, background/controller mode and precise limits.
+
+*Last modified: 2026-11-16 14:50:01*

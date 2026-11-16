@@ -85,7 +85,6 @@ export function mountMenuLayout(root,{data,profiles,profile,initialRecipe,e,onPr
   root.querySelectorAll('[data-set]').forEach(button=>button.addEventListener('click',()=>{selectedMeals.add(button.dataset.set);update();}));
   root.querySelectorAll('[data-host], [data-group], [data-all-hosts]').forEach(input=>input.addEventListener('change',()=>{selectedHosts=hostSelection(data,selectedHosts,input.hasAttribute('data-all-hosts')?'all':input.hasAttribute('data-group')?'group':'host',input.dataset.group||input.dataset.host,input.checked);update();}));
   root.querySelector('#recipe-preview')?.addEventListener('click',()=>onExecute?.({meals:[...selectedMeals],hosts:[...selectedHosts],recipes:[...selectedRecipes].map(reference=>({reference,vars:{},inputs:[],...(scopes[reference]?{inventory_selection:scopes[reference]}:{})}))}));
-  root.querySelector('#recipe-profile')?.addEventListener('change',event=>onProfile(event.target.value));
   if(api&&profile){
    const dialog=root.querySelector('#menu-editor-dialog'),content=root.querySelector('#menu-editor-content');
    const open=html=>{content.innerHTML=html;content.querySelector('[data-editor-cancel]').addEventListener('click',()=>dialog.close());dialog.showModal();};

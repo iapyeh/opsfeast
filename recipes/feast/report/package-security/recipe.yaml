@@ -1,0 +1,77 @@
+{
+  "descriptor_version": "0.3.0",
+  "author": {
+    "name": "Bundle",
+    "contacts": [
+      "Bundle"
+    ]
+  },
+  "license": "MIT",
+  "version": "0.3.0",
+  "output": {
+    "schema_version": "0.3.0"
+  },
+  "verification": {
+    "synthetic": "tested",
+    "local": "not-tested",
+    "ssh": "not-tested"
+  },
+  "id": "os-package-security-report",
+  "title": "OS package vendor vulnerability report",
+  "description": "Offline vendor-native version assessment with affected/fixed/not-affected/unknown evidence; no safe-host verdict. FreeBSD VuXML/base SA, Proxmox VE PSA and ESXi VMSA native comparison; unsupported scope remains unknown.",
+  "runner": {
+    "contract": "python-report",
+    "version": "0.1.0",
+    "entrypoint": "main.py"
+  },
+  "dependencies": {
+    "controller": [
+      "Python 3.11+",
+      "OpsFeast package-security 0.3.0"
+    ]
+  },
+  "permissions": {
+    "connections": false,
+    "sudo": false
+  },
+  "side_effects": [
+    "Writes escaped HTML, Markdown and JSON artifacts only; no feed fetch, host query or remediation."
+  ],
+  "inputs": {
+    "variables": {
+      "title": {
+        "type": "string",
+        "default": "OS package vulnerability analysis"
+      },
+      "as_of": {
+        "type": "string",
+        "default": ""
+      },
+      "max_inventory_age_hours": {
+        "type": "number",
+        "default": 24,
+        "minimum": 0.01
+      },
+      "max_advisory_age_days": {
+        "type": "number",
+        "default": 7,
+        "minimum": 0.01
+      },
+      "max_findings": {
+        "type": "integer",
+        "default": 100000,
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "allow_missing_advisories": {
+        "type": "boolean",
+        "default": false
+      },
+      "acquisition_gaps": {
+        "type": "array",
+        "default": []
+      }
+    }
+  }
+}
+# Last modified: 2026-11-13 23:21:58

@@ -121,7 +121,7 @@ connectivity. Mutations carry registry digest checks, and initialization can lea
 a candidate directory after late failure. Profile registration storage remains
 checkout-local and must be preserved separately on replacement. See
 [administrator/profile interfaces](web-administrator.md) for exact APIs, permissions
-and verification. No Web rename, detach or deletion is implemented.
+and verification. Web detach, recoverable deletion and backup transfer are described in [Profile management](profile-management.md); rename remains unavailable.
 
 The Web list gives every Profile its own bordered card, with its name, status,
 management-root path and owned settings inside that card. Only the card whose name
@@ -165,4 +165,8 @@ Each Feast is the boundary for includes and saved results; custom recipes remain
 
 Both generations of default data directories, registry files and temporary files are ignored by Git. Other custom directories inside a checkout need their own ignore rules. Keep real operational data, credentials, notes and results outside public commits and recipe bundles.
 
-*Last modified: 2026-11-11 22:35:58*
+## Complete Web lifecycle
+
+[Settings Profile management 0.1.0](profile-management.md) now provides create, attach/detach, private backup export/import, recoverable delete and set-default. Main remains protected; delete requires a nondefault Profile and moves data to recovery storage. Vacuum is deferred. Daily Web pages use only the persisted default; explicit Core/CLI selection remains supported. Core `profiles.detach` accepts optional `expected_revision`; the Profile settings helper and Web require it.
+
+*Last modified: 2026-11-13 15:53:30*

@@ -1,6 +1,6 @@
 # Host configuration service 0.2.0
 
-`/hosts` now reads the explicitly selected registered profile's real host inventory.
+`/hosts` reads the persisted default Profile's real host inventory.
 The page supports creation, basic connection/metadata/group changes, and confirmed
 host-definition deletion. The CLI and HTTP adapters use `opsfeast.host_settings`;
 there is no separate Web configuration store. These operations do not connect,
@@ -39,10 +39,7 @@ revision checks and storage are unchanged by this presentation update.
 
 ## Selection and supported writes
 
-Every service call requires an explicit registered `profile`. UI URLs retain
-`profile` when navigating to a host, its settings or the creation form. The
-profile selector starts from the current default only when entering the list
-without a profile. Missing/invalid profiles do not fall back to another root.
+Every service call requires an explicit registered `profile`. Daily UI uses only the default Profile and has no alternate Profile selector. Settings manages other owners. Existing links naming the default retain host selection; foreign-Profile links clear their target selection as described in [Profile management](profile-management.md). Missing/invalid profiles do not fall back to another root.
 Host IDs are immutable in this editor (1–200 Unicode code points, no edge
 whitespace/control characters); renaming is not provided.
 
@@ -250,4 +247,4 @@ later removed. Viewing history does not verify the host's present health.
 
 The host detail now includes a **主機筆記** tab with real shared profile-local notes, search, add/edit and confirmed delete. See [host notes 0.1.0](host-notes.md) for UUID/source/timestamp, CLI/API, concurrency and merge semantics. These notes are independent of configuration backups and preserved Vault README files.
 
-*Last modified: 2026-11-08 23:07:31*
+*Last modified: 2026-11-13 15:53:30*

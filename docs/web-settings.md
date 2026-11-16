@@ -14,10 +14,12 @@ not separate configuration stores or independent interpretations of defaults.
 ## Settings hierarchy and availability
 
 The hub has four installation-level peers: **Site**, **Profiles**, **Bundle
-Recipes** and **Execution**. Within Profiles, select the owning Profile to open its Hosts, user
-Recipes, parameters and Retention policies. Selection changes the displayed scope,
-not the default Profile. The Profiles management page also nests these links under
-each registered Profile, preserving the exact name in the destination URL.
+Recipes** and **Execution**. The hub's Profiles block displays the persisted
+default Profile and links to its owned settings; it has no Profile dropdown.
+Change the default only on Settings → Profiles using the card's set-default
+button. Legacy `/settings?profile=NAME` parameters are removed and cannot select
+a different owner on the hub. The Profiles management page provides per-Profile
+cards for the supported owned settings.
 
 | Route | Scope | Current delivery |
 | --- | --- | --- |
@@ -164,4 +166,8 @@ site/storage tests own image normalization, protected edits and upgrade persiste
 
 Use [execution throttle 0.1.0](web-recipe-menu.md#execution-throttle-and-defaults-010) for the implemented `/settings/execution` page, shared `opsfeast.execution_settings.inspect/save` facade, JSON CLI and GET/PUT `/api/v1/recipe-execution/settings`. The default is 8 concurrent host lanes; temporary per-run threads are sent with confirmed Start, need no new preview and do not save defaults. Selected host counts are not capped. Same-host recipes remain serial. Storage uses versioned installation data, never bundled code or private hosts.yaml. Invalid/stale saves fail; reads/saves do not execute work.
 
-*Last modified: 2026-11-11 16:11:57*
+## Central Profile management
+
+[Settings → Profiles](profile-management.md) is the single Web location for lifecycle and default switching. Create, attach/detach, private ZIP export/import and recoverable delete are available; vacuum is deferred. Owned settings may inspect another Profile within Settings, while Recipes/Hosts/data pages always use default and expose no alternate Profile picker.
+
+*Last modified: 2026-11-13 16:43:20*

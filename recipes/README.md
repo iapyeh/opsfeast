@@ -102,4 +102,34 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+## OS package security
+
+- [Complete OS package snapshot](system/software/inventory/os-packages/README.md): Linux/Proxmox dpkg/RPM, FreeBSD pkg/base/kernel and ESXi VIB/component identities, source times, pagination and explicit completeness; no application/container crawl.
+- [Vendor vulnerability report](feast/report/package-security/README.md): explicit inventory/advisory inputs, offline HTML/Markdown/JSON and comparison evidence.
+
+Read [vendor support and acquisition limits](../docs/os-package-security.md). Debian/Ubuntu and explicitly declared RHEL streams have native version analysis; selected RHSA fetch is not exhaustive. FreeBSD VuXML/base SAs, Proxmox VE PSAs and ESXi VMSA matrices have native comparison with explicit branch/coverage limits. Synthetic tests do not establish native SSH/platform execution.
+
+## One-selection package security
+
+The **OS 套件弱點分析套餐** menu meal uses [this orchestration recipe](system/software/check/package-security/README.md) for package collection → matching official advisory acquisition/cache → linked vulnerability artifacts. It requires only normal selected-host review for supported default sources. See [limits, RHEL configuration and partial reports](../docs/package-security-meal.md).
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](../docs/os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](../docs/native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+*Last modified: 2026-11-13 23:25:46*

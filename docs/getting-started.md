@@ -280,4 +280,15 @@ does not install proxy tools, modify global environment or authorize host connec
 
 For updates or an existing installation, use [update preservation](update-preservation.md) instead of repeating first-use initialization. Reattach the same external data, retain every Profile root, and reuse its saved port, credentials and menu definitions. Old registry ports require the explicit transfer before startup; never allocate new defaults to hide missing update data.
 
-*Last modified: 2026-11-12 10:55:28*
+## Start Web manually after setup
+
+With the existing environment, administrator and installation-data already set up,
+run `./tools/start_web.sh` from the checkout root. It prints the actual Web URL and
+runs in the foreground; Ctrl+C stops it and cleans its PID file. The script uses
+`.venv/bin/python`; an absolute `OPSFEAST_PYTHON` selects another existing interpreter.
+Read [manual launch and PID recovery](web-server.md#manual-shell-launcher-and-pid-marker)
+for background/controller choices, duplicate warnings and agent-handled stale files.
+The launcher does not install prerequisites or initialize/reset user data. Normal
+agent-led first setup still uses the approved owner-controller/account-form flow.
+
+*Last modified: 2026-11-16 14:50:01*

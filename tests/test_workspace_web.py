@@ -160,3 +160,52 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data['status'],'partial')
         diagnose.assert_called_once_with(selected.root.resolve(),'fixture',limit=10,kind='operation')
         self.assertEqual((await self.get(app,path.replace('limit=10','limit=51')))[0],422)
+
+    async def test_activity_recipe_and_meal_titles_search_and_path_fallback(self):
+        profile, app = self.initialize()
+        from opsfeast.core import Profile
+        from types import SimpleNamespace
+        from opsfeast.recipe_menu import GUIDANCE
+        from uuid import uuid4
+        service=app.state.recipe_runs
+        record_id=str(uuid4());record={'id':record_id,'profile':'main','profile_binding':service._profile_binding('main'),'state':'completed','tasks':[
+            {'reference':'system/software/check/package-security','title':'Saved recipe title','meal_titles':['Saved meal <name>'],'result':{'observation_run_id':'saved'}},
+        ]}
+        service._save(record)
+        runs=[{'run_id':key,'started_at':'2026-11-01T01:00:00Z','recipe_reference':ref,'status':'success'} for key,ref in [('saved','system/software/check/package-security'),('cli','system/inventory/system'),('missing',':removed/check')]]
+        with patch.object(Profile,'retention',new_callable=lambda:property(lambda _:SimpleNamespace(runs=lambda:runs))):
+            _,data=await self.get(app,'/api/v1/workspace/logs')
+            rows={r['id']:r for r in data['items']}
+            self.assertEqual(rows['saved']['title'],'Saved meal <name> · Saved recipe title')
+            self.assertEqual(rows['saved']['recipe_reference'],'system/software/check/package-security')
+            self.assertEqual(rows['cli']['title'],GUIDANCE['system/inventory/system'][0])
+            self.assertEqual(rows['missing']['title'],':removed/check')
+            for query in ('Saved%20meal','system/software/check/package-security'):
+                _,filtered=await self.get(app,'/api/v1/workspace/logs?q='+query)
+                self.assertEqual([r['id'] for r in filtered['items']],['saved'])
+        self.assertEqual(service.show(record_id,'main')['tasks'][0]['title'],'Saved recipe title')
+
+    async def test_activity_existing_meals_resolve_names_without_rewriting_history(self):
+        profile, app = self.initialize()
+        from opsfeast.recipe_activity import history_labels
+        from uuid import uuid4
+        service=app.state.recipe_runs;identifier=str(uuid4())
+        record={'id':identifier,'profile':'main','profile_binding':service._profile_binding('main'),'state':'completed','selected_meals':['bundle:package-security'],'tasks':[{'reference':'system/software/check/package-security','result':{'observation_run_id':'old'}}]}
+        service._save(record);before=service._path(identifier).read_bytes()
+        _,labels=history_labels(profile,service)
+        self.assertIn('OS 套件弱點分析套餐',labels['old']['title'])
+        self.assertEqual(service._path(identifier).read_bytes(),before)
+
+    async def test_selected_activity_loads_bounded_result_summary_but_list_does_not(self):
+        profile,app=self.initialize()
+        from opsfeast.core import Profile
+        from types import SimpleNamespace
+        run={'run_id':'run','recipe_reference':'system/software/check/package-security','started_at':'2026-11-01T01:00:00Z','status':'partial','targets':[{'host_id':'node','status':'partial'}]}
+        saved=[{'observation_run_id':'run','host_id':'node','status':'partial','result_id':'observations/synthetic.json','short_id':'synthetic'}]
+        raw={'data':{'stages':[{'stage':'advisories','status':'failed','reason_code':'vendor_acquisition_failed'}]}}
+        with patch.object(Profile,'retention',new_callable=lambda:property(lambda _:SimpleNamespace(runs=lambda:[run]))),patch('recipe_reports.results',return_value={'results':saved,'errors':[]}),patch('recipe_reports.show_result',return_value=raw) as read:
+            _,listing=await self.get(app,'/api/v1/workspace/logs');read.assert_not_called()
+            self.assertEqual(listing['items'][0]['summary']['incomplete_hosts'],1)
+            _,detail=await self.get(app,'/api/v1/workspace/logs?item_id=run')
+            self.assertEqual(read.call_count,1);self.assertTrue(detail['items'][0]['expanded'])
+            self.assertEqual(detail['items'][0]['summary']['issues'][0]['stages'][0]['stage'],'advisories')

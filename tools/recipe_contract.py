@@ -99,14 +99,20 @@ def validate(directory, metadata, *, identity_directory=None):
 
 
 def validate_result(result):
-    if not isinstance(result, dict) or not {'status', 'reason_code', 'message', 'data'} <= set(result) or set(result) - {'status', 'reason_code', 'message', 'data', 'assessment'}:
-        raise ConfigError('recipe result requires status, reason_code, message and data; optional assessment only')
+    if not isinstance(result, dict) or not {'status', 'reason_code', 'message', 'data'} <= set(result) or set(result) - {'status', 'reason_code', 'message', 'data', 'assessment', 'summary', 'reports'}:
+        raise ConfigError('recipe result requires status, reason_code, message and data; optional assessment, bounded summary and saved-report references')
     if not isinstance(result['status'], str) or result['status'] not in STATUSES:
         raise ConfigError('invalid recipe result status')
     if any(not isinstance(result[key], str) or not result[key] for key in ('reason_code', 'message')):
         raise ConfigError('recipe result reason_code and message must be nonempty strings')
     if not isinstance(result['data'], dict):
         raise ConfigError('recipe result data must be an object')
+    if 'summary' in result:
+        if not isinstance(result['summary'],dict) or len(json.dumps(result['summary'],ensure_ascii=True,allow_nan=False))>65536:raise ConfigError('recipe summary must be a bounded JSON object')
+    if 'reports' in result:
+        if not isinstance(result['reports'],list) or len(result['reports'])>32:raise ConfigError('recipe saved-report references exceed limit')
+        for item in result['reports']:
+            if not isinstance(item,dict) or set(item)!={'result_id','status'} or not isinstance(item['result_id'],str) or not re.fullmatch(r'reports/[0-9a-f]{32}/result\.json',item['result_id']) or not isinstance(item['status'],str) or item['status'] not in STATUSES:raise ConfigError('invalid recipe saved-report reference')
     if 'assessment' in result:
         from opsfeast.recipe_assessment import validate as validate_assessment
         validate_assessment(result['assessment'])

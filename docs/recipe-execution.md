@@ -196,4 +196,8 @@ Python-recipe runners support inherited `execution: {via: login|su|sudo, user: .
 
 [Python-routines / recipe-meal 0.1.0](recipe-routines.md) are implemented through the shared runner. Standalone and composed inventory use one executor; Web selections group compatible opted-in routines per host. Other recipe tools remain independent. Descriptor-defined permissions are enforced by verified actor acquisition before each routine body; arbitrary Python still requires review. Read the canonical contract for typed inputs, phase/stop behavior, checkpoints, retention and current policy limits.
 
-*Last modified: 2026-11-10 16:14:10*
+## Bounded summaries and generated report references
+
+Python operational results may include optional `summary` (finite JSON object, at most 65,536 encoded characters) and `reports` (up to 32 objects with exactly `result_id` and `status`). A report ID must match `reports/32-lowercase-hex/result.json`; the runner verifies it resolves to a saved report in the same Profile and has the declared status. These are references to outputs, not arbitrary files or input execution directives. The saved raw/retained `data` stays complete; CLI output explicitly uses `summary` as `data` and sets `data_is_summary: true` when supplied. Web task receipts retain `reports` and offer artifact links. Offline python-report output fields remain unchanged. The [package-security workflow](package-security-meal.md) is the bundled example.
+
+*Last modified: 2026-11-13 17:25:52*

@@ -85,6 +85,8 @@ Use [the transparency procedure](references/exploration-to-recipe.md#transparenc
 
 For bundled Vault reader setup, use the existing init/default Vault consumer or `vault rebuild`, following [automatic Obsidian reader setup](../../docs/host-vault.md#automatic-obsidian-reader-setup). First publication copies/enables the shared CSS; later rebuilds update owned CSS while preserving unrelated appearance settings and manual disabling. Inspect/groups remain read-only or group-only for this purpose. Do not generate a parallel installer or edit human notes. Malformed settings, unmanaged reserved-name collisions and symlinks are content failures; inspect the separate content receipt. Obsidian itself is installed separately, and user-created/textbook Vaults need agent-assisted reader setup. This does not authorize a live-profile rebuild or application installation by itself.
 
+For authoring or revising consumer Vault figures, follow [the shared figure style](../../docs/figure-style.md): Mermaid, outer frame, fit to prose width, external left-aligned `附圖：`/`Figure:` caption close to and aligned with the border, and whitespace around the whole figure. Reuse the approved reference/assets and verify the actual reader output. Existing consumer figures are not automatically restyled; change reusable renderer/templates and preserve generated-output ownership.
+
 
 For Python recipes, read `recipe.host_info` for saved host-init OS/distribution,
 versions, architecture and optional login-PATH python3 version/path. Missing values
@@ -840,4 +842,53 @@ For authorized updates, follow [preserve installation state](../../docs/update-p
 
 When a reviewed host analysis/report needs local images, scripts or data, reuse [document bundles 0.1.0](../../docs/host-note-attachments.md), the hosts/result-data skills and checkout `opsfeast.note_bundles.create/inspect/read_file/export/delete`; this is not a Core SDK method or Recipe execution. Read `host_notes.inspect` for the exact note UUID/revision before a human-authorized save; `create(..., source=reviewed_directory_or_zip, entry="index.md", title=..., expected_revision=...)` copies immutable files. The JSON module CLI and authenticated Web APIs expose the same service. Markdown/Pillow availability comes from `requirements-web.txt`; Web additionally supports explicitly opened sandboxed HTML/three.js with local libraries/JSON, not remote APIs/CDNs, workers or server-side execution. Preserve Profile attachment bytes/manifests with notes, inspect failure/cleanup receipts and do not retry uncertain writes or download dependencies automatically. See the canonical guide for versions, limits, examples, extension points and actual browser verification.
 
-*Last modified: 2026-11-12 12:36:44*
+## OS package security 0.3.0
+
+Before authoring a package scanner or weak-version report, read [the canonical service guide](../../docs/os-package-security.md). Reuse `system/software/inventory/os-packages` (python-recipe 0.1.0, portable `os-package-inventory` 0.2.0) and `feast/report/package-security` (python-report 0.1.0), not the truncated/basic overview package property. The checkout module `opsfeast.package_security` and JSON CLI supply `collect`, explicit official `fetch`/user-attested `import_local`/validated `load`, offline `assess` and `generate/render`. Require Python 3.11+, normal product dependencies and SSHScript 7.0.1 for collection; target Python 3.8+ and native package tools on Linux/FreeBSD; ESXi uses native XML esxcli without target Python. Inspect descriptors/platforms/dependencies before human-authorized host collection. Collection, controller feed download, offline report and remediation are separate scopes.
+
+Use `python -B -m opsfeast.package_security fetch --vendor debian --release 12 --codename bookworm --output NEW_FILE` only within download scope; use the documented Ubuntu/RHEL variants for those vendors. No existing snapshot is overwritten. Then run `python -B tools/opsfeast.py recipes run feast/report/package-security --profile NAME --input INVENTORY_RESULT --input ADVISORY_SNAPSHOT --json`. Explicit local inputs only; no implicit latest/feed refresh/connection. Preserve native epoch/revision/source versions and exact release/product stream. RHEL/Ubuntu Pro streams must be explicitly declared in collection vars; Debian/Ubuntu compare source versions, RHEL binary RPM EVR. Red Hat fetch selects RHSA records, not a complete open-vulnerability feed. FreeBSD VuXML/base SAs, Proxmox VE PSAs and ESXi VMSA matrices now have native comparison. Proxmox does not inherit an unqualified Debian verdict. macOS is unsupported by this collector.
+
+Read final and candidate status separately. Partial/stale/missing/unsupported/withdrawn or ambiguous data stays unknown, and no matching record is never not-affected. A successful report may contain affected findings; `partial` means unresolved assessment coverage. Show vendor fix boundaries and evidence without treating them as approved patch instructions. Missing repository/signature provenance is explicitly unverified; version matches do not establish exploitability or restart completion. Extensions require official adapters, native rules, public synthetic success/failure/boundary tests and updated capability/skill documentation before advertising support.
+
+## Profile lifecycle service and Web default
+
+[Profile management 0.1.0](../../docs/profile-management.md) is an installation-settings service, not a host-operation recipe. Reuse `opsfeast.profile_settings` and `opsfeast.profile_transfer` for authorized lifecycle/backup work; no recipe should reimplement registry parsing, ZIP import or recursive deletion. Private full-Profile backups may contain credentials and are not report/sharing artifacts. Main/default deletion is blocked; other deletes return recovery paths. Vacuum is deferred. Daily Recipes use default only, while owned recipe settings may inspect another Profile in Settings. Explicit CLI/Core recipe targets remain supported; verify actual Profile/hosts. Changed-default pages require reload without replay.
+
+## OS package security meal 0.3.0
+
+For a human requesting collection, matching vendor data and a weakness report together, prefer **OS 套件弱點分析套餐** (`bundle:package-security`) / `python -B tools/opsfeast.py recipes run system/software/check/package-security --profile NAME --host HOST --json`. Read [the complete workflow](../../docs/package-security-meal.md) before use. It reuses `opsfeast.package_security.pipeline.execute(recipe)`, the existing collector/advisory adapters and normal offline report runner on the supplied Recipe/Profile. Do not reconnect, create temporary glue, choose unrelated latest observations or treat three independent plate entries as a dependent pipeline. Review selected targets, account policy, controller official HTTPS, local retention/artifact writes and configured consumers before confirmation. Setup alone grants none of those operations.
+
+Defaults acquire Debian/Ubuntu data automatically, using a Profile-local fresh immutable cache (24h, 0 forces fetch). RHEL can discover up to 100 selected official RHSAs from existing DNF cache without refresh/plugins; its freshness/selection and operator-confirmed product stream remain explicit gaps. Existing `redhat_advisory_ids`/`declared_ecosystems` vars can supply reviewed scope. Unsupported vendor, acquisition failure or partial collection still produce unknown reports where possible, without retries or stale-cache substitution. No match is never safety. Follow saved stage and independent retention/content receipts; a completed workflow can contain affected findings. Read `reports` links for artifacts and `data_is_summary` before interpreting CLI data; full `package_snapshot` rows remain in raw/portable retention. Native hosts and full live feeds are unverified by synthetic tests. Extensions must preserve these boundaries and update guide/capability routing.
+
+For collector 0.2.0 platform prerequisites, fixed native commands, `platform_details`,
+`package_kind`, `packages_complete` and version limits, read [OS package platform support](../../docs/os-package-platforms.md).
+Reuse the collector for ESXi VIB/component metadata, FreeBSD base/kernel patch identity
+and Proxmox VE product identification; missing commands remain explicit gaps. Older
+0.1.0 inventory inputs must be recollected for the current report; do not rewrite
+or delete old evidence. Inventory remains 0.2.0; report/run service 0.3.0 also provides native vendor advisory adapters.
+
+
+For native vendor acquisition/assessment, read [vendor security 0.3.0](../../docs/native-vendor-security.md).
+Reuse `opsfeast.package_security.advisories.fetch/import_local/load` and
+`analysis.assess`, or prefer the existing host-selected meal. FreeBSD uses
+VuXML pkg ordering plus separate installed/running kernel and userland targets;
+Proxmox uses staff PSAs and confirmed package/product branches; ESXi uses the
+official paginated read-only search API and same-update build matrices.
+`vendor_advisory_urls` is an optional official-source override in the meal;
+missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
+retention and linked report receipts. No host execution or remediation follows
+from source inspection, download or offline reporting.
+
+For manual Web startup/process discovery, reuse `tools/start_web.sh` (foreground,
+checkout `.venv` or absolute `OPSFEAST_PYTHON`) and read [the PID lifecycle and
+recovery guide](../../docs/web-server.md#manual-shell-launcher-and-pid-marker).
+New Web CLI/controller launches share external `web-server.pid`; a live PID warns
+and refuses startup, while a dead/invalid marker stays for explicit agent recovery.
+Orderly exit cleans only the owned marker; SIGKILL can leave it stale. Resolve the
+actual installation data, inspect PID/endpoint/work state and HTTP before action;
+do not automatically kill, overwrite or reset data. PID liveness does not grant
+agent-control authority. Keep private stdin open for `--agent-control`; use default
+browser-only manual mode for an already configured administrator. No connections,
+recipes, software installation or reboot persistence are authorized by this helper.
+
+*Last modified: 2026-11-16 14:50:01*

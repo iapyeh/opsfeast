@@ -29,13 +29,13 @@ test('login retains the exact recipe selection or saved run without open redirec
  assert.equal(loginDestination('?next='+encodeURIComponent('/recipes?profile=main&run=id')),'/recipes?profile=main&run=id');
  for(const next of ['//evil/recipes','/recipes?command=bad','/recipes?profile=a&profile=b','/recipes#bad'])assert.equal(loginDestination('?next='+encodeURIComponent(next)),'/workspace');
 });
-test('mount preserves explicit Profile and discovery never sends a mutation',async()=>{
+test('mount uses only default Profile and discovery never sends a mutation',async()=>{
  class Element {innerHTML='';textContent='';nodes={};events={};querySelector(s){return this.nodes[s]??=new Element();}querySelectorAll(){return [];}addEventListener(n,f){this.events[n]=f;}}
  const root=new Element(),calls=[];
  await mountRecipeMenu(root,{e,search:'?profile=other',profiles:{default_profile:'main',profiles:[{name:'main'},{name:'other'}]},fetchImpl:async(path,options)=>{
   calls.push([path,options]);return {ok:true,json:async()=>path.includes('recipe-menu')?{items:[],sets:[],sources:[],hosts:[],status:'success',blueprint:{capabilities:[],domains:[]}}:{items:[]}};
  }});
- assert.match(calls[0][0],/recipe-menu\?profile=other/);assert.equal(calls.length,1);assert.ok(calls.every(([,o])=>!o.method));
+ assert.match(calls[0][0],/recipe-menu\?profile=main/);assert.equal(calls.length,1);assert.ok(calls.every(([,o])=>!o.method));
  assert.match(root.innerHTML,/挑選這次需要的菜色/);assert.match(root.querySelector('#recipe-plate-content').innerHTML,/尚未挑選 Recipes/);
 });
 
@@ -48,4 +48,9 @@ test('inventory picker defaults exclude sensors; job and individual property sel
  assert.deepEqual(readInventorySelection(form('jobs',['hardware-sensors']),catalog),{jobs:['hardware-sensors']});
  assert.deepEqual(readInventorySelection(form('properties',['sensors.fans']),catalog),{properties:['sensors.fans']});
  assert.throws(()=>readInventorySelection(form('properties',[]),catalog));
+});
+
+test('package workflow review explicitly discloses controller vendor downloads',()=>{
+ const html=renderReview({profile:'main',timeout:30,pairs:[{reference:'pipeline',host_id:'node',kind:'operation',permissions:{controller_https:true},identity:{},variable_names:[],invocation:[]}]},e);
+ assert.match(html,/管理端會對外連線下載廠商安全公告/);assert.match(html,/不會在主機上更新或修補套件/);
 });
