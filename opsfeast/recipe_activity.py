@@ -55,7 +55,8 @@ def history_labels(profile, service):
                 meal_titles = list(dict.fromkeys([*previous['meal_titles'], *meals]))
                 observations[identifier] = {'title': ' · '.join([*meal_titles, *recipe_titles]),
                                            'recipe_title': ' · '.join(recipe_titles),
-                                           'recipe_titles': recipe_titles, 'meal_titles': meal_titles}
+                                           'recipe_titles': recipe_titles, 'meal_titles': meal_titles,
+                                           'web_run_id': record['id']}
         except (ConfigError, OSError, ValueError, KeyError, TypeError):
             continue
     return titles, observations

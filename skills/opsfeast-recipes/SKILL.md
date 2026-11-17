@@ -786,6 +786,9 @@ Read the [current layout entrypoint](../../docs/web-recipe-menu.md#current-categ
 before teaching Web operations. The main page currently shows only domain scope,
 Bundle/User recipes, sets, host choices and the two-column plate. Search, parameters,
 history/report-index controls remain outside the main layout. The plate supports field scopes and explicit review/confirmation; compatible inventory recipes share one host connection and guarded login/root phases.
+Use **Reset · 清空餐盤** to clear the current plate’s hosts, recipes, meals and
+field scopes, including its restored tab-local draft. Saved meals/defaults and other
+Profiles’ drafts remain intact; reset makes no API request or host connection.
 Picking items is temporary browser state, never execution authorization. Existing
 worker APIs and saved run/report URLs remain usable within the human's existing
 scope. Group/All picks enabled configured hosts; individual explicit choices can
@@ -831,6 +834,20 @@ Use [execution throttle](../../docs/web-recipe-menu.md#execution-throttle-and-de
 
 
 Execution defaults are discoverable through Settings → Execution and `opsfeast.execution_settings.inspect/save`, with GET/PUT `/api/v1/recipe-execution/settings` and `python -B -m opsfeast.execution_settings show/set`. Pass a positive integer `threads` with the confirmed start API for a temporary execution override. Default 8 is read without writes, defaults live in external installation data, and per-run overrides do not alter them. Threads changes do not require another preview; the plate confirmation still authorizes only the reviewed targets/recipes. Stop ends active owned workers and leaves queued hosts skipped; synthetic concurrency tests do not prove native SSH or remote cleanup. See [the full service/storage/CLI contract](../../docs/web-recipe-menu.md#execution-throttle-and-defaults-010).
+
+From **Activity and logs**, follow a Web plate entry’s timestamp to its original
+execution page (`web_run_id`, scoped to the selected Profile). Its summary title
+opens the exact Recipe page in a new tab. Activity lists use 25-entry pages
+with Previous/Next links and retain search. `results_loaded: false` means result
+links have not been read; expand the disclosure to read them. Incomplete task
+summaries/diagnosis load on expansion only, with `item_id` and `host_id` filtering,
+and appear inside that host’s task. Reuse these reads instead of scanning all raw
+results or preloading every host’s details. The list omits the separate Status column. The river
+scrolls with the page; navigation returns to Activity and logs or the Recipes menu.
+Host completion
+totals and a closed result-count disclosure stay in the list; stage/receipt
+summaries for incomplete tasks appear with the river and task results. CLI-only
+observations retain their diagnosis view. Reads never authorize execution.
 
 For finding or inspecting an existing Web selection, use [execution pages and history](../../docs/web-recipe-menu.md#execution-page-and-return-navigation). Recipes → Execution history opens saved running/completed selections; exact profile/run URLs can be bookmarked. Use existing recipe-runs reads and saved-result diagnosis for missing fields. Collection, retention and downstream failures remain distinct; reopening/history/diagnosis does not execute or reconnect.
 
@@ -891,4 +908,17 @@ agent-control authority. Keep private stdin open for `--agent-control`; use defa
 browser-only manual mode for an already configured administrator. No connections,
 recipes, software installation or reboot persistence are authorized by this helper.
 
-*Last modified: 2026-11-16 14:50:01*
+For reading an incomplete host task, use its focused failure explanation and
+report link. Single-host cards omit batch totals and raw receipt JSON; repeated
+stage/gap reasons are deduplicated. Advisory-cache waiting timeouts mean waiting
+for another operation to release the shared cache exceeded this run's deadline;
+they do not prove missing packages or a vulnerability-free host. Unknown reasons
+remain explicit. Detail loads patch only that card's body, keeping the clicked
+summary in place. The former unfinished-task jump list is removed; open host
+cards directly. Host links open separate tabs. Card labels state one outcome;
+the body omits duplicate overall status and successful receipts, retaining
+problematic processing receipts. Installed-package counts describe inventory
+records used as assessment input, not vulnerability findings or proof of full
+assessment. Existing saved evidence and report artifacts are unchanged.
+
+*Last modified: 2026-11-16 17:27:47*

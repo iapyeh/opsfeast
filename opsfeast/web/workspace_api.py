@@ -88,7 +88,7 @@ def install(app, *, product, require_admin):
 
     @app.get('/api/v1/workspace/{section}')
     def read_section(section: str, request: Request, profile: str | None = None,
-                     item_id: str | None = None,
+                     item_id: str | None = None, host_id: str | None = None,
                      q: str = Query('', max_length=1000), kind: str | None = None,
                      scope: str = 'all',
                      offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=250)):
@@ -97,6 +97,8 @@ def install(app, *, product, require_admin):
             raise HTTPException(404, 'workspace_section_not_found')
         if scope not in ('all', 'bundle', 'user'):
             raise HTTPException(422, 'invalid_recipe_scope')
+        if host_id is not None and (section != 'logs' or item_id is None):
+            raise HTTPException(422, 'host_filter_requires_activity_entry')
         instance = Instance.open(product)
         selected = None if section == 'recipes' and scope == 'bundle' else instance.profile(profile)
         if kind not in (None, 'notification', 'todo'):
@@ -158,7 +160,7 @@ def install(app, *, product, require_admin):
                 items, errors = [], []
                 try:
                     from recipe_reports import results
-                    saved = results(selected.root, kind='operation')
+                    saved = results(selected.root, kind='operation') if item_id is not None else {'results': [], 'errors': []}
                     if saved['errors']: errors.append('some_saved_results_invalid')
                     from opsfeast.recipe_activity import history_labels
                     titles, labels = history_labels(selected, app.state.recipe_runs)
@@ -167,12 +169,13 @@ def install(app, *, product, require_admin):
                         naming = labels.get(run['run_id'], {'title': titles.get(reference, reference), 'recipe_title': titles.get(reference, reference), 'meal_titles': []})
                         items.append({'id': run['run_id'], 'source': 'recipe', 'time': run['started_at'],
                                       **naming, 'recipe_reference': reference, 'status': run['status'], 'details': run,
-                                      'result_links':[{key: row[key] for key in ('host_id','status','result_id','short_id')}
+                                      'results_loaded': item_id is not None, 'result_links':[{key: row[key] for key in ('host_id','status','result_id','short_id')}
                                                       for row in saved['results'] if row.get('observation_run_id') == run['run_id']]})
                 except (ConfigError, OSError, sqlite3.Error):
                     errors.append('recipe_history_unavailable')
                 sessions = {}
-                for host in selected.hosts.list():
+                hosts = [] if item_id is not None and any(item['id'] == item_id for item in items) else selected.hosts.list()
+                for host in hosts:
                     cursor = None
                     while True:
                         data = app.state.console_records.list_sessions(selected.name + ' / ' + host, limit=100, before=cursor)
@@ -192,6 +195,9 @@ def install(app, *, product, require_admin):
                     if entry['source'] != 'recipe':
                         continue
                     raw_results = []
+                    if host_id is not None:
+                        entry['details'] = {**entry['details'], 'targets': [row for row in entry['details'].get('targets', []) if row.get('host_id') == host_id]}
+                        entry['result_links'] = [row for row in entry['result_links'] if row['host_id'] == host_id]
                     bad_hosts = {row.get('host_id') for row in entry['details'].get('targets', []) if row.get('status') != 'success' or row.get('retention_status') in ('failed', 'error')}
                     detail_candidates = [link for link in entry['result_links'] if link['host_id'] in bad_hosts or link['status'] != 'success']
                     if item_id is not None:

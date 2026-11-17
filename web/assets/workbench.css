@@ -1476,14 +1476,13 @@ footer { color:var(--ui-muted); border-color:var(--ui-border); gap:16px; flex-wr
 .recipe-thread-control input { width:7rem; margin-right:.75rem; }
 
 /* One shared river above closed task cards. */
-.recipe-shared-river { position:sticky; top:.5rem; z-index:3; background:var(--ui-surface,#fff); }
+.recipe-shared-river { background:var(--ui-surface,#fff); }
 .recipe-shared-river .recipe-progress { height:min(28vh,18rem); overflow:auto; white-space:pre-wrap; }
 .recipe-shared-river h3 small { font-size:.8rem; color:var(--ui-muted); }
 .recipe-task { margin:.75rem 0; }
 .recipe-task>summary { display:flex; justify-content:space-between; align-items:center; gap:1rem; cursor:pointer; }
 .recipe-task-status { white-space:nowrap; font-size:.85rem; }
 .recipe-task-spinner { display:inline-block; width:.8rem; height:.8rem; border:2px solid var(--ui-border); border-top-color:var(--ui-accent); border-radius:50%; animation:recipe-task-spin 1s linear infinite; vertical-align:middle; }
-.recipe-run-problems ul { max-height:12rem; overflow:auto; }
 .recipe-task-gaps { overflow-x:auto; }
 .recipe-task-gaps td,.recipe-task-gaps th { padding:.5rem; border-bottom:1px solid var(--ui-border); text-align:left; }
 .recipe-run-history li { padding:.7rem; border-bottom:1px solid var(--ui-border); }

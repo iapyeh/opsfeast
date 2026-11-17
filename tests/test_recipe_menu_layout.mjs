@@ -81,3 +81,48 @@ test('an unchanged Profile and browser origin retain the plate across product ch
   assert.deepEqual(JSON.parse(values.get(key)),initial);
  }
 });
+
+test('reset clears restored choices and field scopes, persists an empty plate and isolates Profiles',()=>{
+ const key='opsfeast-menu-draft-v2:current',otherKey='opsfeast-menu-draft-v2:other';
+ const values=new Map([
+  [key,JSON.stringify({recipes:['inventory'],hosts:['a'],meals:['base'],scopes:{inventory:{properties:['system.hostname']}}})],
+  [otherKey,'other profile draft']
+ ]);
+ const storage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
+ const makeRoot=()=>{
+  const input=dataset=>({dataset,checked:false,indeterminate:false,events:{},addEventListener(n,f){this.events[n]=f;},closest(){return {classList:{toggle(){}}};}});
+  const dishes=[input({dish:'inventory'}),input({dish:'inventory'})],host=input({host:'a'}),group=input({group:'web'}),all=input({}),reset=input({}),preview=input({}),plate={innerHTML:''};
+  return {innerHTML:'',dishes,host,group,all,reset,preview,plate,
+   querySelector:s=>({'#recipe-plate-content':plate,'[data-all-hosts]':all,'#menu-reset-plate':reset,'#recipe-preview':preview}[s]||null),
+   querySelectorAll:s=>({'[data-dish]':dishes,'[data-host]':[host],'[data-group]':[group],'[data-host], [data-group], [data-all-hosts]':[host,group,all]}[s]||[])
+  };
+ };
+ let selection;
+ const options={data:{...data,preferences:{scope_id:'current'}},profiles,profile:'main',e,storage,onExecute:s=>{selection=s;}};
+ const root=makeRoot();
+ mountMenuLayout(root,options);
+ assert.ok(root.dishes.every(i=>i.checked));assert.equal(root.host.checked,true);assert.equal(root.group.indeterminate,true);
+ root.reset.events.click();
+ assert.ok(root.dishes.every(i=>!i.checked));
+ for(const input of [root.host,root.group,root.all]){assert.equal(input.checked,false);assert.equal(input.indeterminate,false);}
+ assert.match(root.plate.innerHTML,/主機 <span>0/);assert.match(root.plate.innerHTML,/Recipes <span>0/);
+ assert.deepEqual(JSON.parse(values.get(key)),{recipes:[],hosts:[],meals:[],scopes:{}});
+ assert.equal(values.get(otherKey),'other profile draft');
+ root.reset.events.click(); // Empty reset is harmless.
+ const reloaded=makeRoot();mountMenuLayout(reloaded,options);
+ assert.match(reloaded.plate.innerHTML,/主機 <span>0/);assert.ok(reloaded.dishes.every(i=>!i.checked));
+ reloaded.dishes[0].checked=true;reloaded.dishes[0].events.change();reloaded.preview.events.click();
+ assert.deepEqual(selection,{hosts:[],meals:[],recipes:[{reference:'inventory',vars:{},inputs:[]}]});
+});
+
+test('reset is available without Profile settings or browser storage',()=>{
+ const html=renderLayout(data,groupRecipes(data),profiles,null,e);
+ assert.match(html,/<button class="button" type="button" id="menu-reset-plate">Reset · 清空餐盤<\/button>/);
+ const reset={addEventListener(n,f){this[n]=f;}},plate={innerHTML:''};
+ const root={innerHTML:'',querySelector:s=>s==='#menu-reset-plate'?reset:s==='#recipe-plate-content'?plate:null,querySelectorAll:()=>[]};
+ const storage={getItem(){throw new Error('unavailable');},setItem(){throw new Error('unavailable');}};
+ mountMenuLayout(root,{data,profiles,e,storage,initialRecipe:'inventory'});
+ assert.match(plate.innerHTML,/Recipes <span>1/);
+ reset.click();
+ assert.match(plate.innerHTML,/Recipes <span>0/);
+});

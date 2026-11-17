@@ -3,11 +3,10 @@ import {formatDateTime} from './i18n.mjs';
 import {mountRecipeMenu} from './recipe-menu.mjs';
 export const workspaceCopy = c;
 export const workspacePaths = Object.keys(c.titles);
-export const workspaceUrl = (path, profile, extra={}) => {
-  const query = new URLSearchParams(extra);
-  if(profile)query.set('profile',profile);
-  return path + (query.size?'?'+query:'');
-};
+import {workspaceUrl} from './workspace-url.mjs';
+export {workspaceUrl} from './workspace-url.mjs';
+import {renderActivitySummary} from './activity-summary.mjs';
+export {renderActivitySummary} from './activity-summary.mjs';
 const state=value=>{
   if(typeof value==='string')return c.states[value]||value;
   if(value&&typeof value==='object'&&!Array.isArray(value)&&Object.values(value).every(count=>Number.isInteger(count)&&count>=0))
@@ -26,20 +25,8 @@ export function table(headers, rows, e) {
 function objects(items,e) {
   return items.length?items.map(item=>`<article class="attention-row"><span class="priority">${e(state(item.severity||item.priority||'unknown'))}</span><div><h3>${e(item.title)}</h3><p>${statusBadge(item.status,e)} · ${e(item.source?.host_id||c.unknown)}</p><p>${e(item.body||'')}</p><small>${e(time(item.updated_at))}</small></div></article>`).join(''):`<p role="status">${e(c.empty)}</p>`;
 }
-export function renderActivitySummary(item,{e,profile}) {
-  const summary=item.summary;
-  if(!summary)return '';
-  const reason=value=>{
-    if(!value)return '未提供具體原因';
-    const [code,...scope]=String(value).split(':');
-    const label=c.activityReasons[code]||c.reasons[code]||code;
-    return label+(scope.length?'（'+scope.join(':')+'）':'');
-  };
-  const receipt=value=>({stored:'已保存',success:'成功',failed:'失敗',skipped:'略過'})[value]||state(value||'unknown');
-  return `<section class="activity-summary">${!summary.total_hosts&&item.status!=='success'?'<p>紀錄未提供主機層級的未完成原因。</p>':''}<p>主機：完成 ${e(summary.completed_hosts)} ／ 未完成 ${e(summary.incomplete_hosts)} ／ 共 ${e(summary.total_hosts)} 台</p>${summary.issues.map(issue=>`<article><h3>${e(issue.host_id||c.unknown)} · ${e(state(issue.status))}</h3>${issue.stages?.length?`<ul>${issue.stages.map(stage=>`<li><strong>${e(c.activityStages[stage.stage]||stage.stage)}</strong>：${e(state(stage.status))}${stage.status==='success'?'':' · '+e(reason(stage.reason_code))}</li>`).join('')}</ul>`:`<p>${e(reason(issue.reason_code))}</p>`}${issue.packages?`<p>套件採集：${e(issue.packages.collected_count??'未知')} 筆${issue.packages.complete?'':'，未能確認完整性'}</p>`:''}${issue.gaps?.length?`<ul>${issue.gaps.map(gap=>`<li>${e(reason(gap))}</li>`).join('')}</ul>`:''}${issue.receipts?`<p>資料保存：${e(receipt(issue.receipts.retention))} · 後續呈現／通知：${e(receipt(issue.receipts.content_update))}</p>`:''}<p><a href="${e(workspaceUrl('/logs',profile,issue.result_id?{result:issue.result_id}:{entry:item.id}))}">${e(issue.result_id?c.diagnosis:'查看處理階段與未完成原因')} →</a></p></article>`).join('')}${summary.omitted_result_details?`<p>另有 ${e(summary.omitted_result_details)} 份主機結果未展開；可從主機結果連結查看。</p>`:''}${summary.omitted_hosts?`<p>另有 ${e(summary.omitted_hosts)} 台未完成主機；請查看執行紀錄。</p>`:''}${summary.incomplete_hosts&&!item.expanded?`<p><a href="${e(workspaceUrl('/logs',profile,{entry:item.id}))}">查看各階段與未完成原因 →</a></p>`:''}</section>`;
-}
 export function renderData(path,data,{e,profile,recipeScope='all'}) {
-  const link=(target,label,extra={})=>`<a href="${e(workspaceUrl(target,profile,extra))}">${e(label)}</a>`;
+  const link=(target,label,extra={},newTab=false)=>`<a ${newTab?'target="_blank" rel="noopener" ':''}href="${e(workspaceUrl(target,profile,extra))}">${e(label)}</a>`;
   let html=data.status!=='success'?`<p class="detail-note" role="status">${e(c.partial)}</p>`:'';
   if(path==='/workspace') {
     html+=`<section class="panel workspace-summary-panel"><div><h2>${e(c.hostCount)}</h2><strong class="workspace-host-count">${e(data.host_count)}</strong></div><p class="field-hint">${e(c.summaryNote)}</p></section><div class="roadmap-columns">`;
@@ -55,9 +42,10 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
   }
   if(path==='/work')return html+`<p class="field-hint">${e(c.serviceNote)}</p>`+table(c.workColumns,data.items.map(item=>[e(state(item.kind)),`<details><summary>${e(item.title)}</summary><p>${e(item.body||'')}</p><pre class="log-content">${e(json(item))}</pre></details>`,statusBadge(item.status,e),e(item.source?.host_id||c.unknown),e(time(item.updated_at))]),e);
   if(path==='/logs')return html+`<p class="field-hint">${e(c.logsNote)}</p>`+table(c.logColumns,data.items.map(item=>[
-    e(time(item.time)),e(state(item.source)),
-    `${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}<details ${item.expanded?'open':''}><summary>${e(item.source==='console'?item.title:item.summary?.incomplete_hosts?'查看未完成項目':'查看摘要')}</summary>${renderActivitySummary(item,{e,profile})}${(item.result_links||[]).length?`<details><summary>${e(c.resultCauses)}</summary><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul></details>`:''}<details><summary>原始資料（進階）</summary><pre class="log-content">${e(json(item.details))}</pre></details></details>`,
-    item.source==='recipe'&&item.status!=='success'?link('/logs',state(item.status),{entry:item.id}):statusBadge(item.status,e)
+    item.web_run_id?link('/recipes',time(item.time),{run:item.web_run_id}):e(time(item.time)),e(state(item.source)),
+    item.web_run_id
+      ? `${item.recipe_reference?link('/recipes',item.title,{recipe:item.recipe_reference},true):e(item.title)}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}${item.summary?`<p>主機：完成 ${e(item.summary.completed_hosts)} ／ 未完成 ${e(item.summary.incomplete_hosts)} ／ 共 ${e(item.summary.total_hosts)} 台</p>`:''}<details data-activity-results="${e(item.id)}"><summary>主機結果與未完成項目的數量（未完成主機 ${e(item.summary?.incomplete_hosts??c.unknown)}）</summary><div data-activity-results-content>${(item.result_links||[]).length?`<ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul>`:(item.results_loaded===false?'<p>展開後讀取主機結果。</p>':'<p>尚無已保存的主機結果。</p>')}</div></details>`
+      : `${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}<details ${item.expanded?'open':''}><summary>${e(item.source==='console'?item.title:item.summary?.incomplete_hosts?'查看未完成項目':'查看摘要')}</summary>${statusBadge(item.status,e)}${renderActivitySummary(item,{e,profile})}${(item.result_links||[]).length?`<details><summary>${e(c.resultCauses)}</summary><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul></details>`:''}<details><summary>原始資料（進階）</summary><pre class="log-content">${e(json(item.details))}</pre></details></details>`
   ]),e);
 
   return html+`<p class="field-hint">${e(c.retentionNote)}</p>`+table(c.retentionColumns,data.items.map(item=>[e(time(item.observed_at)),e(item.host_id),e(item.recipe_reference),e(item.kind),statusBadge(item.status,e)]),e);
@@ -119,18 +107,32 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
     }
     const item=query.get(path==='/recipes'?'recipe':'entry');
     let accumulated=[], next=null;
+    const logOffset=path==='/logs'?Math.max(0,Number.parseInt(query.get('offset')||'0',10)||0):0;
     const load=async(offset=0)=>{
-      const args={offset:String(offset)};
+      const args={offset:String(offset),...(path==='/logs'?{limit:'25'}:{})};
       if(recipeScope==='bundle')args.scope='bundle';
       else {args.profile=profile;if(recipeScope==='user')args.scope='user';}
       for(const name of ['q','kind'])if(query.get(name))args[name]=query.get(name);
       if(item)args.item_id=item;
       const data=await read('/api/v1/workspace/'+section+'?'+new URLSearchParams(args));
-      accumulated.push(...(data.items||[]));next=data.next_offset;
-      content.innerHTML=renderData(path,{...data,items:accumulated},{e,profile:recipeScope==='bundle'?null:profile,recipeScope})+`<p class="field-hint">${data.profile?e(c.profile)+': '+e(data.profile)+' · ':''}${e(c.readAt)}: ${e(time(data.read_at))} · ${e(c.timezone)}</p>`+(next!=null?`<button type="button" id="workspace-more" class="button">${e(c.more)}</button>`:'');
+      if(path==='/logs')accumulated=data.items||[];else accumulated.push(...(data.items||[]));next=data.next_offset;
+      content.innerHTML=renderData(path,{...data,items:accumulated},{e,profile:recipeScope==='bundle'?null:profile,recipeScope})+`<p class="field-hint">${data.profile?e(c.profile)+': '+e(data.profile)+' · ':''}${e(c.readAt)}: ${e(time(data.read_at))} · ${e(c.timezone)}</p>`+(path==='/logs'?`<nav aria-label="活動紀錄分頁"><p>第 ${e(Math.floor(offset/25)+1)} 頁 · 共 ${e(data.total)} 筆</p>${offset>0?`<a class="button" href="${e(workspaceUrl(path,profile,{...Object.fromEntries(query),offset:String(Math.max(0,offset-25))}))}">上一頁</a>`:''} ${next!=null?`<a class="button" href="${e(workspaceUrl(path,profile,{...Object.fromEntries(query),offset:String(next)}))}">下一頁</a>`:''}</nav>`:(next!=null?`<button type="button" id="workspace-more" class="button">${e(c.more)}</button>`:''));
+      content.querySelectorAll('details[data-activity-results]').forEach(node=>{
+        let loaded=false;
+        node.addEventListener('toggle',async()=>{
+          if(!node.open||loaded)return;loaded=true;
+          const target=node.querySelector('[data-activity-results-content]');target.textContent=c.loading;
+          try{
+            const saved=await read('/api/v1/workspace/logs?'+new URLSearchParams({profile,item_id:node.dataset.activityResults,limit:'1'}));
+            const entry=saved.items?.find(item=>item.id===node.dataset.activityResults);
+            if(!entry)throw new Error('missing');
+            target.innerHTML=entry.result_links?.length?`<p>已保存主機結果：${e(entry.result_links.length)} 筆</p><ul>${entry.result_links.map(row=>`<li><a href="${e(workspaceUrl('/logs',profile,{result:row.result_id}))}">${e(row.host_id+' · '+state(row.status)+' · '+c.diagnosis)}</a></li>`).join('')}</ul>`:'<p>尚無已保存的主機結果。</p>';
+          }catch{loaded=false;target.textContent=c.failed;}
+        });
+      });
       content.querySelector('#workspace-more')?.addEventListener('click',async event=>{event.target.disabled=true;try{await load(next);}catch{event.target.disabled=false;content.insertAdjacentHTML('beforeend',`<p role="alert">${e(c.failed)}</p>`);}});
     };
-    await load();
+    await load(logOffset);
   }catch(error){content.innerHTML=`<p role="alert">${e(error.message==='unauthorized'?c.unauthorized:c.failed)}</p>${error.message==='unauthorized'?`<a href="/login">${e(c.login)}</a>`:''}`;}
 }
 

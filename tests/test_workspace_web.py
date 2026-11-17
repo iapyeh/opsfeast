@@ -178,6 +178,9 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
             rows={r['id']:r for r in data['items']}
             self.assertEqual(rows['saved']['title'],'Saved meal <name> · Saved recipe title')
             self.assertEqual(rows['saved']['recipe_reference'],'system/software/check/package-security')
+            self.assertEqual(rows['saved']['web_run_id'],record_id)
+            self.assertNotIn('web_run_id',rows['cli'])
+            self.assertNotIn('web_run_id',rows['missing'])
             self.assertEqual(rows['cli']['title'],GUIDANCE['system/inventory/system'][0])
             self.assertEqual(rows['missing']['title'],':removed/check')
             for query in ('Saved%20meal','system/software/check/package-security'):
@@ -209,3 +212,20 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
             _,detail=await self.get(app,'/api/v1/workspace/logs?item_id=run')
             self.assertEqual(read.call_count,1);self.assertTrue(detail['items'][0]['expanded'])
             self.assertEqual(detail['items'][0]['summary']['issues'][0]['stages'][0]['stage'],'advisories')
+
+    async def test_activity_list_skips_result_scan_and_selected_host_is_isolated(self):
+        profile,app=self.initialize()
+        from opsfeast.core import Profile
+        from types import SimpleNamespace
+        run={'run_id':'batch','recipe_reference':'system/inventory/system','started_at':'2026-11-01T01:00:00Z','status':'partial','targets':[{'host_id':'node','status':'partial'},{'host_id':'other','status':'partial'}]}
+        saved=[{'observation_run_id':'batch','host_id':host,'status':'partial','result_id':host+'.json','short_id':host} for host in ('node','other')]
+        with patch.object(Profile,'retention',new_callable=lambda:property(lambda _:SimpleNamespace(runs=lambda:[run]))),patch('recipe_reports.results',return_value={'results':saved,'errors':[]}) as scan,patch('recipe_reports.show_result',return_value={'data':{}}) as read:
+            _,listing=await self.get(app,'/api/v1/workspace/logs?limit=25')
+            scan.assert_not_called();read.assert_not_called()
+            self.assertFalse(listing['items'][0]['results_loaded'])
+            _,detail=await self.get(app,'/api/v1/workspace/logs?item_id=batch&host_id=node')
+            self.assertEqual([row['host_id'] for row in detail['items'][0]['summary']['issues']],['node'])
+            self.assertEqual([row['host_id'] for row in detail['items'][0]['result_links']],['node'])
+            self.assertEqual(detail['items'][0]['summary']['total_hosts'],1)
+            self.assertEqual(read.call_count,1)
+            self.assertEqual((await self.get(app,'/api/v1/workspace/logs?host_id=node'))[0],422)

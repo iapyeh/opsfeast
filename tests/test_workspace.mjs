@@ -114,3 +114,33 @@ test('activity partial summary explains stages and keeps JSON behind advanced di
   assert.match(html,/<details><summary>原始資料（進階）/);assert.match(html,/<details open>/);
   assert.ok(html.indexOf('套件採集')<html.indexOf('raw-only'));
 });
+
+test('Web plate activity links to its exact run and keeps only compact closed results',()=>{
+ const item={id:'observation',source:'recipe',web_run_id:'web&run',recipe_reference:'system/software/check/package-security',title:'Meal <name>',status:'partial',expanded:true,details:{raw:'DO_NOT_SHOW'},summary:{total_hosts:1,completed_hosts:0,incomplete_hosts:1,issues:[{host_id:'node',reason_code:'DO_NOT_SHOW'}]},result_links:[{host_id:'<node>',status:'partial',result_id:'saved/id'}]};
+ const html=renderData('/logs',{status:'success',items:[item]},options);
+ assert.match(html,/\/recipes\?run=web%26run&amp;profile=fixture%26profile/);
+ const cells=[...html.matchAll(/<td>(.*?)<\/td>/g)].map(match=>match[1]);
+ assert.equal(cells.length,3);
+ assert.match(cells[0],/run=web%26run/);
+ assert.doesNotMatch(cells[2],/run=web%26run/);
+ assert.match(cells[2],/recipe=system%2Fsoftware%2Fcheck%2Fpackage-security/);
+ assert.doesNotMatch(html,/<th scope="col">狀態<\/th>/);
+ assert.match(html,/完成 0 ／ 未完成 1 ／ 共 1 台/);
+ assert.match(html,/<details data-activity-results="observation"><summary>主機結果與未完成項目的數量（未完成主機 1）/);
+ assert.match(cells[2],/target="_blank" rel="noopener"/);
+ assert.match(html,/result=saved%2Fid/);assert.match(html,/&lt;node&gt;/);
+ assert.doesNotMatch(html,/查看未完成項目|原始資料|DO_NOT_SHOW|<details open|entry=observation/);
+ const empty=renderData('/logs',{status:'success',items:[{...item,result_links:[]}]},options);
+ assert.match(empty,/尚無已保存的主機結果/);
+});
+
+test('activity pagination fetches 25 rows and preserves search across pages',async()=>{
+ const root=new Element(),calls=[];
+ await mountWorkspace(root,{path:'/logs',e,siteName:'owner',profiles:{default_profile:'main'},search:'?offset=25&q=package',fetchImpl:async path=>{
+  calls.push(path);return {ok:true,json:async()=>({status:'success',items:[],total:80,next_offset:50,profile:'main'})};
+ }});
+ assert.match(calls[0],/offset=25/);assert.match(calls[0],/limit=25/);assert.match(calls[0],/q=package/);
+ const html=root.querySelector('#workspace-content').innerHTML;
+ assert.match(html,/第 2 頁 · 共 80 筆/);assert.match(html,/上一頁/);assert.match(html,/下一頁/);
+ assert.match(html,/offset=50/);assert.match(html,/q=package/);assert.doesNotMatch(html,/id="workspace-more"/);
+});

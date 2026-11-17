@@ -43,7 +43,11 @@ Selecting recipes/sets/hosts updates a tab-local sessionStorage draft, scoped to
 Profile root digest. It makes no connection, starts no worker, writes no server
 settings/observations and grants no execution scope. Reloading or returning from a
 recipe page restores known available selections; different Profiles use separate
-drafts. The draft ends with the browser session and is not a saved user meal. Search, the category
+drafts. **Reset · 清空餐盤** clears the current plate’s hosts, direct recipes, meals and
+field scopes, synchronizes all selection checkboxes and replaces only this Profile’s
+tab-local draft with an empty selection. Reloading keeps it empty. Saved meals,
+recipe defaults and other Profiles’ drafts are preserved; no server request or
+execution is triggered. The draft ends with the browser session and is not a saved user meal. Search, the category
 filter, global blueprint panel, source dump, global parameter/timeout panels, report index and run-history sections remain
 separate. The plate now offers field selection and explicit execution review. Existing data and execution/report APIs are retained.
 Saved `/recipes?profile=NAME&run=UUID` and report/artifact URLs still open their
@@ -547,14 +551,49 @@ The threads input displays 8 immediately rather than an empty inheritance placeh
 
 ## Execution page and return navigation
 
-The saved execution page `/recipes?profile=NAME&run=UUID` now shows one sticky shared progress area above independently expandable task cards. Cards start closed; their summaries retain live indicators and completion/partial/failure labels. Host names link to their exact host page in a new tab (`target=_blank`, `rel=noopener`); the three repeated host/log/retention footer links are removed. Report artifacts also open separately. The common progress area groups existing bounded runner output by host/task and deduplicates identical shared-worker output. It is a sampled grouped view, not a new chronological Console stream; the display retains at most 128 Ki characters and marks truncation. Polling preserves expanded cards and the river's scroll position when the reader has scrolled up.
+Activity log timestamps for Web plates link to this exact saved execution page;
+summary titles open the exact Recipe page in a new tab instead. The activity list omits its
+separate Status column. Execution-page navigation offers **Activity and logs**
+(`/logs?profile=NAME`) and **Recipes menu** (`/recipes?profile=NAME`), rather
+than sending the reader to the separate `history=1` list.
+Its shared river and individual host tasks remain available. Expanded incomplete tasks
+also load their bounded, host-filtered saved activity summaries (collection/advisory/report
+stages and retention/content receipts) through the workspace selected-entry API.
+Summaries appear inside the corresponding task; closed tasks issue no summary
+or diagnosis requests. A failed summary read remains visible without hiding task outcomes; viewing the
+page never reruns operations. The activity list keeps only host completion totals
+and a closed host-result count disclosure for these Web plates.
 
-An explicit unfinished-task summary identifies task/host/recipe and separates collection status, retention failures and downstream consumer failures. Clicking an item expands its task. Incomplete fields and reasons reuse saved `collection_gaps` or lazily GET `/api/v1/results/diagnosis?profile=NAME&result_id=ID&limit=50` when the task opens. These reads do not connect or collect. Missing/failed diagnosis stays explicit; absent evidence is not invented, and omitted groups remain labelled. Existing status and historical data are not rewritten.
+
+The saved execution page `/recipes?profile=NAME&run=UUID` now shows one shared progress area that scrolls with the page above independently expandable task cards. Cards start closed; their summaries retain live indicators and completion/partial/failure labels. Host names link to their exact host page in a new tab (`target=_blank`, `rel=noopener`); the three repeated host/log/retention footer links are removed. Report artifacts also open separately. The common progress area groups existing bounded runner output by host/task and deduplicates identical shared-worker output. It is a sampled grouped view, not a new chronological Console stream; the display retains at most 128 Ki characters and marks truncation. Polling preserves expanded cards and the river's scroll position when the reader has scrolled up.
+
+The former unfinished-task jump list is removed. Each host card directly exposes
+a single outcome label: **執行完成**, **有未完成項目**, or **結果處理有問題**
+when execution succeeded but result processing did not. Expand a card for concrete
+causes. The body omits the duplicate operation-result line and successful receipts;
+failed, partial or unknown retention/content receipts remain explicit. Host links
+open a new tab and do not toggle the card. Incomplete fields and reasons reuse saved `collection_gaps` or lazily GET `/api/v1/results/diagnosis?profile=NAME&result_id=ID&limit=50` when the task opens. These reads do not connect or collect. Missing/failed diagnosis stays explicit; absent evidence is not invented, and omitted groups remain labelled. Existing status and historical data are not rewritten.
 
 On Recipes, **Execution history** opens `/recipes?profile=NAME&history=1`, backed by GET `/api/v1/recipe-runs?profile=NAME`. It lists up to the 100 newest saved selections, including running selections, with exact links back to their execution pages. The normal browser address can be bookmarked for older records. Closing the browser does not stop workers while Web remains running; reopening the history/page only reads and reattaches polling. Restarting Web instead preserves the existing interrupted/no-automatic-retry semantics. No execution is started by opening history, a task or a diagnosis.
+
+Task details update only the selected card body when saved summaries/diagnosis
+arrive; its summary DOM node stays in place, avoiding scroll jumps caused by
+replacing the entire execution page. Single-host explanations omit batch totals,
+duplicate host/status headings, successful-stage rows and duplicate reason/gap
+codes. Known advisory timeout reasons use plain-language descriptions; failed
+advisory acquisition plus a partial report explains that vulnerability assessment
+is incomplete. The package count is explicitly the number of installed-package records acquired
+from the native OS package database as assessment input. It is neither a
+vulnerability count nor proof that every record was assessed. Report counts
+represent findings, so they need not match input record counts. Only problematic
+retention/content receipts remain visible; successful receipts stay in saved data. Unknown reasons are retained and escaped, not reclassified.
+Raw task JSON is no longer rendered here; saved results and generated reports
+remain unchanged and report links remain available. Meaningful missing-field
+diagnosis and read errors stay visible, while empty generic diagnosis text is
+suppressed when a specific saved explanation is available.
 
 ## OS package vulnerability meal
 
 Add **OS 套件弱點分析套餐**, select default-Profile hosts and review/confirm. The [three-stage workflow](package-security-meal.md) collects native identities, acquires matching official advisories on the controller and generates linked HTML/Markdown/JSON reports. The review calls out outbound controller HTTPS. Expand a completed host task and choose **開啟產生的報告**. Missing feeds/scope remain partial/unknown; affected findings can occur in a successful run. The menu meal wraps one dependency-aware operation, not independent collection/report entries with manually copied inputs.
 
-*Last modified: 2026-11-13 17:25:52*
+*Last modified: 2026-11-16 17:27:47*

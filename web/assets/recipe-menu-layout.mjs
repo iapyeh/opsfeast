@@ -84,6 +84,9 @@ export function mountMenuLayout(root,{data,profiles,profile,initialRecipe,e,onPr
   root.querySelectorAll('[data-dish]').forEach(input=>input.addEventListener('change',()=>{input.checked?selectedRecipes.add(input.dataset.dish):selectedRecipes.delete(input.dataset.dish);update();}));
   root.querySelectorAll('[data-set]').forEach(button=>button.addEventListener('click',()=>{selectedMeals.add(button.dataset.set);update();}));
   root.querySelectorAll('[data-host], [data-group], [data-all-hosts]').forEach(input=>input.addEventListener('change',()=>{selectedHosts=hostSelection(data,selectedHosts,input.hasAttribute('data-all-hosts')?'all':input.hasAttribute('data-group')?'group':'host',input.dataset.group||input.dataset.host,input.checked);update();}));
+  root.querySelector('#menu-reset-plate')?.addEventListener('click',()=>{
+   selectedRecipes.clear();selectedHosts.clear();selectedMeals.clear();scopes={};update();
+  });
   root.querySelector('#recipe-preview')?.addEventListener('click',()=>onExecute?.({meals:[...selectedMeals],hosts:[...selectedHosts],recipes:[...selectedRecipes].map(reference=>({reference,vars:{},inputs:[],...(scopes[reference]?{inventory_selection:scopes[reference]}:{})}))}));
   if(api&&profile){
    const dialog=root.querySelector('#menu-editor-dialog'),content=root.querySelector('#menu-editor-content');

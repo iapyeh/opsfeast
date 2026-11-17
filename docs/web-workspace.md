@@ -172,13 +172,55 @@ nested membership without executing recipes or exposing private variables.
 These are checkout-level presentation helpers, not a new retained-data schema.
 
 Activity summaries separate host completion, collection/advisory/report stages and
-retention/downstream receipts. The list uses saved run metadata; selecting an entry
+retention/downstream receipts. Web plate entries expose `web_run_id` from their
+saved observation-to-execution association. Their timestamps link directly to
+`/recipes?profile=NAME&run=UUID`, with the shared progress river and host task
+results. Summary titles open the exact Recipe page in a new tab (`target=_blank`,
+`rel=noopener`) using `recipe_reference`,
+not to the run. The list has Time, Source and Summary columns; it has no separate
+Status column. Console/CLI status remains inside its existing detail disclosure.
+The activity list shows host completion totals and a closed host-result
+count disclosure; incomplete-stage summaries and raw JSON are omitted there.
+The execution page reads the selected-entry API only when an incomplete host task
+is expanded, with `item_id=OBSERVATION_ID&host_id=HOST`. Both result links and
+summary targets are restricted to that saved host, including before the six-file
+read limit. Its stage/receipt summary appears inside that task, beside diagnosis;
+no all-host summary is inserted above task cards during loading.
+Missing summary reads show an error without hiding the river or task results.
+CLI-only observations have no Web run association and retain their diagnosis
+entrypoints. Console links are unchanged. The list uses saved run metadata; selecting an entry
 reads at most six incomplete-host result files and shows at most 20 incomplete hosts
-with explicit omission counts. Missing raw evidence stays unknown. JSON remains in
+with explicit omission counts. Missing raw evidence stays unknown. For CLI-only entries, JSON remains in
 the closed advanced disclosure. Reuse `recipe_activity.activity_summary` and the
 existing workspace logs API; reads never reconnect, retry or rewrite observations.
 Web date/time rendering uses the shared `formatDateTime`/`formatTime` helpers with
 Asia/Taipei, seconds and the 00–23 hour cycle, including execution and Console views.
 
+## Activity pagination and deferred results
 
-*Last modified: 2026-11-14 17:19:41*
+The Web list requests 25 entries per page with Previous/Next links, retaining
+search and Profile scope. It replaces the page rather than accumulating rows.
+The existing API accepts `offset` and `limit` (1–250; default 100). Initial lists
+read observation metadata, Web labels and Console references without scanning raw
+operation results. Recipe entries have `results_loaded: false` and empty
+`result_links`; this is deferred evidence, not proof that no results exist.
+Expanding the closed result-count disclosure reads the exact `item_id` and
+shows its result count/links. A failed read stays visible and can be retried by
+closing and reopening. Selected recipe reads skip unrelated Console enumeration.
+An optional `host_id` requires logs plus `item_id` (otherwise 422) and scopes
+the selected recipe’s targets, links and bounded raw summary to that host.
+Metadata catalogs are still read dynamically; no persistent cache or weekly
+archive is introduced, and pagination is not a stable historical snapshot.
+
+Single-host task cards use a focused explanation rather than the batch summary:
+no one-host totals, repeated headings or raw receipt JSON. The explanation
+deduplicates stage/gap reasons, names advisory-cache waiting and download timeouts,
+and separates incomplete assessment from saved data. Asynchronous detail reads
+patch only the card body, preserving the clicked summary and page position.
+Original evidence and report artifacts are not rewritten. The unfinished-task
+jump list is removed. Card labels give one outcome; the body omits duplicate
+overall status and successful receipts while preserving processing problems. Host
+links open separately. Package counts describe acquired installed-package input
+records, not findings or evidence that all packages were assessed.
+
+*Last modified: 2026-11-16 17:27:47*

@@ -24,7 +24,9 @@ all other requested properties succeeded.
 - On Web **Hosts → host summary**, the **最近盤點結果** panel shows the latest
   saved inventory status and a **查看結果與未完成原因** link.
 - On Web **活動與紀錄**, open a Recipe batch and choose a host under
-  **主機結果與未完成項目**. The diagnosis page lists job, incomplete properties,
+  **主機結果與未完成項目的數量**. Web plate timestamps open the original execution
+  page with its shared river, task results and incomplete-stage summaries.
+  CLI-only observations retain their summary/diagnosis entrypoints. The diagnosis page lists job, incomplete properties,
   reasons and source times, followed by bounded command/error evidence.
 - Direct CLI inspection is read-only:
 
@@ -76,4 +78,4 @@ inventory complete. Public tests use synthetic platform output and saved evidenc
 Offline diagnosis/recovery of real saved observations is not a new SSH execution
 or verification of current host condition.
 
-*Last modified: 2026-11-06 13:44:50*
+*Last modified: 2026-11-16 16:06:41*

@@ -731,11 +731,25 @@ consumers; viewing never authorizes collection or consumer redispatch.
 The [current menu layout](web-recipe-menu.md#current-category-first-selection-preview-2026-11-10)
 now presents domain scope summaries, separate Bundle/User selections, suggested
 sets, individual/group/All host selection and a two-column plate. Main-page search/history/report-index controls stay hidden; the plate now has
-scope selection and explicit review/confirmation. Saved run/report URLs and
+scope selection and explicit review/confirmation. **Reset · 清空餐盤** clears hosts,
+recipes, meals and field scopes in the current Profile’s tab-local draft, including
+restored choices; saved meals/defaults and other Profiles remain unchanged. Saved run/report URLs and
 existing authenticated APIs remain implemented. GET recipe-menu now returns safe
 resolved groups and omits host login names. Selection is browser-only and grants
 no authority to run; group/All resolves enabled hosts and deduplicates overlap.
 
+
+Activity log timestamps with a saved `web_run_id` link directly to their original
+execution page; summary titles open the exact Recipe page in a new tab. Activity
+lists request 25 entries per page (Previous/Next); result scans are deferred until
+a result disclosure opens. Treat `results_loaded: false` as deferred, not empty.
+Expanded incomplete tasks request the existing logs API with `item_id` plus
+`host_id`; summaries stay inside that host’s task. The list has no
+separate Status column. The river scrolls with the execution page, whose navigation
+returns to Activity and logs or the Recipes menu. The list keeps host totals and a closed host-results/count
+disclosure; bounded incomplete-stage summaries belong on the execution page.
+CLI-only observations retain their diagnosis view. Reuse the workspace logs
+API and saved run links; viewing either never reconnects or reruns.
 
 ## Recipe pages, defaults and reusable meals
 
@@ -851,4 +865,14 @@ and HTTP separately; never infer ownership, health or controller authority from 
 PID or automatically kill/reinitialize. SIGKILL can leave a stale marker for
 human-authorized agent recovery. This does not add a daemon installer or scheduler.
 
-*Last modified: 2026-11-16 14:50:01*
+The execution page omits its unfinished-task jump list. Host links open a new
+tab. A single card outcome replaces duplicate completion/partial labels, while
+only problematic result-processing receipts appear in the body. Package counts
+identify installed-package input records, not findings or assessed-package totals.
+Execution task details use plain-language, deduplicated failure explanations
+rather than batch totals or raw JSON. Async detail reads update only that card's
+body to preserve its summary and scroll position. Original saved evidence and
+report artifacts remain unchanged; real diagnosis gaps and read errors stay
+visible. See the [execution page contract](web-recipe-menu.md#execution-page-and-return-navigation).
+
+*Last modified: 2026-11-16 17:27:47*
