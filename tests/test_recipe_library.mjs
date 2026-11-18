@@ -25,7 +25,7 @@ test('meal cards and creation preserve nested references without host or edit co
  const child={id:'child',title:'Inner',description:'',recipes:[item.reference],meals:[]};
  const saved={id:'a',title:'<Meal>',description:'Scope',recipes:[],meals:['child'],selections:{}};
  const catalog={...data,sets:[],user_sets:[child,saved]};
- const html=renderSet(saved,catalog,true,e,'main');assert.match(html,/<details/);assert.doesNotMatch(html,/data-edit-set=/);assert.match(html,/data-delete-set=/);assert.match(html,/Inner/);assert.match(html,/&lt;Meal&gt;/);
+ const html=renderSet(saved,catalog,true,e,'main');assert.match(html,/<details/);assert.doesNotMatch(html,/data-edit-set=/);assert.doesNotMatch(html,/data-delete-set=/);assert.match(html,/meal=a/);assert.match(html,/Inner/);assert.match(html,/&lt;Meal&gt;/);
  const editor=renderSetEditor(catalog,{...saved,recipes:[':gone',item.reference]},e);assert.match(editor,/:gone/);assert.match(editor,/請移除後儲存/);assert.doesNotMatch(editor,/data-set-host/);assert.match(editor,/data-set-meal/);
  assert.match(renderSetDelete(child,e,catalog),/將同時從以下套餐移除引用：&lt;Meal&gt;/);
  assert.match(renderSet({...saved,meals:[]},catalog,true,e,'main'),/空套餐/);
@@ -69,4 +69,14 @@ test('exact matching field options live with the field and are not repeated amon
 test('array-item paths stay inside their array field rather than becoming another root',()=>{
  const tree=fieldTree([{id:'users',type:'array'},{id:'users[].name',type:'string'}]);
  assert.equal(tree.length,1);assert.equal(tree[0].name,'users');assert.equal(tree[0].field.type,'array');assert.equal(tree[0].children.get('name').id,'users[].name');
+});
+
+test('agent-only recipes remain reviewable but cannot be picked or restored to a Web plate',()=>{
+ const agent={...item,launch:{mode:'agent',prompt:'Please arrange browser support.'}};
+ const html=renderRecipeChoice(agent,e,'main');
+ assert.match(html,/data-dish="[^"]+" disabled/);assert.match(html,/專頁複製 agent prompt/);assert.match(html,/href="\/recipes/);
+ const applied=applyUserSet({...data,items:[agent]},{recipes:[agent.reference],hosts:[],meals:[]});
+ assert.equal(applied.recipes.size,0);
+ const meal={id:'agent-meal',title:'Agent meal',description:'',recipes:[agent.reference],meals:[]};
+ assert.match(renderSet(meal,{...data,items:[agent]},true,e,'main'),/data-set="agent-meal" disabled/);
 });

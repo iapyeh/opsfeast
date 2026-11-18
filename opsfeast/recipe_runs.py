@@ -77,6 +77,9 @@ def prepare_pair(root, reference, host, variables, inputs, selection=None):
     item = choose(root, reference)
     if item['reference'] != reference or not item['runnable']:
         raise RecipeRunError('exact_runnable_reference_required')
+    from .recipe_launch import describe as launch
+    if launch(item.get('descriptor') or {})['mode'] == 'agent':
+        raise RecipeRunError('agent_launch_required_open_recipe_prompt')
     if item['kind'] == 'operation':
         if inputs or host is None:
             raise RecipeRunError('operation_requires_host_without_report_inputs')

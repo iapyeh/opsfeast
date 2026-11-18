@@ -226,49 +226,83 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     if intent is not None:
         report['operation_intent_id'] = intent['record_id']
     stage = 'connection'
+    river = None
     try:
-        progress('preparing recipe connection')
-        with connected(config, host, session_class, timeout, report) as session:
+        if metadata['runner']['contract'] == recipe_contract.WORKFLOW_CONTRACT:
+            report['evidence_kind'] = 'not-executed'
+            if (metadata.get('launch') or {}).get('river', False):
+                stage = 'river_creation'
+                from opsfeast.workflow_river import create as create_river
+                river = create_river(REPOSITORY_ROOT, config, host_id=host,
+                    title=metadata.get('title') or metadata['id'], reference=info['reference'],
+                    run_id=report['source_observation_id'])
+                report['river'] = {'session_id': river.session_id, 'reader_url': river.reader_url,
+                                   'history_url': river.history_url}
+                progress('river ' + river.reader_url)
             stage = 'implementation_loading'
+            report['evidence_kind'] = 'not-executed'
             with _implementation_lock:
                 selected = runpy.run_path(str(entry))
             if selected.get('VERSION') != metadata['version'] or not callable(selected.get('execute')):
                 raise ConfigError('recipe runtime VERSION or execute does not match contract')
-            stage = 'execution'
-            progress('executing recipe ' + json.dumps(metadata['id'], ensure_ascii=True))
-            context = RecipeContext(host, info['effective_vars'])
-            if metadata['runner']['contract'] == recipe_contract.CORE_CONTRACT:
-                from opsfeast import Instance, Profile, Recipe
-                instance = Instance.open(REPOSITORY_ROOT)
-                profile = Profile._from_config(instance, config)
-                execution = Recipe._create(profile, config, host, session, timeout, report,
-                                           vars=info['effective_vars'], owner='runner')
-                report['instance'] = dict(execution._state.identity)
-                report['profile'] = profile.name
-                report['run_id'] = execution.run_id
-                try:
-                    stage = 'execution_identity'
-                    with execution.execution(info['execution']) as actor_recipe:
-                        stage = 'execution'
-                        result = selected['execute'](actor_recipe)
-                finally:
-                    execution._state.active = False
-                    execution._active = False
-            else:
-                result = selected['execute'](session, context=context, timeout=timeout)
-            stage = 'result_validation'
-            validated=recipe_contract.validate_result(result)
-            if validated.get('reports'):
-                from recipe_reports import show_result
-                for linked in validated['reports']:
-                    saved=show_result(config.root,linked['result_id'],kind='report')
-                    if saved['status']!=linked['status']:raise ConfigError('linked report status mismatch')
-            report.update(validated)
+            from opsfeast.workflow import WorkflowContext
+            context = WorkflowContext(root=config.root, host_id=host, reference=info['reference'],
+                variables=info['effective_vars'], run_id=report['source_observation_id'],
+                code_directory=code_directory,
+                connector=lambda: connected(config, host, session_class, timeout, report), progress=progress, river=river,
+                identity=lambda: report.get('login_identity', {'source': 'local_session'}))
+            stage = 'workflow_execution'
+            try:
+                result = selected['execute'](context=context, timeout=timeout)
+            finally:
+                context.close_scope()
+            if report.get('connected'):
+                report['evidence_kind'] = 'mock' if runtime is None else ('local' if config.hosts[host]['connection'].get('local') else 'ssh')
+        else:
+            progress('preparing recipe connection')
+            with connected(config, host, session_class, timeout, report) as session:
+                stage = 'implementation_loading'
+                with _implementation_lock:
+                    selected = runpy.run_path(str(entry))
+                if selected.get('VERSION') != metadata['version'] or not callable(selected.get('execute')):
+                    raise ConfigError('recipe runtime VERSION or execute does not match contract')
+                stage = 'execution'
+                progress('executing recipe ' + json.dumps(metadata['id'], ensure_ascii=True))
+                context = RecipeContext(host, info['effective_vars'])
+                if metadata['runner']['contract'] == recipe_contract.CORE_CONTRACT:
+                    from opsfeast import Instance, Profile, Recipe
+                    instance = Instance.open(REPOSITORY_ROOT)
+                    profile = Profile._from_config(instance, config)
+                    execution = Recipe._create(profile, config, host, session, timeout, report,
+                                               vars=info['effective_vars'], owner='runner')
+                    report['instance'] = dict(execution._state.identity)
+                    report['profile'] = profile.name
+                    report['run_id'] = execution.run_id
+                    try:
+                        stage = 'execution_identity'
+                        with execution.execution(info['execution']) as actor_recipe:
+                            stage = 'execution'
+                            result = selected['execute'](actor_recipe)
+                    finally:
+                        execution._state.active = False
+                        execution._active = False
+                else:
+                    result = selected['execute'](session, context=context, timeout=timeout)
+        stage = 'result_validation'
+        validated=recipe_contract.validate_result(result)
+        if validated.get('reports'):
+            from recipe_reports import show_result
+            for linked in validated['reports']:
+                saved=show_result(config.root,linked['result_id'],kind='report')
+                if saved['status']!=linked['status']:raise ConfigError('linked report status mismatch')
+        report.update(validated)
     except (Exception, SystemExit) as exc:
         report.update(status='failed', reason_code='invalid_result' if stage == 'result_validation' else 'execution_failed',
                       message='Recipe result is invalid.' if stage == 'result_validation' else 'Recipe execution failed.')
         # Custom exception text may contain input values; preserve type/stage only.
         report['execution_errors'].append({'stage': stage, 'type': type(exc).__name__})
+    if metadata['runner']['contract'] == recipe_contract.WORKFLOW_CONTRACT and report.get('connected'):
+        report['evidence_kind'] = 'mock' if runtime is None else ('local' if config.hosts[host]['connection'].get('local') else 'ssh')
     if report.get('execution_identity_error'):
         report.update(status='failed', reason_code=report['execution_identity_error'], message='Requested execution identity could not be verified.')
     if report.get('scope_error'):
@@ -298,6 +332,14 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     finally:
         live_collection.reset(live_token)
     finalize_content(config.root, report)
+    if river is not None:
+        try:
+            river.complete(report, path)
+        except Exception as error:
+            report['river_recording'] = {'status': 'failed', 'error_type': type(error).__name__}
+            report['execution_status'] = report['status']
+            report.update(status='failed', reason_code='river_recording_failed',
+                          message='Execution ended but river recording failed; do not automatically repeat.')
     save_receipt(path, report)
     return report, path
 
@@ -497,7 +539,7 @@ def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, invent
     summaries = []
     from console_output import execution_identities, replication_health
     for host, (report, path) in zip(hosts, results):
-        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity','children','meal_run_id','connection_evidence','reports') if key in report}
+        summary = {key: report[key] for key in ('status', 'reason_code', 'message', 'data', 'retention', 'content_update', 'reference_ips_update', 'access', 'actor', 'assessment', 'execution_identity','children','meal_run_id','connection_evidence','reports','river','river_recording') if key in report}
         if 'summary' in report:
             summary['data']=report['summary'];summary['data_is_summary']=True
         if isinstance(report.get('error'), dict) and 'environment' in report['error']:

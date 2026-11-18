@@ -3,6 +3,13 @@ name: opsfeast-recipes
 description: Help OpsFeast users discover, run, author and share operation/report recipes, and review third-party candidates before authorized installation. Use for turning interactive discovery into repeatable recipe/config/retention/consumer workflows, recipe discovery, existing tool/module reuse, tool selection, platform implementation authoring and authorized inventory/Python-session execution; prefer SSHScript when suitable while supporting other tools.
 ---
 
+For unified Recipe package/flow-plan design and cross-agent handoff, use the
+[flow-plan skill](../opsfeast-recipe-flows/SKILL.md) and
+[architecture specification](../../docs/recipe-flow-design.md). A Python-style
+flow is a normative plan, not executable Python. Fixed utility routines and
+closed contracts carry deterministic rules. This is design-only guidance;
+continue using the existing contracts below for supported recipe execution.
+
 For normal first-use setup, follow [include and launch the Web workspace](../../docs/getting-started.md#include-and-launch-the-web-workspace). Include Web dependencies, persistent installation data, available/saved loopback port, startup, HTTP checks and long-lived process ownership in the concrete plan. Once that plan is approved, start Web with the selected interpreter, verify the actual ready URL, give the human a clickable address and keep the service running after the reply. Preserve existing identity/admin/Profile data; do not assume a fixed port or run host operations. Clone-only scope remains read-only setup planning; an explicit CLI-only/no-Web choice takes precedence. Missing process persistence is a blocker to explain, not permission to omit Web silently. Before handing off an installation without an administrator, require `/api/v1/setup` to report `agent_control_available: true`; HTTP 200 alone is insufficient. Immediately issue a private first-account Web link using the retained controller `admin.setup-form` and the approved first-use scope; do not ask for credentials in chat or wait for a copied prompt. The human fills credentials only in Web; check `/api/v1/setup` for completion without retrieving secrets. Link issue is not account completion. Preserve existing accounts; expired links require reissue, not reset. Follow the canonical private first-account form workflow in the administrator guide. If browser-only startup blocked onboarding, follow the copyable recovery instruction in the original chat, preserving data/port and reconciling active work before a restart.
 
 For login-to-river handoff, use [browser readiness 0.1.0](../../docs/browser-events.md): open the exact river so login retains its scoped next URL, then continue already-authorized work without waiting for a "logged in" reply. The reader reports `reader.opened` and the owner controller pushes `browser_event` on its existing stdout; this is readiness evidence, never approval or automatic model wakeup. Separate installations use namespaced authentication/editing cookies.
@@ -164,6 +171,21 @@ for authorized edits, validation and precedence. Attachment registers an existin
 management root and is separate from per-Profile child settings.
 
 # OpsFeast recipes
+
+For readable Recipe review, use [purpose/metadata/composition and execution-gap views](../../docs/recipe-definition-authoring.md#human-readable-purpose-metadata-and-composition). Give embedded resources meaningful `resource_titles`; reuse `recipe_authoring.inspect()` components and execution_blockers instead of interpreting filenames as completion or proof of execution. Name the actual missing entrypoint/contract/output requirements, keep change notes separate from purpose, and distinguish optional content, declarations, existing files and verified execution readiness. Present collection purpose, usable options, readable readiness and outcomes before machine-oriented protocols/routines/raw evidence; keep technical details in the lower section and preserve unsaved user controls during content polling.
+
+
+Use [unified Recipe definition authoring](../../docs/recipe-definition-authoring.md): every recipe uses descriptor 0.3.0 and the same detail/content interface, with blank fields allowed. Reuse `opsfeast.recipe_authoring.new_definition/inspect/save` and its always-JSON module CLI; save milestones with the descriptor digest. No separate draft lifecycle/page, promotion or automatic placeholder exists. A valid real entrypoint and its existing runner contract enable execution actions. Preserve private bindings; authoring never authorizes execution.
+
+
+Use the [simple Recipes/meal index and dedicated pages](../../docs/web-recipe-menu.md#recipes-review-and-execution-plate): `/recipes` only lists entries and necessary global actions. Recipe operations belong at `?recipe=REF`; meal CRUD at `?meal=ID` or `?meal=new`. Reuse `opsfeast.menu_preferences.mutate(..., action="set.update", changes={id,title,description,recipes,meals,selections})` with the current preferences revision; the authenticated preferences POST exposes the same action. Bundle meals remain read-only. Stable-ID edits affect future expansion and invalidate old previews without altering saved executions. Status labels describe static readiness, never enabled flags or execution authority.
+
+
+Use [separate review and execution entrances](../../docs/web-recipe-menu.md#recipes-review-and-execution-plate): `/recipes` lists/reviews all recipes, including incomplete definitions; `/recipe-plate` composes and runs a reviewed selection. Exact recipe links keep `?recipe=`, while execution/report links use the plate path. Adding via `?add=EXACT_REFERENCE` preserves existing selections and never grants execution authority. Do not direct a recipe-creation review to the host/execution picker.
+
+
+For conversational creation, use [Recipe definition authoring 0.1.0](../../docs/recipe-definition-authoring.md). Save an ordinary minimal Profile definition immediately, give its stable Web detail URL, and persist each agreed milestone with revision checking. Recipe previews update automatically; they never authorize or enable execution.
+
 
 For [single-administrator and profile settings](../../docs/web-administrator.md),
 use `/settings/site` (站台設定), `/settings/profiles` and their documented APIs.
@@ -747,7 +769,7 @@ provider extension and verification; do not dump full source files as a workarou
 ## Web menu and execution 0.1.0
 
 Read the [complete menu contract](../../docs/web-recipe-menu.md) for human use,
-HTTP invocation, supported versions, limits and extension points. The `/recipes`
+HTTP invocation, supported versions, limits and extension points. The `/recipe-plate`
 menu explains purposes/limits and the Bundle's static/dynamic blueprint, supports
 individual or suggested selections, typed inputs, exact host review, explicit
 confirmation, runner progress, stop and saved receipts. Catalog/preview do not
@@ -797,7 +819,7 @@ include a visibly disabled host. Cross-domain recipe duplicates stay synchronize
 
 ## Recipe-specific pages and saved meals
 
-Use [recipe pages/defaults/menu preferences](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) for declared fields, saved records, typed Profile defaults, user/external category assignments and reusable nested meals (create/delete). Defaults use the existing hosts.yaml precedence; categories/meals use Profile-local recipe-menu.json 0.2.0. Read exact references and revisions before authorized writes; meals store recipe/meal references and field scopes. Hosts and threads belong to a particular execution. Saving does not grant execution authority.
+Use [recipe pages/defaults/menu preferences](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals) for declared fields, saved records, typed Profile defaults, user/external category assignments and reusable nested meals (create/update/delete). Defaults use the existing hosts.yaml precedence; categories/meals use Profile-local recipe-menu.json 0.2.0. Read exact references and revisions before authorized writes; meals store recipe/meal references and field scopes. Hosts and threads belong to a particular execution. Saving does not grant execution authority.
 
 
 ## Field navigation and inventory split
@@ -826,7 +848,7 @@ need the human's corresponding scope.
 
 ## Nested Web meal selections
 
-Use [the menu contract](../../docs/web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/deletion are supported, editing is deferred. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
+Use [the menu contract](../../docs/web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/update/deletion are supported on dedicated meal pages; updates retain IDs and parent references. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
 
 
 Use [execution throttle](../../docs/web-recipe-menu.md#execution-throttle-and-defaults-010): no fixed host/invocation count cap; default 8 parallel host lanes, sequential within each host. Installation settings and per-run threads are separate.
@@ -843,7 +865,7 @@ links have not been read; expand the disclosure to read them. Incomplete task
 summaries/diagnosis load on expansion only, with `item_id` and `host_id` filtering,
 and appear inside that host’s task. Reuse these reads instead of scanning all raw
 results or preloading every host’s details. The list omits the separate Status column. The river
-scrolls with the page; navigation returns to Activity and logs or the Recipes menu.
+scrolls with the page; navigation returns to Activity and logs or the execution plate.
 Host completion
 totals and a closed result-count disclosure stay in the list; stage/receipt
 summaries for incomplete tasks appear with the river and task results. CLI-only
@@ -921,4 +943,55 @@ problematic processing receipts. Installed-package counts describe inventory
 records used as assessment input, not vulnerability findings or proof of full
 assessment. Existing saved evidence and report artifacts are unchanged.
 
-*Last modified: 2026-11-16 17:27:47*
+## Executable browser-first workflows
+
+Read [Python workflows 0.1.0](../../docs/python-workflows.md) and the
+[flow skill](../opsfeast-recipe-flows/SKILL.md) before authoring or running
+`python-workflow` recipes. Reuse `WorkflowContext.connect()` for delayed selected
+host login, `browser_steps` acquire/list/show/respond for request-bound rendered
+DOM, `bot_usd` fixed parser/selector, `OperationGuard` and
+`browser_command_workflow.run` for bounded, non-retrying dispatch. Do not rewrite
+these routines per execution. Check installed contract/dependency fingerprints,
+provider availability, exact Profile/host/month and authorization first. A general
+browser is supplied by the active agent, not by Web; missing results time out
+before SSH. Follow the linked full response schema, stop conditions, business
+outcome limits and private export exclusions. No virtual-flow interpreter or
+unattended provider is implied.
+
+## Agent conversation launch
+
+For a recipe requiring an active agent, author `launch.mode: agent` and a readable
+`launch.prompt` following [launch 0.1.0](../../docs/python-workflows.md#agent-conversation-as-the-launch-surface).
+Reuse `opsfeast.recipe_launch.describe`, catalog/content `launch` and
+`web_runnable`. Web shows a copyable prompt and rejects direct/meal launch;
+`runnable` still denotes static code readiness. Read the exact definition, tools,
+targets and effects when the user pastes it. Reuse applicable grants, otherwise
+obtain the missing scope before commands/mail. Arrange browser support before
+starting exactly one CLI invocation and fulfill its matching browser request;
+never launch a second copy to answer it. Copying/displaying the prompt does not
+notify an agent, execute anything or constitute approval. Use private bindings
+only in private prompts; inspect them separately during export/import.
+
+## Stop the conversation task with the workflow
+
+A terminal workflow stop ends the current conversation task after reporting its
+cause/state and required owned-resource cleanup. Do not continue optional evidence
+gathering, troubleshooting, repairs, retries or alternative routes without a new
+human instruction. An explicitly requested later parser repair or saved-data test
+is maintenance scope, not permission to resume the original operation. See the
+[flow skill](../opsfeast-recipe-flows/SKILL.md#fixed-parser-updates-and-terminal-stops)
+and [fixed parser 0.1.1](../../docs/python-workflows.md#bot-hidden-header-normalization-parser-011).
+
+## Visible workflow command execution
+
+Use [workflow rivers 0.1.0](../../docs/workflow-rivers.md) and `launch.river: true`
+for reviewed `python-workflow` recipes that should expose their process. The
+runner owns `context.river`; reuse the shared browser-command service or its
+`execute(session, argv, timeout=...)`. Use `--verbose --json`, show/open the early
+reader URL before a browser response can trigger host dispatch, and return the
+same history URL/result after completion. Existing Profile/Web/data-root checks
+fail before commands when unavailable. No extra SSH session, command retry,
+automatic agent wakeup or persistent interactive shell is implied. Read the
+canonical stream/storage/error/output-privacy limits before authoring.
+
+*Last modified: 2026-11-17 23:17:21*

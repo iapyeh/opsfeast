@@ -1,5 +1,13 @@
 # Find, run and reuse recipes and reports
 
+[Recipe definition authoring 0.1.0](recipe-definition-authoring.md) use ordinary descriptors with stable, automatically refreshed Web detail pages during conversational authoring. Empty execution declarations remain non-runnable; the same service also updates executable definitions. Existing execution and packaging contracts remain authoritative.
+
+
+The proposed [Recipe flow package and handoff design](recipe-flow-design.md)
+requires complete plans, routine/dependency closure and cross-agent conformance.
+It is not supported by current pack/unpack/transfer commands; use the existing
+contracts here for runnable recipes. No current importer executes a virtual plan.
+
 Inventory recipe 0.4.0 additionally supplies [internal collection jobs and a minute dispatcher](inventory-jobs.md). These are separate from the saved recipe invocation jobs in this guide. `inventory query` can run without records or save explicit comparison samples; scheduled inventory hosts are opt-in, failures wait until the normal interval, and no AI is called for routine ticks. A general multi-recipe scheduler remains unimplemented.
 
 
@@ -228,4 +236,4 @@ missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
 retention and linked report receipts. No host execution or remediation follows
 from source inspection, download or offline reporting.
 
-*Last modified: 2026-11-13 23:25:46*
+*Last modified: 2026-11-17 15:22:27*

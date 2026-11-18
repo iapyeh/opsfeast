@@ -26,7 +26,7 @@ test('run evidence preserves partial receipts interruptions unknown cleanup and 
  assert.match(html,/有未完成項目/);assert.match(html,/保存：失敗/);assert.match(html,/後續呈現／通知：失敗/);assert.doesNotMatch(html,/詳細回執與來源證據/);assert.match(html,/遠端清理未知/);assert.match(html,/target="_blank" rel="noopener" href="\/hosts\?profile=main&amp;host=node/);assert.doesNotMatch(html,/<script>/);assert.doesNotMatch(html,/id="recipe-stop"/);
 });
 test('login retains the exact recipe selection or saved run without open redirects',()=>{
- assert.equal(loginDestination('?next='+encodeURIComponent('/recipes?profile=main&run=id')),'/recipes?profile=main&run=id');
+ assert.equal(loginDestination('?next='+encodeURIComponent('/recipe-plate?profile=main&run=id')),'/recipe-plate?profile=main&run=id');
  for(const next of ['//evil/recipes','/recipes?command=bad','/recipes?profile=a&profile=b','/recipes#bad'])assert.equal(loginDestination('?next='+encodeURIComponent(next)),'/workspace');
 });
 test('mount uses only default Profile and discovery never sends a mutation',async()=>{
@@ -36,7 +36,7 @@ test('mount uses only default Profile and discovery never sends a mutation',asyn
   calls.push([path,options]);return {ok:true,json:async()=>path.includes('recipe-menu')?{items:[],sets:[],sources:[],hosts:[],status:'success',blueprint:{capabilities:[],domains:[]}}:{items:[]}};
  }});
  assert.match(calls[0][0],/recipe-menu\?profile=main/);assert.equal(calls.length,1);assert.ok(calls.every(([,o])=>!o.method));
- assert.match(root.innerHTML,/挑選這次需要的菜色/);assert.match(root.querySelector('#recipe-plate-content').innerHTML,/尚未挑選 Recipes/);
+ assert.match(root.innerHTML,/執行餐盤/);assert.match(root.querySelector('#recipe-plate-content').innerHTML,/尚未挑選 Recipes/);
 });
 
 test('inventory picker defaults exclude sensors; job and individual property selections are explicit',()=>{

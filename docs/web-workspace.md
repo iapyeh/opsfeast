@@ -1,5 +1,8 @@
 # Saved-data Web workspace 0.1.0
 
+The `/recipes` entrance is now a simple combined Recipe/meal table. Open names for all per-item actions; create meals through `?meal=new` and manage them through `?meal=ID`. Static labels **可執行 / 不可執行** are distinct from enabled flags. See [meal management and state semantics](web-recipe-menu.md#recipes-review-and-execution-plate).
+
+
 The local website displays existing data rather than synthetic management records.
 Open the launcher's returned URL, sign in and choose a Profile on a data page.
 Changing the page's selection does not change the installation's default Profile.
@@ -12,10 +15,12 @@ interfaces with their existing authorization rules.
   blocked todos from the selected Profile. Counts are configuration and saved
   service evidence, not online status. The newest five of each service are shown;
   use **查看全部** to read the service list.
-- `/recipes`: the operational menu (see [execution](web-recipe-menu.md)), using the shared catalog with Profile/external recipes before
-  bundled recipes. Search, source status, versions, metadata and inspection errors
-  are available. `?recipe=ENCODED_REFERENCE` selects one exact recipe. Inspection
-  does not import recipe entrypoints, verify target applicability or grant execution.
+- `/recipes`: the [Recipe discovery/review list](web-recipe-menu.md#recipes-review-and-execution-plate), including incomplete definitions. Search/filter by source, status and category; open
+  `?recipe=ENCODED_REFERENCE` for the exact review page. Execution actions require a validated entrypoint.
+- `/recipe-plate`: target/recipe/meal selection, parameters and confirmed execution.
+  `?add=REFERENCE` adds once to the restored plate; `?run=UUID`, `?history=1` and
+  `?report=RESULT_ID` open saved execution/report views. Viewing or adding never
+  executes. Old execution/report bookmarks under `/recipes` must use this path.
 - `/retention` and `/recipes/data`: saved retention index with original observation
   times, host, recipe, kind and status. These are summaries; use Core/CLI for full
   retained data and explicit export. No automatic recollection or rebuild occurs.
@@ -223,4 +228,4 @@ overall status and successful receipts while preserving processing problems. Hos
 links open separately. Package counts describe acquired installed-package input
 records, not findings or evidence that all packages were assessed.
 
-*Last modified: 2026-11-16 17:27:47*
+*Last modified: 2026-11-17 15:22:27*

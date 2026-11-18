@@ -1,12 +1,18 @@
 # Execute and author Python-session recipes
 
+For the proposed unified Recipe architecture and Python-style specification plans,
+read [Recipe flow design](recipe-flow-design.md). Virtual plans remain review
+artifacts; [Python workflows](python-workflows.md) separately implements reviewed
+Python with delayed connection and an active-agent browser handoff. No virtual-plan
+interpreter or automatic provider broker is shipped.
+
 New raw adds source_observation_id and execution_access_mode; general results also capture retention_snapshot before connection/code execution. These are additive [replay context fields](../schemas/raw-retention-context.schema.json). [Offline replay](retention-replay.md) uses the original snapshot by default, preserving execution classification independently of an author override.
 
 ## Retention and operation journals
 
 [Namespace-enabled profiles](retention.md) add opt-in typed host-values 0.2.0 retention with dataset/field descriptions and explicit units to general recipes. Write/unknown general recipes persist intent before connections/code and append outcome after cleanup. Missing access_mode means unknown; read skips the operation journal. Retention/audit failure yields explicit failure; content update has a separate receipt and never changes recipe status, and no automatic raw cleanup occurs. Profiles without namespace retain the legacy raw-only general-recipe behavior described below.
 
-Use `tools/opsfeast.py recipes run` to execute one explicitly selected recipe on explicitly selected hosts. Inventory uses descriptor 0.3.0 with [python-routines and recipe-meal 0.1.0](recipe-routines.md); general recipes use the Python-session/Core contracts described here. The [recipes list/show/run surface](recipe-experience.md) uses the internal recipe_runner module; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 7.0.1. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
+Use `tools/opsfeast.py recipes run` to execute one explicitly selected recipe on explicitly selected hosts. Inventory uses descriptor 0.3.0 with [python-routines and recipe-meal 0.1.0](recipe-routines.md); general recipes use the Python-session/Core contracts or the linked python-workflow contract. The [recipes list/show/run surface](recipe-experience.md) uses the internal recipe_runner module; offline python-report 0.1.0 uses recipes run without Session/host selection. Both use the selected interpreter, Python 3.11+, PyYAML 6.0.3 and matching SSHScript import/distribution 7.0.1. Review the actual recipe and dependencies before authorized execution; this interface is not a sandbox or approval mechanism.
 
 Start with the [recipes skill](../skills/opsfeast-recipes/SKILL.md), [CLI reference](cli.md#operational-recipe-execution) and [source/input rules](recipe-sources.md). Check the selected Feast and environment with `check` and `check_environment.py`; these checks do not execute recipes or install missing dependencies. Inspect the descriptor and entrypoint statically with `inspect-recipe /absolute/recipe/path --json`. Compatible metadata does not prove target dependencies, safety or successful operation.
 
@@ -200,4 +206,14 @@ Python-recipe runners support inherited `execution: {via: login|su|sudo, user: .
 
 Python operational results may include optional `summary` (finite JSON object, at most 65,536 encoded characters) and `reports` (up to 32 objects with exactly `result_id` and `status`). A report ID must match `reports/32-lowercase-hex/result.json`; the runner verifies it resolves to a saved report in the same Profile and has the declared status. These are references to outputs, not arbitrary files or input execution directives. The saved raw/retained `data` stays complete; CLI output explicitly uses `summary` as `data` and sets `data_is_summary: true` when supplied. Web task receipts retain `reports` and offer artifact links. Offline python-report output fields remain unchanged. The [package-security workflow](package-security-meal.md) is the bundled example.
 
-*Last modified: 2026-11-13 17:25:52*
+## Delayed connection workflows
+
+Reviewed browser/routine/command recipes may use `python-workflow` 0.1.0 and
+`execute(*, context, timeout)`. No host connection opens before explicit
+`context.connect()`. Read [Python workflows](python-workflows.md) for the context,
+login-only policy, bounded browser handoff, operation guard, availability and
+failure/result contracts. This is reviewed Python, not an interpreter for virtual
+plans. An active browser-capable agent is required for browser steps; Web does not
+automatically supply or wake one. Execution remains separately authorized.
+
+*Last modified: 2026-11-17 17:26:05*

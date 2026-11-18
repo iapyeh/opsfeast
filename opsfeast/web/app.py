@@ -15,7 +15,7 @@ from opsfeast import site, admin
 from .security import Sessions, LIFETIME, EditingSessions, EDIT_LIFETIME, AgentCapability, cookie_names, login_destination
 
 WEB_ROOT = REPOSITORY_ROOT / 'web'
-PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/bundle-recipes', '/settings/execution', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
+PAGES = ('/', '/setup', '/login', '/workspace', '/settings', '/settings/hosts', '/settings/recipes', '/settings/bundle-recipes', '/settings/execution', '/settings/parameters', '/settings/retention', '/settings/site', '/settings/profiles', '/operations', '/hosts', '/recipes', '/recipe-plate', '/retention', '/apps', '/learn', '/docs', '/work', '/logs', '/skills', '/recipes/data')
 
 
 def create_app(installation=None, *, data_root=None, agent_token=None, edit_token=None, interactive_options=None, console_options=None) -> FastAPI:
@@ -128,7 +128,7 @@ def create_app(installation=None, *, data_root=None, agent_token=None, edit_toke
     async def landing(request: Request):
         if request.url.path == '/login' and human_authenticated(request):
             return RedirectResponse(login_destination(request.query_params.get('next')), status_code=303)
-        protected = admin.status(root)['configured'] and request.url.path in ('/workspace','/operations','/hosts','/recipes','/retention','/apps','/work','/logs','/skills','/recipes/data')
+        protected = admin.status(root)['configured'] and request.url.path in ('/workspace','/operations','/hosts','/recipes','/recipe-plate','/retention','/apps','/work','/logs','/skills','/recipes/data')
         if protected and not authenticated(request):
             destination=request.url.path+('?' + request.url.query if request.url.query else '')
             return RedirectResponse('/login?next='+quote(destination,safe=''), status_code=303)

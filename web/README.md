@@ -1,5 +1,8 @@
 # OpsFeast local Web workspace
 
+Recipes and meals share a simple `/recipes` table; per-item operations live on exact recipe or meal pages. User meal CRUD uses the revision-checked preferences service (`set.create/update/delete`); Bundle definitions are read-only. See [canonical routes and contracts](../docs/web-recipe-menu.md#recipes-review-and-execution-plate).
+
+
 The local website provides administrator login, saved site presentation,
 Profile/host configuration, confirmed recipe execution and saved-data views.
 Read [saved-data workspace 0.1.0](../docs/web-workspace.md) for page behavior,
@@ -12,7 +15,7 @@ tablet support is deferred. For the shared design system, all-page scope and rev
 
 ## Human-centered management workspace
 
-`/workspace`, `/recipes`, `/work`, `/retention` and `/logs` read the selected
+`/workspace`, `/recipes`, `/recipe-plate`, `/work`, `/retention` and `/logs` read the selected
 Profile's existing data. `/skills`, `/learn` and `/docs` expose actual local public
 Markdown sources. `/settings` shows installed versions, explicit official-source checks and a
 [confirmed Agent handoff](../docs/web-updates.md), with
@@ -83,7 +86,8 @@ restart recovery exists. Node.js and a frontend build are not needed.
 | `/workspace` | Saved active notifications/todos and configured host count |
 | `/operations` | Host/Console/history entrypoints; no command playback |
 | `/hosts` | Real host configuration; [CRUD/group/backup contract](../docs/web-hosts.md) |
-| `/recipes` | Purpose-based menu with explicit confirmed execution |
+| `/recipes` | Searchable Recipe list and exact review pages, including definitions without an execution entrypoint |
+| `/recipe-plate` | Execution plate, saved rivers and reports; explicit confirmed execution |
 | `/recipes/data`, `/retention`, `/work`, `/logs` | Actual Profile-scoped read-only data views |
 | `/skills`, `/apps` | Bundled Skill sources; Vault/application guidance |
 | `/learn`, `/docs` | Local public Markdown index/search and inert source readers |
@@ -265,7 +269,7 @@ no report replay, arbitrary file serving, scripts or external preview resources.
 
 ## Category-first recipe layout preview
 
-The [main recipe page](../docs/web-recipe-menu.md#current-category-first-selection-preview-2026-11-10)
+The [execution plate](../docs/web-recipe-menu.md#current-category-first-selection-preview-2026-11-10)
 now groups scope summaries and Bundle/User recipes by domain, then shows sets,
 individual/group/All host picks and a two-column plate. Search/history/report-index controls remain outside the main selection layout. Selection synchronizes exact references/host sets locally; the plate offers field scope and explicit review/confirmation before execution. Saved run/report URLs and APIs
 remain available. Host login accounts are omitted from the menu data/view.
@@ -285,4 +289,4 @@ Recipe links now open separate tabs. Category scopes are directly visible; Bundl
 
 The Recipes plate now offers per-recipe field scopes and explicit review/confirmation. Compatible routine recipes are grouped per host, with conditional login/root permissions visible before start. Progress/stop and independent child result links use the existing owned-worker APIs. User meals additionally save validated nonsecret selectors. Recipe-specific retained pages keep source times and actor/cleanup evidence. See [routines](../docs/recipe-routines.md) and [menu](../docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-11 15:55:36*
+*Last modified: 2026-11-17 15:20:50*

@@ -1,4 +1,4 @@
-import {domains,renderLayout,renderPlate,renderSetEditor,renderCategoryEditor,renderSetDelete,renderScopeEditor,copy as c} from './locales/recipe-menu-zh-TW.mjs';
+import {domains,renderLayout,renderPlate,renderCategoryEditor,renderScopeEditor,copy as c} from './locales/recipe-menu-zh-TW.mjs';
 
 const pathDomains={hardware:'hardware',storage:'storage',software:'software',network:'network',account:'identity',access:'identity',logging:'observability',time:'workloads',process:'workloads',service:'workloads',services:'workloads',database:'workloads',observability:'observability',analysis:'analysis'};
 export function recipeDomains(item) {
@@ -35,7 +35,7 @@ export function selectionMark(names,selected) {
   return {checked:names.length>0&&count===names.length,indeterminate:count>0&&count<names.length};
 }
 export function applyUserSet(data,saved) {
- const knownRecipes=new Set(data.items.filter(i=>i.runnable).map(i=>i.reference)),knownHosts=new Set(data.hosts.map(h=>h.host_id));
+ const knownRecipes=new Set(data.items.filter(i=>i.runnable&&i.launch?.mode!=='agent').map(i=>i.reference)),knownHosts=new Set(data.hosts.map(h=>h.host_id));
  return {recipes:new Set(saved.recipes.filter(ref=>knownRecipes.has(ref))),hosts:new Set((saved.hosts||[]).filter(id=>knownHosts.has(id))),meals:new Set(saved.meals||[])};
 }
 export function readScopeEditors(root,allowed=null) {
@@ -48,7 +48,7 @@ export function readScopeEditors(root,allowed=null) {
   selections[section.dataset.scopeRef]={properties};
  }return selections;
 }
-export function mountMenuLayout(root,{data,profiles,profile,initialRecipe,e,onProfile,api,onExecute,storage=typeof sessionStorage==='undefined'?null:sessionStorage}) {
+export function mountMenuLayout(root,{data,profiles,profile,initialRecipe,initialMeal,e,onProfile,api,onExecute,storage=typeof sessionStorage==='undefined'?null:sessionStorage}) {
  let selectedRecipes=new Set(),selectedHosts=new Set(),selectedMeals=new Set(),scopes={};
  const key='opsfeast-menu-draft-v2:'+ (data.preferences?.scope_id||profile||'bundle');
  try {
@@ -57,7 +57,8 @@ export function mountMenuLayout(root,{data,profiles,profile,initialRecipe,e,onPr
    const restored=applyUserSet(data,draft);selectedRecipes=restored.recipes;selectedHosts=restored.hosts;selectedMeals=restored.meals;scopes=draft.scopes||{};
   }
  }catch{}
- if(initialRecipe&&data.items.some(i=>i.reference===initialRecipe&&i.runnable))selectedRecipes.add(initialRecipe);
+ if(initialRecipe&&data.items.some(i=>i.reference===initialRecipe&&i.runnable&&i.launch?.mode!=='agent'))selectedRecipes.add(initialRecipe);
+ if(initialMeal&&[...(data.sets||[]),...(data.user_sets||[])].some(s=>s.id===initialMeal))selectedMeals.add(initialMeal);
  const refresh=preferences=>{
   selectedMeals=new Set([...selectedMeals].filter(id=>data.sets.some(s=>s.id===id)||preferences.sets.some(s=>s.id===id)));
   data={...data,preferences,custom_categories:preferences.categories,user_sets:preferences.sets,items:data.items.map(i=>{const next={...i};delete next.category_ids;if(Object.hasOwn(preferences.assignments,i.reference))next.category_ids=preferences.assignments[i.reference];return next;})};render();
@@ -92,16 +93,7 @@ export function mountMenuLayout(root,{data,profiles,profile,initialRecipe,e,onPr
    const dialog=root.querySelector('#menu-editor-dialog'),content=root.querySelector('#menu-editor-content');
    const open=html=>{content.innerHTML=html;content.querySelector('[data-editor-cancel]').addEventListener('click',()=>dialog.close());dialog.showModal();};
    const submit=handler=>async event=>{event.preventDefault();const button=event.submitter||event.target;button.disabled=true;try{const preferences=await handler();dialog.close();refresh(preferences);}catch(error){content.querySelector('#menu-editor-error').textContent=error.message;button.disabled=false;}};
-   const editSet=saved=>{
-    open(renderSetEditor(data,saved,e));
-    content.querySelectorAll('[data-set-recipe]').forEach(input=>input.addEventListener('change',()=>{content.querySelectorAll('[data-set-scope]').forEach(section=>{if(section.dataset.setScope===input.value)section.hidden=!input.checked;});}));
-    content.querySelector('#menu-set-form').addEventListener('submit',submit(()=>{
-     const form=content.querySelector('#menu-set-form'),values=new FormData(form);
-     return mutation('set.create',{title:values.get('title').trim(),description:values.get('description'),recipes:[...content.querySelectorAll('[data-set-recipe]:checked')].map(i=>i.value),meals:[...content.querySelectorAll('[data-set-meal]:checked')].map(i=>i.value),selections:Object.fromEntries(Object.entries(readScopeEditors(content,[...content.querySelectorAll('[data-set-recipe]:checked')].map(i=>i.value))).filter(([ref])=>[...content.querySelectorAll('[data-set-recipe]:checked')].some(i=>i.value===ref)))});
-    }));
-   };
-   root.querySelector('#menu-save-plate')?.addEventListener('click',()=>editSet({title:'',description:'',recipes:[...selectedRecipes],meals:[...selectedMeals],selections:scopes}));
-   root.querySelectorAll('[data-delete-set]').forEach(button=>button.addEventListener('click',()=>{const saved=data.user_sets.find(s=>s.id===button.dataset.deleteSet);open(renderSetDelete(saved,e,data));content.querySelector('#menu-delete-confirm').addEventListener('click',submit(()=>mutation('set.delete',{id:saved.id})));}));
+   root.querySelector('#menu-save-plate')?.addEventListener('click',()=>{storage?.setItem('opsfeast-meal-prefill:'+data.preferences.scope_id,JSON.stringify({title:'',description:'',recipes:[...selectedRecipes],meals:[...selectedMeals],selections:scopes}));location.href='/recipes?'+new URLSearchParams({profile,meal:'new'});});
    root.querySelector('#menu-categories')?.addEventListener('click',()=>{
     open(renderCategoryEditor(data.custom_categories||[],e));const form=content.querySelector('#menu-category-form');
     form.elements.namedItem('id').addEventListener('change',()=>{const category=data.custom_categories.find(c=>c.id===form.elements.namedItem('id').value);form.elements.namedItem('title').value=category?.title||'';form.elements.namedItem('description').value=category?.description||'';});

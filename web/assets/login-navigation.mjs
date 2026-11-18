@@ -17,10 +17,10 @@ export function loginDestination(search) {
     if(target.origin==='http://local.invalid'&&target.pathname==='/hosts'&&
        [...target.searchParams.keys()].every(key=>['profile','host','view','new'].includes(key)))return target.pathname+target.search;
   }
-  if(typeof next==='string'&&(next==='/logs'||next.startsWith('/logs?')||next==='/recipes'||next.startsWith('/recipes?'))){
+  if(typeof next==='string'&&(next==='/logs'||next.startsWith('/logs?')||next==='/recipes'||next.startsWith('/recipes?')||next==='/recipe-plate'||next.startsWith('/recipe-plate?'))){
     const target=new URL(next,'http://local.invalid'), keys=[...target.searchParams.keys()];
-    const allowed=target.pathname==='/recipes'?['profile','recipe','run','q','report','artifact']:['profile','entry','result'];
-    if(target.origin==='http://local.invalid'&&['/logs','/recipes'].includes(target.pathname)&&!target.hash&&
+    const allowed=target.pathname==='/recipes'?['profile','recipe','meal','q','source','status','category','kind']:target.pathname==='/recipe-plate'?['profile','add','meal','run','history','report','artifact']:['profile','entry','result'];
+    if(target.origin==='http://local.invalid'&&['/logs','/recipes','/recipe-plate'].includes(target.pathname)&&!target.hash&&
        keys.every(key=>allowed.includes(key))&&new Set(keys).size===keys.length)return target.pathname+target.search;
   }
   return '/workspace';

@@ -51,6 +51,49 @@ Preserve the owner's installation name and images in prominent positions, with
 OpsFeast attribution in the footer. Presentation changes never alter installation
 identity, private Profile bindings, permissions or saved observations.
 
+## Compact desktop controls
+
+Desktop fields use the shared `--ui-control-height` (38px minimum); ordinary
+buttons use `--ui-button-height` (36px minimum). Reduce vertical padding rather
+than fixing every control's height: wrapped button text and multiline textareas
+must still grow. Host controls use the same compact sizing; decorative plus signs
+use a single line so their inherited line box does not inflate the button.
+Navigation links and terminal layouts retain their own sizing.
+
+Inline label/control groups use an 8px gap and 4px horizontal insets. Existing
+classed grid/stacked labels keep their layout through low-specificity defaults.
+The execution plate content has 16px block margins, separating the grey selected
+host/recipe panels from both the header action buttons and the execution-review
+button below. Keep this structural spacing independent of compact button height.
+
+Action rows use centered cross-axis alignment with 8px vertical / 12px horizontal
+gaps, preventing tall labels from stretching neighboring buttons. Standalone
+sibling buttons also have an 8px inline-start margin. Do not add margins to every
+100%-width input: that can overflow its container. Keep full-width fields within
+their parent and provide spacing through labels, wrappers and action-row gaps.
+
+Browser verification on a separate synthetic installation measured Recipes
+search/select controls at 38px and buttons at 36px; host filters and the add button
+measured 38px. Recipe/meal forms retained an 8px label gap and multiline textarea
+height. Recipes and host views had no document-level horizontal overflow at the
+reviewed desktop viewport. This does not establish mobile/tablet or every page's
+layout. The previous 44px minimum plus 10px vertical padding originated in local
+CSS; consulting UI UX Pro Max did not install or render third-party components.
+
+## Recipe information boundaries
+
+Keep business title/description in their own header. Show the collection purpose,
+operator-editable options, readable execution conditions and recent outcomes/reports
+before technical content. Move raw data/contracts, routines, protocol field codes
+and the definition/composition overview into the lower **Technical details and
+composition** area. Place reference, ID, version,
+static state and update/change metadata in a separate card; the latest change note
+is a closed disclosure. Execution conditions explain why a recipe cannot run.
+The composition overview shows missing and optional components before the grouped
+content previews. Semantic role names and resource titles are primary; filenames
+are secondary source information. Distinguish provided text, existing files and
+declared settings from passed execution checks. Read [the shared content contract](recipe-definition-authoring.md#human-readable-purpose-metadata-and-composition).
+
 ## Interaction and account editing
 
 Native fields have visible labels, usable boundaries, keyboard focus and retained
@@ -146,4 +189,4 @@ synthetic tests. The exact-plan page was inspected without creating or executing
 work. Live command execution and mobile/tablet verification were outside scope.
 The existing Web service was restored on its saved endpoint and returned HTTP 200.
 
-*Last modified: 2026-11-08 23:15:47*
+*Last modified: 2026-11-17 16:21:06*

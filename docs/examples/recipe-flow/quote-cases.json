@@ -1,0 +1,701 @@
+{
+  "schema_version": "0.1.0",
+  "purpose": "Synthetic offline selection vectors; no browser/SSH execution",
+  "target_month": "2032-04",
+  "base_table": {
+    "schema_version": "0.1.0",
+    "as_of": "2032-04-20",
+    "columns": [
+      "date",
+      "currency",
+      "cash_buy",
+      "cash_sell",
+      "spot_buy",
+      "spot_sell"
+    ],
+    "coverage": {
+      "from": "2032-04-01",
+      "to": "2032-04-20",
+      "complete": true
+    },
+    "rows": [
+      {
+        "date": "2032-04-15",
+        "currency": "USD",
+        "cash_buy": "20.01",
+        "cash_sell": "40.01",
+        "spot_buy": "30.01",
+        "spot_sell": "31.25"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "15-available",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-16",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          },
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.25"
+          },
+          {
+            "date": "2032-04-14",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.24"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-15",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.25"
+        }
+      }
+    },
+    {
+      "id": "15-missing-choose-16",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-14",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.24"
+          },
+          {
+            "date": "2032-04-16",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          },
+          {
+            "date": "2032-04-17",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.27"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-16",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.26"
+        }
+      }
+    },
+    {
+      "id": "15-and-16-missing",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-14",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.24"
+          },
+          {
+            "date": "2032-04-17",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.27"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-17",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.27"
+        }
+      }
+    },
+    {
+      "id": "unsorted-date-order",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-19",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.29"
+          },
+          {
+            "date": "2032-04-17",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.27"
+          },
+          {
+            "date": "2032-04-16",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-16",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.26"
+        }
+      }
+    },
+    {
+      "id": "other-currency-is-not-usd",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "EUR",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "88.88"
+          },
+          {
+            "date": "2032-04-16",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-16",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.26"
+        }
+      }
+    },
+    {
+      "id": "no-fallback-to-14",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-14",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.24"
+          }
+        ]
+      },
+      "expected": {
+        "error": "no_available_date"
+      }
+    },
+    {
+      "id": "no-cross-month-fallback",
+      "table_overrides": {
+        "as_of": "2032-05-20",
+        "coverage": {
+          "from": "2032-04-01",
+          "to": "2032-05-20",
+          "complete": true
+        },
+        "rows": [
+          {
+            "date": "2032-04-14",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.24"
+          },
+          {
+            "date": "2032-05-01",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.99"
+          }
+        ]
+      },
+      "expected": {
+        "error": "no_available_date"
+      }
+    },
+    {
+      "id": "no-cross-year",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2031-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "30.99"
+          },
+          {
+            "date": "2032-04-16",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-16",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.26"
+        }
+      }
+    },
+    {
+      "id": "duplicates-same-price",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.250"
+          },
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.25"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-15",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.25"
+        }
+      }
+    },
+    {
+      "id": "duplicates-conflicting-price",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.25"
+          },
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          }
+        ]
+      },
+      "expected": {
+        "error": "ambiguous_rate"
+      }
+    },
+    {
+      "id": "preserve-fraction",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.255"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-15",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.255"
+        }
+      }
+    },
+    {
+      "id": "canonical-decimal",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "00031.2500"
+          }
+        ]
+      },
+      "expected": {
+        "quote": {
+          "target_month": "2032-04",
+          "selected_date": "2032-04-15",
+          "currency": "USD",
+          "rate_type": "spot",
+          "direction": "bank_sell",
+          "sell_rate": "31.25"
+        }
+      }
+    },
+    {
+      "id": "bad-15-price-does-not-skip",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": ""
+          },
+          {
+            "date": "2032-04-16",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.26"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "float-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": 31.25
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "null-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": null
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "boolean-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": true
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "zero-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "0"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "negative-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "-31.25"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "nan-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "NaN"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "exponent-rate-rejected",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-15",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "3.125e1"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_rate"
+      }
+    },
+    {
+      "id": "columns-changed",
+      "table_overrides": {
+        "columns": [
+          "date",
+          "currency",
+          "cash_buy",
+          "cash_sell",
+          "spot_sell",
+          "spot_buy"
+        ]
+      },
+      "expected": {
+        "error": "schema_changed"
+      }
+    },
+    {
+      "id": "schema-version-changed",
+      "table_overrides": {
+        "schema_version": "99.0.0"
+      },
+      "expected": {
+        "error": "schema_changed"
+      }
+    },
+    {
+      "id": "coverage-incomplete",
+      "table_overrides": {
+        "coverage": {
+          "from": "2032-04-01",
+          "to": "2032-04-20",
+          "complete": false
+        }
+      },
+      "expected": {
+        "error": "coverage_incomplete"
+      }
+    },
+    {
+      "id": "coverage-starts-after-15",
+      "table_overrides": {
+        "coverage": {
+          "from": "2032-04-16",
+          "to": "2032-04-20",
+          "complete": true
+        }
+      },
+      "expected": {
+        "error": "coverage_incomplete"
+      }
+    },
+    {
+      "id": "coverage-ends-too-early",
+      "table_overrides": {
+        "coverage": {
+          "from": "2032-04-01",
+          "to": "2032-04-17",
+          "complete": true
+        }
+      },
+      "expected": {
+        "error": "coverage_incomplete"
+      }
+    },
+    {
+      "id": "before-15",
+      "table_overrides": {
+        "as_of": "2032-04-14",
+        "coverage": {
+          "from": "2032-04-01",
+          "to": "2032-04-14",
+          "complete": true
+        },
+        "rows": [
+          {
+            "date": "2032-04-14",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.24"
+          }
+        ]
+      },
+      "expected": {
+        "error": "not_yet_available"
+      }
+    },
+    {
+      "id": "invalid-calendar-date",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-31",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.25"
+          }
+        ]
+      },
+      "expected": {
+        "error": "invalid_date"
+      }
+    },
+    {
+      "id": "future-table-row",
+      "table_overrides": {
+        "rows": [
+          {
+            "date": "2032-04-21",
+            "currency": "USD",
+            "cash_buy": "20.01",
+            "cash_sell": "40.01",
+            "spot_buy": "30.01",
+            "spot_sell": "31.25"
+          }
+        ]
+      },
+      "expected": {
+        "error": "future_row"
+      }
+    },
+    {
+      "id": "invalid-month",
+      "target_month": "2032-13",
+      "expected": {
+        "error": "invalid_month"
+      }
+    }
+  ],
+  "_meta": {
+    "last_modified": "2026-11-17 11:00:13"
+  }
+}

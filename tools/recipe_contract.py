@@ -12,6 +12,7 @@ from recipe_inputs import prepare_vars
 CONTRACT = 'python-session'
 REPORT_CONTRACT = 'python-report'
 CORE_CONTRACT = 'python-recipe'
+WORKFLOW_CONTRACT = 'python-workflow'
 VERSION = '0.1.0'
 STATUSES = {'success', 'partial', 'failed', 'skipped', 'unsupported'}
 
@@ -27,6 +28,8 @@ def validate(directory, metadata, *, identity_directory=None):
     from retention_store import validate_retention
     validate_retention(metadata, directory)
     plain_values(metadata, 'recipe descriptor')
+    from opsfeast.recipe_launch import describe as launch
+    launch(metadata)
     if metadata.get('descriptor_version') != '0.3.0':
         raise ConfigError('Python-session recipes require descriptor_version 0.3.0')
     identifier = metadata.get('id')
@@ -39,7 +42,7 @@ def validate(directory, metadata, *, identity_directory=None):
         if not isinstance(values, list) or any(not isinstance(item, str) or not item for item in values):
             raise ConfigError('recipe platforms must contain lists of nonempty strings')
     runner = mapping(metadata.get('runner'), 'recipe runner', ('contract', 'version', 'entrypoint'))
-    if runner.get('contract') not in (CONTRACT, REPORT_CONTRACT, CORE_CONTRACT) or runner.get('version') != VERSION:
+    if runner.get('contract') not in (CONTRACT, REPORT_CONTRACT, CORE_CONTRACT, WORKFLOW_CONTRACT) or runner.get('version') != VERSION:
         raise ConfigError('unsupported recipe runner contract/version')
     output = mapping(metadata.get('output'), 'recipe output', ('schema_version',))
     if not isinstance(output.get('schema_version'), str) or not output['schema_version']:
@@ -77,7 +80,7 @@ def validate(directory, metadata, *, identity_directory=None):
         signature = inspect.Signature(parameters)
         if runner['contract'] == CORE_CONTRACT:
             signature.bind(object())
-        elif runner['contract'] == REPORT_CONTRACT:
+        elif runner['contract'] in (REPORT_CONTRACT, WORKFLOW_CONTRACT):
             signature.bind(context=object(), timeout=30)
         else:
             signature.bind(object(), context=object(), timeout=30)

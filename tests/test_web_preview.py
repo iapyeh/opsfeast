@@ -288,7 +288,7 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await call('/api/v1/profiles'))[0],401)
         self.assertEqual((await call('/api/v1/admin/bootstrap','POST',payload,[token_header]))[0],409)
         public=json.loads((await call('/api/v1/auth/status'))[2]);self.assertIsNone(public['username'])
-        for path in ('/workspace','/work','/logs','/skills','/recipes/data'):
+        for path in ('/workspace','/work','/logs','/skills','/recipes/data','/recipe-plate'):
             self.assertEqual((await call(path))[0],303)
         self.assertEqual((await call('/api/v1/auth/login','POST',{'username':'synthetic','password':'wrong'}))[0],401)
         status,headers,_=await call('/api/v1/auth/login','POST',{'username':'synthetic','password':password})
@@ -327,11 +327,11 @@ class WebPreviewTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, 200)
         cookie = [(b'cookie', headers[b'set-cookie'].split(b';')[0])]
         sid = '11af0ac8-f21c-49ec-a5de-8f99d8116aac'
-        valid = ['/settings/profiles', '/settings/site', '/setup', '/hosts', '/logs?profile=main&result=fixture',
+        valid = ['/recipes?profile=main&recipe=%3Afinance%2Frate', '/recipes?status=draft&category=network', '/recipe-plate?profile=main&add=%3Afinance%2Frate', '/recipe-plate?run=fixture', '/recipe-plate?history=1', '/settings/profiles', '/settings/site', '/setup', '/hosts', '/logs?profile=main&result=fixture',
                  '/hosts?profile=lab&host=web-01&view=settings', '/interactive', '/interactive?work=' + sid]
         valid += ['/console/' + sid + suffix + '?profile=lab&host_id=web-01'
                   for suffix in ('', '/history', '/blocks/' + sid, '/history/blocks/' + sid)]
-        invalid = ['', 'https://untrusted.example', '//untrusted.example', '//[', '/login',
+        invalid = ['/recipe-plate?run=a&run=b', '/recipe-plate?command=bad', '/recipes?run=old-route', '/recipe-plate#bad', '', 'https://untrusted.example', '//untrusted.example', '//[', '/login',
                    '/settings/profiles/../site', '/hosts?redirect=https://untrusted.example',
                    '/console/' + sid + '?profile=a&profile=b', '/console/' + sid + '#bad',
                    '/hosts\\evil', '/hosts\n']

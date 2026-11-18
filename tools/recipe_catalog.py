@@ -59,12 +59,18 @@ def catalog(root=None, query=None, kind=None):
                     'id': meta.get('id'), 'version': meta.get('version'), 'title': meta.get('title', ''),
                     'description': meta.get('description', ''), 'kind': recipe_kind,
                     'contract': contract, 'status': inspected['status'], 'errors': list(inspected['errors']),
-                    'runnable': inspected['status'] == 'success' and contract in ('valid-python-session', 'valid-python-report', 'valid-python-recipe', 'valid-inventory-system', 'valid-python-routines', 'valid-recipe-meal'),
+                    'runnable': inspected['status'] == 'success' and contract in ('valid-python-session', 'valid-python-report', 'valid-python-recipe', 'valid-python-workflow', 'valid-inventory-system', 'valid-python-routines', 'valid-recipe-meal'),
                     'retention': inspected.get('retention'),
                     'collection': inspected.get('collection'),
                     'inputs': meta.get('inputs', {}), 'dependencies': meta.get('dependencies', {}),
                     'verification': meta.get('verification', {}), 'descriptor': meta,
                     'availability_evidence': 'static-only; dependencies, data and host applicability are not verified'}
+            from opsfeast.recipe_launch import describe as launch
+            try:
+                item['launch'] = launch(meta)
+            except ConfigError:
+                item['launch'] = {'mode': 'agent', 'prompt': ''}
+            item['web_runnable'] = item['runnable'] and item['launch']['mode'] == 'direct'
             from recipe_identity import normalized
             try:
                 item.update(normalized(meta))

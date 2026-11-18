@@ -39,7 +39,9 @@ def login_destination(next_url):
         return next_url
     if target.path == '/logs' and len(keys) == len(set(keys)) and set(keys) <= {'profile', 'entry', 'result'}:
         return next_url
-    if target.path == '/recipes' and len(keys) == len(set(keys)) and set(keys) <= {'profile', 'recipe', 'run', 'q', 'report', 'artifact'}:
+    if target.path == '/recipes' and len(keys) == len(set(keys)) and set(keys) <= {'profile', 'recipe', 'meal', 'q', 'source', 'status', 'category', 'kind'}:
+        return next_url
+    if target.path == '/recipe-plate' and len(keys) == len(set(keys)) and set(keys) <= {'profile', 'add', 'meal', 'run', 'history', 'report', 'artifact'}:
         return next_url
     return default
 

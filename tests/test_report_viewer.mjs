@@ -33,5 +33,5 @@ test('review shows exact sensor fields and completed reports offer a Web viewer'
  assert.match(html,/自選欄位 · 1 組／1 個欄位/);assert.match(html,/sensors.fans/);assert.match(html,/溫度／風扇/);
  const run=renderRun({id:'run',profile:'main',state:'completed',tasks:[{kind:'report',reference:'report',state:'success',result:{status:'success',result_id:report.result_id,artifacts:report.artifacts}}]},e);
  assert.match(run,/開啟報告成果/);assert.doesNotMatch(run,/既有 CLI 讀取/);
- assert.equal(loginDestination('?next='+encodeURIComponent('/recipes?profile=main&report=reports%2Fid%2Fresult.json&artifact=report.html')),'/recipes?profile=main&report=reports%2Fid%2Fresult.json&artifact=report.html');
+ assert.equal(loginDestination('?next='+encodeURIComponent('/recipe-plate?profile=main&report=reports%2Fid%2Fresult.json&artifact=report.html')),'/recipe-plate?profile=main&report=reports%2Fid%2Fresult.json&artifact=report.html');
 });

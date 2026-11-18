@@ -31,6 +31,15 @@ history. ESXi sources are IPv4-only; loopback is excluded from reference views.
 
 # AI Agent Guidance
 
+For reusable meal creation/modification/deletion, use the [recipes skill](opsfeast-recipes/SKILL.md) and [dedicated meal pages/shared preferences API](../docs/web-recipe-menu.md#recipes-review-and-execution-plate). The combined Recipes/meal index lists names; per-item operations stay on their own pages.
+
+
+For Web recipe review versus execution, route through the [recipes skill](opsfeast-recipes/SKILL.md): `/recipes` includes definitions and review pages; `/recipe-plate` owns the current selection and saved execution rivers. See [canonical paths](../docs/web-recipe-menu.md#recipes-review-and-execution-plate).
+
+
+For creating recipes interactively with visible progress, use [Recipe definition authoring 0.1.0](../docs/recipe-definition-authoring.md) through the [recipes skill](opsfeast-recipes/SKILL.md). Save the initial ordinary definition immediately and provide the stable Web preview before completing the design.
+
+
 For agent-directed root Console work, [choose login-account sudo by default](../docs/console-agent.md#choose-the-actor-for-an-authorized-root-switch)
 within the existing human grant. Omitted sudo policy is enabled; do not ask again
 which account should obtain root or begin with su root. Explicit human choices,
@@ -186,6 +195,7 @@ When writing Python that consumes host settings, start with [runtime configurati
 
 - [opsfeast-hosts](opsfeast-hosts/SKILL.md): create, edit, and review a user management directory's `hosts.yaml` and included YAML, using the [configuration guide](../docs/hosts-yaml.md); initialize platform facts and perform requested connection/su/sudo diagnostics through the [diagnostic guide](../docs/host-diagnostics.md).
 - [opsfeast-recipes](opsfeast-recipes/SKILL.md): discover, author and execute inventory and compatible Python-session recipes with typed invocation inputs, share one or many recipes, and acquire, verify and review third-party candidates before authorized installation. Start with the [recipe user guide](../docs/recipes.md).
+- [opsfeast-recipe-flows](opsfeast-recipe-flows/SKILL.md): design/review numbered Python-style Recipe plans, fixed utility routines, agent/script contracts, authority, stop/recovery and portable conformance. [Architecture](../docs/recipe-flow-design.md), [language](../docs/recipe-flow-language.md), [USD case](../docs/recipe-flow-exchange-rate.md) and [receiving-agent checks](../docs/recipe-flow-conformance.md). Design guidance only: current runner/importer and skill installation are unchanged.
 - [opsfeast-result-data](opsfeast-result-data/SKILL.md): recover, interpret, export, validate and combine retained observations; start with the [result-data contracts](../docs/result-data.md).
 - [sshscript](sshscript/SKILL.md): SSHScript 7.0.1 source snapshot local/SSH commands, persistent shells, interactive input and managed jobs. For an existing Session, read the [embedded Console contract](sshscript/references/embedded-console.md); for the shipped persistent chat-owned adapter use [Console worker 0.3.0](../docs/console-agent.md). Read its [Agent Guide](sshscript/references/agent-guide.md), version policy and task-relevant API sections; the complete snapshot and SOURCE.json preserve public provenance.
 
@@ -361,4 +371,30 @@ agent-control authority. Keep private stdin open for `--agent-control`; use defa
 browser-only manual mode for an already configured administrator. No connections,
 recipes, software installation or reboot persistence are authorized by this helper.
 
-*Last modified: 2026-11-16 14:50:01*
+## Executable hybrid recipes
+
+For browser-before-SSH workflows, use the [flow recipe skill](opsfeast-recipe-flows/SKILL.md)
+and [Python workflows 0.1.0](../docs/python-workflows.md). The shipped
+`python-workflow` runner executes reviewed Python with delayed login connection;
+active agents fulfill bounded browser snapshot requests. Pure parsing, decimal
+selection, guarded dispatch and saved results are reusable product services.
+This does not implement the proposed virtual-plan interpreter or an automatic
+browser agent. Authoring never authorizes execution.
+
+## Recipes launched through an agent conversation
+
+For agent-required browser/tool recipes, the [recipe skill](opsfeast-recipes/SKILL.md)
+and [launch contract](../docs/python-workflows.md#agent-conversation-as-the-launch-surface)
+define `launch.mode: agent`, suggested prompts, static versus Web readiness and
+agent CLI handoff. Web provides copyable text instead of direct execution and
+never automatically wakes or authorizes an agent.
+
+## Live workflow execution rivers
+
+The [recipe](opsfeast-recipes/SKILL.md) and [flow](opsfeast-recipe-flows/SKILL.md)
+skills route [workflow rivers 0.1.0](../docs/workflow-rivers.md): opt in with
+`launch.river`, reuse `context.river` and show/open the emitted URL before host
+dispatch. Real commands/output go to the existing Console record service; this
+does not retroactively create live records or authorize repeating completed work.
+
+*Last modified: 2026-11-17 23:17:21*

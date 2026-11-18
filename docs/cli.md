@@ -2,6 +2,9 @@ For agent-owned Web startup and password management, use [owner controller 0.1.0
 
 # Ops command-line reference
 
+Recipe definition authoring has an always-JSON module CLI: `python -B -m opsfeast.recipe_authoring --profile NAME --reference :PATH [--snapshot FILE]`. See [definition fields, revisions and errors](recipe-definition-authoring.md). This command saves or reads local text snapshots and never runs recipes.
+
+
 Host notes `list --recipe REFERENCE --include-general` selects exact recipe
 experience plus unassociated host constraints; repeat `--tag TAG` for all-tag
 matching. Create/update/merge stdin accepts `recipe_references`/`tags` arrays;
@@ -1145,4 +1148,25 @@ exit 2, stale/invalid markers exit 1, and orderly exit cleans only its own marke
 A marker is not HTTP readiness or agent authentication. Existing port/admin/Profile
 state is preserved; no host operation or automatic stale-file cleanup occurs.
 
-*Last modified: 2026-11-16 14:50:01*
+## Browser workflow step handoff
+
+The always-JSON `python -B -m opsfeast.browser_steps --profile NAME list`,
+`... show REQUEST_ID`, and `... respond REQUEST_ID --file /absolute/snapshot.json`
+commands inspect/fulfill an already authorized running browser step. Optional
+`--product /absolute/checkout` belongs before the subcommand. No browser launch,
+HTTP fallback or execution grant is implied. See [Python workflows](python-workflows.md)
+for exact response fields, provider prerequisites, limits, errors and safe stops.
+Reviewed `python-workflow` recipes otherwise use the existing recipes run command
+and plate; they defer SSH until browser validation finishes.
+
+## Workflow execution rivers
+
+A `python-workflow` descriptor with `launch.river: true` creates a Console river
+before host connection. Use the existing `recipes run REF --profile NAME --host
+HOST --verbose --json` invocation so the active agent receives the early river URL.
+Show/open it before fulfilling a browser request. Final JSON and saved results
+include `river.session_id`, `reader_url`, `history_url`; recording errors are
+explicit and never authorize reruns. Read [workflow rivers](workflow-rivers.md)
+for prerequisites, exact interfaces, streaming limits and verification scope.
+
+*Last modified: 2026-11-17 23:17:21*

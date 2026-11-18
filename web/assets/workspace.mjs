@@ -1,6 +1,7 @@
 import c from './locales/workspace-zh-TW.mjs';
 import {formatDateTime} from './i18n.mjs';
 import {mountRecipeMenu} from './recipe-menu.mjs';
+import {mountRecipeCatalog} from './recipe-catalog.mjs';
 export const workspaceCopy = c;
 export const workspacePaths = Object.keys(c.titles);
 import {workspaceUrl} from './workspace-url.mjs';
@@ -34,7 +35,7 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
       const component=data.components[name];
       html+=`<section class="panel"><div class="panel-heading"><h2>${e(c[name])}${component.status==='success'?` (${e(component.total)})`:''}</h2>${link('/work',c.all)}</div>${component.status==='success'?objects(component.items,e):`<p role="status">${e(c.failed)}</p>`}</section>`;
     }
-    return html+'</div><section class="entry-grid roadmap-section">'+['hosts','recipes','retention','logs'].map(key=>`<article class="entry-card">${link('/'+key,c.links[key])}</article>`).join('')+'</section>';
+    return html+'</div><section class="entry-grid roadmap-section">'+['hosts','recipes','recipe-plate','retention','logs'].map(key=>`<article class="entry-card">${link('/'+key,c.links[key])}</article>`).join('')+'</section>';
   }
   if(path==='/recipes') {
     html+=`<p class="field-hint">${e(c.catalogNote)}</p><details><summary>${e(c.sources)}</summary><pre class="log-content">${e(json(data.sources))}</pre></details>`;
@@ -42,7 +43,7 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
   }
   if(path==='/work')return html+`<p class="field-hint">${e(c.serviceNote)}</p>`+table(c.workColumns,data.items.map(item=>[e(state(item.kind)),`<details><summary>${e(item.title)}</summary><p>${e(item.body||'')}</p><pre class="log-content">${e(json(item))}</pre></details>`,statusBadge(item.status,e),e(item.source?.host_id||c.unknown),e(time(item.updated_at))]),e);
   if(path==='/logs')return html+`<p class="field-hint">${e(c.logsNote)}</p>`+table(c.logColumns,data.items.map(item=>[
-    item.web_run_id?link('/recipes',time(item.time),{run:item.web_run_id}):e(time(item.time)),e(state(item.source)),
+    item.web_run_id?link('/recipe-plate',time(item.time),{run:item.web_run_id}):e(time(item.time)),e(state(item.source)),
     item.web_run_id
       ? `${item.recipe_reference?link('/recipes',item.title,{recipe:item.recipe_reference},true):e(item.title)}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}${item.summary?`<p>主機：完成 ${e(item.summary.completed_hosts)} ／ 未完成 ${e(item.summary.incomplete_hosts)} ／ 共 ${e(item.summary.total_hosts)} 台</p>`:''}<details data-activity-results="${e(item.id)}"><summary>主機結果與未完成項目的數量（未完成主機 ${e(item.summary?.incomplete_hosts??c.unknown)}）</summary><div data-activity-results-content>${(item.result_links||[]).length?`<ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul>`:(item.results_loaded===false?'<p>展開後讀取主機結果。</p>':'<p>尚無已保存的主機結果。</p>')}</div></details>`
       : `${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}<details ${item.expanded?'open':''}><summary>${e(item.source==='console'?item.title:item.summary?.incomplete_hosts?'查看未完成項目':'查看摘要')}</summary>${statusBadge(item.status,e)}${renderActivitySummary(item,{e,profile})}${(item.result_links||[]).length?`<details><summary>${e(c.resultCauses)}</summary><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul></details>`:''}<details><summary>原始資料（進階）</summary><pre class="log-content">${e(json(item.details))}</pre></details></details>`
@@ -52,7 +53,8 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
 }
 
 export async function mountWorkspace(root,{path,e,siteName,search='',profiles=null,recipeScope='all',fetchImpl=fetch}) {
-  if(path==='/recipes'&&recipeScope==='all')return mountRecipeMenu(root,{e,profiles,search,fetchImpl});
+  if(path==='/recipes'&&recipeScope==='all')return mountRecipeCatalog(root,{e,profiles,search,fetchImpl});
+  if(path==='/recipe-plate')return mountRecipeMenu(root,{e,profiles,search,fetchImpl});
   const query=new URLSearchParams(search);
   let profile=recipeScope==='user'?(query.get('profile')||profiles?.default_profile):profiles?.default_profile;
   const title=recipeScope==='bundle'?c.bundleRecipes:recipeScope==='user'?c.userRecipes:c.titles[path];

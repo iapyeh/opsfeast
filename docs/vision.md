@@ -36,6 +36,18 @@ and [execution experience](../skills/opsfeast-recipes/references/execution-exper
 The inventory-specific [job/utility/periodic collection service](inventory-jobs.md) now implements deterministic minute dispatch with opt-in hosts, source-timestamped samples and public YANG model reuse. References below to planned scheduling concern a general scheduler; they do not negate this narrower implemented capability.
 
 
+## Unified Recipe packages and specification flows
+
+The [Recipe flow design](recipe-flow-design.md) develops the agreed architecture:
+a recipe packages purpose, a numbered Python-style specification plan, utility
+routines, step contracts and resources. A one-script recipe is the conceptual
+one-action special case. Agents author the structured plan; humans review its
+control/data flow without needing to understand utility internals. Deterministic
+rules use the same reviewed versioned code and conformance vectors across agents.
+The plan itself is not executable Python. Runtime/provider/journal/import support
+remains unimplemented; the existing recipe contracts remain in effect. Preserve
+private bindings and historical data when later implementing the new model.
+
 ## User-centered system administration and transparent collaboration
 
 OpsFeast assists the human administrator and their chosen AI agents with system
@@ -282,4 +294,4 @@ access is not an administrator session.
 
 Recipe source, raw observation evidence and structured retention are independent portable units. The implemented [transfer foundation](portability.md) supports origin-preserving copy/import, explicit recipe conflicts/rollback and verified resumable archival with storage compaction. User [data contracts](portable-contracts.md) travel with recipes/data rather than requiring a product registry edit. Human authority remains explicit for code activation, transmission and destructive source removal; historical import never becomes a live incident. Network distribution, a general scheduler and automatic recovery-package cleanup remain outside this implementation.
 
-*Last modified: 2026-11-09 11:51:59*
+*Last modified: 2026-11-17 11:00:13*

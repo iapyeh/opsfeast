@@ -10,6 +10,7 @@ from .recipe_defaults import item_for, inspect as defaults
 def inspect(product,*,profile,reference,offset=0,limit=5,host=None):
     selected=Instance.open(product).profile(profile)
     item=item_for(selected,reference)
+    from .recipe_authoring import inspect as content
     # Import the product facade, not recipe Python/normalizers.
     from .recipe_menu import menu
     card=next(row for row in menu(selected)['items'] if row['reference']==reference)
@@ -43,7 +44,7 @@ def inspect(product,*,profile,reference,offset=0,limit=5,host=None):
               for r in operations['results'] if r['recipe_reference']==reference][:10]}
     return {'schema_version':'0.1.0','profile':selected.name,'recipe':card,'declarations':declared,
             'defaults':defaults(product,profile=profile,reference=reference),'preferences':preferences(selected),
-            'saved':saved,'reports':reports,'attempts':attempts}
+            'saved':saved,'reports':reports,'attempts':attempts,'content':masked(content(selected,reference))}
 
 
 def record(product,*,profile,reference,record_id):

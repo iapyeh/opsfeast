@@ -398,4 +398,13 @@ capability roles, same-origin checks, SSE race recovery and client wait behavior
 Browser fixtures use explicitly synthetic administrator/session data. These tests
 prove no real SSH execution, backup health, privilege switching or stopping.
 
-*Last modified: 2026-11-06 14:34:35*
+## Reviewed workflow producers
+
+[Workflow rivers 0.1.0](workflow-rivers.md) is an opt-in producer over these same
+Console blocks. It creates the session before workflow dispatch and records
+progress, actual connection identity, command, live bounded stdout/stderr and the
+saved result link. Registered Profile/host associations make it discoverable from
+host Console history. This is distinct from a persistent interactive shell worker
+and does not add a new command input/cancellation API to the reader.
+
+*Last modified: 2026-11-17 23:17:21*

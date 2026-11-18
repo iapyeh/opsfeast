@@ -13,7 +13,7 @@ test('task cards start closed, retain a host link in the summary and share one p
  assert.doesNotMatch(html,/<details[^>]*\sopen|<unsafe>|查看主機系統全貌|活動與紀錄 →|保存資料 →/);
  assert.match(html,/&lt;unsafe&gt;/);
  assert.match(html,/href="\/logs\?profile=main">← 活動與紀錄/);
- assert.match(html,/href="\/recipes\?profile=main">Recipes 菜單/);
+ assert.match(html,/href="\/recipe-plate\?profile=main">執行餐盤/);
  assert.doesNotMatch(html,/history=1|← Recipes/);
 });
 test('unfinished tasks name collection, retention and downstream failures separately',()=>{

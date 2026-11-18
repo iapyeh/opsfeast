@@ -63,6 +63,69 @@ class GeneralRecipeTests(unittest.TestCase):
             status = recipe_main([':system/network/check/port', '--root', str(self.root), *args])
         return status, json.loads(output.getvalue()) if output.getvalue() else None, error.getvalue(), factory
 
+    def workflow(self, body):
+        self.metadata['runner']['contract'] = 'python-workflow'
+        self.code = "VERSION = '1.0.0'\ndef execute(*, context, timeout):\n" + body
+        self.write()
+
+    def test_workflow_without_connect_does_not_construct_session(self):
+        self.workflow("    return {'status':'failed','reason_code':'browser_missing','message':'No provider.','data':{'host':context.host_id}}\n")
+        report, path = self.execute(assignments=['port=8888'])
+        self.factory.assert_not_called()
+        self.assertEqual(report['evidence_kind'], 'not-executed')
+        self.assertEqual(report['reason_code'], 'browser_missing')
+        self.assertEqual(json.loads(path.read_text()), report)
+
+    def test_workflow_explicit_connection_uses_selected_host_and_cleanup(self):
+        self.workflow("    context.progress('browser already validated')\n    with context.connect() as session:\n        session.exec_command(['synthetic'])\n    return {'status':'success','reason_code':'done','message':'Synthetic.','data':{'host':context.host_id}}\n")
+        report, path = self.execute(assignments=['port=8888'])
+        self.assertEqual(report['status'], 'success')
+        self.assertEqual(report['evidence_kind'], 'mock')
+        self.session.close.assert_called_once_with(strict=True)
+        self.session.exec_command.assert_called_once_with(['synthetic'])
+
+    def test_workflow_exception_after_connect_preserves_connection_evidence(self):
+        self.workflow("    with context.connect() as session:\n        raise RuntimeError('synthetic')\n")
+        report, path = self.execute(assignments=['port=8888'])
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['evidence_kind'], 'mock')
+        self.session.close.assert_called_once_with(strict=True)
+
+    def test_workflow_exception_before_connect_stays_not_executed(self):
+        self.workflow("    raise RuntimeError('synthetic')\n")
+        report, path = self.execute(assignments=['port=8888'])
+        self.factory.assert_not_called()
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['evidence_kind'], 'not-executed')
+
+    def test_workflow_river_exists_before_connection_and_is_linked_in_saved_result(self):
+        from opsfeast.workflow_river import WorkflowRiver
+        from opsfeast.console_records import Records
+        self.workflow("    context.progress('browser validated')\n    with context.connect() as session:\n        pass\n    return {'status':'partial','reason_code':'business_unknown','message':'Synthetic.','data':{'mail_delivery':'unknown'}}\n")
+        self.metadata['launch']={'mode':'agent','prompt':'Synthetic task.','river':True};self.write()
+        records=Records(self.root/'synthetic-river')
+        river=WorkflowRiver(records,profile='synthetic',host_id='h',title='Synthetic',reference=':system/network/check/port',run_id='synthetic',origin='http://localhost:59000')
+        with patch('opsfeast.workflow_river.create',return_value=river) as create:
+            report,path=self.execute(assignments=['port=8888'])
+        create.assert_called_once();self.assertEqual(report['river']['session_id'],river.session_id)
+        self.assertEqual(json.loads(path.read_text())['river'],report['river'])
+        blocks=records.snapshot(river.session_id)['blocks']
+        self.assertTrue(any(b['kind']=='identity' for b in blocks))
+        identity=next(b for b in blocks if b['kind']=='identity')
+        value=json.loads(records.content(river.session_id,identity['id'])['text'])
+        self.assertEqual(value['host'],'h');self.assertFalse(value['identity_verified'])
+        self.assertFalse(any(b['status']=='streaming' for b in blocks))
+        self.session.close.assert_called_once_with(strict=True)
+
+    def test_required_workflow_river_failure_cannot_connect(self):
+        self.workflow("    with context.connect() as session:\n        pass\n")
+        self.metadata['launch']={'mode':'agent','prompt':'Synthetic task.','river':True};self.write()
+        with patch('opsfeast.workflow_river.create',side_effect=ops.ConfigError('Web unavailable')):
+            report,path=self.execute(assignments=['port=8888'])
+        self.factory.assert_not_called();self.assertEqual(report['status'],'failed')
+        self.assertEqual(report['evidence_kind'],'not-executed')
+        self.assertEqual(report['execution_errors'][0]['stage'],'river_creation')
+
     def test_success_saved_envelope_without_inventory_probes_or_retention(self):
         with patch('host_runtime.discover') as discover, patch('observation_store.retain') as retain:
             report, path = self.execute(assignments=['port=8888'])

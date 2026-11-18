@@ -2,6 +2,7 @@
 const paths={
   home:'M3 10 12 3l9 7v10H3Z M9 20v-7h6v7',
   hosts:'M4 4h16v6H4Z M4 14h16v6H4Z M7 7h.01 M7 17h.01',
+  plate:'M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0 M7 12a5 5 0 1 0 10 0 5 5 0 0 0-10 0',
   recipes:'M5 3h14v18H5Z M8 7h8 M8 11h8 M8 15h5',
   work:'M8 5H4v16h16V5h-4 M8 3h8v4H8Z M8 12l2 2 5-5',
   logs:'M4 5h16 M4 12h16 M4 19h16 M8 3v4 M16 10v4 M11 17v4',

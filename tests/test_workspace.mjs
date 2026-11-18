@@ -118,7 +118,7 @@ test('activity partial summary explains stages and keeps JSON behind advanced di
 test('Web plate activity links to its exact run and keeps only compact closed results',()=>{
  const item={id:'observation',source:'recipe',web_run_id:'web&run',recipe_reference:'system/software/check/package-security',title:'Meal <name>',status:'partial',expanded:true,details:{raw:'DO_NOT_SHOW'},summary:{total_hosts:1,completed_hosts:0,incomplete_hosts:1,issues:[{host_id:'node',reason_code:'DO_NOT_SHOW'}]},result_links:[{host_id:'<node>',status:'partial',result_id:'saved/id'}]};
  const html=renderData('/logs',{status:'success',items:[item]},options);
- assert.match(html,/\/recipes\?run=web%26run&amp;profile=fixture%26profile/);
+ assert.match(html,/\/recipe-plate\?run=web%26run&amp;profile=fixture%26profile/);
  const cells=[...html.matchAll(/<td>(.*?)<\/td>/g)].map(match=>match[1]);
  assert.equal(cells.length,3);
  assert.match(cells[0],/run=web%26run/);

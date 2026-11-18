@@ -15,6 +15,33 @@ For agent website operations, use the [memory-only owner controller](agent-owner
 
 # Reuse OpsFeast tools and Python modules
 
+For readable Recipe review, use [purpose/metadata/composition and execution-gap views](recipe-definition-authoring.md#human-readable-purpose-metadata-and-composition). Give embedded resources meaningful `resource_titles`; reuse `recipe_authoring.inspect()` components and execution_blockers instead of interpreting filenames as completion or proof of execution. Name the actual missing entrypoint/contract/output requirements, keep change notes separate from purpose, and distinguish optional content, declarations, existing files and verified execution readiness.
+
+
+Use [unified Recipe definition authoring](recipe-definition-authoring.md): every recipe uses descriptor 0.3.0 and the same detail/content interface, with blank fields allowed. Reuse `opsfeast.recipe_authoring.new_definition/inspect/save` and its always-JSON module CLI; save milestones with the descriptor digest. No separate draft lifecycle/page, promotion or automatic placeholder exists. A valid real entrypoint and its existing runner contract enable execution actions. Preserve private bindings; authoring never authorizes execution.
+
+
+[Meal management](web-recipe-menu.md#recipes-review-and-execution-plate) uses the simple combined `/recipes` index and dedicated `?meal=ID` / `?meal=new` pages. Existing `opsfeast.menu_preferences.inspect/mutate/expand` and preferences POST now support `set.update` with complete definition fields plus stable ID. Graph/field validation, optimistic revisions and backups remain shared. Bundle meals are read-only, deletions clean incoming references, and edits invalidate old execution previews; no hosts or execution authority are saved.
+
+
+[Recipe discovery/review and execution plate](web-recipe-menu.md#recipes-review-and-execution-plate) are separate Web entrances: `/recipes` lists all cataloged recipes, including incomplete definitions; `/recipe-plate` owns composition, confirmed execution, saved rivers and report views. Reuse GET `/api/v1/recipe-menu` for source/status/errors and classification; the existing Python catalog and execution APIs are unchanged.
+
+
+[Recipe definition authoring 0.1.0](recipe-definition-authoring.md): `opsfeast.recipe_authoring.new_definition/save/inspect` and `python -B -m opsfeast.recipe_authoring` provide Profile-local, revision-checked snapshots and stable auto-updating Web previews. Definitions without entrypoints are cataloged but cannot execute. Save an ordinary initial definition when conversational creation begins.
+
+
+## Design-only Recipe flow plans
+
+Use [the flow-plan skill](../skills/opsfeast-recipe-flows/SKILL.md) to design/review
+unified Recipe packages with numbered Python-style specification plans, fixed
+utility routines, typed agent/script calls and explicit authority/recovery. Read
+[architecture](recipe-flow-design.md), [language](recipe-flow-language.md),
+[the USD example](recipe-flow-exchange-rate.md) and [conformance](recipe-flow-conformance.md).
+The documented reference selector and synthetic vectors verify date/price policy
+only; the separate [Python workflow implementation](python-workflows.md) supplies
+a fixed parser and bounded browser handoff, but does not establish proven agent
+interoperability service. Do not substitute this design for supported execution.
+
 Host notes now expose structured `recipe_references` and `tags` through existing
 inspect/mutate, CLI and HTTP surfaces. Use exact recipe filtering with general
 notes for pre-run experience discovery; repeated tag filters require all tags.
@@ -746,7 +773,7 @@ a result disclosure opens. Treat `results_loaded: false` as deferred, not empty.
 Expanded incomplete tasks request the existing logs API with `item_id` plus
 `host_id`; summaries stay inside that host’s task. The list has no
 separate Status column. The river scrolls with the execution page, whose navigation
-returns to Activity and logs or the Recipes menu. The list keeps host totals and a closed host-results/count
+returns to Activity and logs or the execution plate. The list keeps host totals and a closed host-results/count
 disclosure; bounded incomplete-stage summaries belong on the execution page.
 CLI-only observations retain their diagnosis view. Reuse the workspace logs
 API and saved run links; viewing either never reconnects or reruns.
@@ -782,7 +809,7 @@ need the human's corresponding scope.
 
 ## Nested Web meal selections
 
-Use [the menu contract](web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/deletion are supported, editing is deferred. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
+Use [the menu contract](web-recipe-menu.md) for preferences 0.2.0. Domain disclosures start closed; Scopes describes the domain alongside Bundle/User recipe lists. Add meal IDs to the plate rather than flattening them. User meals save direct recipes, nested meal IDs and field scopes, never hosts; creation/update/deletion are supported on dedicated meal pages; updates retain IDs and parent references. Deletion atomically removes incoming user-meal references and retains empty parents. Use `opsfeast.menu_preferences.expand(profile, recipes, meals)` for current-definition expansion and field union before execution, or pass `meals` to the authenticated recipe preview API. Repeated exact recipes execute once per host; report recipes once locally. Cycles, missing references and conflicting options fail; changed definitions require renewed review. Reads/saving grant no execution authority. Old 0.1.0 preferences are preserved but unsupported; deliberate recreation is required, without automatic migration. Synthetic tests do not establish native SSH/privilege behavior.
 
 
 Use [execution throttle](web-recipe-menu.md#execution-throttle-and-defaults-010): no fixed host/invocation count cap; default 8 parallel host lanes, sequential within each host. Installation settings and per-run threads are separate.
@@ -875,4 +902,52 @@ body to preserve its summary and scroll position. Original saved evidence and
 report artifacts remain unchanged; real diagnosis gaps and read errors stay
 visible. See the [execution page contract](web-recipe-menu.md#execution-page-and-return-navigation).
 
-*Last modified: 2026-11-16 17:27:47*
+## Reviewed Python workflows and browser evidence
+
+Use [Python workflows 0.1.0](python-workflows.md) for a browser-first operation
+instead of recreating orchestration in each recipe. Bundled checkout-level modules:
+`opsfeast.workflow.WorkflowContext` (runner-owned delayed login connection),
+`opsfeast.browser_steps.acquire` / its JSON CLI (bounded active-agent rendered-table
+handoff), `opsfeast.bot_usd.parse_bot_usd_table/select_monthly_usd_quote` (fixed USD
+rules), `opsfeast.operation_guard.OperationGuard` (Profile business-key reservation)
+and `opsfeast.browser_command_workflow.run` (validated evidence -> guarded argv).
+Read the canonical signatures, storage/version contracts, failure behavior and
+synthetic verification limits before use. General browser tools are agent-provided;
+there is no installed unattended browser/provider broker or automatic agent wakeup.
+Different source parsers/argv builders are reviewed callback extension points.
+The virtual-plan interpreter/closed flow importer remain unimplemented.
+
+## Agent-required recipe launch guidance
+
+Use `opsfeast.recipe_launch.describe(metadata)` (checkout-level launch 0.1.0)
+to validate/normalize explicit direct/agent launch declarations. Reuse catalog
+`launch`/`web_runnable` rather than inferring agent needs from runner names.
+[The canonical contract](python-workflows.md#agent-conversation-as-the-launch-surface)
+provides declaration examples, Web prompt/copy behavior, nested meal restrictions,
+validation errors and supported agent CLI handoff. No automatic agent notification
+or stored approval is supplied.
+
+## BOT parser hidden headers
+
+The fixed [BOT parser 0.1.1](python-workflows.md#bot-hidden-header-normalization-parser-011)
+normalizes only the observed duplicate noscript/JavaScript date header and two
+empty hidden spacer cells before validating the six-column grid. Reuse
+`opsfeast.bot_usd.parse_bot_usd_table`; keep selector 0.1.0, responsive data cells
+and schema failures. Do not filter arbitrary hidden cells or rewrite parsing
+while executing. Review/version a routine change and synchronize the private
+recipe copy before replaying saved evidence. The public fixture uses synthetic
+rows; private capture replay neither fetches prices nor grants command execution.
+
+## Workflow river recording
+
+Reuse [workflow rivers 0.1.0](workflow-rivers.md) for visible reviewed workflow
+execution: explicit `launch.river` opt-in, runner-created `context.river`, progress
+forwarding and `context.river.execute(session, argv, timeout=...)` over the existing
+SSHScript Session. It uses Console blocks/history rather than inventing another
+log store. The guarded browser-command service records automatically when opted
+in. Show/open the emitted URL before browser response/SSH dispatch. Registered
+Profile, existing installation data and running saved Web endpoint are required;
+missing availability stops instead of running without records. Public fake/local
+checks do not prove remote or mail behavior.
+
+*Last modified: 2026-11-17 23:17:21*

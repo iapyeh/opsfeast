@@ -71,12 +71,13 @@ groups:
     def meal(self, recipes=None, meals=None, selections=None):
         return {'title':'Synthetic meal','description':'','recipes':recipes or [],'meals':meals or [],'selections':selections or {}}
 
-    def test_nested_meals_are_immutable_host_free_and_delete_cleans_parents(self):
+    def test_nested_meals_keep_identity_on_update_and_delete_cleans_parents(self):
         before_hosts=self.entry.read_bytes()
         child=self.change('set.create',self.meal([self.reference]))['sets'][0]
         parent=self.change('set.create',self.meal(meals=[child['id']]))['sets'][1]
         grand=self.change('set.create',self.meal(meals=[parent['id']]))['sets'][2]
-        with self.assertRaises(ConfigError):self.change('set.update',child)
+        self.change('set.update',{**child,'title':'Updated child'})
+        self.assertEqual(preferences.inspect(self.profile)['sets'][1]['meals'],[child['id']])
         with self.assertRaises(ConfigError):self.change('set.create',{**self.meal([self.reference]),'hosts':['node']})
         self.assertNotIn('hosts',child)
         state=self.change('set.delete',{'id':child['id']})
@@ -102,6 +103,31 @@ groups:
         self.assertEqual(len(choices),1)
         self.assertTrue(choices[0]['inventory_selection']['properties'])
         self.assertFalse((self.root/'inventory.yaml').exists())
+
+    def test_meal_updates_preserve_parent_links_validate_graph_and_change_expansion(self):
+        child=self.change('set.create',self.meal([self.reference]))['sets'][0]
+        parent=self.change('set.create',self.meal(meals=[child['id']]))['sets'][1]
+        before,binding=preferences.expand(self.profile,[],[parent['id']])
+        previous=preferences.inspect(self.profile)['revision']
+        ref='system/inventory/hardware-sensors'
+        updated={'id':child['id'],**self.meal([ref],selections={ref:{'properties':['sensors.fans']}}),'title':'New child'}
+        state=self.change('set.update',updated)
+        self.assertEqual(state['sets'][0]['id'],child['id'])
+        self.assertEqual(state['sets'][1]['meals'],[child['id']])
+        choices,new_binding=preferences.expand(self.profile,[],[parent['id']])
+        self.assertNotEqual(binding,new_binding)
+        self.assertEqual(choices[0]['reference'],ref)
+        self.assertEqual(choices[0]['inventory_selection'],{'properties':['sensors.fans']})
+        with self.assertRaises(SiteConflict):self.change('set.update',updated,previous)
+        path=self.root/preferences.FILENAME;original=path.read_bytes()
+        invalid=[{**updated,'meals':[parent['id']]},{**updated,'id':'bundle:foundation'},
+                 {**updated,'recipes':[':missing'],'selections':{}},{**updated,'hosts':['node']},
+                 {**updated,'selections':{ref:{'properties':['missing.field']}}}]
+        for candidate in invalid:
+            with self.subTest(candidate=candidate),self.assertRaises(ConfigError):self.change('set.update',candidate)
+            self.assertEqual(path.read_bytes(),original)
+        self.change('set.update',{'id':child['id'],**self.meal()})
+        with self.assertRaisesRegex(ConfigError,'empty_meal'):preferences.expand(self.profile,[],[parent['id']])
 
     def test_graph_cycles_unknown_references_and_bundle_changes(self):
         a={'id':'a',**self.meal(meals=['b'])};b={'id':'b',**self.meal(meals=['a'])}
@@ -250,4 +276,13 @@ class RecipeLibraryHTTPTests(unittest.IsolatedAsyncioTestCase):
         status,_,body=await self.request('/api/v1/recipe-runs/preview','POST',body=json.dumps(selection).encode(),headers=json_headers,app=app)
         self.assertEqual(status,200)
         self.assertEqual(json.loads(body)['pairs'][0]['inventory_selection']['properties'],['sensors.fans'])
+        self.assertFalse(app.state.recipe_runs.directory.exists())
+        preview_id=json.loads(body)['preview_id']
+        mutation={'profile':'main','expected_revision':preferences.inspect(self.fixture.profile)['revision'],
+                  'action':'set.update','changes':{**saved,'title':'HTTP updated meal'}}
+        self.assertEqual((await self.request('/api/v1/recipe-menu/preferences','POST',body=json.dumps(mutation).encode(),headers=json_headers,app=app))[0],200)
+        # Editing a referenced meal invalidates a reviewed execution before any worker starts.
+        status,_,body=await self.request('/api/v1/recipe-runs','POST',body=json.dumps({'preview_id':preview_id,'confirmed':True}).encode(),headers=json_headers,app=app)
+        self.assertEqual(status,409)
+        self.assertIn(b'recipe_preview_changed_review_again',body)
         self.assertFalse(app.state.recipe_runs.directory.exists())

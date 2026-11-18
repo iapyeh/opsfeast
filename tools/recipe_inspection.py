@@ -21,7 +21,7 @@ def recipe_path(value):
     return result
 
 
-def inspect_one(directory, requested):
+def inspect_one(directory, requested, *, metadata=None):
     report = {'directory': str(directory), 'status': 'success', 'errors': [],
               'descriptor': None, 'implementations': [], 'coverage': None,
               'runner_contract': 'not-validated'}
@@ -29,13 +29,15 @@ def inspect_one(directory, requested):
         descriptor = directory / 'recipe.yaml'
         if not descriptor.resolve().is_relative_to(directory.resolve()):
             raise ConfigError('recipe descriptor escapes recipe directory')
-        metadata = read_yaml(descriptor)
+        metadata = read_yaml(descriptor) if metadata is None else metadata
         if not isinstance(metadata, dict):
             raise ConfigError('recipe descriptor must be a mapping')
         plain_values(metadata, 'recipe descriptor')
         from recipe_identity import validate as validate_identity
         validate_identity(metadata, directory)
         report['descriptor'] = metadata
+        from opsfeast.recipe_authoring import validate as validate_definition
+        validate_definition(metadata)
         from retention_store import describe
         report['retention'] = describe(metadata, directory)
         if 'collection' in metadata:
@@ -94,15 +96,18 @@ def inspect_one(directory, requested):
             except (ConfigError, OSError, UnicodeError) as exc:
                 report['runner_contract'] = 'invalid-inventory-system'
                 report['errors'].append(str(exc))
-        elif 'runner' in metadata:
-            try:
-                recipe_contract.validate(directory, metadata)
-                report['runner_contract'] = 'valid-' + metadata['runner']['contract']
-            except (ConfigError, OSError, UnicodeError) as exc:
-                report['runner_contract'] = 'invalid-' + str((metadata.get('runner') or {}).get('contract', 'python-session')) if isinstance(metadata.get('runner'), dict) else 'invalid-python-session'
-                report['errors'].append(str(exc))
+        elif metadata.get('runner') and (metadata['runner'].get('entrypoint') or metadata['runner'].get('contract') not in ('',None)):
+            if not metadata['runner'].get('entrypoint'):
+                report['runner_contract'] = 'not-configured'
+            else:
+                try:
+                    recipe_contract.validate(directory, metadata)
+                    report['runner_contract'] = 'valid-' + metadata['runner']['contract']
+                except (ConfigError, OSError, UnicodeError) as exc:
+                    report['runner_contract'] = 'invalid-' + str(metadata['runner'].get('contract', 'python-session'))
+                    report['errors'].append(str(exc))
         else:
-            report['runner_contract'] = 'unsupported-recipe-id'
+            report['runner_contract'] = 'not-configured' if metadata.get('descriptor_version')=='0.3.0' else 'unsupported-recipe-id'
     except (ConfigError, OSError, UnicodeError) as exc:
         report['errors'].append(str(exc))
     if report['errors']:

@@ -80,6 +80,13 @@ def install(app, *, product, root, require_admin, json_body):
         from opsfeast.recipe_detail import inspect
         return inspect(product,profile=profile,reference=reference,offset=offset,limit=limit,host=host)
 
+    @app.get('/api/v1/recipe-content')
+    def recipe_content(request: Request, profile: str, reference: str):
+        require_admin(request)
+        from opsfeast.recipe_authoring import inspect
+        from management_view import masked
+        return masked(inspect(Instance.open(product).profile(profile), reference))
+
     @app.post('/api/v1/recipe-detail/defaults')
     async def defaults(request: Request):
         require_admin(request)

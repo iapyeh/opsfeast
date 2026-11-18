@@ -11,6 +11,17 @@ For agent website operations, use the [memory-only owner controller](agent-owner
 
 # Documentation
 
+For the separate Recipes review list and execution plate, see [Web entrance routing](web-recipe-menu.md#recipes-review-and-execution-plate), including changed execution/report bookmark paths.
+
+
+For live review while an agent creates a recipe, see [Recipe definitions and conversational authoring](recipe-definition-authoring.md).
+
+
+For the proposed unified Recipe architecture, read [Recipe flow design](recipe-flow-design.md),
+[Python-style plan language](recipe-flow-language.md), [the USD case](recipe-flow-exchange-rate.md)
+and [conformance/handoff](recipe-flow-conformance.md). These are design specifications
+and offline examples; current runner and import support remain unchanged.
+
 For shared multi-host investigations, see [shared task river 0.1.0](shared-console.md): independent connections, host-tagged blocks, per-host TAB focus and one chronological river.
 
 For chat-owned live SSHScript execution and streamed Console output, use [Console worker 0.3.0](console-agent.md).
@@ -198,4 +209,17 @@ missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
 retention and linked report receipts. No host execution or remediation follows
 from source inspection, download or offline reporting.
 
-*Last modified: 2026-11-13 23:25:46*
+## Python workflows
+
+[Executable Python workflows and browser handoff](python-workflows.md) documents
+the shipped delayed-connection runner, agent browser requests, deterministic USD
+utilities and guarded dispatch. The recipe-flow documents separately specify
+virtual plans and a proposed closed package architecture.
+
+## Workflow execution visibility
+
+[Live workflow rivers](workflow-rivers.md) documents the explicit launch opt-in,
+early reader URL, runner-owned recording/streaming, prerequisites and failure
+behavior for agent-led Python workflows.
+
+*Last modified: 2026-11-17 23:17:21*

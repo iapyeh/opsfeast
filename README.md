@@ -2,6 +2,12 @@ For agent website operations, use the [memory-only owner controller](docs/agent-
 
 # OpsFeast
 
+Use **Recipes** (`/recipes`) to browse/review recipes and their developing content, and **執行餐盤** (`/recipe-plate`) to compose a run. See [review and execution navigation](docs/web-recipe-menu.md#recipes-review-and-execution-plate).
+
+
+Recipes can be [drafted during conversation](docs/recipe-definition-authoring.md): the agent saves an initial ordinary definition and updates a stable Web preview as the human reviews it. Missing entrypoints keep execution actions hidden; no placeholder is created.
+
+
 For incremental human/agent operations, use the shipped [Console worker 0.3.0](docs/console-agent.md): it creates the river before connecting and automatically forwards Console output. No temporary bridge is needed.
 
 
@@ -204,6 +210,7 @@ For agents developing OpsFeast, [agent guidance and human-agent operation are co
 | --- | --- |
 | Manage profiles, hosts.yaml, platform facts or connection/su/sudo diagnostics | [Ops hosts skill](skills/opsfeast-hosts/SKILL.md), then [host diagnostics](docs/host-diagnostics.md) for tests |
 | Discover, execute, author, share or review recipes | [Ops recipes skill](skills/opsfeast-recipes/SKILL.md), then the [recipe catalog](recipes/README.md) and selected recipe guide |
+| Design numbered Python-style hybrid Recipe flow plans (design only) | [Flow-plan skill](skills/opsfeast-recipe-flows/SKILL.md), [architecture](docs/recipe-flow-design.md) and [conformance](docs/recipe-flow-conformance.md); no new runner/import support |
 | Read, recover, export or combine retained result data | [Result-data skill](skills/opsfeast-result-data/SKILL.md), then [result workflow](docs/result-data.md) |
 | Write or adapt SSHScript commands and sessions | [Included SSHScript skill](skills/sshscript/SKILL.md), its [Agent Guide](skills/sshscript/references/agent-guide.md), [version policy](skills/sshscript/references/versioning.md) and relevant [API guide](skills/sshscript/references/api-guide.md) sections |
 
@@ -383,4 +390,4 @@ PID markers refuse startup; ask your agent to inspect exceptions. See [manual
 startup and agent PID recovery](docs/web-server.md#manual-shell-launcher-and-pid-marker)
 for interpreter selection, background/controller mode and precise limits.
 
-*Last modified: 2026-11-16 14:50:01*
+*Last modified: 2026-11-17 15:20:50*

@@ -1,6 +1,7 @@
 import {copy as c,renderDetail,renderRecords} from './locales/recipe-detail-zh-TW.mjs';
 import {domains} from './locales/recipe-menu-zh-TW.mjs';
 import {recipeDomains} from './recipe-menu-layout.mjs';
+import {mountContent} from './recipe-content.mjs';
 export {renderDetail,renderRecords};
 export function defaultChanges(root,variables) {
  const changes={},remove=[];
@@ -22,6 +23,7 @@ export async function mountRecipeDetail(root,{profile,reference,e,api}) {
   data.automatic_categories=recipeDomains(data.recipe);data.selected_host=host;
   const categories=[...Object.entries(domains).map(([id,title])=>({id,title})),...data.preferences.categories];
   root.innerHTML=renderDetail(data,categories,e);
+  if(data.content)mountContent(root,data.content,{profile,reference,e,api,targets:{purpose:root.querySelector('#recipe-content'),readiness:root.querySelector('#recipe-readiness-content'),technical:root.querySelector('#recipe-technical-content')}});
   const execute=(selector,action)=>root.querySelector(selector)?.addEventListener('submit',async event=>{
    event.preventDefault();const button=event.submitter||event.target.querySelector('[type=submit]');if(button)button.disabled=true;
    try{await action(event.target);await load();root.querySelector('#recipe-detail-notice').textContent=c.saved;}catch(error){event.target.querySelector('[role="status"]').textContent=error.message||c.error;if(button)button.disabled=false;}

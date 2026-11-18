@@ -60,13 +60,14 @@ def menu(profile=None):
     for source in data['recipes']:
         ref = source['reference']
         meta = source['descriptor']
+        runner=meta.get('runner') if isinstance(meta.get('runner'),dict) else {}
         title, domain, purpose, limitation = GUIDANCE.get(ref, (source['title'] or ref, 'reports' if source['kind'] == 'report' else 'custom', source['description'], '使用者／外部來源：請先審閱程式、相依性與副作用。'))
-        items.append({key: source.get(key) for key in ('reference', 'source', 'version', 'kind', 'runnable', 'status', 'inputs', 'dependencies', 'verification', 'availability_evidence', 'author', 'license')})
+        items.append({key: source.get(key) for key in ('reference', 'source', 'version', 'kind', 'runnable', 'web_runnable', 'launch', 'status', 'errors', 'inputs', 'dependencies', 'verification', 'availability_evidence', 'author', 'license')})
         items[-1].update(title=title, domain=domain, purpose=purpose, limitation=limitation,
-                         is_meal=meta.get('runner',{}).get('contract')=='recipe-meal',access_mode=meta.get('access_mode', 'not_declared'), platforms=meta.get('platforms', {}),
+                         is_meal=runner.get('contract')=='recipe-meal',access_mode=meta.get('access_mode', 'not_declared'), platforms=meta.get('platforms', {}),
                          side_effects=meta.get('side_effects', []), permissions=meta.get('permissions', {}),
                          guide=('recipes/' + ref + '/README.md') if ref in GUIDANCE else None)
-        if source['runnable'] and (meta.get('collection') or meta.get('inventory') or meta.get('runner',{}).get('contract')=='recipe-meal'):
+        if source['runnable'] and (meta.get('collection') or meta.get('inventory') or runner.get('contract')=='recipe-meal'):
             from inventory_jobs import inspect_collection
             items[-1]['inventory_catalog'] = inspect_collection(Path(source['directory']), meta)
     # Catalog's expanded properties carry their provider IDs; keep one source of truth.

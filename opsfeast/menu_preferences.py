@@ -122,10 +122,15 @@ def mutate(product,*,profile,expected_revision,action,changes):
                 if item['reference']!=changes['reference'] or not item.get('source') or item.get('source')=='repository' or ':' not in changes['reference']:raise MenuError('only_user_recipe_categories_are_editable')
                 if changes['categories'] is None:data['assignments'].pop(item['reference'],None)
                 else:data['assignments'][item['reference']]=changes['categories']
-            elif action=='set.create':
-                if set(changes)!={'title','description','recipes','meals','selections'}:raise MenuError('invalid_set_fields')
+            elif action in ('set.create','set.update'):
+                allowed={'title','description','recipes','meals','selections'}|({'id'} if action=='set.update' else set())
+                if set(changes)!=allowed:raise MenuError('invalid_set_fields')
+                target=None
+                if action=='set.update':
+                    target=next((s for s in data['sets'] if s['id']==changes['id']),None)
+                    if target is None:raise MenuError('user_set_not_found')
                 references(changes['recipes']);meal_ids(changes['meals'])
-                if not changes['recipes'] and not changes['meals']:raise MenuError('user_set_requires_members')
+                if action=='set.create' and not changes['recipes'] and not changes['meals']:raise MenuError('user_set_requires_members')
                 from recipe_catalog import catalog
                 available={r['reference']:r for r in catalog(selected.root)['recipes'] if r['runnable']}
                 if any(ref not in available for ref in changes['recipes']):raise MenuError('set_contains_unavailable_recipes')
@@ -134,7 +139,8 @@ def mutate(product,*,profile,expected_revision,action,changes):
                 for ref,selection in changes['selections'].items():
                     if selection is None:raise MenuError('invalid_set_selections')
                     item=available[ref];inventory_selection(item['descriptor'],Path(item['directory']),selection)
-                data['sets'].append({'id':str(uuid4()),**changes})
+                if target is None:data['sets'].append({'id':str(uuid4()),**changes})
+                else:target.update(changes)
             elif action=='set.delete':
                 if set(changes)!={'id'} or not any(s['id']==changes['id'] for s in data['sets']):raise MenuError('user_set_not_found')
                 data['sets']=[s for s in data['sets'] if s['id']!=changes['id']]

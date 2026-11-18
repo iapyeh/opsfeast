@@ -1,7 +1,6 @@
 import {mountRecipeRun,mountRecipeRunHistory} from './recipe-run-view.mjs';
 import {reviewPlate} from './recipe-execution.mjs';
 import {mountMenuLayout} from './recipe-menu-layout.mjs';
-import {mountRecipeDetail} from './recipe-detail.mjs';
 import {mountReportViewer} from './report-viewer.mjs';
 import {copy as c,states,renderCard,renderBlueprint,renderReview,renderRun} from './locales/recipe-menu-zh-TW.mjs';
 export {domains,renderCard,renderBlueprint,renderReview,renderRun} from './locales/recipe-menu-zh-TW.mjs';
@@ -42,12 +41,13 @@ export async function mountRecipeMenu(root,{e,profile=null,profiles=null,search=
   try {
     if(!profiles)profiles=await api('/api/v1/profiles');
     profile=profiles.default_profile;
-    if(query.get('recipe'))return mountRecipeDetail(root,{profile,reference:query.get('recipe'),e,api});
     if(query.get('report')&&!profile)throw new Error(c.failure('explicit_profile_required'));
     if(query.get('report'))return mountReportViewer(root,{e,profile,identifier:query.get('report'),artifact:query.get('artifact'),api});
     if(query.get('history'))return mountRecipeRunHistory(root,{profile,e,api});
     if(query.get('run'))return mountRecipeRun(root,{profile,id:query.get('run'),e,api});
     const data=await api('/api/v1/recipe-menu'+(profile?'?'+new URLSearchParams({profile}):''));
-    mountMenuLayout(root,{data,profiles,profile,initialRecipe:query.get('recipe'),e,api,onExecute:selection=>reviewPlate(root,{profile,selection,e,api,catalog:data,onEdit:()=>mountRecipeMenu(root,{e,profile,profiles,search,fetchImpl}),onStarted:run=>{location.href=url('/recipes',profile,{run:run.id});}}),onProfile:name=>{location.href=url('/recipes',name);}});
+    mountMenuLayout(root,{data,profiles,profile,initialRecipe:query.get('add'),initialMeal:query.get('meal'),e,api,onExecute:selection=>reviewPlate(root,{profile,selection,e,api,catalog:data,onEdit:()=>mountRecipeMenu(root,{e,profile,profiles,search:'',fetchImpl}),onStarted:run=>{location.href=url('/recipe-plate',profile,{run:run.id});}}),onProfile:name=>{location.href=url('/recipe-plate',name);}});
+    // Consume the add request once: resetting/reloading must keep an empty plate.
+    if((query.has('add')||query.has('meal'))&&typeof window!=='undefined')window.history.replaceState(null,'',url('/recipe-plate',profile));
   }catch(exc){root.innerHTML=`<p role="alert">${e(exc.message)}</p>`;}
 }
