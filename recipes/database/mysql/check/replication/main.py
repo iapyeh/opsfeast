@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 import re
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 
 def configuration(values):

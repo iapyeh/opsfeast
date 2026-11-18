@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "linux-local-accounts",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "access_mode": "read",
   "title": "Inventory Linux local users and groups",
   "description": "Bounded local /etc/passwd and /etc/group projection; no hashes or login eligibility claims.",

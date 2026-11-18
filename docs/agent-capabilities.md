@@ -30,6 +30,8 @@ Use [unified Recipe definition authoring](recipe-definition-authoring.md): every
 [Recipe definition authoring 0.1.0](recipe-definition-authoring.md): `opsfeast.recipe_authoring.new_definition/save/inspect` and `python -B -m opsfeast.recipe_authoring` provide Profile-local, revision-checked snapshots and stable auto-updating Web previews. Definitions without entrypoints are cataloged but cannot execute. Save an ordinary initial definition when conversational creation begins.
 
 
+For Web plate progress, reuse the existing [saved execution API and river](web-recipe-menu.md#execution-page-and-return-navigation). New runs persist bounded `progress_events` in controller receive order across hosts; each event carries sequence, receive time, host, recipe references and text. The viewer renders a continuous timestamped log. Shared workers emit once; absent old events and truncation stay explicit. Reading never executes work.
+
 ## Design-only Recipe flow plans
 
 Use [the flow-plan skill](../skills/opsfeast-recipe-flows/SKILL.md) to design/review
@@ -967,4 +969,13 @@ operation, see the [Profile-local guard and read-only inspection](python-workflo
 Use `opsfeast.operation_guard` and the staged approval, preserving older guard
 records and rejecting changed receipts.
 
-*Last modified: 2026-11-18 14:35:13*
+All 28 Bundle Recipes now use [staged execution](staged-recipe-execution.md).
+Host CLI, saved inventory and due dispatch record stages automatically. Offline
+reports use one controller-scoped Python stage through `recipe_reports.run_report`
+or `recipes run`, without host targets; JSON adds execution/river receipts. Web
+plates create one generated `feast/plate` parent with the saved plate UUID, covering
+grouped routine workers. Reuse existing recipe-runs reads for that selection; it is
+not an installable Recipe or a CLI resume reference. Report Agent/multiple stages
+remain unsupported. Preserve user/external Recipes and historical data.
+
+*Last modified: 2026-11-18 15:56:07*

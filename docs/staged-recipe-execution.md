@@ -91,17 +91,83 @@ stage orchestration.
 
 ## CLI, inventory scheduling and activity
 
-The bundled System configuration Inventory Recipe opts in. Its normal
-`recipes run system/inventory/system --host HOST ... --json` and saved standalone
-`inventory run` or `inventory query --save` paths manage a Python stage
-automatically. The inventory dispatcher creates one execution per enrolled
-staged Recipe for its due hosts and returns an `executions` array. The existing
-schedule opt-in, due windows, result/retention handling and retry policy still
-apply. Dry-run, no-due schedules and unsaved queries keep their existing behavior.
-Recipe code should use these shared entrypoints instead of creating a river per
-worker. Broader adoption by other Recipes, offline reports and grouped Web meal
-workers is outside this version. A Web worker invoking a standalone migrated
-Recipe uses the same CLI executor within its existing invocation scope.
+All 28 bundled Recipes declare staged execution. Host operations, the eleven
+Inventory children and Overview use one Python stage while retaining their existing
+runner contracts. The stage coordinates lifecycle and evidence; it does not replace
+Core Recipe scopes, routine permission phases, selectors or retention schemas.
+Normal `recipes run` creates the stage automatically across the selected hosts.
+Standalone saved `inventory run` and `inventory query --save` do the same. The
+inventory dispatcher creates one execution per enrolled staged Recipe for its due
+hosts and returns an `executions` array. Existing schedule opt-in, due windows,
+result/retention handling and retry policy still apply. Dry-run, no-due schedules
+and unsaved queries do not create executions.
+
+### Offline reports
+
+The three bundled `python-report` Recipes use one Python stage. `run_report` and
+`recipes run REPORT` create it automatically with `scope: controller`, no host
+targets and `trigger: report`. No SSHScript session or live Web service is required.
+The Console session is labelled as controller work, without inventing a host.
+Progress and the saved report result ID are recorded in that river. The normal
+report JSON/CLI result adds `execution_id`, `execution_status` and `river`; artifacts
+remain under the same report directory. Report Python, inputs and artifact validation
+keep their existing contracts. A report may not declare multiple stages or an Agent
+stage, and report CLI invocations still reject `--execution-id`. Use ordinary
+workflow Recipes for Agent/Python handoffs. A failure outside normal result handling
+ends the claimed stage as unknown; incomplete evidence never permits replay.
+
+### Web execution plates and grouped routine workers
+
+Every confirmed Web plate creates one `feast/plate` execution, using the saved
+Web run UUID as its execution and Console session UUID. It has one Python stage
+and records the ordered selection as `members` (reference, host_id, fingerprint).
+It declares every selected host, or controller scope for a report-only plate.
+The existing Profile-scoped `/api/v1/recipe-runs/ID` response includes `execution_id`,
+`execution_status` after completion and `river`. This generated plate is a saved
+selection, not an installable Recipe reference or a new CLI resume target.
+
+The coordinator appends received worker progress to one common streaming log
+block with receive time, host and Recipe references, preserving the timestamped
+plate log as well. It does not create one Console block per output chunk or task.
+The Console copy keeps its first 128 KiB (UTF-8) plus an explicit truncation
+notice, then continues work; the plate view independently retains its newest
+bounded progress. Full per-task receipts stay in the saved plate record. Grouped routine workers keep shared connections and
+independent child results; they no longer miss the parent execution lifecycle.
+Standalone migrated Recipes invoked by a worker can additionally retain their
+own Recipe execution receipts. These are child work, not replacement parent
+rivers. Local reports within an operation likewise keep their report receipts.
+Stop preserves skipped/terminated task evidence; uncertain local/remote outcomes
+remain unknown. A recording failure is explicit and never triggers an automatic
+rerun. The existing plate UI remains one continuous receive-order log across hosts.
+Activity merges the staged parent with its worker batches into one row, retaining
+the parent river link and independent host result links.
+
+### Post-collection execution receipts
+
+Saved standalone inventory and internal single-host operation results store the
+final stage receipt in `execution_receipt` 0.1.0: `schema_version`, `execution_id`,
+`execution_status` and `river`. Their invocation return values additionally project
+those three receipt values at the top level, matching the normal batch CLI.
+The [additive raw schema](../schemas/raw-retention-context.schema.json) documents
+this field. It is excluded from `retention_replay.raw_digest`, just like existing
+retention/content receipts, so finalizing a stage does not invalidate the saved
+observation's provenance or replay idempotency. Pre-existing top-level workflow
+river and execution identity remain part of the original digest; historical
+records are not rewritten or reinterpreted. Offline report files are not retained
+host observations and keep their execution receipt values at the top level.
+
+### Adoption and compatibility
+
+The other 27 bundled Recipe versions were incremented when their stage declarations
+were added; System configuration already declared its stage. Exact references,
+inputs, permissions, result payloads and retention contracts are unchanged.
+Fingerprint-bound previews, saved invocations and transferred packages need review
+against the new definitions; regenerate a stale preview rather than bypassing its
+checks. Existing observations, report artifacts and execution histories are not
+rewritten or replayed. User/external Recipes are not automatically modified. Recipes
+without a stage declaration retain their explicit supported runner contract; the
+virtual-plan interpreter remains unimplemented. Reload Web after reconciling active
+work to load the coordinator/report changes; preserve its port/data/controller.
 
 Registered Profiles use installation-local Console storage and store execution
 state under their management root in `.recipe-executions/`. An unregistered
@@ -123,13 +189,11 @@ the incomplete evidence and use the existing business guard before any repeat.
 Console block and byte budgets apply. Execution state and Console events are
 published to separate stores; a failed write can leave an incomplete view.
 
-Public tests use temporary Profiles, fake sessions and a credential-free Web
+Public tests include `tests/test_recipe_stage_adoption.py`, `tests/test_recipe_runs.py`
+and `tests/test_inventory_execution_river_pilot.py`, using temporary Profiles, fake sessions and a credential-free Web
 API. They cover multi-threaded CLI and scheduled Inventory, cancellation,
 exclusive claims, changed bindings, sequential Agent/Agent/Python/Agent
 handoff and live-to-history activity links. They do not run billing, contact
 managed hosts or send email.
 
-
-
-
-*Last modified: 2026-11-18 10:35:29*
+*Last modified: 2026-11-18 16:09:45*

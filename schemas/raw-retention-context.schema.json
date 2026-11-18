@@ -43,7 +43,59 @@
         }
       },
       "additionalProperties": true
+    },
+    "execution_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Post-collection staged execution receipt; excluded from the observation business digest.",
+      "required": [
+        "schema_version",
+        "execution_id",
+        "execution_status",
+        "river"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1.0"
+        },
+        "execution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "execution_status": {
+          "enum": [
+            "waiting",
+            "running",
+            "success",
+            "partial",
+            "failed",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "river": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "session_id",
+            "reader_url",
+            "history_url"
+          ],
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "reader_url": {
+              "type": "string"
+            },
+            "history_url": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
-  "$comment": "Last modified: 2026-10-19 11:44:32"
+  "$comment": "Last modified: 2026-11-18 16:03:00"
 }

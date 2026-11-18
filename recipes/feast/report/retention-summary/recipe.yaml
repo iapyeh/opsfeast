@@ -1,6 +1,11 @@
 descriptor_version: 0.3.0
 id: report-retention
-version: 0.1.0
+version: 0.1.1
+execution:
+  version: 0.1.0
+  stages:
+    - id: report
+      executor: python
 author: {name: Bundle, contacts: [Bundle]}
 license: MIT
 title: Retained observations in Markdown and HTML

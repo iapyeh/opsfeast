@@ -25,6 +25,8 @@ from .core import Instance
 VERSION = '0.1.0'
 MAX_STDOUT = 4 * 1024 * 1024
 MAX_PROGRESS = 65536
+MAX_RIVER_PROGRESS = 131072
+MAX_RIVER_EVENTS = 2048
 WORKER_DEADLINE = 600
 MAX_RECIPES = 32
 
@@ -156,6 +158,9 @@ class RecipeRuns:
         self.plans = {}
         self.active = None
         self.processes = {}
+        self.execution = None
+        self.execution_log = None
+        self.execution_log_offset = 0
         self.stopping = threading.Event()
         self.thread = None
 
@@ -318,8 +323,25 @@ class RecipeRuns:
                       'confirmation': 'explicit_selection_confirmed',
                       'selected_meals':plan.get('meals',[]),
                       'timeout': plan['public']['timeout'], 'threads':threads,
+                      'progress_events': [], 'progress_truncated': False, 'progress_sequence': 0,
                       'tasks': [{**p, 'meal_titles':plan['activity_meals'].get(p['reference'], []), 'state': 'queued', 'progress': '', 'progress_truncated': False,
                                  'result': None, 'local_termination': None} for p in plan['public']['pairs']]}
+            from .staged_execution import Executions, PythonStage, binding
+            store = Executions(plan['root'], installation=self.product)
+            hosts = list(dict.fromkeys(task['host_id'] for task in record['tasks'] if task['host_id'] is not None))
+            identity = binding('feast/plate', {'version': '0.1.0'}, _digest(plan['public']), hosts)
+            state = store.begin(**identity, title='Recipe plate', trigger='web',
+                stages=[{'id': 'execute', 'executor': 'python'}],
+                scope='hosts' if hosts else 'controller', execution_id=record['id'],
+                members=[{'reference': task['reference'], 'host_id': task['host_id'],
+                          'fingerprint': task['fingerprint']} for task in record['tasks']])
+            self.execution = PythonStage(store, state['id'], identity)
+            self.execution_log = str(uuid4())
+            self.execution_log_offset = 0
+            store.records.add_block(state['id'], {'event_id': str(uuid4()),
+                'block_id': self.execution_log, 'kind': 'stdout', 'title': 'Execution log',
+                'text': '', 'form': None})
+            record.update(execution_id=state['id'], river=state['river'])
             self._save(record)
             self.active = record['id']
             self.stopping.clear()
@@ -376,9 +398,24 @@ class RecipeRuns:
                 record['completed_at']=now()
                 if any(t['local_termination'] for t in record['tasks']):record['remote_cleanup']='unknown'
                 with self.lock:
-                    try:self._save(record)
+                    try:
+                        if self.execution is not None:
+                            reports = [{'status': t['state'],
+                                        'reason_code': 'outcome_unknown' if t['local_termination'] else t.get('reason_code')}
+                                       for t in record['tasks']]
+                            self.execution.store.records.finish(self.execution.id, self.execution_log,
+                                {'event_id': str(uuid4()), 'status': 'completed' if record['state'] == 'completed' else 'interrupted'})
+                            state = self.execution.finish(reports, 0 if record['state'] == 'completed' else 1)
+                            record['execution_status'] = state['status']
+                        self._save(record)
+                    except Exception as exc:
+                        record.update(state='failed', execution_status='unknown',
+                                      execution_recording_error=type(exc).__name__)
+                        self._save(record)
                     finally:
                         self.active=None
+                        self.execution=None
+                        self.execution_log=None
                         self.processes.clear()
                         plan['private']=[]
 
@@ -420,6 +457,38 @@ class RecipeRuns:
                 with self.lock:
                     self._save(record)
 
+    def _append_progress(self, record, task, spec, text):
+        """Append once per worker read, under the shared receive-order lock."""
+        events = record['progress_events']
+        record['progress_sequence'] += 1
+        events.append({'sequence': record['progress_sequence'], 'received_at': now(),
+                       'host_id': task['host_id'],
+                       'references': [p['reference'] for p in spec.get('batch', [spec])],
+                       'text': text})
+        if self.execution is not None and self.execution.id == record.get('id') and not record.get('river_progress_truncated'):
+            entry = events[-1]
+            prefix = f"[{entry['received_at']}] {entry['host_id'] or '[controller]'} · {'、'.join(entry['references'])} · "
+            message = '\n'.join(prefix + line for line in text.rstrip('\n').split('\n')) + '\n'
+            for offset in range(0, len(message), 2048):
+                part = message[offset:offset + 2048]
+                if self.execution_log_offset + len(part.encode('utf-8')) > MAX_RIVER_PROGRESS:
+                    part = '\n[Progress truncated; task receipts remain in the saved plate.]\n'
+                    record['river_progress_truncated'] = True
+                self.execution.store.records.append(self.execution.id, self.execution_log,
+                    {'event_id': str(uuid4()), 'offset': self.execution_log_offset, 'text': part})
+                self.execution_log_offset += len(part.encode('utf-8'))
+                if record.get('river_progress_truncated'):
+                    break
+        size = sum(len(event['text']) for event in events)
+        while len(events) > MAX_RIVER_EVENTS or size > MAX_RIVER_PROGRESS:
+            excess = size - MAX_RIVER_PROGRESS
+            if len(events) == 1:
+                events[0]['text'] = events[0]['text'][excess:]
+                record['progress_truncated'] = True
+                break
+            size -= len(events.pop(0)['text'])
+            record['progress_truncated'] = True
+
     def _invoke(self, task, spec, record):
         if self.stopping.is_set():
             task['state']='skipped'
@@ -458,6 +527,7 @@ class RecipeRuns:
                                 combined = task['progress'] + text
                                 task['progress_truncated'] |= len(combined) > MAX_PROGRESS
                                 task['progress'] = combined[-MAX_PROGRESS:]; changed = True
+                                self._append_progress(record, task, spec, text)
                     if changed:
                         with self.lock:
                             if self.stopping.is_set(): record['state'] = 'stopping'

@@ -3,7 +3,7 @@ from datetime import datetime
 import html
 import json
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 
 def execute(*, context, timeout):

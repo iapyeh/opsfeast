@@ -865,7 +865,7 @@ links have not been read; expand the disclosure to read them. Incomplete task
 summaries/diagnosis load on expansion only, with `item_id` and `host_id` filtering,
 and appear inside that host’s task. Reuse these reads instead of scanning all raw
 results or preloading every host’s details. The list omits the separate Status column. The river
-scrolls with the page; navigation returns to Activity and logs or the execution plate.
+scrolls with the page and shows one receive-order log with a timestamp, host and recipe on every line, without host blocks. Reuse the saved `progress_events` from the recipe-runs GET API; do not merge per-task snapshots to infer chronology. Missing historical events and bounded-output truncation remain explicit. See the [execution page contract](../../docs/web-recipe-menu.md#execution-page-and-return-navigation) for limits and service reload requirements. Navigation returns to Activity and logs or the execution plate.
 Host completion
 totals and a closed result-count disclosure stay in the list; stage/receipt
 summaries for incomplete tasks appear with the river and task results. CLI-only
@@ -999,10 +999,18 @@ canonical stream/storage/error/output-privacy limits before authoring.
 For recipes declaring `execution`, first read the
 [staged execution contract](../../docs/staged-recipe-execution.md) for stage
 IDs, launch alignment, typed output, failure and authorization boundaries.
-System configuration Inventory uses one Python stage with the existing runner
-and selector semantics. Normal CLI and due inventory dispatch open the river
-automatically. For Agent-first recipes use `recipes execution begin`, `claim`,
+All 28 bundled Recipes declare a Python stage with their existing runner and
+selector semantics. Normal host CLI and due inventory dispatch record their river
+automatically. The three offline reports create controller-scoped stages without
+hosts through `recipe_reports.run_report` or normal `recipes run`; results add
+execution ID/status/river while artifacts and retention stay in their original stores.
+Reports support one Python stage and no `--execution-id` handoff. Web plates record
+one parent execution/river with the same UUID as the saved plate, including grouped
+routine workers. Reuse its recipe-runs GET response and saved selection rather than
+creating a river per host. `feast/plate` is a generated record, not an installable
+Recipe or CLI resume reference. User/external Recipes are not rewritten. Changed
+versions/fingerprints require fresh review of stale previews and saved invocations. For Agent-first recipes use `recipes execution begin`, `claim`,
 `progress`, `finish` and `recipes run --execution-id` as shown in the
 contract. Use the existing typed workflow and host/session helpers for I/O.
 
-*Last modified: 2026-11-18 10:35:29*
+*Last modified: 2026-11-18 15:56:07*

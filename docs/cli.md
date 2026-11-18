@@ -1,5 +1,7 @@
 For agent-owned Web startup and password management, use [owner controller 0.1.0](agent-owner.md): `python -B -u -m opsfeast.web --agent-control`, then JSON-lines request/admin.password/worker.start/worker.send controls. No token files are generated.
 
+All bundled Recipes now declare [staged execution](staged-recipe-execution.md). Normal recipes run creates the execution/river automatically. The three offline reports use one controller-scoped Python stage with no host selection; their result JSON adds execution_id, execution_status and river, and still rejects --execution-id. Saved inventory and due dispatch retain their existing selectors and scheduling authorization. Changed Recipe versions/fingerprints require review of saved invocations; histories are preserved.
+
 # Ops command-line reference
 
 Recipe definition authoring has an always-JSON module CLI: `python -B -m opsfeast.recipe_authoring --profile NAME --reference :PATH [--snapshot FILE]`. See [definition fields, revisions and errors](recipe-definition-authoring.md). This command saves or reads local text snapshots and never runs recipes.
@@ -1170,4 +1172,4 @@ include `river.session_id`, `reader_url`, `history_url`; recording errors are
 explicit and never authorize reruns. Read [workflow rivers](workflow-rivers.md)
 for prerequisites, exact interfaces, streaming limits and verification scope.
 
-*Last modified: 2026-11-18 15:27:06*
+*Last modified: 2026-11-18 15:56:07*

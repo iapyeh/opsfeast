@@ -27,4 +27,13 @@ Success data.account is the observed nonempty single-line account name, not proo
 
 Synthetic runner/result tests and a temporary local credential-free execution are validation evidence. Remote SSH and native su/sudo are unverified; listed platforms are declared applicability, not all-platform execution evidence. Attribution is Bundle, MIT; include LICENSE when packaging.
 
-*Last modified: 2026-10-30 12:17:33*
+## Staged execution
+
+Version 0.1.1 declares one Python `execute` stage under
+[staged Recipe execution 0.1.0](../../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

@@ -192,6 +192,14 @@ invocation can leave a later Agent stage waiting. Reuse `context.execution`
 and `context.river` in reviewed Python workflows. No additional host
 authorization follows from recording a stage or creating a river.
 
+All bundled Recipes now adopt staged execution. Reports use a single Python
+stage with controller scope and no hosts; the report executor records it
+automatically and returns its execution/river receipt. Reports cannot use Agent
+stages or `--execution-id`. Web plates have a generated `feast/plate` parent with
+the same UUID as the saved plate, including grouped routine workers. See the
+[adoption and limits](../../docs/staged-recipe-execution.md#offline-reports).
+This does not implement a virtual-plan interpreter or convert private Recipes.
+
 ## A completed operation that requires repeat confirmation
 
 For a Recipe that documents a confirmed repeat, use the read-only
@@ -202,4 +210,4 @@ workflow, using selectable options when available. Record the later explicit
 dispatch consent with the exact receipt. An in-flight or
 uncertain dispatch continues to require reconciliation.
 
-*Last modified: 2026-11-18 15:27:06*
+*Last modified: 2026-11-18 15:56:07*

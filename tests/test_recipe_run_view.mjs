@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {renderRun,renderTaskBody,sharedProgress,taskIssues,taskResultId,mountRecipeRunHistory,mountRecipeRun} from '../web/assets/recipe-run-view.mjs';
 const e=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const task=(extra={})=>({host_id:'node',reference:'hardware',state:'success',kind:'operation',progress:'',result:{status:'success',retention:{status:'stored'},content_update:{status:'updated'}},...extra});
-const run=tasks=>({id:'run',profile:'main',state:'completed_with_gaps',remote_cleanup:'not_applicable',tasks});
+const run=tasks=>({id:'run',profile:'main',state:'completed_with_gaps',remote_cleanup:'not_applicable',progress_events:[],tasks});
 test('task cards start closed, retain a host link in the summary and share one progress river',()=>{
- const html=renderRun(run([task({state:'running',progress:'<unsafe>'}),task({host_id:'other'})]),e);
+ const html=renderRun({...run([task({state:'running'}),task({host_id:'other'})]),progress_events:[{received_at:'2026-11-18T01:02:03Z',host_id:'node',references:['hardware'],text:'<unsafe>'}]},e);
  assert.equal((html.match(/id="recipe-shared-progress"/g)||[]).length,1);
  assert.equal((html.match(/class="recipe-progress"/g)||[]).length,1);
  assert.match(html,/target="_blank" rel="noopener" href="\/hosts\?profile=main&amp;host=node/);
@@ -30,10 +30,17 @@ test('saved diagnosis supplies exact missing fields without changing stored outc
  const html=renderRun(run([partial]),e,{diagnoses:{'observations/result.json':{data:{coverage_gaps:[{properties:['hardware.uuid','hardware.serial'],reason_code:'permission_denied'}],issues:[]}}}});
  assert.match(html,/hardware.uuid、hardware.serial/);assert.match(html,/權限不足/);assert.match(html,/有未完成項目/);
 });
-test('shared worker progress is not repeated for every child',()=>{
- const progress=sharedProgress([task({reference:'a',progress:'one log'}),task({reference:'b',progress:'one log'})]);
- assert.equal((progress.text.match(/one log/g)||[]).length,1);assert.match(progress.text,/a、b/);
- assert.equal(sharedProgress([task({progress:'x'.repeat(140000)})]).truncated,true);
+test('shared progress interleaves hosts in recorded receive order with time on every line',()=>{
+ const events=[['node','first\nsecond\n'],['other','middle'],['node','last']].map(([host_id,text],i)=>({host_id,text,sequence:i+1,received_at:'2026-11-18T01:02:03Z',references:['a','b']}));
+ const progress=sharedProgress({progress_events:events,progress_truncated:true});
+ const lines=progress.text.split('\n');
+ assert.equal(lines.length,4);
+ assert.match(lines[0],/09:02:03.*node · a、b · first/);
+ assert.match(lines[1],/09:02:03.*node · a、b · second/);
+ assert.match(lines[2],/other.*middle/);assert.match(lines[3],/node.*last/);
+ assert.equal(progress.truncated,true);
+ assert.equal(sharedProgress({progress_events:[]}).text,'');
+ assert.match(sharedProgress({tasks:[task({progress:'old'})]}).text,/未保存依接收順序/);
 });
 test('history uses read-only saved runs with exact profile and stable run links',async()=>{
  const root={innerHTML:''},calls=[];

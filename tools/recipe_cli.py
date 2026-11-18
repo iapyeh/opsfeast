@@ -100,7 +100,8 @@ def execute(root, spec, *, json_output=False, variables=None, inventory_selectio
                                   inv['assignments'], inv['timeout'])
         print_report({'status': report['status'], 'reason_code': report['reason_code'], 'message': report['message'],
                 'result_id': path.relative_to(root).as_posix(), 'result_path': str(path),
-                'data': report['data'], 'artifacts': report['artifacts']}, json_output=json_output, kind='execution', recipe=item['reference'], allow_nan=False)
+                'data': report['data'], 'artifacts': report['artifacts'],
+                **{key: report[key] for key in ('execution_id', 'execution_status', 'river') if key in report}}, json_output=json_output, kind='execution', recipe=item['reference'], allow_nan=False)
         return 0 if report['status'] == 'success' else 1
     if inv['inputs']:
         raise ConfigError('--input is for offline report recipes only')

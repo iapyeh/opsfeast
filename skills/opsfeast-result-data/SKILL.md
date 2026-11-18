@@ -434,5 +434,15 @@ existing workspace logs API; reads never reconnect, retry or rewrite observation
 Web date/time rendering uses the shared `formatDateTime`/`formatTime` helpers with
 Asia/Taipei, seconds and the 00–23 hour cycle, including execution and Console views.
 
+## Staged execution receipts and provenance
 
-*Last modified: 2026-11-14 17:19:41*
+Use the [receipt contract](../../docs/staged-recipe-execution.md#post-collection-execution-receipts)
+when reading saved staged inventory or single-host operations. The raw
+`execution_receipt` 0.1.0 contains execution ID/status/river separately from observed
+data. Invocation responses also project those receipt values at the top level.
+Reuse `retention_replay.raw_digest` rather than hashing the whole JSON: receipt
+finalization must preserve provenance and replay identity. Existing top-level
+workflow evidence still contributes to its original digest; do not remove it,
+rewrite history or rerun a host operation to obtain a receipt.
+
+*Last modified: 2026-11-18 16:03:00*

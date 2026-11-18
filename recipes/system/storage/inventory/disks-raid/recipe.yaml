@@ -5,7 +5,12 @@ author:
   - Bundle
 license: MIT
 id: disks-raid
-version: 0.4.0
+version: 0.4.1
+execution:
+  version: 0.1.0
+  stages:
+    - id: collect
+      executor: python
 title: Physical disk inventory and independent RAID health
 description: Count every reported data/boot physical disk including spare, standalone
   and unconfigured drives using human-readable role expectations; assess RAID arrays

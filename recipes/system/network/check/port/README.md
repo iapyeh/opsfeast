@@ -45,4 +45,13 @@ SSHScript supplies local/SSH command execution through the runner's borrowed Ses
 
 [Public tests](../../../../../tests/test_general_recipes.py) cover open/refused/timeout/network error with synthetic sockets, invalid/truncated command output, runner inputs and failure states. No real target, SSH or local TCP probe has been performed. Review target prerequisites and the complete recipe before authorized use. No distribution license is currently declared by the repository.
 
-*Last modified: 2026-10-30 12:19:40*
+## Staged execution
+
+Version 0.1.1 declares one Python `execute` stage under
+[staged Recipe execution 0.1.0](../../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

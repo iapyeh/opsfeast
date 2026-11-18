@@ -209,6 +209,40 @@ class RecipeRunTests(unittest.TestCase):
         self.assertTrue(all(t['reason_code']=='worker_output_limit' for t in result['tasks']))
         self.assertTrue(all(t['progress_truncated'] and len(t['progress'])<=32 for t in result['tasks']))
 
+    def test_shared_progress_preserves_receive_order_and_shared_worker_identity(self):
+        record = {'progress_events': [], 'progress_sequence': 0, 'progress_truncated': False}
+        shared = {'reference': 'a', 'batch': [{'reference': 'a'}, {'reference': 'b'}]}
+        with self.service.lock, patch('opsfeast.recipe_runs.now', return_value='2026-11-18T01:02:03+00:00'):
+            self.service._append_progress(record, {'host_id': 'node'}, shared, 'first\n')
+            self.service._append_progress(record, {'host_id': 'other'}, {'reference': 'c'}, 'middle\n')
+            self.service._append_progress(record, {'host_id': 'node'}, shared, 'last\n')
+        self.assertEqual([e['host_id'] for e in record['progress_events']], ['node', 'other', 'node'])
+        self.assertEqual([e['sequence'] for e in record['progress_events']], [1, 2, 3])
+        self.assertEqual(record['progress_events'][0]['references'], ['a', 'b'])
+        self.assertEqual(record['progress_events'][0]['received_at'], '2026-11-18T01:02:03+00:00')
+        with self.service.lock, patch('opsfeast.recipe_runs.MAX_RIVER_EVENTS', 2):
+            self.service._append_progress(record, {'host_id': 'other'}, shared, 'new\n')
+        self.assertEqual([e['sequence'] for e in record['progress_events']], [3, 4])
+        self.assertTrue(record['progress_truncated'])
+        with self.service.lock, patch('opsfeast.recipe_runs.MAX_RIVER_PROGRESS', 3):
+            self.service._append_progress(record, {'host_id': 'node'}, shared, 'abcdef')
+        self.assertEqual([e['text'] for e in record['progress_events']], ['def'])
+        self.assertEqual(record['progress_events'][0]['sequence'], 5)
+
+    def test_worker_progress_is_saved_once_in_shared_river(self):
+        real = subprocess.Popen
+        def launch(argv, **kwargs):
+            return real([sys.executable, '-u', '-c', 'import sys; sys.stdin.read(); print("synthetic-log",file=sys.stderr,flush=True); print("{}")'], **kwargs)
+        preview = self.service.preview(self.selection(hosts=['node', 'other']))
+        with patch('opsfeast.recipe_runs.subprocess.Popen', side_effect=launch):
+            result = self.wait(self.service.start(preview['preview_id'], True)['id'])
+        events = result['progress_events']
+        self.assertEqual([e['sequence'] for e in events], list(range(1, len(events)+1)))
+        self.assertEqual({e['host_id'] for e in events}, {'node', 'other'})
+        self.assertEqual(''.join(e['text'] for e in events).count('synthetic-log'), 2)
+        self.assertTrue(all(e['received_at'] and e['references'] for e in events))
+        self.assertEqual(self.service.show(result['id'], 'main')['progress_events'], events)
+
     def test_worker_wall_deadline_confirms_only_owned_local_termination(self):
         real = subprocess.Popen
         def launch(argv, **kwargs):
@@ -269,6 +303,58 @@ class RecipeRunTests(unittest.TestCase):
         self.assertEqual(result['state'],'completed')
         self.assertTrue(all(t['state']=='success' and 'Shared worker' in t['progress'] for t in result['tasks']))
         self.assertEqual({t['result']['recipe']['reference'] for t in result['tasks']},{r['reference'] for r in choice['recipes']})
+
+    def test_multi_host_grouped_plate_uses_one_parent_execution_and_river(self):
+        from opsfeast.staged_execution import Executions
+        choice = self.selection('system/inventory/hardware', hosts=['node', 'other'])
+        choice['recipes'].append({'reference': 'system/inventory/network-state', 'vars': {}, 'inputs': []})
+        reviewed = self.service.preview(choice)
+        store = Executions(self.profile.root, installation=self.root)
+
+        def invoke(task, spec, record):
+            state = store.read(record['id'])
+            self.assertEqual(state['status'], 'running')
+            self.assertEqual(state['hosts'], ['node', 'other'])
+            self.assertEqual(len(state['members']), 4)
+            with self.service.lock:
+                self.service._append_progress(record, task, spec, 'synthetic shared output\n')
+            task.update(state='success', result={'status': 'success', 'content_update': {'status': 'success'}, 'children': [
+                {'recipe': {'reference': member['reference']}, 'status': 'success',
+                 'retention': {'status': 'stored'}} for member in spec['batch']]})
+
+        with patch.object(self.service, '_invoke', invoke):
+            result = self.wait(self.service.start(reviewed['preview_id'], True)['id'])
+        self.assertEqual(result['state'], 'completed', result)
+        self.assertEqual(result['execution_id'], result['id'])
+        self.assertEqual(result['execution_status'], 'success')
+        self.assertEqual(len(store.list()), 1)
+        view = store.records.snapshot(result['id'])
+        self.assertEqual({target['host_id'] for target in view['session']['targets']}, {'node', 'other'})
+        logs = [block for block in view['blocks'] if block['kind'] == 'stdout']
+        self.assertEqual(len(logs), 1)
+        text = store.records.content(result['id'], logs[0]['id'])['text']
+        for host in ('node', 'other'):
+            self.assertIn(host + ' · system/inventory/hardware、system/inventory/network-state', text)
+
+    def test_plate_log_budget_marks_truncation_without_stopping_work(self):
+        from opsfeast.staged_execution import Executions
+        preview = self.service.preview(self.selection())
+
+        def invoke(task, spec, record):
+            for index in range(20):
+                with self.service.lock:
+                    self.service._append_progress(record, task, spec, f'line {index}\n')
+            task.update(state='success', result={'status': 'success'})
+
+        with patch.object(self.service, '_invoke', invoke), patch('opsfeast.recipe_runs.MAX_RIVER_PROGRESS', 128):
+            result = self.wait(self.service.start(preview['preview_id'], True)['id'])
+        self.assertEqual(result['state'], 'completed')
+        self.assertEqual(result['execution_status'], 'success')
+        self.assertTrue(result['river_progress_truncated'])
+        store = Executions(self.profile.root, installation=self.root)
+        blocks = store.records.snapshot(result['id'])['blocks']
+        self.assertEqual(len(blocks), 3)
+        self.assertIn('Progress truncated', store.records.content(result['id'], blocks[1]['id'])['text'])
 
 
 import test_web_preview as web

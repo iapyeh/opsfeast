@@ -1,5 +1,7 @@
 # Recipes, routines and shared-connection meals 0.1.0
 
+All eleven bundled Inventory children and Overview now declare one Python [execution stage](staged-recipe-execution.md). CLI and saved/scheduled inventory create their lifecycle/river automatically. Web plates use one generated parent execution across hosts, including grouped routine workers. This does not change routine permissions, shared connections or independent retention.
+
 This is the current execution contract for the split inventory recipes. See
 [inventory](inventory-jobs.md), [retention](retention.md), [Web](web-recipe-menu.md)
 and the [agreed design](inventory-routine-design.md). A recipe defines purpose,
@@ -204,4 +206,4 @@ historical records are never rewritten automatically. These read/presentation
 interfaces require no host access; explicit report, dispatch or rebuild writes
 need the human's corresponding scope.
 
-*Last modified: 2026-11-10 16:49:25*
+*Last modified: 2026-11-18 15:56:07*

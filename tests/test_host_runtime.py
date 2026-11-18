@@ -546,7 +546,7 @@ class DispatchTests(unittest.TestCase):
             bundle=Path(tmp)/'recipe';copy_recipe(source,bundle)
             metadata=ops.read_yaml(bundle/'recipe.yaml')
             recipe_contract.validate(bundle,metadata)
-            entry=bundle/'main.py';entry.write_text(entry.read_text().replace('VERSION = "0.1.0"','VERSION = "9"'))
+            entry=bundle/'main.py';entry.write_text(entry.read_text().replace('VERSION = '+repr(metadata['version']),'VERSION = "9"'))
             with self.assertRaises(ops.ConfigError):recipe_contract.validate(bundle,metadata)
             entry.unlink();entry.symlink_to(source/'main.py')
             with self.assertRaises(ops.ConfigError):recipe_contract.validate(bundle,metadata)

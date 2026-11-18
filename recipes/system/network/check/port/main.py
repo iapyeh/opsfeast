@@ -2,7 +2,7 @@
 import ipaddress
 import json
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 PROBE = '''import json, socket, sys
 address, port, budget = sys.argv[1], int(sys.argv[2]), float(sys.argv[3])
 try:

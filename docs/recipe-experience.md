@@ -1,5 +1,7 @@
 # Find, run and reuse recipes and reports
 
+The three bundled offline reports now use [staged execution](staged-recipe-execution.md#offline-reports): one controller-scoped Python stage without hosts. Their normal result JSON adds execution_id, execution_status and river; artifacts remain in their original report directory. Report Agent/multiple stages and --execution-id are unsupported. Existing saved invocations must be reviewed against changed Recipe versions/fingerprints.
+
 [Recipe definition authoring 0.1.0](recipe-definition-authoring.md) use ordinary descriptors with stable, automatically refreshed Web detail pages during conversational authoring. Empty execution declarations remain non-runnable; the same service also updates executable definitions. Existing execution and packaging contracts remain authoritative.
 
 
@@ -236,4 +238,4 @@ missing/failed/unparsed/ambiguous/stale evidence stays unknown. Inspect stage,
 retention and linked report receipts. No host execution or remediation follows
 from source inspection, download or offline reporting.
 
-*Last modified: 2026-11-17 15:22:27*
+*Last modified: 2026-11-18 15:56:07*

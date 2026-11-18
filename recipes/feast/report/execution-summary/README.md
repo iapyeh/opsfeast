@@ -67,4 +67,13 @@ another file. Missing older metadata remains unknown. Original result/retention
 bytes and ownership are unchanged. See [the dependency map](../../../../docs/inventory-consumers.md)
 and [split regressions](../../../../tests/test_inventory_consumers_split.py).
 
-*Last modified: 2026-11-10 16:55:21*
+## Staged execution
+
+Version 0.1.4 declares one Python `report` stage under
+[staged Recipe execution 0.1.0](../../../../docs/staged-recipe-execution.md).
+Offline generation records a controller-scoped execution and river without host targets.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

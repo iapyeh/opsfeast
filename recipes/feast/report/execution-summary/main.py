@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import html
 import json
 
-VERSION = '0.1.3'
+VERSION = '0.1.4'
 
 
 def _human_times(value):

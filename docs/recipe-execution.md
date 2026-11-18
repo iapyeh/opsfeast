@@ -1,5 +1,7 @@
 # Execute and author Python-session recipes
 
+All bundled Recipes now declare [staged execution](staged-recipe-execution.md). The outer Python stage records lifecycle/river evidence while preserving each current runner, permission policy and retention contract. Offline reports use controller scope without hosts; Web plates have one generated parent execution across their workers. Existing user/external Recipes and historical data are preserved.
+
 For the proposed unified Recipe architecture and Python-style specification plans,
 read [Recipe flow design](recipe-flow-design.md). Virtual plans remain review
 artifacts; [Python workflows](python-workflows.md) separately implements reviewed
@@ -216,4 +218,4 @@ failure/result contracts. This is reviewed Python, not an interpreter for virtua
 plans. An active browser-capable agent is required for browser steps; Web does not
 automatically supply or wake one. Execution remains separately authorized.
 
-*Last modified: 2026-11-17 17:26:05*
+*Last modified: 2026-11-18 15:56:07*

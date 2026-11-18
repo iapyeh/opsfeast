@@ -2,7 +2,12 @@ descriptor_version: 0.3.0
 author: {name: Bundle, contacts: [Bundle]}
 license: MIT
 id: mysql-replication
-version: 0.1.0
+version: 0.1.1
+execution:
+  version: 0.1.0
+  stages:
+    - id: execute
+      executor: python
 title: Check MySQL and MariaDB replication
 description: Read replica-side status for configured database instances and all replication channels; no source connection or repair.
 access_mode: read

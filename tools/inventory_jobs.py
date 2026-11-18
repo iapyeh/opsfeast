@@ -111,8 +111,12 @@ def collect_host(root, host, **options):
                     result = _collect_with_observation(root, host, stage, **options)
                 stage.result(host, result, result.get('result_path'))
                 state = stage.finish([result], result_exit_code(result))
-                result.update(execution_id=stage.id, execution_status=state['status'], river=state['river'])
-                return result
+                receipt = {'execution_id': stage.id, 'execution_status': state['status'], 'river': state['river']}
+                result['execution_receipt'] = {'schema_version': '0.1.0', **receipt}
+                if result.get('result_path'):
+                    from recipe_runner import save_receipt
+                    save_receipt(Path(result['result_path']), result)
+                return {**result, **receipt}
     return _collect_with_observation(root, host, None, **options)
 
 

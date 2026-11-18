@@ -406,6 +406,23 @@ def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli
     with execution_snapshot(config.root, directory) as pinned:
         if read_yaml(pinned / 'recipe.yaml') != config.execution_recipe['metadata'] or bundle_digest(pinned) != digest:
             raise ConfigError('recipe changed after preflight; select and execute again')
+        from opsfeast.staged_execution import PythonStage, stages
+        metadata = config.execution_recipe['metadata']
+        if stage_run is None and stages(metadata):
+            item = {'reference': config.execution_recipe['reference'], 'descriptor': metadata,
+                    'directory': str(directory), 'title': metadata.get('title')}
+            with PythonStage.start(root, item, [host], trigger='api') as owned_stage:
+                with reporting(False, 'recipe', host, sink=owned_stage.progress):
+                    report, path = run_general(config, host, directory, digest, output_dir, timeout,
+                        session_class, runtime, code_directory=pinned, stage_run=owned_stage)
+                owned_stage.link_observation(observation_run_id)
+                owned_stage.result(host, report, path)
+                state = owned_stage.finish([report], execution_exit_code([report]))
+                receipt = {'execution_id': owned_stage.id, 'execution_status': state['status'], 'river': state['river']}
+                report['execution_receipt'] = {'schema_version': '0.1.0', **receipt}
+                if path:
+                    save_receipt(path, report)
+                return {**report, **receipt}, path
         return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, code_directory=pinned, stage_run=stage_run)
 
 
@@ -614,7 +631,7 @@ def _execute_hosts(root, recipe, inv, hosts, excluded, values, json_output, inve
             stage_run.result(host, report, path)
         state = stage_run.finish(summaries, exit_code)
         result.update(execution_id=stage_run.id, execution_status=state['status'], river=state['river'])
-        if not json_output:
+        if not json_output and show_progress:
             progress_line('river ' + state['river']['history_url'])
     print_report(result, json_output=json_output, kind='execution', icons=icons,
                  recipe=recipe, host=hosts[0] if len(hosts)==1 else None, ensure_ascii=True, result_root=root)

@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "os-package-security-pipeline",
-  "version": "0.3.0",
+  "version": "0.3.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "execute", "executor": "python"}]
+  },
   "access_mode": "read",
   "title": "Collect packages, acquire vendor advisories and generate a vulnerability report",
   "description": "Host-selected three-stage workflow. Controller downloads official vendor data, reuses fresh Profile snapshots, and saves linked evidence reports. No remediation. FreeBSD VuXML/base SA, Proxmox VE PSA and ESXi VMSA native comparison; unsupported scope remains unknown.",

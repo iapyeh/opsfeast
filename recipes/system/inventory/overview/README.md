@@ -85,4 +85,13 @@ public tests use synthetic transports and local fixture processes. See the canon
 [retention](../../../../docs/retention.md), [collection table](collection-plan.md),
 [Web menu](../../../../docs/web-recipe-menu.md) and [recipes skill](../../../../skills/opsfeast-recipes/SKILL.md).
 
-*Last modified: 2026-11-10 15:57:34*
+## Staged execution
+
+Version 0.1.1 declares one Python `collect` stage under
+[staged Recipe execution 0.1.0](../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

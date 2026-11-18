@@ -1,5 +1,5 @@
 """Observe the login account using the runner-provided Core Recipe."""
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 
 def execute(recipe):

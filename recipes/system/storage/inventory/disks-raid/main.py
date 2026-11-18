@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import shlex
 
-VERSION = '0.4.0'
+VERSION = '0.4.1'
 LIMIT = 262144
 LSBLK = ['lsblk', '--json', '--bytes', '--list', '--output',
          'NAME,KNAME,PATH,TYPE,SIZE,MODEL,SERIAL,WWN,TRAN,ROTA,HCTL']

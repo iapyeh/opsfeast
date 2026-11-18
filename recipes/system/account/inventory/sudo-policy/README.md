@@ -81,4 +81,13 @@ owned-process timeout/output cleanup and runner -> portable retention -> consume
 have not been verified in this delivery. A local Python subprocess test is not
 managed-host evidence. See [sources and exact limits](../../../../../docs/linux-policy-profiling.md).
 
-*Last modified: 2026-11-09 13:02:17*
+## Staged execution
+
+Version 0.1.1 declares one Python `collect` stage under
+[staged Recipe execution 0.1.0](../../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

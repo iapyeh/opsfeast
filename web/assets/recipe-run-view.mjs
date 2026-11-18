@@ -23,17 +23,13 @@ export function taskResultId(task) {
  if(typeof task.result?.result_id==='string')return task.result.result_id;
  return typeof task.result?.result_path==='string'?task.result.result_path.split('/').slice(-2).join('/'):null;
 }
-export function sharedProgress(tasks) {
- const blocks=new Map();
- for(const task of tasks){
-  if(!task.progress)continue;
-  const key=JSON.stringify([task.host_id,task.progress]);
-  if(!blocks.has(key))blocks.set(key,{host:task.host_id||'本機報告',references:[],text:task.progress});
-  const block=blocks.get(key);if(!block.references.includes(task.reference))block.references.push(task.reference);
- }
- const text=[...blocks.values()].map(b=>`${b.host} · ${b.references.join('、')}\n${b.text}`).join('\n\n');
- return {text:text.slice(-131072),truncated:text.length>131072||tasks.some(t=>t.progress_truncated)};
+export function sharedProgress(run) {
+ if(!Array.isArray(run.progress_events))return {text:'此紀錄未保存依接收順序排列的進度。',truncated:false};
+ const text=run.progress_events.flatMap(event=>event.text.replace(/\r\n/g,'\n').replace(/\n$/,'').split('\n')
+  .map(line=>`[${time(event.received_at)}] ${event.host_id||'本機報告'} · ${event.references.join('、')} · ${line}`)).join('\n');
+ return {text,truncated:!!run.progress_truncated};
 }
+
 function gaps(task,diagnosis,e,{hasActivity=false}={}) {
  const rows=diagnosis?.data?.coverage_gaps||task.result?.collection_gaps||[];
  const table=Array.isArray(rows)&&rows.length?`<table><thead><tr><th>未完成欄位</th><th>原因</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${e((row.properties||[]).join('、')||row.property||'未列出欄位')}</td><td>${e(reason(row.reason_code))}</td></tr>`).join('')}</tbody></table>`:'';
@@ -54,10 +50,10 @@ export function renderTaskBody(task,run,e,{diagnoses={},activities={}}={}) {
 }
 export function renderRun(run,e,{diagnoses={},activities={}}={}) {
  const tasks=run.tasks||[];
- const active=['running','stopping'].includes(run.state),progress=sharedProgress(tasks);
+ const active=['running','stopping'].includes(run.state),progress=sharedProgress(run);
  const hostLink=task=>task.host_id?`<a target="_blank" rel="noopener" href="${e(url('/hosts',run.profile,{host:task.host_id}))}">${e(task.host_id)}</a>`:'本機報告';
  const running=tasks.filter(t=>t.state==='running').length,queued=tasks.filter(t=>t.state==='queued').length;
- return `<div class="page-heading"><div><h2>本次執行 · ${e(label(run.state))}</h2><p>${e(time(run.created_at))} · ${run.threads?`${e(run.threads)} threads · `:''}${tasks.length} 項工作</p></div>${active?'<button class="button danger-button" id="recipe-stop">停止本次選擇</button>':''}</div><p><a href="${e(url('/logs',run.profile))}">← 活動與紀錄</a> · <a href="${e(url('/recipe-plate',run.profile))}">執行餐盤</a></p><p class="field-hint">Web 服務持續運作時，關閉瀏覽器不會停止執行；可從活動與紀錄的時間連結回到本頁。</p><section class="panel recipe-shared-river"><h3>共用執行進度 <small>${running} 項執行中 · ${queued} 項等待</small></h3><pre class="recipe-progress" id="recipe-shared-progress" tabindex="0">${e(progress.text||'尚無 runner 進度輸出。')}</pre><p class="field-hint">依主機與任務彙整${progress.truncated?'；僅顯示保留範圍內的最近輸出':''}。</p></section><p class="field-hint">遠端清理：${e(run.remote_cleanup==='unknown'?'未知':run.remote_cleanup==='not_applicable'?'尚無強制中斷':run.remote_cleanup||'未回報')}。停止請求、本機終止與遠端清理分別記錄。${run.recovery?'服務重啟後沒有重試此工作。':''}</p>${tasks.map((task,index)=>{
+ return `<div class="page-heading"><div><h2>本次執行 · ${e(label(run.state))}</h2><p>${e(time(run.created_at))} · ${run.threads?`${e(run.threads)} threads · `:''}${tasks.length} 項工作</p></div>${active?'<button class="button danger-button" id="recipe-stop">停止本次選擇</button>':''}</div><p><a href="${e(url('/logs',run.profile))}">← 活動與紀錄</a> · <a href="${e(url('/recipe-plate',run.profile))}">執行餐盤</a></p><p class="field-hint">Web 服務持續運作時，關閉瀏覽器不會停止執行；可從活動與紀錄的時間連結回到本頁。</p><section class="panel recipe-shared-river"><h3>共用執行進度 <small>${running} 項執行中 · ${queued} 項等待</small></h3><pre class="recipe-progress" id="recipe-shared-progress" tabindex="0">${e(progress.text||'尚無 runner 進度輸出。')}</pre><p class="field-hint">依接收順序顯示時間、主機與任務${progress.truncated?'；僅顯示保留範圍內的最近輸出':''}。</p></section><p class="field-hint">遠端清理：${e(run.remote_cleanup==='unknown'?'未知':run.remote_cleanup==='not_applicable'?'尚無強制中斷':run.remote_cleanup||'未回報')}。停止請求、本機終止與遠端清理分別記錄。${run.recovery?'服務重啟後沒有重試此工作。':''}</p>${tasks.map((task,index)=>{
   const state=task.state==='running'?'<span class="recipe-task-spinner" aria-label="執行中"></span> 執行中':task.state==='success'?(taskIssues(task).length?'結果處理有問題':'執行完成'):task.state==='partial'?'有未完成項目':task.state==='queued'?'等待':`已結束 · ${label(task.state)}`;
   return `<details class="panel recipe-task" data-task-index="${index}" id="recipe-task-${index}"><summary><span>${hostLink(task)} · ${e(task.reference)}</span><span class="recipe-task-status">${task.state==='running'?state:e(state)}</span></summary><div class="recipe-task-body">${renderTaskBody(task,run,e,{diagnoses,activities})}</div></details>`;
  }).join('')}`;

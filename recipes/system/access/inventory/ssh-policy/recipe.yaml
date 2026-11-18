@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "linux-ssh-policy",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "access_mode": "read",
   "title": "OpenSSH policy projection",
   "description": "Bounded openssh policy projection; configuration, runtime and context-qualified evidence stay distinct. No automatic privilege acquisition or setting changes.",

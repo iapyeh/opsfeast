@@ -1,7 +1,7 @@
 """Offline package-security report entrypoint."""
 from opsfeast.package_security.report import execute as generate_report
 
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 
 
 def execute(*, context, timeout):

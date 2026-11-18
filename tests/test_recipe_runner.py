@@ -44,7 +44,11 @@ class UnifiedRunnerTests(unittest.TestCase):
         records=__import__('retention_store').query(self.root)['records']
         self.assertEqual(len(records),10)
         self.assertTrue(all(r['retention_definition']['contract']=='inventory-routine-observations' for r in records))
-        self.assertEqual(json.loads(path.read_text()),report)
+        saved = json.loads(path.read_text())
+        self.assertEqual({key: saved['execution_receipt'][key] for key in ('execution_id', 'execution_status', 'river')},
+                         {key: report[key] for key in ('execution_id', 'execution_status', 'river')})
+        self.assertEqual(saved, {key: value for key, value in report.items()
+                                if key not in ('execution_id', 'execution_status', 'river')})
         self.assertFalse((self.root/'host-facts').exists())
 
     def test_public_batch_delegates_inventory_without_an_access_gate(self):

@@ -104,4 +104,13 @@ and past observations are unchanged. Collection coverage, original health/policy
 instance/source times and missing fields remain distinct. This does not discover
 or execute new targets. See [coverage review](../../../../../docs/profiling-coverage.md).
 
-*Last modified: 2026-11-09 12:22:53*
+## Staged execution
+
+Version 0.4.1 declares one Python `collect` stage under
+[staged Recipe execution 0.1.0](../../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

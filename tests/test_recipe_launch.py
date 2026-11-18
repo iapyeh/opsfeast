@@ -53,7 +53,7 @@ class RecipeLaunchTests(unittest.TestCase):
         fixture=RecipeLibraryTests();fixture.setUp();self.addCleanup(fixture.doCleanups)
         descriptor=fixture.root/'recipes/system/network/check/local-port/recipe.yaml'
         from opsfeast import read_yaml
-        metadata=read_yaml(descriptor);metadata['launch']={'mode':'agent','prompt':'Synthetic agent task.'}
+        metadata=read_yaml(descriptor);metadata['launch']={'mode':'agent','prompt':'Synthetic agent task.'};metadata['execution']['stages'][0]['executor']='agent'
         descriptor.write_text(json.dumps(metadata))
         child=fixture.change('set.create',fixture.meal([fixture.reference]))['sets'][-1]
         parent=fixture.change('set.create',fixture.meal(meals=[child['id']]))['sets'][-1]

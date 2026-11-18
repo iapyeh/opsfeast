@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "linux-firewall-policy",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "access_mode": "read",
   "title": "Linux firewall policy views",
   "description": "Bounded linux firewall policy views; configuration, runtime and context-qualified evidence stay distinct. No automatic privilege acquisition or setting changes.",

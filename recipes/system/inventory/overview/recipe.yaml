@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "inventory-overview",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "status": "implemented",
   "title": "System inventory meal",
   "description": "Independent inventory recipes; one owned connection, verified login/root phases per host.",

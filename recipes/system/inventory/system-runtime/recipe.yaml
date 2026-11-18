@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "inventory-system-runtime",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "title": "System runtime",
   "description": "Independent system-runtime observations; partial source/permission coverage remains explicit.",
   "kind": "collection",

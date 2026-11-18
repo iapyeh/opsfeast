@@ -17,7 +17,10 @@ def digest(value):
 
 
 def raw_digest(report):
-    return digest({k: v for k, v in report.items() if k not in ('retention', 'content_update', 'reference_ips_update')})
+    # Post-collection receipts are not observation evidence. Keep pre-existing
+    # top-level workflow river/identity fields in the digest unchanged.
+    return digest({k: v for k, v in report.items() if k not in (
+        'retention', 'content_update', 'reference_ips_update', 'execution_receipt')})
 
 
 def source_identity(report, fallback=None):

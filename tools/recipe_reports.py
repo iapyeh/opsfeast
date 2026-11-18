@@ -95,12 +95,26 @@ def validate_artifacts(directory, declarations, *, max_bytes=None):
 
 
 def run_report(root, item, inputs, values=None, assignments=(), timeout=30):
-    from opsfeast.recipe_install import execution_snapshot
+    from opsfeast.recipe_install import execution_snapshot, fingerprint
+    from opsfeast.staged_execution import PythonStage, stages
     from opsfeast import read_yaml
+    from contextlib import nullcontext
     with execution_snapshot(root, Path(item['directory'])) as directory:
         if read_yaml(directory/'recipe.yaml')!=item['descriptor']:
             raise ConfigError('report recipe changed after selection')
-        return _run_report(root,item,inputs,values,assignments,timeout,code_directory=directory)
+        stage = PythonStage.start(root, item, [], trigger='report') if stages(item['descriptor']) else None
+        with stage if stage else nullcontext():
+            if stage:
+                if fingerprint(directory) != stage.state['fingerprint']:
+                    raise ConfigError('Pinned report differs from the claimed execution')
+                stage.progress(None, 'Generating offline report')
+            report, path = _run_report(root,item,inputs,values,assignments,timeout,code_directory=directory)
+            if stage:
+                stage.result(None, report, path)
+                state = stage.finish([report], 0 if report['status'] == 'success' else 1)
+                report.update(execution_id=stage.id, execution_status=state['status'], river=state['river'])
+                write_json(path, report)
+            return report, path
 
 
 def _run_report(root, item, inputs, values=None, assignments=(), timeout=30, *, code_directory=None):

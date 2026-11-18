@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "linux-time-sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "access_mode": "read",
   "title": "Linux time synchronization configuration and state",
   "description": "Bounded linux time synchronization configuration and state; configuration, runtime and context-qualified evidence stay distinct. No automatic privilege acquisition or setting changes.",

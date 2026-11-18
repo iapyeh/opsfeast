@@ -56,4 +56,13 @@ See [routine contract and execution](../../../../docs/recipe-routines.md),
 
 For version-based vulnerability reporting, use [the full OS package collector](../../software/inventory/os-packages/README.md) and [the vendor assessment workflow](../../../../docs/os-package-security.md). This basic overview property does not provide the required full source/binary identities and completeness evidence; it is not silently upgraded or converted.
 
-*Last modified: 2026-11-13 15:17:58*
+## Staged execution
+
+Version 0.1.1 declares one Python `collect` stage under
+[staged Recipe execution 0.1.0](../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

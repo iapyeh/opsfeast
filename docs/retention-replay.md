@@ -1,5 +1,11 @@
 # Offline retention replay and protected deletion
 
+Post-collection [staged execution receipts](staged-recipe-execution.md#post-collection-execution-receipts)
+use the additive raw `execution_receipt` 0.1.0 field. The observation business
+digest excludes this receipt, preserving replay idempotency and source verification.
+Existing top-level workflow river/identity fields remain in that digest; no saved
+evidence is rewritten. See the [raw context schema](../schemas/raw-retention-context.schema.json).
+
 After an actual successful write, replay dispatches enabled [retention consumers](retention-consumers.md), including registered local programs. Its dry-run never dispatches. Identical replay creates no new event but can retry pending deliveries. `content_update.consumers` records each attempt independently; use `consumers inspect/dispatch` for delivery recovery. Previously retained records without events require application rebuilds rather than replay-based event backfill.
 
 Replay is the data-only recovery/development path from saved recipe raw results into [retention storage](retention.md). It never connects, imports recipe execution code or refreshes collection. Default vault publication is a subsequent content application, with its own result; it can be disabled with `vault.auto_refresh: false`.
@@ -51,4 +57,4 @@ Schemas: [raw replay context](../schemas/raw-retention-context.schema.json), [da
 
 Use [transfer](portability.md) to copy/import saved observations and already structured retention, or to archive selected old data and reclaim space. Replay is raw → retention interpretation; import of retention is saved data → validated storage and does not rerun a normalizer. Mode: portable snapshots embed their data schema, so replay has no candidate code dependency. Archive can move raw alone while retaining data, or data alone while retaining raw; preserve independent links/provenance and small audit receipts. Existing protected-operation rules still apply. Never emulate archive with retention delete-observation followed by raw unlink, because that lacks verified-package recovery and compaction.
 
-*Last modified: 2026-10-25 14:56:19*
+*Last modified: 2026-11-18 16:03:00*

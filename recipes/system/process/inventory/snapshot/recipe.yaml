@@ -8,7 +8,11 @@
   },
   "license": "MIT",
   "id": "linux-process-snapshot",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "execution": {
+    "version": "0.1.0",
+    "stages": [{"id": "collect", "executor": "python"}]
+  },
   "access_mode": "read",
   "title": "Snapshot visible Linux processes",
   "description": "Bounded visible procfs identity/resource snapshot; no argv/environment capture or lifecycle completeness claims.",

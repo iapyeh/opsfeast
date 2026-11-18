@@ -10,4 +10,13 @@ Version 0.3.0 consumes inventory 0.2.0 with [native platform details](../../../.
 Read [native vendor security](../../../../../docs/native-vendor-security.md) for automatic
 source selection, explicit official URLs/imports and unsupported predicates.
 
-*Last modified: 2026-11-13 23:25:46*
+## Staged execution
+
+Version 0.3.1 declares one Python `execute` stage under
+[staged Recipe execution 0.1.0](../../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*

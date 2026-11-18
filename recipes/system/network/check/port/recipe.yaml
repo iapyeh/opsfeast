@@ -12,7 +12,12 @@ retention:
     port: {type: integer, unit: tcp-port, description: TCP destination port}
     reachable: {type: boolean, unit: "", description: Whether the bounded connection attempt succeeded}
     state: {type: string, unit: "", description: Connection outcome; not overall service health}
-version: 0.1.0
+version: 0.1.1
+execution:
+  version: 0.1.0
+  stages:
+    - id: execute
+      executor: python
 title: Check a TCP port from the selected host
 description: Connect once to an explicit IP address and port from the selected host; TCP success does not prove application health.
 runner:

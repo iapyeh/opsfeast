@@ -448,13 +448,13 @@ renderer is mounted.
 
 ## Verification
 
-Public tests: `tests/test_recipe_runs.py`, `tests/test_recipe_menu.mjs`,
+Public tests: `tests/test_recipe_runs.py`, `tests/test_recipe_run_view.mjs`, `tests/test_recipe_menu.mjs`,
 `tests/test_web_inventory_reports.py`, `tests/test_report_viewer.mjs` and affected
 workspace/login tests. They exercise real static discovery, no-write preflight,
 changed/expired/confirmed selections, strict targets/types/report input resolution,
 real offline worker/artifact generation, idempotency, owned-process stop with
 remaining work skipped, recovery without replay, authentication/origin/body gates,
-escaping and distinct partial/unknown outcomes. All host transports are synthetic
+escaping and distinct partial/unknown outcomes. Shared-progress tests cover interleaved host receive order, line timestamps, shared-worker attribution, persisted events, bounded truncation and missing historical events. All host transports are synthetic
 or absent; no managed host or native Linux tool applicability is inferred.
 
 ## Delivery evidence (2026-11-09)
@@ -647,6 +647,19 @@ The review page immediately renders a provisional summary from the current plate
 
 The threads input displays 8 immediately rather than an empty inheritance placeholder. Saved execution defaults are fetched independently of the full preview and replace that initial value when available. A manually entered per-run value is never overwritten by a late defaults response; the authoritative preview still controls confirmation.
 
+## Staged plate execution
+
+Confirmed selections now use [staged execution](staged-recipe-execution.md#web-execution-plates-and-grouped-routine-workers).
+The saved plate UUID is also its parent execution and Console UUID. The existing
+recipe-runs GET response exposes `execution_id`, `river` and the final
+`execution_status`. A parent spans all selected hosts, including grouped routine
+workers; report-only plates use controller scope without a fake host. Individual
+Recipe/report receipts may also retain child execution IDs. Existing task outcomes,
+stop/cleanup evidence, retention and the continuous receive-order progress display
+remain separate. The generated `feast/plate` record is not a catalog Recipe or a
+CLI handoff target. A recording failure stays explicit; viewing never retries.
+Web must be reloaded after reconciling active work to use the new coordinator.
+
 ## Execution page and return navigation
 
 Activity log timestamps for Web plates link to this exact saved execution page;
@@ -663,7 +676,7 @@ page never reruns operations. The activity list keeps only host completion total
 and a closed host-result count disclosure for these Web plates.
 
 
-The saved execution page `/recipe-plate?profile=NAME&run=UUID` now shows one shared progress area that scrolls with the page above independently expandable task cards. Cards start closed; their summaries retain live indicators and completion/partial/failure labels. Host names link to their exact host page in a new tab (`target=_blank`, `rel=noopener`); the three repeated host/log/retention footer links are removed. Report artifacts also open separately. The common progress area groups existing bounded runner output by host/task and deduplicates identical shared-worker output. It is a sampled grouped view, not a new chronological Console stream; the display retains at most 128 Ki characters and marks truncation. Polling preserves expanded cards and the river's scroll position when the reader has scrolled up.
+The saved execution page `/recipe-plate?profile=NAME&run=UUID` now shows one shared progress area that scrolls with the page above independently expandable task cards. Cards start closed; their summaries retain live indicators and completion/partial/failure labels. Host names link to their exact host page in a new tab (`target=_blank`, `rel=noopener`); the three repeated host/log/retention footer links are removed. Report artifacts also open separately. The common progress area is a continuous receive-order log across all hosts, without host/task blocks. Every displayed line includes the controller receive time (Asia/Taipei), host and recipe references. Shared-worker output is appended once for all its child recipes. New saved run records expose `progress_events` (sequence, received_at, host_id, references, text), `progress_sequence` and `progress_truncated` through the existing recipe-runs GET API. Sequence is assigned under the shared receive lock; timestamps describe controller receipt, not remote execution time. Reads may split partial lines; each received fragment keeps its own position/time. The record retains the newest 128 Ki characters of output and at most 2,048 chunks, with explicit truncation. Existing task progress remains available separately. Old records without events explicitly report that receive-order progress was not saved; no chronology is reconstructed or historical data rewritten. Reload the Web service before new executions to load this recording change; refreshing the browser alone only loads the renderer. Polling preserves expanded cards and the river's scroll position when the reader has scrolled up.
 
 The former unfinished-task jump list is removed. Each host card directly exposes
 a single outcome label: **執行完成**, **有未完成項目**, or **結果處理有問題**
@@ -705,4 +718,4 @@ Meals retain static readiness but suppress Web launch when a nested recipe needs
 an agent. See [launch guidance 0.1.0](python-workflows.md#agent-conversation-as-the-launch-surface)
 for fields, API readiness semantics, errors and authorization limits.
 
-*Last modified: 2026-11-18 09:49:17*
+*Last modified: 2026-11-18 15:56:07*

@@ -21,27 +21,27 @@ import retention_store as store
 import test_host_vault as vault_fixtures
 
 BUNDLED = {
-    'system/software/inventory/os-packages': ('os-package-inventory', '0.2.0'),
-    'system/software/check/package-security': ('os-package-security-pipeline', '0.3.0'),
-    'feast/report/package-security': ('os-package-security-report', '0.3.0'),
-    'system/access/inventory/ssh-policy': ('linux-ssh-policy', '0.1.0'),
-    'system/account/inventory/sudo-policy': ('linux-sudo-policy', '0.1.0'),
-    'system/network/inventory/firewall-policy': ('linux-firewall-policy', '0.1.0'),
-    'system/time/inventory/synchronization': ('linux-time-sync', '0.1.0'),
-    'system/logging/inventory/configuration': ('linux-logging-config', '0.1.0'),
-    'system/account/inventory/local-users': ('linux-local-accounts', '0.1.0'),
-    'system/process/inventory/snapshot': ('linux-process-snapshot', '0.1.0'),
-    'system/storage/inventory/disks-raid': ('disks-raid', '0.4.0'),
-    'database/mysql/check/replication': ('mysql-replication', '0.1.0'),
-    'system/network/check/port': ('check-port', '0.1.0'),
-    'system/account/check/identity': ('check-identity', '0.1.0'),
-    'system/inventory/overview': ('inventory-overview', '0.1.0'),
+    'system/software/inventory/os-packages': ('os-package-inventory', '0.2.1'),
+    'system/software/check/package-security': ('os-package-security-pipeline', '0.3.1'),
+    'feast/report/package-security': ('os-package-security-report', '0.3.1'),
+    'system/access/inventory/ssh-policy': ('linux-ssh-policy', '0.1.1'),
+    'system/account/inventory/sudo-policy': ('linux-sudo-policy', '0.1.1'),
+    'system/network/inventory/firewall-policy': ('linux-firewall-policy', '0.1.1'),
+    'system/time/inventory/synchronization': ('linux-time-sync', '0.1.1'),
+    'system/logging/inventory/configuration': ('linux-logging-config', '0.1.1'),
+    'system/account/inventory/local-users': ('linux-local-accounts', '0.1.1'),
+    'system/process/inventory/snapshot': ('linux-process-snapshot', '0.1.1'),
+    'system/storage/inventory/disks-raid': ('disks-raid', '0.4.1'),
+    'database/mysql/check/replication': ('mysql-replication', '0.1.1'),
+    'system/network/check/port': ('check-port', '0.1.1'),
+    'system/account/check/identity': ('check-identity', '0.1.1'),
+    'system/inventory/overview': ('inventory-overview', '0.1.1'),
     'system/inventory/system': ('inventory-platform-system', '0.1.1'),
-    'feast/report/execution-summary': ('report-summary', '0.1.3'),
-    'feast/report/retention-summary': ('report-retention', '0.1.0'),
+    'feast/report/execution-summary': ('report-summary', '0.1.4'),
+    'feast/report/retention-summary': ('report-retention', '0.1.1'),
 }
 
-BUNDLED.update({'system/inventory/'+leaf:('inventory-'+leaf,'0.1.0') for leaf in ('hardware','network-configuration','software','storage-layout','storage-capacity','services','network-state','system-runtime','resource-metrics','hardware-sensors')})
+BUNDLED.update({'system/inventory/'+leaf:('inventory-'+leaf,'0.1.1') for leaf in ('hardware','network-configuration','software','storage-layout','storage-capacity','services','network-state','system-runtime','resource-metrics','hardware-sensors')})
 
 class RecipeTaxonomyTests(unittest.TestCase):
     setUp = vault_fixtures.VaultTests.setUp

@@ -91,6 +91,12 @@ def group_web_activity(items, requested_id=None):
                      status=next(iter(states)) if len(states) == 1 else 'partial',
                      details={**entry['details'], 'targets': list(targets.values())},
                      result_links=list(unique_links.values()))
+        # A staged plate and its grouped observation batches share one UUID.
+        # Keep the detailed group once, carrying the parent's river/stage links.
+        for existing in standalone:
+            if existing['id'] == parent:
+                entry.update({key: existing[key] for key in ('river_url', 'stage') if key in existing})
+        standalone = [existing for existing in standalone if existing['id'] != parent]
         standalone.append(entry)
     return standalone
 

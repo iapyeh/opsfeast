@@ -36,7 +36,8 @@ def stages(metadata):
         raise ConfigError('Recipe launch mode must match its first execution stage')
     runner = metadata.get('runner') or {}
     if metadata.get('kind') == 'report' or runner.get('contract') == 'python-report':
-        raise ConfigError('staged report entrypoints are not supported')
+        if len(items) != 1 or items[0]['executor'] != 'python':
+            raise ConfigError('offline reports require one Python execution stage')
     return items
 
 
@@ -76,26 +77,36 @@ class Executions:
         from retention_store import atomic
         atomic(self.path(state['id']), json.dumps(state, ensure_ascii=False, allow_nan=False) + '\n')
 
-    def begin(self, *, reference, title, version, fingerprint, stages, hosts, trigger):
-        if not stages or not hosts or len(set(hosts)) != len(hosts):
+    def begin(self, *, reference, title, version, fingerprint, stages, hosts, trigger,
+              scope='hosts', execution_id=None, members=None):
+        if (not stages or scope not in ('hosts', 'controller')
+                or (scope == 'hosts' and not hosts) or (scope == 'controller' and hosts)
+                or len(set(hosts)) != len(hosts)):
             raise ConfigError('Recipe execution requires stages and unique hosts')
         self.directory.mkdir(mode=0o700, exist_ok=True)
-        execution_id = str(uuid4())
+        execution_id = identifier(execution_id) if execution_id is not None else str(uuid4())
         path = self.path(execution_id)
         from host_runtime import now
-        self.records.create({
+        session = {
             'session_id': execution_id, 'title': title or reference,
-            'host_id': f'{self.profile_name} / {hosts[0]}', 'work_id': None,
-            'targets': [{'profile': self.profile_name, 'host_id': host, 'icon': '🖥'} for host in hosts],
-        }, recipe_execution=True)
+            'host_id': f'{self.profile_name} / {hosts[0]}' if hosts else f'Controller ({self.profile_name})',
+            'work_id': None,
+        }
+        if hosts:
+            session['targets'] = [{'profile': self.profile_name, 'host_id': host, 'icon': '🖥'} for host in hosts]
         state = {'schema_version': VERSION, 'id': execution_id, 'profile': self.profile.name,
                  'reference': reference, 'title': title or reference, 'version': version,
                  'fingerprint': fingerprint, 'hosts': list(hosts), 'trigger': trigger,
                  'started_at': now(), 'completed_at': None, 'status': 'waiting',
                  'observation_run_id': None, 'cursor': 0,
                  'stages': [{**stage, 'status': 'waiting'} for stage in stages],
-                 'river': self.river_links(execution_id)}
+                 'scope': scope, 'river': self.river_links(execution_id)}
+        if members is not None:
+            state['members'] = members
         with _locked(path):
+            if path.exists():
+                raise ConfigError('Recipe execution already exists')
+            self.records.create(session, recipe_execution=True)
             self._save(state)
         return state
 
@@ -217,6 +228,7 @@ class PythonStage:
         if execution_id is None:
             execution_id = store.begin(
                 **identity, stages=stages(metadata), title=item.get('title'), trigger=trigger,
+                scope='controller' if metadata.get('kind') == 'report' or metadata.get('runner', {}).get('contract') == 'python-report' else 'hosts',
             )['id']
         return cls(store, execution_id, identity)
 
@@ -235,7 +247,7 @@ class PythonStage:
     def result(self, host, report, path=None):
         self.progress(host, json.dumps({
             'status': report['status'], 'reason_code': report.get('reason_code'),
-            'result_id': Path(path).relative_to(self.store.profile.root).as_posix() if path else None,
+            'result_id': Path(path).resolve().relative_to(self.store.profile.root.resolve()).as_posix() if path else None,
         }))
 
     def finish(self, reports, exit_code):

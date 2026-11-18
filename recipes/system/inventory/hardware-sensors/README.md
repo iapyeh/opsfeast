@@ -53,4 +53,13 @@ See [routine contract and execution](../../../../docs/recipe-routines.md),
 [inventory jobs/schedules](../../../../docs/inventory-jobs.md),
 [retention](../../../../docs/retention.md) and [Web selection](../../../../docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-10 12:27:11*
+## Staged execution
+
+Version 0.1.1 declares one Python `collect` stage under
+[staged Recipe execution 0.1.0](../../../../docs/staged-recipe-execution.md).
+Normal CLI runs record one execution and river across the selected hosts.
+Web plates retain their own shared execution, including grouped routine workers.
+Recipe scope, permissions, result/retention schemas and native verification limits
+are unchanged. Earlier saved results are preserved; no migration or replay occurs.
+
+*Last modified: 2026-11-18 15:56:07*
