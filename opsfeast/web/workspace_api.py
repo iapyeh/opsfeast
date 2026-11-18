@@ -60,11 +60,12 @@ def install(app, *, product, require_admin):
                 'invalid_result_count': len(listing['errors'])}
 
     @app.get('/api/v1/results/diagnosis')
-    def diagnosis(request: Request, result_id: str, profile: str | None = None, limit: int = Query(5, ge=1, le=50)):
+    def diagnosis(request: Request, result_id: str, profile: str | None = None,
+                  limit: int = Query(5, ge=1, le=50), sample_offset: int = Query(0, ge=0)):
         require_admin(request)
         selected = Instance.open(product).profile(profile)
         from result_diagnostics import diagnose
-        try: return {'profile': selected.name, **diagnose(selected.root, result_id, limit=limit, kind='operation')}
+        try: return {'profile': selected.name, **diagnose(selected.root, result_id, limit=limit, kind='operation', sample_offset=sample_offset)}
         except (OSError, sqlite3.Error): raise HTTPException(503, 'result_diagnosis_unavailable') from None
 
     @app.get('/api/v1/library')
@@ -106,7 +107,7 @@ def install(app, *, product, require_admin):
         def selected_page(items):
             needle = q.strip().casefold()
             if needle:
-                fields = ('reference', 'title', 'description', 'host_id', 'recipe_reference', 'kind', 'status', 'source', 'body', 'time', 'observed_at')
+                fields = ('reference', 'title', 'description', 'host_id', 'recipe_reference', 'recipe_references', 'kind', 'status', 'source', 'body', 'time', 'observed_at')
                 items = [item for item in items if any(needle in str(item.get(key, '')).casefold() for key in fields)]
             return page(items, offset, limit)
         result = {'schema_version': '0.1.0', 'profile': selected.name if selected else None,
@@ -157,10 +158,10 @@ def install(app, *, product, require_admin):
                 items.sort(key=lambda item: (item['observed_at'], item['record_id']), reverse=True)
                 result.update(selected_page(items))
             elif section == 'logs':
-                items, errors = [], []
+                items, errors, saved, labels = [], [], {'results': [], 'errors': []}, {}
                 try:
                     from recipe_reports import results
-                    saved = results(selected.root, kind='operation') if item_id is not None else {'results': [], 'errors': []}
+                    saved = results(selected.root, kind='operation', collapse_successful_wrappers=True) if item_id is not None else {'results': [], 'errors': []}
                     if saved['errors']: errors.append('some_saved_results_invalid')
                     from opsfeast.recipe_activity import history_labels
                     titles, labels = history_labels(selected, app.state.recipe_runs)
@@ -173,6 +174,56 @@ def install(app, *, product, require_admin):
                                                       for row in saved['results'] if row.get('observation_run_id') == run['run_id']]})
                 except (ConfigError, OSError, sqlite3.Error):
                     errors.append('recipe_history_unavailable')
+                observations = {item['id']: item for item in items}
+                staged_ids, covered_observations, rivers_by_observation = set(), set(), {}
+                try:
+                    from opsfeast.staged_execution import Executions
+                    store = Executions(selected.root, installation=product)
+                    executions = store.list()
+                    staged_ids = {entry['id'] for entry in executions}
+                    for entry in executions:
+                        active = entry['completed_at'] is None
+                        river = '/console/' + entry['id'] + ('' if active else '/history')
+                        stage = entry['stages'][entry['cursor']] if active else None
+                        observation_ids = {s['observation_run_id'] for s in entry['stages'] if s.get('observation_run_id')}
+                        for observation_id in observation_ids:
+                            for host in entry['hosts']:
+                                rivers_by_observation[(observation_id, entry['reference'], host)] = river
+                        belongs_to_web = any(observations.get(observation_id, {}).get('web_run_id')
+                                             for observation_id in observation_ids)
+                        if (belongs_to_web and entry['id'] != item_id) or (host_id is not None and host_id not in entry['hosts']):
+                            continue
+                        for observation_id in observation_ids:
+                            observation = observations.get(observation_id)
+                            if (observation and observation_id != item_id
+                                    and observation['recipe_reference'] == entry['reference']
+                                    and {target['host_id'] for target in observation['details'].get('targets', [])}
+                                    == set(entry['hosts'])):
+                                covered_observations.add(observation_id)
+                        result_links = [{key: row[key] for key in ('host_id','status','result_id','short_id')}
+                                        for row in saved.get('results', [])
+                                        if row.get('observation_run_id') in observation_ids
+                                        and row.get('recipe_reference') == entry['reference']
+                                        and row['host_id'] in entry['hosts']
+                                        and (host_id is None or row['host_id'] == host_id)]
+                        items.append({'id': entry['id'], 'source': 'recipe',
+                                      'time': entry['started_at'], 'title': entry['title'],
+                                      'recipe_reference': entry['reference'], 'status': entry['status'],
+                                      'stage': {k: stage.get(k) for k in ('id', 'executor', 'awaiting_human')} if stage else None,
+                                      'river_url': river, 'result_links': result_links,
+                                      'results_loaded': item_id is not None})
+                except (ConfigError, OSError, ValueError):
+                    errors.append('staged_recipe_history_unavailable')
+                items = [item for item in items if item['id'] not in covered_observations]
+                for item in items:
+                    if not item.get('web_run_id'):
+                        continue
+                    for row in item['result_links']:
+                        river = rivers_by_observation.get((item['id'], item['recipe_reference'], row['host_id']))
+                        if river:
+                            row['river_url'] = river
+                from opsfeast.recipe_activity import group_web_activity
+                items = group_web_activity(items, item_id)
                 sessions = {}
                 hosts = [] if item_id is not None and any(item['id'] == item_id for item in items) else selected.hosts.list()
                 for host in hosts:
@@ -183,6 +234,8 @@ def install(app, *, product, require_admin):
                         cursor = data['next_cursor']
                         if cursor is None: break
                 for item in sessions.values():
+                    if item['session_id'] in staged_ids:
+                        continue
                     items.append({'id': item['session_id'], 'source': 'console', 'time': item['created_at'],
                                   'title': item['title'], 'status': item.get('block_states', {}),
                                   'url': '/console/' + item['session_id'] + '/history', 'details': item})
@@ -192,7 +245,7 @@ def install(app, *, product, require_admin):
                 from opsfeast.recipe_activity import activity_summary
                 from recipe_reports import show_result
                 for entry in selected_items['items']:
-                    if entry['source'] != 'recipe':
+                    if entry['source'] != 'recipe' or entry.get('river_url'):
                         continue
                     raw_results = []
                     if host_id is not None:

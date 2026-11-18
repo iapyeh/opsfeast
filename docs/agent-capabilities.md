@@ -950,4 +950,21 @@ Profile, existing installation data and running saved Web endpoint are required;
 missing availability stops instead of running without records. Public fake/local
 checks do not prove remote or mail behavior.
 
-*Last modified: 2026-11-17 23:17:21*
+## Staged Recipe execution 0.1.0
+
+Use the [staged execution contract](staged-recipe-execution.md) and
+`recipes execution` for Agent-owned stages that hand off to the Python runner
+under one execution and river ID. Use `context.execution` and `context.river`
+for reviewed Python workflows. Use ordinary `recipes run` and inventory
+dispatch for the enrolled System configuration Inventory Recipe. The checkout
+service is `opsfeast.staged_execution`; it persists stage and target-scoped
+progress without requiring Web and supplies authenticated live/history activity
+links for registered Profiles. The linked guide documents available commands,
+supported outcomes, limits and verification.
+
+For Recipes that explicitly support human-confirmed repeats of a completed
+operation, see the [Profile-local guard and read-only inspection](python-workflows.md).
+Use `opsfeast.operation_guard` and the staged approval, preserving older guard
+records and rejecting changed receipts.
+
+*Last modified: 2026-11-18 14:35:13*

@@ -6,9 +6,10 @@ from . import browser_steps
 from .operation_guard import OperationGuard
 
 
-def run(context, *, target_host, purpose, url, select_quote, build_argv):
+def run(context, *, target_host, purpose, url, select_quote, build_argv, repeat_receipt=None,
+        command_completion_is_success=False):
     """Authorization is supplied by the human's run request, never by page content."""
-    data = {'business_outcome': 'unverified', 'mail_delivery': 'unknown'}
+    data = {} if command_completion_is_success else {'business_outcome': 'unverified', 'mail_delivery': 'unknown'}
     guard = None
     dispatched = False
     terminal = False
@@ -24,8 +25,12 @@ def run(context, *, target_host, purpose, url, select_quote, build_argv):
         deadline = context.vars.get('command_timeout_seconds', 300)
         if type(wait) is not int or not 1 <= wait <= 180 or type(deadline) is not int or not 1 <= deadline <= 300:
             raise ConfigError('invalid_workflow_deadline')
-        guard = OperationGuard(context.root, key={'purpose': purpose, 'host': target_host, 'month': month}, run_id=context.run_id)
+        guard = OperationGuard(context.root, key={'purpose': purpose, 'host': target_host, 'month': month},
+                               run_id=context.run_id, repeat_receipt=repeat_receipt)
         data['guard_id'] = guard.path.stem
+        if guard.repeat_of is not None:
+            data['repeat_of'] = guard.repeat_of
+            context.progress('Confirmed repeat of completed operation ' + guard.repeat_of['run_id'])
         snapshot = browser_steps.acquire(context, url=url, target_month=month, wait_seconds=wait)
         data.update(browser_request_id=snapshot['request_id'], snapshot_sha256=snapshot['snapshot_sha256'])
         context.progress('02 parse table; 03 select same-month spot bank-selling quote')
@@ -55,10 +60,15 @@ def run(context, *, target_host, purpose, url, select_quote, build_argv):
             state = 'command_completed' if receipt.exitcode == 0 else 'command_failed'
             guard.update(state, step='05', command=data['command'])
             terminal = True
-        context.progress('05 ' + state + '; invoice creation and mail delivery remain unverified')
-        return {'status': 'partial' if receipt.exitcode == 0 else 'failed',
-                'reason_code': state + '_business_outcome_unverified' if receipt.exitcode == 0 else state,
-                'message': 'Command completed; invoice creation and mail delivery are unverified.' if receipt.exitcode == 0 else 'Command failed; do not automatically repeat billing.', 'data': data}
+        if receipt.exitcode != 0:
+            status, reason, message = 'failed', state, 'Command failed; do not automatically repeat billing.'
+        elif command_completion_is_success:
+            status, reason, message = 'success', state, 'Command completed with exit code 0.'
+        else:
+            status, reason = 'partial', state + '_business_outcome_unverified'
+            message = 'Command completed; invoice creation and mail delivery are unverified.'
+        context.progress('05 ' + message)
+        return {'status': status, 'reason_code': reason, 'message': message, 'data': data}
     except Exception as exc:
         state = 'outcome_unknown' if dispatched else 'failed_before_dispatch'
         if guard is not None and not terminal:

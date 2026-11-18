@@ -108,6 +108,38 @@ test('live page streams only its own session and keeps live form replies explici
   }finally{cleanup.forEach(fn=>fn());}
 });
 
+test('reader keeps text selection open and copies full content without folding',async()=>{
+  const {ids,cleanup}=setup(true);
+  const navigator=Object.getOwnPropertyDescriptor(globalThis,'navigator');
+  let copied='', selected='';
+  Object.defineProperty(globalThis,'navigator',{configurable:true,value:{clipboard:{
+    writeText:async text=>{copied=text;},
+  }}});
+  window.getSelection=()=>({toString:()=>selected});
+  try{
+    await import('../web/assets/console-reader.mjs?copy-fixture');
+    await new Promise(resolve=>setImmediate(resolve));
+    const output=elements(ids.get('transcript')).find(el=>el.dataset.blockId==='output');
+    const row=elements(output).find(el=>el.className==='source-line');
+    const copy=elements(output).find(el=>el.className==='text-control block-copy');
+    selected='a text selection';
+    output.click();
+    row.click();
+    assert.equal(output.classes.has('block-closed'),false);
+    selected='';
+    row.click();
+    assert.equal(output.classes.has('block-closed'),true);
+    await copy.onclick();
+    assert.equal(copied,'x'.repeat(30000));
+    assert.equal(output.classes.has('block-closed'),true);
+    assert.match(ids.get('connection').textContent,/已複製/);
+  }finally{
+    if(navigator)Object.defineProperty(globalThis,'navigator',navigator);
+    else delete globalThis.navigator;
+    cleanup.forEach(fn=>fn());
+  }
+});
+
 test('host and block toggles preserve chronology, loaded content, drafts and new-stream defaults',async()=>{
  const {ids,calls,cleanup,snapshot,streams}=setup(false);
  snapshot.session.host_id='Shared investigation';snapshot.session.targets=[

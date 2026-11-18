@@ -8,7 +8,7 @@ from . import ConfigError
 
 class WorkflowContext:
     def __init__(self, *, root, host_id, reference, variables, run_id, code_directory,
-                 connector, progress, river=None, identity=None):
+                 connector, progress, river=None, identity=None, execution=None):
         self.root = Path(root)
         self.host_id = host_id
         self.reference = reference
@@ -17,6 +17,7 @@ class WorkflowContext:
         self.code_directory = Path(code_directory)
         self._identity = identity
         self.river = river
+        self.execution = deepcopy(execution)
         self._connector = connector
         self._progress = progress
         self._active = True

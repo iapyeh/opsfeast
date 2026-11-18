@@ -397,4 +397,13 @@ skills route [workflow rivers 0.1.0](../docs/workflow-rivers.md): opt in with
 dispatch. Real commands/output go to the existing Console record service; this
 does not retroactively create live records or authorize repeating completed work.
 
-*Last modified: 2026-11-17 23:17:21*
+## Shared staged execution
+
+Discover the [staged Recipe execution 0.1.0 contract](../docs/staged-recipe-execution.md)
+through the [recipes](opsfeast-recipes/SKILL.md) and
+[flow](opsfeast-recipe-flows/SKILL.md) skills. Use one execution and river
+for ordered Agent/Python stages, including a threaded System configuration
+Inventory stage. Agent stages explicitly record their progress and hand off
+through the original execution ID.
+
+*Last modified: 2026-11-18 10:35:29*

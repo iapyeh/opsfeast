@@ -153,19 +153,36 @@ remote program supports selecting a historical billing period.
 `opsfeast.operation_guard.OperationGuard` stores a durable Profile-local business
 key `{purpose,host,month}` in `.operation-guards/SHA256.json`. It reserves before
 browser work, binds an owner nonce and run ID, records quote/source hash/argv, and
-writes `outcome_unknown` before dispatch. Concurrent, completed, dispatched or
-unknown attempts block another invocation regardless of code version. A failed
-pre-dispatch attempt can be retried by a separately authorized invocation;
-prior receipts are archived. No automatic stale-lock reset, resend, repeat override
-or remote idempotency guarantee exists. Reconciliation needs human-reviewed
-original evidence; editing/deleting a guard is not a supported repeat procedure.
+writes `outcome_unknown` before dispatch. A concurrent, failed dispatched, or
+unknown attempt remains blocked. A completed command blocks another attempt
+unless the reviewed Recipe explicitly offers a confirmed repeat. Agents can
+inspect the exact key without making a reservation:
+
+```sh
+python -B -m opsfeast.operation_guard --profile demo --purpose monthly-report --host fixture --month 2032-04
+```
+
+For `repeat_confirmation_required`, immediately show the previous completion
+and the specific repeat effects. Ask for a clear choice before creating a new
+run or beginning preparation, and use selectable options when available.
+A Recipe that supports repeats still requires the human to confirm the operation
+and its effects before dispatch. Pass the exact returned `receipt` as
+`repeat_receipt` only after that dispatch confirmation. `OperationGuard` validates the receipt inside the reservation lock.
+A changed receipt stops the attempt; an authorized repeat that fails before
+dispatch preserves the previous completed-run requirement. The prior entry is
+archived when a new reservation succeeds. The receipt identifies the guard
+revision; the Recipe is responsible for obtaining human confirmation. No
+automatic resend or stale-lock reset occurs. Reconcile unknown outcomes with
+the original evidence and preserve the guard records.
 The guard prevents duplicates only within this Profile; a different installation
 or Profile can still call the same external program.
 
-Exit 0 yields partial `command_completed_business_outcome_unverified`; nonzero
-is failed, dispatch exceptions are `outcome_unknown`, and no automatic retry
-occurs. Invoice generation and mail delivery remain unverified until a reviewed
-business receipt exists. Command output is represented by SHA-256, byte length
+Set `command_completion_is_success=True` when the Recipe's scope ends at
+command execution. For those Recipes, a remote exit code of 0 yields success and
+`command_completed`. The shared default for Recipes that require business outcome
+evidence remains partial with `command_completed_business_outcome_unverified`.
+A nonzero command exit yields failure. Dispatch exceptions record
+`outcome_unknown` and require reconciliation before any repeat. Command output is represented by SHA-256, byte length
 and truncation flags; full invoice/customer content is not copied to the generic
 result. Guard states plus the standard saved recipe report preserve the dispatch
 boundary. A crash before dispatch-intent can conservatively leave a reservation;
@@ -273,4 +290,4 @@ limits and fail-closed behavior. `context.river` is optional; the shared guarded
 browser-command service uses it when present. Completed old runs are not replayed
 or backfilled. River records do not change human confirmation requirements.
 
-*Last modified: 2026-11-17 23:17:21*
+*Last modified: 2026-11-18 15:27:06*

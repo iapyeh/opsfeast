@@ -48,25 +48,29 @@ def positive_threads(value):
     return count
 
 
-def progress(message):
+def progress(message, *, record=True):
     reporter = _progress.get()
     if reporter is not None:
-        reporter.update(message)
+        reporter.update(message, record=record)
 
 
 class RunProgress:
     """Stage messages and a waiting heartbeat without probing the target."""
-    def __init__(self, label, interval=5, host=None):
+    def __init__(self, label, interval=5, host=None, *, enabled=True, sink=None):
         self.label, self.interval = label, interval
         self.host = host
+        self.enabled, self.sink = enabled, sink
         self.stage = 'starting'
         self.changed = time.monotonic()
         self.stop = threading.Event()
         self.lock = threading.Lock()
 
-    def update(self, message):
+    def update(self, message, *, record=True):
         with self.lock:
             self.stage, self.changed = message, time.monotonic()
+        if record and self.sink is not None:
+            self.sink(self.host, message)
+        if self.enabled:
             emit('stage', host=self.host, stage=message)
             progress_line(f'{self.label} {message}')
 
@@ -79,15 +83,16 @@ class RunProgress:
 
 
 @contextmanager
-def reporting(enabled, label, host=None):
-    reporter = RunProgress(label, host=host) if enabled else None
+def reporting(enabled, label, host=None, *, sink=None):
+    reporter = RunProgress(label, host=host, enabled=enabled, sink=sink) if enabled or sink is not None else None
     token = _progress.set(reporter)
     worker = None
     try:
         if reporter is not None:
             reporter.update('starting')
-            worker = threading.Thread(target=reporter.heartbeat, daemon=True)
-            worker.start()
+            if enabled:
+                worker = threading.Thread(target=reporter.heartbeat, daemon=True)
+                worker.start()
         yield
     finally:
         if reporter is not None:
@@ -188,7 +193,7 @@ def preflight(root, host, recipe, cli_vars=None, assignments=(), *, explicit_hos
         raise ConfigError('observations must be a real directory within management root')
     return config, directory, digest, output_dir
 
-def run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, *, code_directory=None):
+def run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, *, code_directory=None, stage_run=None):
     info = config.execution_recipe
     metadata = info['metadata']
     code_directory = code_directory or directory
@@ -219,6 +224,11 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     report['producer_instance_id'] = read_identity(REPOSITORY_ROOT)['id']
     report['execution_access_mode'] = metadata.get('access_mode', 'unknown')
     report['retention_snapshot'] = snapshot(metadata, code_directory)
+    if metadata.get('execution'):
+        if stage_run is None:
+            raise ConfigError('Staged workflow requires a claimed Recipe execution')
+        if report['recipe']['content_sha256'] != stage_run.state['fingerprint']:
+            raise ConfigError('Pinned Recipe differs from the claimed execution')
     from retention_store import operation_intent, operation_result
     intent = operation_intent(config.root, host, metadata, report['recipe']['descriptor_sha256'], info['effective_vars'],
                               reference=info['reference'], implementation_digest=report['recipe']['implementation_sha256'],
@@ -230,7 +240,22 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     try:
         if metadata['runner']['contract'] == recipe_contract.WORKFLOW_CONTRACT:
             report['evidence_kind'] = 'not-executed'
-            if (metadata.get('launch') or {}).get('river', False):
+            if stage_run is not None:
+                from opsfeast.workflow_river import WorkflowRiver, require_web
+                store = stage_run.store
+                if (metadata.get('launch') or {}).get('river', False):
+                    stage = 'river_creation'
+                    if not store.profile.name:
+                        raise ConfigError('Workflow requires a registered Profile')
+                    require_web(store.profile.instance.root, store.data_root)
+                links = store.river_links(stage_run.id)
+                origin = links['reader_url'].rsplit('/console/', 1)[0]
+                river = WorkflowRiver(store.records, profile=store.profile_name, host_id=host,
+                    title=stage_run.state['title'], reference=info['reference'],
+                    run_id=report['source_observation_id'], origin=origin, session_id=stage_run.id)
+                report.update(river=links, execution_id=stage_run.id)
+                progress('river ' + links['reader_url'])
+            elif (metadata.get('launch') or {}).get('river', False):
                 stage = 'river_creation'
                 from opsfeast.workflow_river import create as create_river
                 river = create_river(REPOSITORY_ROOT, config, host_id=host,
@@ -249,8 +274,10 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
             context = WorkflowContext(root=config.root, host_id=host, reference=info['reference'],
                 variables=info['effective_vars'], run_id=report['source_observation_id'],
                 code_directory=code_directory,
-                connector=lambda: connected(config, host, session_class, timeout, report), progress=progress, river=river,
-                identity=lambda: report.get('login_identity', {'source': 'local_session'}))
+                connector=lambda: connected(config, host, session_class, timeout, report),
+                progress=lambda message: progress(message, record=river is None), river=river,
+                identity=lambda: report.get('login_identity', {'source': 'local_session'}),
+                execution=stage_run.state if stage_run is not None else None)
             stage = 'workflow_execution'
             try:
                 result = selected['execute'](context=context, timeout=timeout)
@@ -343,7 +370,7 @@ def run_general(config, host, directory, digest, output_dir, timeout, session_cl
     save_receipt(path, report)
     return report, path
 
-def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli_vars=None, assignments=(), explicit_host=True, observation_run_id=None, inventory_selection=None):
+def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli_vars=None, assignments=(), explicit_host=True, observation_run_id=None, inventory_selection=None, stage_run=None):
     """Execute a reviewed explicit recipe; inventory always uses the job collector."""
     timeout = positive_timeout(timeout)
     progress('validating configuration and recipe')
@@ -379,7 +406,7 @@ def run(root, host, timeout=30, session_class=None, runtime=None, *, recipe, cli
     with execution_snapshot(config.root, directory) as pinned:
         if read_yaml(pinned / 'recipe.yaml') != config.execution_recipe['metadata'] or bundle_digest(pinned) != digest:
             raise ConfigError('recipe changed after preflight; select and execute again')
-        return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, code_directory=pinned)
+        return run_general(config, host, directory, digest, output_dir, timeout, session_class, runtime, code_directory=pinned, stage_run=stage_run)
 
 
 def finalize_content(root, report):
@@ -445,7 +472,7 @@ class TargetAction(argparse.Action):
 
 
 
-def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, inventory_selection=None):
+def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, inventory_selection=None, item=None, execution_id=None):
     """Shared operation batch for recipes run and saved jobs; no command parsing."""
     from recipe_inputs import json_object
     excluded = []
@@ -459,6 +486,22 @@ def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, invent
                 print(json.dumps({'hosts':[], 'excluded_hosts':excluded}))
             raise
     values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else cli_vars
+    from opsfeast.staged_execution import PythonStage, stages
+    plan = stages(item['descriptor']) if item is not None else []
+    if execution_id and not plan:
+        raise ConfigError('Recipe does not declare staged execution')
+    if execution_id and not hosts:
+        raise ConfigError('Claimed Recipe execution requires its original targets')
+    if plan and plan[0]['executor'] == 'agent' and not execution_id:
+        raise ConfigError('Begin and complete the first Agent stage before running this Recipe')
+    stage_run = PythonStage.start(root, item, hosts, trigger='cli', execution_id=execution_id) if plan and hosts else None
+    from contextlib import nullcontext
+    with stage_run if stage_run is not None else nullcontext():
+        return _execute_hosts(root, recipe, inv, hosts, excluded, values, json_output,
+                              inventory_selection, stage_run)
+
+
+def _execute_hosts(root, recipe, inv, hosts, excluded, values, json_output, inventory_selection, stage_run):
     workers = max(1, min(inv['threads'] or default_threads(), len(hosts)))
     show_progress = not inv['quiet'] and (inv['verbose'] or sys.stdout.isatty())
     icons = {}
@@ -473,6 +516,8 @@ def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, invent
     planned = hosts + [e['host'] for e in omitted]
     selection={'kind':'cli','all':inv['all'],'selectors':[list(item) for item in inv['targets']], 'exclude':list(inv['exclude'])}
     run_id = start(root, [{'host_id':h, 'icon':config.hosts[h].get('icon', '')} for h in planned], recipe, selection=selection) if retention_settings(root) else None
+    if stage_run:
+        stage_run.link_observation(run_id)
     if run_id:
         for entry in omitted:
             record_result(root,run_id,entry['host'],{'status':'skipped','reason_code':'host_disabled'})
@@ -481,12 +526,13 @@ def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, invent
     def execute(target):
         index, host = target
         label = f'[{index}/{len(hosts)}] {json.dumps(host, ensure_ascii=True)}:'
-        with reporting(show_progress, label, host=host):
+        with reporting(show_progress, label, host=host, sink=stage_run.progress if stage_run else None):
             try:
                 report, path = run(root, host, inv['timeout'], recipe=recipe,
                                    cli_vars=values, assignments=inv['assignments'],
                                    explicit_host=host in explicit, observation_run_id=run_id,
-                                   **({'inventory_selection': inventory_selection} if inventory_selection is not None else {}))
+                                   **({'inventory_selection': inventory_selection} if inventory_selection is not None else {}),
+                                   **({'stage_run': stage_run} if stage_run is not None else {}))
                 if run_id:
                     report['observation_run_id']=run_id
                 progress(f"completed: {report['status']} ({report.get('reason_code', 'unknown')})")
@@ -562,9 +608,17 @@ def execute_hosts(root, recipe, inv, *, json_output=False, cli_vars=None, invent
             result['content_update'] = content
     if excluded:
         result['excluded_hosts'] = excluded
+    exit_code = execution_exit_code(summaries, content if run_id else None)
+    if stage_run:
+        for host, (report, path) in zip(hosts, results):
+            stage_run.result(host, report, path)
+        state = stage_run.finish(summaries, exit_code)
+        result.update(execution_id=stage_run.id, execution_status=state['status'], river=state['river'])
+        if not json_output:
+            progress_line('river ' + state['river']['history_url'])
     print_report(result, json_output=json_output, kind='execution', icons=icons,
                  recipe=recipe, host=hosts[0] if len(hosts)==1 else None, ensure_ascii=True, result_root=root)
-    return execution_exit_code(summaries, content if run_id else None)
+    return exit_code
 
 
 

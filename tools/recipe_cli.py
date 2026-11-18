@@ -80,7 +80,7 @@ def validate_invocation(root, item, inv, *, variables=None):
             raise ConfigError('invalid all/target/exclusion combination')
 
 
-def execute(root, spec, *, json_output=False, variables=None, inventory_selection=None):
+def execute(root, spec, *, json_output=False, variables=None, inventory_selection=None, execution_id=None):
     prepare_console(json_output)
     item = choose(root, spec['recipe'])
     if not item['runnable']:
@@ -93,6 +93,8 @@ def execute(root, spec, *, json_output=False, variables=None, inventory_selectio
         raise ConfigError('select input variables or vars_file, not both')
     validate_invocation(root, item, inv, variables=variables)
     if item['kind'] == 'report':
+        if execution_id:
+            raise ConfigError('Offline reports do not accept an execution ID')
         values = json_object(Path(inv['vars_file'])) if inv['vars_file'] else variables
         report, path = run_report(root, item, [Path(p) for p in inv['inputs']], values,
                                   inv['assignments'], inv['timeout'])
@@ -103,7 +105,7 @@ def execute(root, spec, *, json_output=False, variables=None, inventory_selectio
     if inv['inputs']:
         raise ConfigError('--input is for offline report recipes only')
     from recipe_runner import execute_hosts
-    return execute_hosts(root, item['reference'], inv, json_output=json_output, cli_vars=variables,
+    return execute_hosts(root, item['reference'], inv, json_output=json_output, cli_vars=variables, item=item, execution_id=execution_id,
                          **({'inventory_selection': inventory_selection} if inventory_selection is not None else {}))
 
 
@@ -114,6 +116,53 @@ def specification(args):
         'vars_file': str(args.vars_file.expanduser().resolve()) if args.vars_file else None,
         'inputs': [str(path.expanduser().resolve()) for path in args.input],
         'verbose': args.verbose, 'quiet': args.quiet}}
+
+
+def execution_commands(commands):
+    from recipe_runner import TargetAction
+
+    execution = commands.add_parser('execution', help='start, record and inspect staged Recipe runs')
+    actions = execution.add_subparsers(dest='action', required=True)
+    begin = actions.add_parser('begin', help='create a river before the first Agent step')
+    begin.add_argument('recipe')
+    begin.add_argument('--host', nargs='+', dest='targets', action=TargetAction, metavar='HOST', required=True)
+    environment(begin)
+    for name in ('show', 'claim', 'progress', 'finish'):
+        action = actions.add_parser(name)
+        environment(action)
+        action.add_argument('execution_id')
+        if name != 'show':
+            action.add_argument('stage_id')
+        if name == 'progress':
+            action.add_argument('--text', required=True)
+            action.add_argument('--awaiting-human', action='store_true')
+        if name == 'finish':
+            action.add_argument('--status', required=True, choices=['success','partial','failed','cancelled','unknown'])
+            action.add_argument('--output', type=Path)
+
+
+def execution_action(root, args):
+    from opsfeast.staged_execution import Executions, binding, stages
+    store = Executions(root)
+    if args.action == 'begin':
+        from opsfeast.recipe_install import fingerprint
+        from recipe_runner import select_hosts
+        item = choose(root, args.recipe)
+        plan = stages(item['descriptor'])
+        if not item['runnable'] or not plan or plan[0]['executor'] != 'agent':
+            raise ConfigError('Recipe does not begin with a supported Agent stage')
+        hosts = select_hosts(root, args.targets)
+        identity = binding(item['reference'], item['descriptor'], fingerprint(Path(item['directory'])), hosts)
+        return store.begin(**identity, title=item['title'], stages=plan, trigger='agent')
+    if args.action == 'claim':
+        return store.claim(args.execution_id, args.stage_id, 'agent')
+    if args.action == 'progress':
+        store.progress(args.execution_id, args.stage_id, 'agent', args.text,
+                       awaiting_human=args.awaiting_human)
+    if args.action == 'finish':
+        return store.finish(args.execution_id, args.stage_id, 'agent', args.status,
+                            json_object(args.output) if args.output else {})
+    return store.read(args.execution_id)
 
 
 def main(argv=None):
@@ -157,6 +206,8 @@ def main(argv=None):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     environment(run)
     invocation(run)
+    run.add_argument('--execution-id', help='attach to the next Python stage of a saved execution')
+    execution_commands(commands)
     result = commands.add_parser('results', help='browse offline report results without running recipes',
         description=('Read previously saved offline report results. list shows a filtered index, show emits the '
                      'original saved JSON, detail includes full metadata, and diagnose shows bounded failure evidence. '
@@ -231,13 +282,16 @@ def main(argv=None):
             parser.error('--exclude requires --all')
 
     try:
-        raw = args.command in ('artifact', 'pack', 'unpack') or args.command == 'results' and args.action in ('show', 'detail') or bool(getattr(args, 'html', None))
+        raw = args.command in ('artifact', 'pack', 'unpack', 'execution') or args.command == 'results' and args.action in ('show', 'detail') or bool(getattr(args, 'html', None))
         if not raw:
             prepare_console(getattr(args, 'json', False))
         if args.command == 'unpack':
             output(unpack(args.archive, args.destination))
             return 0
         root = None if getattr(args, 'checkout_only', False) else resolve_root(args.root, args.profile).resolve(strict=True)
+        if args.command == 'execution':
+            output(execution_action(root, args))
+            return 0
         if args.command == 'list':
             data = catalog(root, args.query, args.kind)
             rows = [[item['reference'], item['version'], item['kind'], item['title'], 'compatible' if item['runnable'] else 'unavailable', '; '.join(item['errors'])] for item in data['recipes']]
@@ -274,7 +328,7 @@ def main(argv=None):
                 print(item['availability_evidence'])
             return 0 if item['runnable'] else 1
         if args.command == 'run':
-            return execute(root, specification(args), json_output=args.json)
+            return execute(root, specification(args), json_output=args.json, execution_id=args.execution_id)
         if args.command == 'pack':
             item = choose(root, args.recipe)
             if not item['runnable']: raise ConfigError('only compatible reviewed recipes can be packed')

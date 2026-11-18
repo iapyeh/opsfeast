@@ -17,6 +17,39 @@ export function preview(block,compact=false){
   return head+(compact?'\n⋯\n':'\n⋯（預覽；完整內容請展開或另開）⋯\n')+tail;
 }
 
+export function blockDisplayText(block,shown){
+  if(block.size===0&&block.status==='completed'&&['stdout','stderr'].includes(block.kind)){
+    return `${block.kind}：沒有輸出。`;
+  }
+  if(block.kind==='status'&&shown===block.head&&!block.tail&&/^[a-z][a-z0-9-]{0,39}$/.test(block.title)){
+    try{
+      const result=JSON.parse(shown);
+      const outcomes={success:'成功',partial:'部分完成',failed:'失敗',unknown:'結果不明'};
+      if(Object.hasOwn(outcomes,result.status)&&Object.keys(result).length===2&&
+         Object.keys(result.output).length===1&&Number.isInteger(result.output.exit_code)){
+        return `Recipe runner：${outcomes[result.status]}（runner 退出碼 ${result.output.exit_code}）`;
+      }
+    }catch{}
+  }
+  return displayText(shown);
+}
+
+export async function readBlockText(block,readPage){
+  const encoder=new TextEncoder();
+  if(!block.tail&&encoder.encode(block.head).length===block.size)return block.head;
+  const chunks=[];
+  for(let offset=0;offset<block.size;){
+    const limit=Math.max(256,Math.min(16384,block.size-offset));
+    const page=await readPage(offset,limit);
+    if(page.next_offset<=offset)throw Error('incomplete_block_content');
+    chunks.push(page.next_offset>block.size
+      ?new TextDecoder().decode(encoder.encode(page.text).subarray(0,block.size-offset))
+      :page.text);
+    offset=page.next_offset;
+  }
+  return chunks.join('');
+}
+
 export function visibleInRiver(block){return block.kind!=='identity';}
 export function processingState(blocks){
   const busy=blocks.some(b=>['command','analysis','status'].includes(b.kind)&&b.status==='streaming');

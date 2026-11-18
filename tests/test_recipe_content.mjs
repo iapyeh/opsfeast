@@ -24,12 +24,12 @@ test('purpose, definition metadata, composition and execution gaps have separate
 });
 test('user workflows precede technical composition, contracts and raw saved data',()=>{
  const data={profile:'synthetic',recipe:{reference:content.reference,title:content.title,source:'repository'},content,
-  defaults:{variables:[]},declarations:{output:{schema_version:'MACHINE_PROTOCOL'}},preferences:{},
+  defaults:{variables:[{name:'timeout',editable:true,definition:{type:'integer'}}]},declarations:{output:{schema_version:'MACHINE_PROTOCOL'}},preferences:{},
   saved:{status:'success',hosts:[],items:[{record_id:'row',host_id:'node',status:'success',data_preview:'MACHINE_RESULT'}]},
   reports:{items:[{result_id:'report',status:'success'}]},attempts:{status:'success',items:[]}};
  const html=renderDetail(data,[],e),technical=html.indexOf('id="recipe-technical"');
- for(const label of ['這道 Recipe 蒐集什麼？','共用選項與儲存','執行條件','近期採集／執行狀態','已產生的報告成果'])assert.ok(html.indexOf(label)<technical,label);
- for(const label of ['定義資訊','Recipe 構成','完整的資料與保存契約','MACHINE_PROTOCOL','MACHINE_RESULT'])assert.ok(html.indexOf(label)>technical,label);
+ for(const label of ['這道 Recipe 蒐集什麼？','執行條件','近期採集／執行狀態','已產生的報告成果'])assert.ok(html.slice(0,technical).includes(label),label);
+ for(const label of ['共用選項與儲存','定義資訊','Recipe 構成','完整的資料與保存契約','MACHINE_PROTOCOL','MACHINE_RESULT'])assert.ok(html.indexOf(label)>technical,label);
  assert.equal((html.match(/完整的資料與保存契約/g)||[]).length,1);
  const readiness=renderContent(content,e,{section:'readiness'});
  assert.match(readiness,/尚未提供執行入口/);assert.doesNotMatch(readiness,/runner.entrypoint|<pre|execution-protocol/);

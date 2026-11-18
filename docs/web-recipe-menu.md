@@ -147,8 +147,10 @@ items. The complete raw contract stays available as a separate disclosure.
 
 Declared input options whose **exact name matches a field ID** appear inside that
 field item, including an object node when applicable. Unmatched recipe-wide inputs
-appear under **Common options and save**. One shared form saves both locations
-through the same typed Profile-default service; each input appears only once.
+appear under **Technical details and composition → Common options and save**.
+Use **Save default options** there to save changes from both locations through
+the same typed Profile-default service. When editable options appear with a
+field, the field panel links to the save section.
 This placement does not invent per-property inputs, change collection selections,
 or create thresholds from arbitrary field names. Inventory currently declares
 recipe-wide attention/budget/timeout inputs, so these remain common options. Saved records preserve
@@ -703,4 +705,4 @@ Meals retain static readiness but suppress Web launch when a nested recipe needs
 an agent. See [launch guidance 0.1.0](python-workflows.md#agent-conversation-as-the-launch-surface)
 for fields, API readiness semantics, errors and authorization limits.
 
-*Last modified: 2026-11-17 17:37:43*
+*Last modified: 2026-11-18 09:49:17*

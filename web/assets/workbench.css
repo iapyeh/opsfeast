@@ -953,6 +953,7 @@ main p,main small { color:#586d51; }
 .log-metadata { display:grid; grid-template-columns:auto 1fr; gap:12px 24px; font-size:16px; }
 .log-metadata dd { margin:0; }
 .log-content { font:15px/1.9 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; overflow-wrap:anywhere; background:#eef2e8; border:1px solid #d9e1d2; padding:22px; border-radius:6px; }
+.result-sample-value { white-space:pre-wrap; overflow-wrap:anywhere; }
 #recipe-detail .roadmap-tabs { margin-top:30px; }
 @media(max-width:780px) { .topbar { flex-wrap:wrap; height:auto; min-height:76px; padding-top:18px; padding-bottom:18px; } .breadcrumb { width:100%; } }
 [hidden] { display:none !important; }

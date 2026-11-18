@@ -85,6 +85,17 @@ class WorkflowRiverTests(unittest.TestCase):
         self.assertIn('business_unverified',text);self.assertIn('unknown',text)
         self.assertFalse(any(b['status']=='streaming' for b,text in self.contents()))
 
+    def test_completion_records_the_remote_command_exit_code_without_business_fields(self):
+        import json
+
+        self.river.complete({'status':'success','reason_code':'command_completed','connected':True,
+                             'data':{'command':{'exitcode':0}}},Path('/synthetic/result.json'))
+        result=json.loads(self.contents()[-1][1])
+        self.assertEqual(result['command_exit_code'],0)
+        self.assertEqual(result['status'],'success')
+        self.assertNotIn('mail_delivery',result)
+        self.assertNotIn('business_outcome',result)
+
     def test_record_failure_before_dispatch_never_starts_job(self):
         session=Mock()
         with patch.object(self.records,'add_block',side_effect=OSError('synthetic')):

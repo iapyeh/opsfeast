@@ -1,4 +1,5 @@
 """Inventory job service: static discovery, selective acquisition and optional retention."""
+from contextlib import ExitStack
 import copy
 import hashlib
 import json
@@ -93,6 +94,29 @@ def select(data, jobs=None, properties=None, *, include_disabled=False):
 
 def collect_host(root, host, **options):
     """A saved explicit host invocation owns one batch unless its caller supplies one."""
+    if options.get('save') and not options.get('observation_run_id'):
+        from opsfeast.staged_execution import PythonStage, stages
+        reference = options.get('reference', 'system/inventory/overview')
+        config = profile(root).hosts._config
+        chosen = definition(config, reference, explicit_host=options.get('explicit_host', True))
+        if stages(chosen['metadata']):
+            if host not in config.hosts:
+                raise ConfigError('unknown inventory host')
+            item = {'reference': chosen['reference'], 'directory': chosen['directory'],
+                    'descriptor': chosen['metadata'], 'title': chosen['metadata'].get('title')}
+            options['prepared'] = chosen
+            with PythonStage.start(root, item, [host], trigger='cli') as stage:
+                from recipe_runner import reporting
+                with reporting(False, 'inventory', host, sink=stage.progress):
+                    result = _collect_with_observation(root, host, stage, **options)
+                stage.result(host, result, result.get('result_path'))
+                state = stage.finish([result], result_exit_code(result))
+                result.update(execution_id=stage.id, execution_status=state['status'], river=state['river'])
+                return result
+    return _collect_with_observation(root, host, None, **options)
+
+
+def _collect_with_observation(root, host, stage, **options):
     from observation_runs import start, record_result, finish
     from retention_store import settings as retention_settings, refresh_content
     own = options.get('save', False) and not options.get('observation_run_id') and retention_settings(root) is not None
@@ -109,6 +133,8 @@ def collect_host(root, host, **options):
                        options.get('reference','system/inventory/overview'), trigger=options.get('trigger','manual'),
                        selection={'kind':'cli','all':False,'selectors':[['host',host]],'exclude':[]})
         options['observation_run_id'] = run_id
+        if stage:
+            stage.link_observation(run_id)
     result = None
     try:
         result = _collect_host(root, host, **options)
@@ -160,7 +186,11 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
     stamp = at or now()
     if type(threads) is not int or not 1<=threads<=64:
         raise ConfigError('dispatcher threads must be an integer from 1 to 64')
-    def execute(state, locked=False):
+    def execute(state):
+        with ExitStack() as execution_stack:
+            return execute_due(state, execution_stack)
+
+    def execute_due(state, execution_stack):
         results = []
         tasks = []
         for host,entry in settings.get('hosts',{}).items():
@@ -204,16 +234,30 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
                            'kind':'scheduled','all':False,
                            'selectors':[['host',h] for h,_,_,_ in tasks]+[['host',r['host_id']] for r in results],
                            'exclude':[]}) if tasks else None
+        from opsfeast.staged_execution import PythonStage, stages
+        by_recipe, staged_workers = {}, {}
+        for host, _, chosen, _ in tasks:
+            if stages(chosen.get('metadata', {})):
+                by_recipe.setdefault(chosen['reference'], (chosen, []))[1].append(host)
+        for reference, (chosen, hosts) in by_recipe.items():
+            item = {'reference': reference, 'directory': chosen['directory'],
+                    'descriptor': chosen['metadata'], 'title': chosen['metadata'].get('title')}
+            stage = execution_stack.enter_context(PythonStage.start(root, item, hosts, trigger='scheduled'))
+            stage.link_observation(run_id)
+            staged_workers.update({host: stage for host in hosts})
         if run_id:
             for result in results:
                 record_result(root,run_id,result['host_id'],result)
         def acquire(task):
             host,key,chosen,selected = task
+            from recipe_runner import reporting
+            stage = staged_workers.get(host)
             try:
                 if chosen.get('planning_error'):
                     raise ConfigError('scheduled recipe unavailable: '+chosen['planning_error'])
-                result = (collect or collect_host)(root,host,jobs=selected,save=True,trigger='scheduled',
-                                                  timeout=timeout,budget=budget,prepared=chosen,explicit_host=False,observation_run_id=run_id)
+                with reporting(False, 'scheduled inventory', host, sink=stage.progress if stage else None):
+                    result = (collect or collect_host)(root,host,jobs=selected,save=True,trigger='scheduled',
+                                                      timeout=timeout,budget=budget,prepared=chosen,explicit_host=False,observation_run_id=run_id)
             except Exception as exc:
                 # Pre-acquisition/storage failures are durable scheduler evidence too.
                 result = {'host_id':host,'status':'failed','error_type':type(exc).__name__,
@@ -254,13 +298,24 @@ def dispatch(root, *, dry_run=False, timeout=30, budget=90, threads=4, at=None, 
                     from recipe_runner import save_receipt
                     save_receipt(Path(result['result_path']),result)
         failed = any(result_exit_code(r) for r in results)
-        return {'status':'failed' if failed else 'success','dry_run':dry_run,'hosts':results,'attempted_at':stamp,'observation_run_id':run_id}
+        executions = []
+        for _, hosts in by_recipe.values():
+            stage = staged_workers[hosts[0]]
+            reports = [r for r in results if r['host_id'] in hosts]
+            for report in reports:
+                stage.result(report['host_id'], report, report.get('result_path'))
+            state = stage.finish(reports, int(any(result_exit_code(r) for r in reports)))
+            executions.append({'id': stage.id, 'status': state['status'], 'river': state['river']})
+        result = {'status':'failed' if failed else 'success','dry_run':dry_run,'hosts':results,'attempted_at':stamp,'observation_run_id':run_id}
+        if executions:
+            result['executions'] = executions
+        return result
     if dry_run:
         return execute(schedule.read_state(root))
     with schedule.lock(root) as acquired:
         if not acquired:
             return {'status':'skipped','reason_code':'dispatcher_already_running','hosts':[]}
-        return execute(schedule.read_state(root),True)
+        return execute(schedule.read_state(root))
 
 
 def latest_groups(records):

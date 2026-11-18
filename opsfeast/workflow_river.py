@@ -20,16 +20,17 @@ def uid():
 
 
 class WorkflowRiver:
-    def __init__(self, records, *, profile, host_id, title, reference, run_id, origin):
+    def __init__(self, records, *, profile, host_id, title, reference, run_id, origin, session_id=None):
         self.records = records
-        self.session_id = uid()
+        self.session_id = session_id or uid()
         self.target_id = profile + ' / ' + host_id
         self.reader_url = origin.rstrip('/') + '/console/' + self.session_id
         self.history_url = self.reader_url + '/history'
         self.phase = None
-        self.records.create({'session_id': self.session_id, 'title': title,
-            'host_id': self.target_id, 'work_id': None,
-            'targets': [{'profile': profile, 'host_id': host_id, 'icon': '🖥'}]})
+        if session_id is None:
+            self.records.create({'session_id': self.session_id, 'title': title,
+                'host_id': self.target_id, 'work_id': None,
+                'targets': [{'profile': profile, 'host_id': host_id, 'icon': '🖥'}]})
         self.text('status', 'Recipe execution', json.dumps({'reference': reference,
             'source_observation_id': run_id, 'host': host_id, 'profile': profile}, ensure_ascii=False))
 
@@ -135,12 +136,16 @@ class WorkflowRiver:
         if self.phase:
             self.finish(self.phase, 'failed' if report['status'] == 'failed' else 'completed')
             self.phase = None
+        data = report.get('data', {})
+        command = data.get('command')
+        details = {key: data[key] for key in ('business_outcome', 'mail_delivery') if key in data}
+        if isinstance(command, dict) and type(command.get('exitcode')) is int:
+            details['command_exit_code'] = command['exitcode']
         self.text('status', 'Final recipe result', json.dumps({
             'status': report['status'], 'reason_code': report['reason_code'],
             'result_path': str(result_path), 'connected': report.get('connected', False),
             'cleanup_error': report.get('cleanup_error'),
-            'business_outcome': report.get('data', {}).get('business_outcome'),
-            'mail_delivery': report.get('data', {}).get('mail_delivery')}, ensure_ascii=False),
+            **details}, ensure_ascii=False),
             'failed' if report['status'] == 'failed' else 'completed')
 
 
@@ -148,13 +153,20 @@ def create(installation, config, *, host_id, title, reference, run_id):
     """Require the existing registered Profile/data root and a running local Web."""
     from .core import Instance, Profile
     from .storage import resolve_data_root
-    from .web_settings import read_port
     instance = Instance.open(installation)
     profile = Profile._from_config(instance, config)
     if profile.name is None:
         raise ConfigError('workflow river requires a registered Profile')
     root = resolve_data_root(instance.root, required=True)
-    port = read_port(instance.root, data_root=root)
+    port = require_web(instance.root, root)
+    return WorkflowRiver(Records(root / 'console-records'), profile=profile.name,
+        host_id=host_id, title=title, reference=reference,
+        run_id=run_id, origin='http://localhost:' + str(port))
+
+
+def require_web(installation, root):
+    from .web_settings import read_port
+    port = read_port(installation, data_root=root)
     if port is None:
         raise ConfigError('workflow river requires an existing Web endpoint')
     try:
@@ -163,6 +175,4 @@ def create(installation, config, *, host_id, title, reference, run_id):
                 raise ValueError('Web unavailable')
     except Exception as error:
         raise ConfigError('workflow river Web unavailable; no command dispatched') from error
-    return WorkflowRiver(Records(root / 'console-records'), profile=profile.name,
-        host_id=host_id, title=title, reference=reference,
-        run_id=run_id, origin='http://localhost:' + str(port))
+    return port

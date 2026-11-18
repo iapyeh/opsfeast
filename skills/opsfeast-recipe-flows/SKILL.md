@@ -180,4 +180,26 @@ river/Web availability stops; never run again merely to obtain a river. Keep
 actual argv, source output gaps, cleanup and business outcome uncertainty visible.
 This records prospective execution, not reconstructed live history.
 
-*Last modified: 2026-11-17 23:17:21*
+## Staged Agent and Python executions
+
+If `recipes show --json` exposes `descriptor.execution` 0.1.0, follow
+[staged Recipe execution](../../docs/staged-recipe-execution.md).
+Begin and claim the Agent stage before opening the browser. Record progress
+and human decisions in that run. Save the stage output only after its declared
+review and continue with the original ID using `recipes run --execution-id`.
+Finish a cancelled or failed Agent stage explicitly. A successful Python
+invocation can leave a later Agent stage waiting. Reuse `context.execution`
+and `context.river` in reviewed Python workflows. No additional host
+authorization follows from recording a stage or creating a river.
+
+## A completed operation that requires repeat confirmation
+
+For a Recipe that documents a confirmed repeat, use the read-only
+[operation guard inspection](../../docs/python-workflows.md#guarded-browser-to-command-service)
+to identify the previous completion. Show it and the possible repeat effects
+as soon as a duplicate is found. Ask for a clear choice before starting the
+workflow, using selectable options when available. Record the later explicit
+dispatch consent with the exact receipt. An in-flight or
+uncertain dispatch continues to require reconciliation.
+
+*Last modified: 2026-11-18 15:27:06*

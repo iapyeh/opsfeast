@@ -40,6 +40,18 @@ class DiagnosisTests(unittest.TestCase):
             code=observation_results.main([*arguments,'--root',str(self.root)])
         return code,out.getvalue(),err.getvalue()
 
+    def test_collected_samples_page_lists_only_saved_successful_values(self):
+        samples=[{'property':'system.hostname','status':'success','value':str(i),'keys':{'index':i}}
+                 for i in range(51)]
+        samples.append({'property':'system.timezone','status':'failed','value':None})
+        identifier=self.save(status='partial',groups=[{'id':'system','samples':samples}])
+        data=diagnostics.diagnose(self.root,identifier,sample_offset=0)['collected_samples']
+        self.assertEqual((data['total'],len(data['items']),data['next_offset']),(51,50,50))
+        second=diagnostics.diagnose(self.root,identifier,sample_offset=50)['collected_samples']
+        self.assertEqual(second['items'][0]['value_text'],'50')
+        self.assertEqual(second['items'][0]['keys'],{'index':50})
+        self.assertIsNone(second['next_offset'])
+
     def test_outer_error_is_prioritized_and_acquisition_duplicates_and_payload_are_omitted(self):
         identifier=self.save(execution_errors=[{'stage':'collection','error_type':'KeyError','reason_code':'collection_failed'}],
             probes=[{'id':'acquisition','command':None,'status':'failed','reason_code':'collection_failed'}],

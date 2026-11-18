@@ -62,14 +62,51 @@ def history_labels(profile, service):
     return titles, observations
 
 
+def group_web_activity(items, requested_id=None):
+    """Use the persisted Web invocation ID as the activity row identity."""
+    groups, standalone = {}, []
+    for item in items:
+        parent = item.get('web_run_id')
+        if parent and item['id'] != requested_id:
+            groups.setdefault(parent, []).append(item)
+        else:
+            standalone.append(item)
+    for parent, members in groups.items():
+        entry = members[0].copy()
+        refs = {member['recipe_reference'] for member in members}
+        titles = list(dict.fromkeys(title for member in members for title in
+                                    [*member['meal_titles'], *member['recipe_titles']]))
+        targets = {}
+        for member in members:
+            for target in member['details'].get('targets', []):
+                host = target['host_id']
+                if host not in targets or not completed_target(target):
+                    targets[host] = target
+        unique_links = {row['result_id']: {**row, **({'recipe_reference': member['recipe_reference']} if len(refs) > 1 else {})}
+                        for member in members for row in member['result_links']}
+        states = {member['status'] for member in members}
+        entry.update(id=parent, time=min(member['time'] for member in members),
+                     title=' · '.join(titles), recipe_reference=next(iter(refs)) if len(refs) == 1 else None,
+                     recipe_references=sorted(refs),
+                     status=next(iter(states)) if len(states) == 1 else 'partial',
+                     details={**entry['details'], 'targets': list(targets.values())},
+                     result_links=list(unique_links.values()))
+        standalone.append(entry)
+    return standalone
+
+
+def completed_target(row):
+    return row.get('status') == 'success' and row.get('retention_status') not in ('failed', 'error')
+
+
 def activity_summary(run, results=()):
     """Bounded human-summary projection of saved run/known result evidence."""
     targets = run.get('targets') or []
-    good = sum(row.get('status') == 'success' and row.get('retention_status') not in ('failed', 'error') for row in targets)
+    good = sum(completed_target(row) for row in targets)
     issues = []
     by_host = {row.get('host_id'): row for row in results}
     for row in targets:
-        if row.get('status') == 'success' and row.get('retention_status') not in ('failed', 'error'):
+        if completed_target(row):
             continue
         item = {key: row.get(key) for key in ('host_id', 'status', 'reason_code', 'retention_status')}
         saved = by_host.get(row.get('host_id'))

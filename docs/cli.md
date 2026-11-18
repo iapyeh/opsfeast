@@ -448,6 +448,7 @@ The [canonical recipe experience reference](recipe-experience.md) defines catalo
 | --- | --- |
 | recipes list [--query TEXT] [--kind operation/report] [--json] [--html NEW_FILE] | Combine active bundle/profile/external sources. Show disabled/unavailable sources and static compatibility; HTML writes a new escaped table. |
 | recipes show RECIPE [--json] | Show identity, purpose, typed inputs, dependencies and verification. Exact references take precedence; ambiguous IDs fail. |
+| recipes execution {begin,show,claim,progress,finish} | Coordinate Agent stages and inspect the shared river. Continue a reviewed pending Python stage with `recipes run --execution-id ID`. See [staged Recipe execution](staged-recipe-execution.md). |
 | recipes run RECIPE [operation options] | Operations share opsfeast.py recipes run host/group/all/exclude/threads/timeout/--var/--vars-file/progress semantics. |
 | recipes run RECIPE [--input JSON_FILE ...] [--var NAME=VALUE ...] [--vars-file JSON_FILE] [--timeout SECONDS] | Offline python-report recipes receive selected JSON data and isolated parameters, no hosts/Sessions. Save new result/artifact files. |
 | recipes results list [--recipe-id ID] [--status STATUS] [--json] [--html NEW_FILE] | Read the ordered offline-report index, with explicit invalid-file errors. Host results use observation result. |
@@ -1169,4 +1170,4 @@ include `river.session_id`, `reader_url`, `history_url`; recording errors are
 explicit and never authorize reruns. Read [workflow rivers](workflow-rivers.md)
 for prerequisites, exact interfaces, streaming limits and verification scope.
 
-*Last modified: 2026-11-17 23:17:21*
+*Last modified: 2026-11-18 15:27:06*

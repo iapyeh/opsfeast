@@ -109,6 +109,28 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data['total'], 1)  # Shared sessions are deduplicated.
         self.assertEqual(data['items'][0]['url'], '/console/' + sid + '/history')
 
+    async def test_staged_activity_opens_single_live_then_history_river(self):
+        from opsfeast.staged_execution import Executions
+        profile, app = self.initialize()
+        (profile.root / 'hosts.yaml').write_text('hosts: {fixture: {connection: {local: true}}}\n')
+        store = Executions(profile.root, installation=self.root)
+        state = store.begin(reference=':synthetic/two-step', title='Review sample',
+                            version='1.0', fingerprint='a' * 64, hosts=['fixture'], trigger='agent',
+                            stages=[{'id': 'review', 'executor': 'agent'}])
+        sid = state['id']
+        store.claim(sid, 'review', 'agent')
+        store.progress(sid, 'review', 'agent', 'Awaiting review', awaiting_human=True)
+        status, data = await self.get(app, '/api/v1/workspace/logs')
+        self.assertEqual(status, 200)
+        (entry,) = data['items']
+        self.assertEqual(entry['river_url'], '/console/' + sid)
+        self.assertTrue(entry['stage']['awaiting_human'])
+        store.finish(sid, 'review', 'agent', 'cancelled', {})
+        _, data = await self.get(app, '/api/v1/workspace/logs?item_id=' + sid)
+        (entry,) = data['items']
+        self.assertEqual(entry['river_url'], '/console/' + sid + '/history')
+        self.assertEqual(entry['status'], 'cancelled')
+
     async def test_document_allowlist_symlinks_and_untrusted_text(self):
         _, app = self.initialize()
         docs = self.root / 'docs'
@@ -158,7 +180,7 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status,200)
         self.assertEqual(data['profile'],'main')
         self.assertEqual(data['status'],'partial')
-        diagnose.assert_called_once_with(selected.root.resolve(),'fixture',limit=10,kind='operation')
+        diagnose.assert_called_once_with(selected.root.resolve(),'fixture',limit=10,kind='operation',sample_offset=0)
         self.assertEqual((await self.get(app,path.replace('limit=10','limit=51')))[0],422)
 
     async def test_activity_recipe_and_meal_titles_search_and_path_fallback(self):
@@ -176,17 +198,55 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(Profile,'retention',new_callable=lambda:property(lambda _:SimpleNamespace(runs=lambda:runs))):
             _,data=await self.get(app,'/api/v1/workspace/logs')
             rows={r['id']:r for r in data['items']}
-            self.assertEqual(rows['saved']['title'],'Saved meal <name> · Saved recipe title')
-            self.assertEqual(rows['saved']['recipe_reference'],'system/software/check/package-security')
-            self.assertEqual(rows['saved']['web_run_id'],record_id)
+            self.assertEqual(rows[record_id]['title'],'Saved meal <name> · Saved recipe title')
+            self.assertEqual(rows[record_id]['recipe_reference'],'system/software/check/package-security')
+            self.assertEqual(rows[record_id]['web_run_id'],record_id)
             self.assertNotIn('web_run_id',rows['cli'])
             self.assertNotIn('web_run_id',rows['missing'])
             self.assertEqual(rows['cli']['title'],GUIDANCE['system/inventory/system'][0])
             self.assertEqual(rows['missing']['title'],':removed/check')
             for query in ('Saved%20meal','system/software/check/package-security'):
                 _,filtered=await self.get(app,'/api/v1/workspace/logs?q='+query)
-                self.assertEqual([r['id'] for r in filtered['items']],['saved'])
+                self.assertEqual([r['id'] for r in filtered['items']],[record_id])
         self.assertEqual(service.show(record_id,'main')['tasks'][0]['title'],'Saved recipe title')
+
+    async def test_web_execution_groups_worker_batches_and_keeps_their_rivers(self):
+        from opsfeast.core import Profile
+        from opsfeast.staged_execution import Executions, PythonStage
+        from types import SimpleNamespace
+        from uuid import uuid4
+        profile, app = self.initialize()
+        service = app.state.recipe_runs
+        store = Executions(profile.root, installation=self.root)
+        reference = 'system/inventory/system'
+        web_id = str(uuid4())
+        hosts = ('first', 'second')
+        (profile.root / 'hosts.yaml').write_text('hosts: {first: {connection: {local: true}}, second: {connection: {local: true}}}\n')
+        runs, saved, tasks, rivers = [], [], [], {}
+        for host in hosts:
+            observation_id = str(uuid4())
+            execution = store.begin(reference=reference, title='System', version='1.0', fingerprint='a' * 64,
+                                    stages=[{'id': 'collect', 'executor': 'python'}], hosts=[host], trigger='cli')
+            stage = PythonStage(store, execution['id'], {})
+            stage.link_observation(observation_id)
+            store.finish(execution['id'], 'collect', 'python', 'success', {})
+            rivers[host] = '/console/' + execution['id'] + '/history'
+            runs.append({'run_id': observation_id, 'recipe_reference': reference, 'started_at': '2026-11-01T01:00:00Z',
+                         'status': 'success', 'targets': [{'host_id': host, 'status': 'success'}]})
+            saved.append({'observation_run_id': observation_id, 'host_id': host, 'status': 'success',
+                          'recipe_reference': reference, 'result_id': host + '.json', 'short_id': host})
+            tasks.append({'reference': reference, 'result': {'observation_run_id': observation_id}})
+        service._save({'id': web_id, 'profile': 'main', 'profile_binding': service._profile_binding('main'),
+                       'state': 'completed', 'tasks': tasks})
+        with patch.object(Profile, 'retention', new_callable=lambda: property(lambda _: SimpleNamespace(runs=lambda: runs))), patch('recipe_reports.results', return_value={'results': saved, 'errors': []}):
+            _, listing = await self.get(app, '/api/v1/workspace/logs')
+            (row,) = listing['items']
+            self.assertEqual(row['id'], web_id)
+            self.assertEqual(row['summary']['total_hosts'], 2)
+            _, detail = await self.get(app, '/api/v1/workspace/logs?item_id=' + web_id)
+            self.assertEqual({link['host_id']: link['river_url'] for link in detail['items'][0]['result_links']}, rivers)
+            _, previous = await self.get(app, '/api/v1/workspace/logs?item_id=' + runs[0]['run_id'])
+            self.assertEqual(previous['items'][0]['result_links'][0]['host_id'], hosts[0])
 
     async def test_activity_existing_meals_resolve_names_without_rewriting_history(self):
         profile, app = self.initialize()
@@ -229,3 +289,32 @@ class WorkspaceWebTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(detail['items'][0]['summary']['total_hosts'],1)
             self.assertEqual(read.call_count,1)
             self.assertEqual((await self.get(app,'/api/v1/workspace/logs?host_id=node'))[0],422)
+
+    async def test_activity_collapses_only_successful_wrapper_with_its_exact_member(self):
+        from opsfeast.core import Profile
+        from recipe_reports import results
+        from types import SimpleNamespace
+        profile, app = self.initialize()
+        reference = 'system/inventory/system'
+        run = {'run_id': 'batch', 'recipe_reference': reference, 'started_at': '2026-11-01T01:00:00Z',
+               'status': 'success', 'targets': [{'host_id': 'node', 'status': 'success'}]}
+        base = {'host_id': 'node', 'status': 'success', 'observation_run_id': 'batch', 'meal_run_id': 'meal'}
+        member = dict(base, recipe={'id': 'inventory-platform-system', 'reference': reference},
+                      source_observation_id='exact-source')
+        wrapper = dict(base, recipe={'id': 'recipe-meal', 'reference': reference},
+                       children=[{'recipe': member['recipe'], 'status': 'success',
+                                  'source_observation_id': member['source_observation_id']}])
+        folder = profile.root / 'observations'
+        folder.mkdir(exist_ok=True)
+        files = {'member.json': member, 'wrapper.json': wrapper,
+                 'different.json': dict(wrapper, meal_run_id='other-meal'),
+                 'multi.json': dict(wrapper, children=wrapper['children'] * 2),
+                 'with-failure.json': dict(wrapper, content_update={'status': 'failed'})}
+        for name, data in files.items():
+            (folder / name).write_text(json.dumps(data))
+        with patch.object(Profile, 'retention', new_callable=lambda: property(lambda _: SimpleNamespace(runs=lambda: [run]))):
+            _, detail = await self.get(app, '/api/v1/workspace/logs?item_id=batch')
+        links = detail['items'][0]['result_links']
+        self.assertEqual({row['result_id'] for row in links},
+                         {'observations/' + name for name in files if name != 'wrapper.json'})
+        self.assertEqual(len(results(profile.root, kind='operation')['results']), len(files))

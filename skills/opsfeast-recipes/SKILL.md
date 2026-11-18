@@ -824,7 +824,7 @@ Use [recipe pages/defaults/menu preferences](../../docs/web-recipe-menu.md#recip
 
 ## Field navigation and inventory split
 
-Follow the [recipe page layout](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals): titles/member links open new tabs, dotted fields form expandable trees, exact-name options live with their field and common inputs remain separate. Manage categories from Recipes; recipe pages assign them. Read the [routine/meal design](../../docs/inventory-routine-design.md) for its rationale; current interfaces are in the [implemented routine contract](../../docs/recipe-routines.md). Independent recipes and connection/permission grouping are shipped.
+Follow the [recipe page layout](../../docs/web-recipe-menu.md#recipe-pages-defaults-categories-and-user-meals): titles/member links open new tabs, dotted fields form expandable trees, exact-name options live with their field, and the technical details section contains common inputs and the save button for both locations. Manage categories from Recipes; recipe pages assign them. Read the [routine/meal design](../../docs/inventory-routine-design.md) for its rationale; current interfaces are in the [implemented routine contract](../../docs/recipe-routines.md). Independent recipes and connection/permission grouping are shipped.
 
 
 ## Inventory routine/meal contract 0.1.0
@@ -994,4 +994,15 @@ fail before commands when unavailable. No extra SSH session, command retry,
 automatic agent wakeup or persistent interactive shell is implied. Read the
 canonical stream/storage/error/output-privacy limits before authoring.
 
-*Last modified: 2026-11-17 23:17:21*
+## Shared staged execution 0.1.0
+
+For recipes declaring `execution`, first read the
+[staged execution contract](../../docs/staged-recipe-execution.md) for stage
+IDs, launch alignment, typed output, failure and authorization boundaries.
+System configuration Inventory uses one Python stage with the existing runner
+and selector semantics. Normal CLI and due inventory dispatch open the river
+automatically. For Agent-first recipes use `recipes execution begin`, `claim`,
+`progress`, `finish` and `recipes run --execution-id` as shown in the
+contract. Use the existing typed workflow and host/session helpers for I/O.
+
+*Last modified: 2026-11-18 10:35:29*

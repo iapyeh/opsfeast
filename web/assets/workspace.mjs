@@ -26,8 +26,19 @@ export function table(headers, rows, e) {
 function objects(items,e) {
   return items.length?items.map(item=>`<article class="attention-row"><span class="priority">${e(state(item.severity||item.priority||'unknown'))}</span><div><h3>${e(item.title)}</h3><p>${statusBadge(item.status,e)} · ${e(item.source?.host_id||c.unknown)}</p><p>${e(item.body||'')}</p><small>${e(time(item.updated_at))}</small></div></article>`).join(''):`<p role="status">${e(c.empty)}</p>`;
 }
+function activityStatus(item,e) {
+  const hasHostCounts=item.source==='recipe'&&item.summary?.total_hosts>0;
+  return hasHostCounts&&['success','partial'].includes(item.status)?'':statusBadge(item.status,e);
+}
+function workspaceLinks(profile,e) {
+  return (target,label,extra={},newTab=false)=>`<a ${newTab?'target="_blank" rel="noopener" ':''}href="${e(workspaceUrl(target,profile,extra))}">${e(label)}</a>`;
+}
+function activityResultLinks(rows,link,e) {
+  if (!rows?.length) return '<p>尚無已保存的主機結果。</p>';
+  return `<ul>${rows.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id},true)}${row.recipe_reference?` <code>${e(row.recipe_reference)}</code>`:''}${row.river_url?' · '+link(row.river_url,'河道',{},true):''}</li>`).join('')}</ul>`;
+}
 export function renderData(path,data,{e,profile,recipeScope='all'}) {
-  const link=(target,label,extra={},newTab=false)=>`<a ${newTab?'target="_blank" rel="noopener" ':''}href="${e(workspaceUrl(target,profile,extra))}">${e(label)}</a>`;
+  const link=workspaceLinks(profile,e);
   let html=data.status!=='success'?`<p class="detail-note" role="status">${e(c.partial)}</p>`:'';
   if(path==='/workspace') {
     html+=`<section class="panel workspace-summary-panel"><div><h2>${e(c.hostCount)}</h2><strong class="workspace-host-count">${e(data.host_count)}</strong></div><p class="field-hint">${e(c.summaryNote)}</p></section><div class="roadmap-columns">`;
@@ -44,9 +55,14 @@ export function renderData(path,data,{e,profile,recipeScope='all'}) {
   if(path==='/work')return html+`<p class="field-hint">${e(c.serviceNote)}</p>`+table(c.workColumns,data.items.map(item=>[e(state(item.kind)),`<details><summary>${e(item.title)}</summary><p>${e(item.body||'')}</p><pre class="log-content">${e(json(item))}</pre></details>`,statusBadge(item.status,e),e(item.source?.host_id||c.unknown),e(time(item.updated_at))]),e);
   if(path==='/logs')return html+`<p class="field-hint">${e(c.logsNote)}</p>`+table(c.logColumns,data.items.map(item=>[
     item.web_run_id?link('/recipe-plate',time(item.time),{run:item.web_run_id}):e(time(item.time)),e(state(item.source)),
-    item.web_run_id
-      ? `${item.recipe_reference?link('/recipes',item.title,{recipe:item.recipe_reference},true):e(item.title)}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}${item.summary?`<p>主機：完成 ${e(item.summary.completed_hosts)} ／ 未完成 ${e(item.summary.incomplete_hosts)} ／ 共 ${e(item.summary.total_hosts)} 台</p>`:''}<details data-activity-results="${e(item.id)}"><summary>主機結果與未完成項目的數量（未完成主機 ${e(item.summary?.incomplete_hosts??c.unknown)}）</summary><div data-activity-results-content>${(item.result_links||[]).length?`<ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul>`:(item.results_loaded===false?'<p>展開後讀取主機結果。</p>':'<p>尚無已保存的主機結果。</p>')}</div></details>`
-      : `${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}<details ${item.expanded?'open':''}><summary>${e(item.source==='console'?item.title:item.summary?.incomplete_hosts?'查看未完成項目':'查看摘要')}</summary>${statusBadge(item.status,e)}${renderActivitySummary(item,{e,profile})}${(item.result_links||[]).length?`<details><summary>${e(c.resultCauses)}</summary><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul></details>`:''}<details><summary>原始資料（進階）</summary><pre class="log-content">${e(json(item.details))}</pre></details></details>`
+    item.river_url
+      ? `${link(item.river_url,item.title)} ${statusBadge(item.status,e)}
+         ${item.stage?.awaiting_human?'<p>等待人工確認</p>':item.stage?`<p>${e(item.stage.id)}</p>`:''}
+         ${item.result_links?.length?`<ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul>`:''}
+         ${item.results_loaded?'':link('/logs','查看保存結果',{entry:item.id})}`
+      : item.web_run_id
+      ? `${item.recipe_reference?link('/recipes',item.title,{recipe:item.recipe_reference},true):e(item.title)}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}${activityStatus(item,e)}<details data-activity-results="${e(item.id)}"><summary>主機結果${item.summary?`（完成 ${e(item.summary.completed_hosts)}／未完成 ${e(item.summary.incomplete_hosts)}／共 ${e(item.summary.total_hosts)} 台）`:''}</summary><div data-activity-results-content>${item.results_loaded===false?'<p>展開後讀取主機結果。</p>':activityResultLinks(item.result_links,link,e)}</div></details>`
+      : `${item.source==='console'?link(item.url,c.history):link('/logs',item.title,{entry:item.id})}${item.recipe_reference?`<p class="field-hint"><code>${e(item.recipe_reference)}</code></p>`:''}<details ${item.expanded?'open':''}><summary>${e(item.source==='console'?item.title:item.summary?.incomplete_hosts?'查看未完成項目':'查看摘要')}</summary>${activityStatus(item,e)}${renderActivitySummary(item,{e,profile})}${(item.result_links||[]).length?`<details><summary>${e(c.resultCauses)}</summary><ul>${item.result_links.map(row=>`<li>${link('/logs',row.host_id+' · '+state(row.status)+' · '+c.diagnosis,{result:row.result_id})}</li>`).join('')}</ul></details>`:''}<details><summary>原始資料（進階）</summary><pre class="log-content">${e(json(item.details))}</pre></details></details>`
   ]),e);
 
   return html+`<p class="field-hint">${e(c.retentionNote)}</p>`+table(c.retentionColumns,data.items.map(item=>[e(time(item.observed_at)),e(item.host_id),e(item.recipe_reference),e(item.kind),statusBadge(item.status,e)]),e);
@@ -95,10 +111,14 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
     if(recipeScope!=='bundle'&&!profile){content.innerHTML=`<p>${e(c.noProfile)}</p><a href="/settings/profiles">${e(c.profiles)}</a>`;return;}
     if(recipeScope!=='bundle')content.insertAdjacentHTML('beforebegin',`<p class="field-hint">${e(c.profile)}：${e(profile)} · <a href="/settings/profiles">${e(c.profiles)}</a></p>`);
     if(path==='/logs'&&query.get('result')) {
-      const loadDiagnosis=async(limit=5)=>{
-        const data=await read('/api/v1/results/diagnosis?'+new URLSearchParams({profile,result_id:query.get('result'),limit:String(limit)}));
-        content.innerHTML=renderDiagnosis(data,{e,profile});
-        content.querySelector('#diagnosis-more')?.addEventListener('click',()=>loadDiagnosis(50).catch(()=>content.insertAdjacentHTML('beforeend',`<p role="alert">${e(c.failed)}</p>`)));
+      let limit=5, sampleOffset=0;
+      const loadDiagnosis=async()=>{
+        const data=await read('/api/v1/results/diagnosis?'+new URLSearchParams({profile,result_id:query.get('result'),limit,sample_offset:sampleOffset}));
+        content.innerHTML=renderDiagnosis(data,{e,profile,sampleOffset});
+        const refresh=()=>loadDiagnosis().catch(()=>content.insertAdjacentHTML('beforeend',`<p role="alert">${e(c.failed)}</p>`));
+        content.querySelector('#diagnosis-more')?.addEventListener('click',()=>{limit=50;return refresh();});
+        content.querySelector('#result-samples-prev')?.addEventListener('click',()=>{sampleOffset=Math.max(0,sampleOffset-50);return refresh();});
+        content.querySelector('#result-samples-next')?.addEventListener('click',()=>{sampleOffset=data.collected_samples.next_offset;return refresh();});
       };
       await loadDiagnosis();return;
     }
@@ -128,7 +148,7 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
             const saved=await read('/api/v1/workspace/logs?'+new URLSearchParams({profile,item_id:node.dataset.activityResults,limit:'1'}));
             const entry=saved.items?.find(item=>item.id===node.dataset.activityResults);
             if(!entry)throw new Error('missing');
-            target.innerHTML=entry.result_links?.length?`<p>已保存主機結果：${e(entry.result_links.length)} 筆</p><ul>${entry.result_links.map(row=>`<li><a href="${e(workspaceUrl('/logs',profile,{result:row.result_id}))}">${e(row.host_id+' · '+state(row.status)+' · '+c.diagnosis)}</a></li>`).join('')}</ul>`:'<p>尚無已保存的主機結果。</p>';
+            target.innerHTML=activityResultLinks(entry.result_links,workspaceLinks(profile,e),e);
           }catch{loaded=false;target.textContent=c.failed;}
         });
       });
@@ -139,11 +159,24 @@ export async function mountWorkspace(root,{path,e,siteName,search='',profiles=nu
 }
 
 
-export function renderDiagnosis(data,{e,profile}) {
+export function renderDiagnosis(data,{e,profile,sampleOffset=0}) {
   const reason=value=>c.reasons[value]||value||c.unknown;
-  return `<a href="${e(workspaceUrl('/logs',profile))}">← ${e(c.back)}</a><h2>${e(c.diagnosis)} · ${e(data.host_id)}</h2><p>${e(c.status)}: ${e(state(data.status))} · ${e(data.reason_code||'')}</p><p>${e(c.missingFields)}: ${e(data.coverage_gap_count||0)} · ${e(c.commandIssues)}: ${e(data.issue_count)}</p>`+
-    table(c.gapColumns,(data.coverage_gaps||[]).map(gap=>[e(gap.job),e(gap.properties.join(', ')),e(reason(gap.reason_code)),e(time(gap.observed_at))]),e)+
-    (data.issues||[]).map(issue=>`<section class="panel roadmap-section"><h3>${e(reason(issue.reason_code))}</h3><p>${e(issue.stage)} · ${e(issue.error_type||'')}</p>${issue.command?`<pre class="log-content">${e(issue.command)}</pre>`:''}${['stderr','stdout'].map(name=>issue[name]?`<pre class="log-content">${e(issue[name].text)}</pre>`:'').join('')}</section>`).join('')+
-    (data.omitted_count||data.omitted_coverage_groups?`<p>${e(c.boundedDiagnosis)}</p><button class="button" type="button" id="diagnosis-more">${e(c.more)}</button>`:'')+
+  const gaps=data.coverage_gaps||[], issues=data.issues||[];
+  const hasMore=data.omitted_count||data.omitted_coverage_groups;
+  const noIssues=data.status==='success'&&data.coverage_gap_count===0&&data.issue_count===0;
+  const samples=data.collected_samples;
+  const values=samples?.total?`<section><h3>${e(c.collectedValues)}（${e(samples.total)}）</h3>
+    ${table(c.collectedColumns,samples.items.map(row=>[
+      `<code>${e(row.property)}</code>${Object.keys(row.keys).length?` <small>${e(JSON.stringify(row.keys))}</small>`:''}`,
+      `<code class="result-sample-value">${e(row.value_text)}${row.value_truncated?'…':''}</code>`,
+      e(time(row.observed_at)),
+    ]),e)}
+    ${sampleOffset>0?`<button type="button" class="button" id="result-samples-prev">${e(c.previousResults)}</button>`:''}
+    ${samples.next_offset!=null?`<button type="button" class="button" id="result-samples-next">${e(c.nextResults)}</button>`:''}</section>`:'';
+  return `<a href="${e(workspaceUrl('/logs',profile))}">← ${e(c.back)}</a><h2>${e(c.diagnosis)} · ${e(data.host_id)}</h2><p>${e(c.status)}: ${e(state(data.status))} · ${e(data.reason_code||'')}</p>${values}<p>${e(c.missingFields)}: ${e(data.coverage_gap_count||0)} · ${e(c.commandIssues)}: ${e(data.issue_count)}</p>`+
+    (gaps.length?table(c.gapColumns,gaps.map(gap=>[e(gap.job),e(gap.properties.join(', ')),e(reason(gap.reason_code)),e(time(gap.observed_at))]),e):'')+
+    issues.map(issue=>`<section class="panel roadmap-section"><h3>${e(reason(issue.reason_code))}</h3><p>${e(issue.stage)} · ${e(issue.error_type||'')}</p>${issue.command?`<pre class="log-content">${e(issue.command)}</pre>`:''}${['stderr','stdout'].map(name=>issue[name]?`<pre class="log-content">${e(issue[name].text)}</pre>`:'').join('')}</section>`).join('')+
+    (hasMore?`<p>${e(c.boundedDiagnosis)}</p><button class="button" type="button" id="diagnosis-more">${e(c.more)}</button>`:'')+
+    (!gaps.length&&!issues.length&&!hasMore?`<p>${e(noIssues?c.diagnosisClear:c.diagnosisNoDetails)}</p>`:'')+
     (data.notes||[]).map(note=>`<p class="field-hint">${e(note)}</p>`).join('');
 }

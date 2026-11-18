@@ -24,10 +24,12 @@ all other requested properties succeeded.
 - On Web **Hosts → host summary**, the **最近盤點結果** panel shows the latest
   saved inventory status and a **查看結果與未完成原因** link.
 - On Web **活動與紀錄**, open a Recipe batch and choose a host under
-  **主機結果與未完成項目的數量**. Web plate timestamps open the original execution
+  **主機結果**. Web plate timestamps open the original execution
   page with its shared river, task results and incomplete-stage summaries.
   CLI-only observations retain their summary/diagnosis entrypoints. The diagnosis page lists job, incomplete properties,
-  reasons and source times, followed by bounded command/error evidence.
+  reasons and source times, followed by bounded command/error evidence. For
+  saved inventory results, **本次採集結果** lists successful field values and
+  their sample times from the exact execution, including values in partial runs.
 - Direct CLI inspection is read-only:
 
   ```sh
@@ -57,7 +59,11 @@ The administrator/owner-protected Web adapters are:
   inventory metadata, or `result: null`; invalid stored-result counts stay visible.
 - `GET /api/v1/results/diagnosis?profile=NAME&result_id=ID&limit=5`: the same saved
   diagnosis plus selected Profile. IDs use the existing safe short/relative-path
-  lookup. No arbitrary file access or cross-Profile fallback is introduced.
+  lookup. The Web response includes `collected_samples` with up to 50 successful
+  inventory samples per page, `total` and `next_offset`. Pass `sample_offset`
+  for a later page. Values longer than 2,048 characters are explicitly clipped.
+  The original result remains available via `observation result ID --raw`.
+  No arbitrary file access or cross-Profile fallback is introduced.
 
 Unauthorized reads return 401; invalid arguments/IDs/configuration return 422;
 diagnosis storage failures return 503. Web links retain the Profile. Command output
@@ -78,4 +84,4 @@ inventory complete. Public tests use synthetic platform output and saved evidenc
 Offline diagnosis/recovery of real saved observations is not a new SSH execution
 or verification of current host condition.
 
-*Last modified: 2026-11-16 16:06:41*
+*Last modified: 2026-11-18 14:14:40*

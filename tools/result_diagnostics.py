@@ -1,4 +1,6 @@
 """Read-only, bounded failure evidence for saved operation/report results."""
+import json
+
 from console_output import cell
 from recipe_reports import result_path, show_result
 from opsfeast import ConfigError
@@ -39,11 +41,34 @@ def coverage_gaps(raw):
     return [{**row, 'properties': sorted(set(row['properties']))} for row in grouped.values()]
 
 
-def diagnose(root, identifier, *, limit=5, kind=None):
+def collected_samples(raw, offset):
+    """Return one page of successful inventory samples, scoped to this result."""
+    samples = ((group, sample) for group in (raw.get('groups') or [])
+               for sample in (group.get('samples') or [])
+               if sample.get('status') == 'success' and 'value' in sample)
+    entries = []
+    count = 0
+    for group, sample in samples:
+        if offset <= count < offset + 50:
+            value = sample['value']
+            value_text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+            entries.append({'job': group.get('id'), 'property': sample.get('property'),
+                            'keys': sample.get('keys') or {}, 'value_text': value_text[:2048],
+                            'value_truncated': len(value_text) > 2048,
+                            'observed_at': sample.get('observed_at')})
+        count += 1
+    return {'items': entries, 'total': count,
+            'next_offset': offset + len(entries) if offset + len(entries) < count else None}
+
+
+def diagnose(root, identifier, *, limit=5, kind=None, sample_offset=None):
     """Use known evidence fields, never search arbitrary payloads or reconnect."""
     if type(limit) is not int or not 1<=limit<=50:
         raise ConfigError('diagnosis limit must be between 1 and 50')
+    if sample_offset is not None and (type(sample_offset) is not int or sample_offset < 0):
+        raise ConfigError('invalid collected sample offset')
     raw=show_result(root,identifier,kind=kind)
+    samples = {} if sample_offset is None else {'collected_samples': collected_samples(raw, sample_offset)}
     resolved=result_path(root,identifier).relative_to(root).as_posix()
     issues=[]
     def add(stage,reason=None,error_type=None,**details):
@@ -116,7 +141,7 @@ def diagnose(root, identifier, *, limit=5, kind=None):
             'probe_count':len(probes),'unsupported_or_unattempted':skipped,'issue_count':len(issues),
             'shown_count':len(selected),'omitted_count':len(issues)-len(selected),'issues':selected,'notes':notes,
             'coverage_gap_count':sum(len(row['properties']) for row in coverage),
-            'coverage_gaps':coverage[:limit], 'omitted_coverage_groups':max(0,len(coverage)-limit)}
+            'coverage_gaps':coverage[:limit], 'omitted_coverage_groups':max(0,len(coverage)-limit), **samples}
 
 
 def format_diagnosis(report):

@@ -110,4 +110,13 @@ UTF-8 offsets and exact host history. A credential-free local SSHScript process
 checks actual local job/record integration. These tests do not connect to a
 managed host, execute billing or prove remote cancellation/mail delivery.
 
-*Last modified: 2026-11-17 23:17:21*
+## Workflows that declare stages
+
+[Staged Recipe execution 0.1.0](staged-recipe-execution.md) creates the river
+before the first Agent stage. The runner claims the pending Python stage using
+`recipes run --execution-id ID` and attaches to the existing river. The
+`launch.river: true` availability check still applies before the workflow can
+dispatch. The single-runner flow above applies to workflows without
+`execution` stages.
+
+*Last modified: 2026-11-18 10:35:29*

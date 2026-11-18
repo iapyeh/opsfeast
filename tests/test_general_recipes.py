@@ -76,6 +76,27 @@ class GeneralRecipeTests(unittest.TestCase):
         self.assertEqual(report['reason_code'], 'browser_missing')
         self.assertEqual(json.loads(path.read_text()), report)
 
+    def test_workflow_river_records_progress_once_with_a_runner_sink(self):
+        self.metadata['launch'] = {'mode': 'direct', 'river': True}
+        self.workflow("    context.progress('Quote validated')\n"
+                      "    return {'status':'success','reason_code':'done','message':'Synthetic.','data':{}}\n")
+        from opsfeast.console_records import Records
+        from opsfeast.workflow_river import WorkflowRiver
+        records = Records(self.root / 'console-records')
+        river = WorkflowRiver(records, profile='synthetic', host_id='h', title='Fixture',
+                              reference=':fixture', run_id='fixture', origin='http://localhost:59000')
+        sink = Mock(side_effect=lambda host, message: river.text('status', 'dispatch', message))
+        stderr = io.StringIO()
+        with (patch('opsfeast.workflow_river.create', return_value=river),
+              contextlib.redirect_stderr(stderr), runner.reporting(True, 'fixture', 'h', sink=sink)):
+            report, _ = self.execute(assignments=['port=8888'])
+        self.assertEqual(report['status'], 'success')
+        self.factory.assert_not_called()
+        sink.assert_any_call('h', 'validating configuration and recipe')
+        self.assertIn('fixture Quote validated', stderr.getvalue())
+        self.assertEqual(sum(block['head'] == 'Quote validated'
+                             for block in records.snapshot(river.session_id)['blocks']), 1)
+
     def test_workflow_explicit_connection_uses_selected_host_and_cleanup(self):
         self.workflow("    context.progress('browser already validated')\n    with context.connect() as session:\n        session.exec_command(['synthetic'])\n    return {'status':'success','reason_code':'done','message':'Synthetic.','data':{'host':context.host_id}}\n")
         report, path = self.execute(assignments=['port=8888'])

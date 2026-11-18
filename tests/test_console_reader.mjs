@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {consume,displayText,preview,visibleInRiver,identityLabel,processingState,activityState} from '../web/assets/console-reader-state.mjs';
+import {consume,displayText,preview,blockDisplayText,readBlockText,visibleInRiver,identityLabel,processingState,activityState} from '../web/assets/console-reader-state.mjs';
 test('stream updates one block without retaining every text chunk in browser history',()=>{
   const original={session:{session_id:'one'},seq:0,blocks:[]};
   const e={session_id:'one',seq:1,block:{id:'b',revision:1,head:'first',tail:'',size:5}};
@@ -14,6 +14,31 @@ test('stream updates one block without retaining every text chunk in browser his
 });
 test('display handles CR progress and ANSI while preserving plain text',()=>{
   assert.equal(displayText('first\r\n10%\r20%\n繁體\x1b[31m文字\x1b[0m'),'first\n20%\n繁體文字');
+});
+
+test('empty output streams and a runner outcome have distinct reader labels',()=>{
+  for(const kind of ['stdout','stderr']){
+    assert.equal(blockDisplayText({kind,status:'completed',size:0},''),kind+'：沒有輸出。');
+    assert.equal(blockDisplayText({kind,status:'streaming',size:0},''),'');
+    assert.equal(blockDisplayText({kind,status:'completed',size:3},'ok\n'),'ok\n');
+  }
+  const head='{"status": "partial", "output": {"exit_code": 1}}';
+  assert.equal(blockDisplayText({kind:'status',title:'dispatch',head},head),'Recipe runner：部分完成（runner 退出碼 1）');
+  assert.equal(blockDisplayText({kind:'stdout',title:'dispatch',head},head),head);
+});
+
+test('copy reads original text in byte-offset pages without including subsequent output',async()=>{
+  const original='臺銀\nsecond';
+  const size=new TextEncoder().encode(original).length;
+  const calls=[];
+  const text=await readBlockText({head:'臺銀',tail:'second',size},async(offset,limit)=>{
+    calls.push([offset,limit]);
+    return offset===0?{text:'臺銀\n',next_offset:7}:{text:'second\nlate',next_offset:size+5};
+  });
+  assert.equal(text,original);
+  assert.deepEqual(calls,[[0,256],[7,256]]);
+  assert.equal(await readBlockText({head:original,size},()=>assert.fail('complete head should not fetch')),original);
+  await assert.rejects(readBlockText({head:'',size},async()=>({text:'',next_offset:0})),/incomplete_block_content/);
 });
 
 test('identity metadata stays outside river content and has a readable toolbar label',()=>{

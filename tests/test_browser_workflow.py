@@ -14,7 +14,7 @@ from opsfeast import browser_steps as browser
 from opsfeast.bot_usd import parse_bot_usd_table, select_monthly_usd_quote, QuoteError
 from opsfeast.browser_command_workflow import run
 from opsfeast.workflow import WorkflowContext
-from opsfeast.operation_guard import OperationGuard
+from opsfeast.operation_guard import OperationGuard, inspect as inspect_guard
 
 HTML = '''<table><thead><tr><th rowspan="2">掛牌日期</th><th rowspan="2">幣別</th><th colspan="2">現金匯率</th><th colspan="2">即期匯率</th></tr><tr><th>本行買入</th><th>本行賣出</th><th>本行買入</th><th>本行賣出</th></tr></thead><tbody><tr><td>2032/04/16</td><td>美金 (USD)</td><td>20.01</td><td>40.01</td><td>30.01</td><td>31.250</td></tr></tbody></table>'''
 
@@ -52,10 +52,11 @@ class BrowserWorkflowTests(unittest.TestCase):
         self.events.append(('command', argv, kwargs))
         return self.receipt
 
-    def invoke(self):
+    def invoke(self, repeat_receipt=None, *, command_completion_is_success=False):
         return run(self.context, target_host='synthetic-host', purpose='synthetic-invoice',
                    url='https://example.test/table', select_quote=select,
-                   build_argv=lambda quote: ['/opt/reviewed', '--usd-rate', quote['sell_rate']])
+                   build_argv=lambda quote: ['/opt/reviewed', '--usd-rate', quote['sell_rate']],
+                   repeat_receipt=repeat_receipt, command_completion_is_success=command_completion_is_success)
 
     def test_parser_uses_spot_selling_and_skips_absent_fifteenth(self):
         self.assertEqual(select(snapshot(), '2032-04')['sell_rate'], '31.25')
@@ -133,6 +134,30 @@ class BrowserWorkflowTests(unittest.TestCase):
         self.assertEqual(self.context.river.execute.call_args.args[1],['/opt/reviewed','--usd-rate','31.25'])
         self.assertEqual(self.events.count('connect'),1)
 
+    def test_command_only_scope_uses_remote_exit_code_as_recipe_outcome(self):
+        from recipe_runner import execution_exit_code
+
+        with patch('opsfeast.browser_steps.acquire', return_value=snapshot()):
+            result = self.invoke(command_completion_is_success=True)
+            self.assertEqual(result['status'], 'success')
+            self.assertEqual(result['reason_code'], 'command_completed')
+            self.assertEqual(result['data']['command']['exitcode'], 0)
+            self.assertEqual(execution_exit_code([result]), 0)
+            self.assertNotIn('business_outcome', result['data'])
+            self.assertNotIn('mail_delivery', result['data'])
+            self.assertEqual(self.invoke(command_completion_is_success=True)['status'], 'failed')
+
+    def test_command_only_scope_still_fails_on_a_nonzero_remote_exit_code(self):
+        from recipe_runner import execution_exit_code
+
+        self.receipt.exitcode = 7
+        with patch('opsfeast.browser_steps.acquire', return_value=snapshot()):
+            result = self.invoke(command_completion_is_success=True)
+        self.assertEqual(result['status'], 'failed')
+        self.assertEqual(result['reason_code'], 'command_failed')
+        self.assertEqual(result['data']['command']['exitcode'], 7)
+        self.assertEqual(execution_exit_code([result]), 1)
+
     def test_failure_before_selection_has_no_connection(self):
         with patch('opsfeast.browser_steps.acquire', side_effect=browser.BrowserStepError('browser_provider_timeout')):
             self.assertEqual(self.invoke()['data']['execution'], 'failed_before_dispatch')
@@ -196,6 +221,58 @@ class BrowserWorkflowTests(unittest.TestCase):
         with self.assertRaises(ConfigError): first.update('outcome_unknown')
         second.update('outcome_unknown')
         with self.assertRaises(ConfigError): OperationGuard(self.root, key=key, run_id='third')
+
+    def test_completed_workflow_requires_explicit_receipt_and_archives_original(self):
+        key = {'purpose': 'synthetic-invoice', 'host': 'synthetic-host', 'month': '2032-04'}
+        first = OperationGuard(self.root, key=key, run_id='earlier')
+        first.update('command_completed', command={'exitcode': 0})
+        original = first.path.read_bytes()
+        warning = inspect_guard(self.root, key)
+        self.assertEqual(warning['state'], 'repeat_confirmation_required')
+        self.assertEqual(warning['previous_completed']['run_id'], 'earlier')
+        with patch.object(browser, 'acquire', return_value=snapshot()) as acquire:
+            self.assertIn('operation_repeat_confirmation_required', self.invoke()['message'])
+            self.assertIn('operation_repeat_receipt_changed', self.invoke('a' * 64)['message'])
+            acquire.assert_not_called()
+            result = self.invoke(warning['receipt'])
+            self.assertEqual(result['data']['repeat_of']['run_id'], 'earlier')
+            self.assertEqual(result['reason_code'], 'command_completed_business_outcome_unverified')
+            self.assertIn('operation_repeat_receipt_changed', self.invoke(warning['receipt'])['message'])
+            acquire.assert_called_once()
+        archived = first.path.with_name(first.path.stem + '-' + first.nonce + '.json')
+        self.assertEqual(archived.read_bytes(), original)
+
+    def test_repeat_confirmation_is_exclusive_and_required_again_after_early_failure(self):
+        from concurrent.futures import ThreadPoolExecutor
+        key = {'purpose': 'synthetic', 'host': 'fixture', 'month': '2032-04'}
+        self.assertEqual(inspect_guard(self.root, key)['state'], 'available')
+        self.assertFalse((self.root / '.operation-guards').exists())
+        first = OperationGuard(self.root, key=key, run_id='earlier')
+        first.update('command_completed')
+        receipt = inspect_guard(self.root, key)['receipt']
+
+        def reserve(index):
+            try:
+                return OperationGuard(self.root, key=key, run_id=str(index), repeat_receipt=receipt)
+            except ConfigError:
+                return None
+
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            (winner,) = [guard for guard in workers.map(reserve, range(2)) if guard is not None]
+        self.assertEqual(inspect_guard(self.root, key)['state'], 'blocked')
+        winner.update('failed_before_dispatch')
+        self.assertEqual(inspect_guard(self.root, key)['previous_completed']['run_id'], 'earlier')
+        self.assertIsNone(reserve('replay'))
+        with self.assertRaisesRegex(ConfigError, 'repeat_confirmation_required'):
+            OperationGuard(self.root, key=key, run_id='no-confirmation')
+
+    def test_uncertain_dispatch_stays_blocked_even_with_a_receipt(self):
+        key = {'purpose': 'synthetic', 'host': 'fixture', 'month': '2032-04'}
+        first = OperationGuard(self.root, key=key, run_id='earlier')
+        first.update('outcome_unknown')
+        self.assertEqual(inspect_guard(self.root, key)['state'], 'blocked')
+        with self.assertRaisesRegex(ConfigError, 'operation_already_reserved'):
+            OperationGuard(self.root, key=key, run_id='repeat', repeat_receipt=browser.digest(browser.read(first.path)))
 
 
 if __name__ == '__main__': unittest.main()

@@ -257,10 +257,11 @@ def collection_user(raw):
     return name
 
 
-def results(root, recipe=None, host=None, status=None, *, kind=None):
+def results(root, recipe=None, host=None, status=None, *, kind=None, collapse_successful_wrappers=False):
     if kind not in (None,'operation','report'):
         raise ConfigError('result kind must be operation or report')
     records, errors = [], []
+    wrappers, member_keys = {}, set()
     files = list(_result_files(root))
     short_ids = _short_result_ids(identifier for identifier, path in files)
     for identifier, path in files:
@@ -292,10 +293,34 @@ def results(root, recipe=None, host=None, status=None, *, kind=None):
                    'content_update': raw.get('content_update'), 'retention': raw.get('retention'), 'kind': 'report' if 'report_contract' in raw else 'operation'}
             if recipe and row['recipe_id'] != recipe or host and row['host_id'] != host or status and row['status'] != status:
                 continue
+            if collapse_successful_wrappers and stored_kind == 'operation' and raw['status'] == 'success':
+                run_id, meal_id = raw.get('observation_run_id'), raw.get('meal_run_id')
+                scope = (run_id, meal_id, row['host_id'], row['recipe_reference'])
+                if all(isinstance(value, str) and value for value in scope):
+                    children = raw.get('children')
+                    if meta.get('id') != 'recipe-meal':
+                        source_id = raw.get('source_observation_id')
+                        if isinstance(source_id, str) and source_id:
+                            member_keys.add((*scope, source_id))
+                    elif isinstance(children, list) and len(children) == 1 and isinstance(children[0], dict):
+                        child = children[0]
+                        child_recipe = child.get('recipe') or {}
+                        source_id = child.get('source_observation_id')
+                        receipts = [raw.get(key) or {} for key in
+                                    ('retention', 'content_update', 'reference_ips_update')]
+                        if (isinstance(source_id, str) and source_id and child.get('status') == 'success'
+                                and isinstance(child_recipe, dict)
+                                and child_recipe.get('reference') == row['recipe_reference']
+                                and not raw.get('execution_errors') and not raw.get('cleanup_error')
+                                and all(isinstance(receipt, dict) and receipt.get('status') not in ('failed', 'partial')
+                                        for receipt in receipts)):
+                            wrappers[identifier] = (*scope, source_id)
             records.append(row)
         except (ConfigError, OSError, ValueError, TypeError):
             errors.append({'result_id': identifier, 'short_id': short_ids[identifier],
                            'reason_code': 'invalid-result-file'})
+    if wrappers:
+        records = [row for row in records if wrappers.get(row['result_id']) not in member_keys]
     records.sort(key=lambda row: (str(row['started_at'] or ''), row['result_id']), reverse=True)
     return {'results_version': VERSION, 'status': 'partial' if errors else 'success', 'results': records, 'errors': errors}
 

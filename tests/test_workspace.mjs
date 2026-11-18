@@ -88,6 +88,29 @@ test('partial diagnosis explains unsupported fields and escapes saved command ev
   assert.doesNotMatch(html,/<script>/);
 });
 
+test('empty diagnosis describes the execution status without implying missing collected data',()=>{
+  const data={host_id:'fixture',coverage_gap_count:0,issue_count:0,coverage_gaps:[],issues:[]};
+  const success=renderDiagnosis({...data,status:'success'},options);
+  assert.match(success,/沒有未完整取得的欄位，也沒有執行或保存問題/);
+  assert.doesNotMatch(success,/目前沒有資料/);
+  const partial=renderDiagnosis({...data,status:'partial'},options);
+  assert.match(partial,/沒有可顯示的診斷細節/);
+  assert.doesNotMatch(partial,/沒有執行或保存問題/);
+});
+
+test('saved result shows collected fields and escapes the collected values',()=>{
+  const data={host_id:'fixture',status:'success',coverage_gap_count:0,issue_count:0,
+    collected_samples:{total:51,next_offset:50,items:[
+      {property:'system.hostname',keys:{},value_text:'<host>',observed_at:'2026-11-01T00:00:00Z'},
+    ]}};
+  const html=renderDiagnosis(data,options);
+  assert.match(html,/本次採集結果（51）/);
+  assert.match(html,/system.hostname/);
+  assert.match(html,/&lt;host&gt;/);
+  assert.doesNotMatch(html,/<host>/);
+  assert.match(html,/result-samples-next/);
+});
+
 test('library cards search titles as well as paths and keep titles inert',async()=>{
   const root=new Element();
   await mountWorkspace(root,{path:'/docs',e,siteName:'Fixture',fetchImpl:async()=>({ok:true,json:async()=>({items:[{path:'docs/guide.md',title:'Scope <img src=x>'},{path:'docs/other.md',title:'Other'}]})})});
@@ -113,10 +136,11 @@ test('activity partial summary explains stages and keeps JSON behind advanced di
   assert.match(html,/XML 無法解析（system version get）/);assert.match(html,/資料保存：已保存/);assert.match(html,/&lt;host&gt;/);
   assert.match(html,/<details><summary>原始資料（進階）/);assert.match(html,/<details open>/);
   assert.ok(html.indexOf('套件採集')<html.indexOf('raw-only'));
+ assert.doesNotMatch(html,/data-state-warning/);
 });
 
 test('Web plate activity links to its exact run and keeps only compact closed results',()=>{
- const item={id:'observation',source:'recipe',web_run_id:'web&run',recipe_reference:'system/software/check/package-security',title:'Meal <name>',status:'partial',expanded:true,details:{raw:'DO_NOT_SHOW'},summary:{total_hosts:1,completed_hosts:0,incomplete_hosts:1,issues:[{host_id:'node',reason_code:'DO_NOT_SHOW'}]},result_links:[{host_id:'<node>',status:'partial',result_id:'saved/id'}]};
+ const item={id:'observation',source:'recipe',web_run_id:'web&run',recipe_reference:'system/software/check/package-security',title:'Meal <name>',status:'partial',expanded:true,details:{raw:'DO_NOT_SHOW'},summary:{total_hosts:1,completed_hosts:0,incomplete_hosts:1,issues:[{host_id:'node',reason_code:'DO_NOT_SHOW'}]},result_links:[{host_id:'<node>',status:'partial',result_id:'saved/id',river_url:'/console/saved/history'}]};
  const html=renderData('/logs',{status:'success',items:[item]},options);
  assert.match(html,/\/recipe-plate\?run=web%26run&amp;profile=fixture%26profile/);
  const cells=[...html.matchAll(/<td>(.*?)<\/td>/g)].map(match=>match[1]);
@@ -124,11 +148,17 @@ test('Web plate activity links to its exact run and keeps only compact closed re
  assert.match(cells[0],/run=web%26run/);
  assert.doesNotMatch(cells[2],/run=web%26run/);
  assert.match(cells[2],/recipe=system%2Fsoftware%2Fcheck%2Fpackage-security/);
- assert.doesNotMatch(html,/<th scope="col">狀態<\/th>/);
- assert.match(html,/完成 0 ／ 未完成 1 ／ 共 1 台/);
- assert.match(html,/<details data-activity-results="observation"><summary>主機結果與未完成項目的數量（未完成主機 1）/);
+ assert.doesNotMatch(html,/<th scope="col">狀態<\/th>|data-state-warning/);
+ const success=renderData('/logs',{status:'success',items:[{...item,status:'success',summary:{completed_hosts:2,incomplete_hosts:0,total_hosts:2}}]},options);
+ assert.match(success,/完成 2／未完成 0／共 2 台/);
+ assert.doesNotMatch(success,/data-state-success/);
+ const waiting=renderData('/logs',{status:'success',items:[{...item,status:'waiting',summary:undefined}]},options);
+ assert.match(waiting,/data-state-neutral">等待回覆/);
+ assert.match(html,/<details data-activity-results="observation"><summary>主機結果（完成 0／未完成 1／共 1 台）/);
  assert.match(cells[2],/target="_blank" rel="noopener"/);
- assert.match(html,/result=saved%2Fid/);assert.match(html,/&lt;node&gt;/);
+ assert.match(html,/<a target="_blank" rel="noopener" href="\/logs\?result=saved%2Fid/);
+ assert.match(html,/<a target="_blank" rel="noopener" href="\/console\/saved\/history\?profile=/);
+ assert.match(html,/&lt;node&gt;/);
  assert.doesNotMatch(html,/查看未完成項目|原始資料|DO_NOT_SHOW|<details open|entry=observation/);
  const empty=renderData('/logs',{status:'success',items:[{...item,result_links:[]}]},options);
  assert.match(empty,/尚無已保存的主機結果/);

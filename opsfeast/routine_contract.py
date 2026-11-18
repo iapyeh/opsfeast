@@ -21,6 +21,8 @@ class RoutineSpec:
 
 
 def validate(directory,metadata):
+    from .recipe_launch import describe as launch
+    launch(metadata)
     try:return _validate(Path(directory),metadata)
     except ConfigError:raise
     except (ValueError,KeyError,TypeError,AttributeError,RecursionError):raise ConfigError('invalid routine or meal definition') from None

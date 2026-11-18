@@ -36,11 +36,12 @@ BUNDLED = {
     'system/network/check/port': ('check-port', '0.1.0'),
     'system/account/check/identity': ('check-identity', '0.1.0'),
     'system/inventory/overview': ('inventory-overview', '0.1.0'),
+    'system/inventory/system': ('inventory-platform-system', '0.1.1'),
     'feast/report/execution-summary': ('report-summary', '0.1.3'),
     'feast/report/retention-summary': ('report-retention', '0.1.0'),
 }
 
-BUNDLED.update({'system/inventory/'+leaf:('inventory-platform-system' if leaf=='system' else 'inventory-'+leaf,'0.1.0') for leaf in ('hardware','system','network-configuration','software','storage-layout','storage-capacity','services','network-state','system-runtime','resource-metrics','hardware-sensors')})
+BUNDLED.update({'system/inventory/'+leaf:('inventory-'+leaf,'0.1.0') for leaf in ('hardware','network-configuration','software','storage-layout','storage-capacity','services','network-state','system-runtime','resource-metrics','hardware-sensors')})
 
 class RecipeTaxonomyTests(unittest.TestCase):
     setUp = vault_fixtures.VaultTests.setUp

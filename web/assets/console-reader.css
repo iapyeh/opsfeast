@@ -48,7 +48,7 @@
 .event.block-closed>.source-line{margin:0;white-space:nowrap;overflow:hidden}
 .event.block-closed .source-label{flex-shrink:0}.event.block-closed .source-suffix{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .event.block-closed>:not(.source-line):not(.actions){display:none!important}
-.event.block-closed>.actions>:not(.block-toggle){display:none!important}
+.event.block-closed>.actions>:not(.block-toggle):not(.block-copy){display:none!important}
 
 .event:has(>.source-line:not([hidden])){position:relative;padding-right:48px}
 .event:has(>.source-line:not([hidden]))>.actions{position:absolute;right:6px;top:9px;margin:0!important}
@@ -60,7 +60,9 @@
 
 /* Keep the fold toggle at the far right; the open-window link sits just before it. */
 .event>.actions>a{order:1}.event>.actions>.block-toggle{order:2}
-.event:has(>.source-line:not([hidden])){padding-right:88px}
+.event:has(>.source-line:not([hidden])){padding-right:144px}
+.event.block-closed:has(>.source-line:not([hidden])){padding-right:84px}
+.event pre{cursor:text;user-select:text}
 .event .block-toggle:disabled{opacity:.3;cursor:default}
 
 /* Console shares the workspace's light shell; evidence retains terminal contrast. */

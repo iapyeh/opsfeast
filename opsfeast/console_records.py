@@ -38,9 +38,9 @@ def string(value, limit, empty=False):
 def exact(body, keys):
     if not isinstance(body,dict) or set(body)!=set(keys.split()): raise RecordError('invalid_fields')
 
-def targets(value):
+def targets(value, maximum=16):
     """Immutable, explicitly declared participants in a shared task river."""
-    if not isinstance(value,list) or not 1<=len(value)<=16:raise RecordError('invalid_targets')
+    if not isinstance(value,list) or not 1<=len(value)<=maximum:raise RecordError('invalid_targets')
     result=[];seen=set()
     for item in value:
         exact(item,'profile host_id icon')
@@ -130,10 +130,10 @@ class Records:
         if result['form'] and result['form']['expires_at']:
             result['expired']=time_value(result['form']['expires_at'])<=datetime.now(timezone.utc)
         return result
-    def create(self,body):
+    def create(self,body,*,recipe_execution=False):
         shared=isinstance(body,dict) and 'targets' in body
         exact(body,'session_id title host_id work_id'+(' targets' if shared else ''))
-        if shared:body={**body,'targets':targets(body['targets'])}
+        if shared:body={**body,'targets':targets(body['targets'], 10000 if recipe_execution else 16)}
         sid=identifier(body['session_id']);string(body['title'],500);string(body['host_id'],200)
         if body['work_id'] is not None:identifier(body['work_id'])
         with self.db() as db:

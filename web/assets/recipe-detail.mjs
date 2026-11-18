@@ -24,12 +24,12 @@ export async function mountRecipeDetail(root,{profile,reference,e,api}) {
   const categories=[...Object.entries(domains).map(([id,title])=>({id,title})),...data.preferences.categories];
   root.innerHTML=renderDetail(data,categories,e);
   if(data.content)mountContent(root,data.content,{profile,reference,e,api,targets:{purpose:root.querySelector('#recipe-content'),readiness:root.querySelector('#recipe-readiness-content'),technical:root.querySelector('#recipe-technical-content')}});
-  const execute=(selector,action)=>root.querySelector(selector)?.addEventListener('submit',async event=>{
+  const execute=(selector,action,savedStatus='#recipe-detail-notice')=>root.querySelector(selector)?.addEventListener('submit',async event=>{
    event.preventDefault();const button=event.submitter||event.target.querySelector('[type=submit]');if(button)button.disabled=true;
-   try{await action(event.target);await load();root.querySelector('#recipe-detail-notice').textContent=c.saved;}catch(error){event.target.querySelector('[role="status"]').textContent=error.message||c.error;if(button)button.disabled=false;}
+   try{await action(event.target);await load();root.querySelector(savedStatus).textContent=c.saved;}catch(error){event.target.querySelector('[role="status"]').textContent=error.message||c.error;if(button)button.disabled=false;}
   });
   root.querySelectorAll('[data-option]').forEach(row=>row.querySelector('[data-override]').addEventListener('change',event=>{const value=row.querySelector('[data-option-value]');if(value)value.disabled=!event.target.checked;}));
-  execute('#recipe-default-form',form=>api('/api/v1/recipe-detail/defaults',{profile,reference,expected_revision:data.defaults.revision,...defaultChanges(form,data.defaults.variables)}));
+  execute('#recipe-default-form',()=>api('/api/v1/recipe-detail/defaults',{profile,reference,expected_revision:data.defaults.revision,...defaultChanges(root,data.defaults.variables)}),'#recipe-default-status');
   const preference=(action,changes)=>api('/api/v1/recipe-menu/preferences',{profile,expected_revision:data.preferences.revision,action,changes});
   execute('#recipe-category-form',form=>preference('recipe.categories',{reference,categories:new FormData(form).getAll('categories')}));
   root.querySelector('#recipe-category-reset')?.addEventListener('click',async()=>{try{await preference('recipe.categories',{reference,categories:null});await load();}catch(error){root.querySelector('#recipe-category-status').textContent=error.message;}});

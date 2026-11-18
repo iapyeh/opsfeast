@@ -62,6 +62,8 @@ test('exact matching field options live with the field and are not repeated amon
  assert.equal((html.match(/data-option="port"/g)||[]).length,1);
  assert.ok(html.indexOf('data-option="port"')<html.indexOf('共用選項與儲存'));
  assert.ok(html.indexOf('data-option="timeout"')>html.indexOf('共用選項與儲存'));
+ assert.match(html,/<a href="#recipe-default-options">前往技術細節儲存預設選項/);
+ assert.match(html,/data-option="port".*form="recipe-default-form" data-override.*<textarea form="recipe-default-form"/);
  assert.doesNotMatch(html,/id="recipe-new-category"/);assert.match(html,/前往 Recipes 管理自訂分類/);
  assert.equal((html.match(/id="recipe-default-form"/g)||[]).length,1);
 });

@@ -178,14 +178,16 @@ These are checkout-level presentation helpers, not a new retained-data schema.
 
 Activity summaries separate host completion, collection/advisory/report stages and
 retention/downstream receipts. Web plate entries expose `web_run_id` from their
-saved observation-to-execution association. Their timestamps link directly to
-`/recipes?profile=NAME&run=UUID`, with the shared progress river and host task
+saved observation-to-execution association. Observations with the same Web
+execution ID appear in one activity row, with the host results and linked worker
+rivers inside its disclosure. Its timestamp links directly to
+`/recipe-plate?profile=NAME&run=UUID`, with the shared progress and host task
 results. Summary titles open the exact Recipe page in a new tab (`target=_blank`,
 `rel=noopener`) using `recipe_reference`,
 not to the run. The list has Time, Source and Summary columns; it has no separate
 Status column. Console/CLI status remains inside its existing detail disclosure.
-The activity list shows host completion totals and a closed host-result
-count disclosure; incomplete-stage summaries and raw JSON are omitted there.
+The activity row shows host completion totals in its closed host-result
+disclosure; incomplete-stage summaries and raw JSON are omitted there.
 The execution page reads the selected-entry API only when an incomplete host task
 is expanded, with `item_id=OBSERVATION_ID&host_id=HOST`. Both result links and
 summary targets are restricted to that saved host, including before the six-file
@@ -228,4 +230,4 @@ overall status and successful receipts while preserving processing problems. Hos
 links open separately. Package counts describe acquired installed-package input
 records, not findings or evidence that all packages were assessed.
 
-*Last modified: 2026-11-17 15:22:27*
+*Last modified: 2026-11-18 14:14:40*

@@ -59,4 +59,13 @@ See [routine contract and execution](../../../../docs/recipe-routines.md),
 [inventory jobs/schedules](../../../../docs/inventory-jobs.md),
 [retention](../../../../docs/retention.md) and [Web selection](../../../../docs/web-recipe-menu.md).
 
-*Last modified: 2026-11-10 12:27:11*
+## Execution river
+
+Version 0.1.1 declares one Python stage under
+[staged Recipe execution 0.1.0](../../../../docs/staged-recipe-execution.md).
+A normal saved direct run or the due inventory dispatcher records one river
+for the selected hosts of this Recipe. The existing system fields, permissions
+and retention contract remain in use. Credential-free tests verify threaded
+collection, partial failure and recording without Web.
+
+*Last modified: 2026-11-18 10:35:29*

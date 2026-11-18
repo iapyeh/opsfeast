@@ -138,6 +138,14 @@ form. Commands/output/identity/analysis/authorization are writer reports, not pr
 of execution or authenticated human decisions. Source-time support is not supplied
 in 0.2.0; created_at and event received_at are server receive times.
 
+Use the block header or fold button to open and close it. Text in the block
+body can be selected. **Copy** (複製) copies the original stored text, including
+content beyond the preview, to the local clipboard. For streaming blocks it
+copies the bytes already visible to the reader at the time of the click.
+Completed empty stdout and stderr captures explicitly show that no output was
+recorded. The staged Recipe runner exit code describes the Recipe outcome
+independently of the remote command's own exit code.
+
 The reader shows a processing indicator for streaming command/analysis/status blocks, both below the latest visible block and beside the active block. This reports unfinished source work, not a worker/model heartbeat. Finishing those blocks clears it; other streaming content (such as stdout alone) does not assert that an operation is active.
 
 Text block states: streaming → completed / failed / interrupted / cancelled.
@@ -407,4 +415,4 @@ saved result link. Registered Profile/host associations make it discoverable fro
 host Console history. This is distinct from a persistent interactive shell worker
 and does not add a new command input/cancellation API to the reader.
 
-*Last modified: 2026-11-17 23:17:21*
+*Last modified: 2026-11-18 15:18:55*

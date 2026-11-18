@@ -19,4 +19,6 @@ def describe(metadata):
         runner = metadata.get('runner') or {}
         if not isinstance(runner, dict) or runner.get('contract') not in (None, '', 'python-workflow'):
             raise ConfigError('recipe launch.river requires python-workflow')
+    from .staged_execution import stages
+    stages(metadata)
     return {'mode': value['mode'], 'prompt': prompt, 'river': value.get('river', False)}
